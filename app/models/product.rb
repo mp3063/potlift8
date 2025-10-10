@@ -36,6 +36,8 @@
 class Product < ApplicationRecord
   include InventoryCalculator
   include ProductStateMachine
+  include SyncLockable
+  include ChangePropagator
 
   # Product Types
   enum :product_type, {
@@ -335,6 +337,90 @@ class Product < ApplicationRecord
   #
   def variants
     subproducts
+  end
+
+  # Batch Sync Helper Methods
+  #
+  # Sync this product to all catalogs in batch
+  #
+  # @param queue [Symbol] Queue to use for batch job (:low_priority, :default, :high_priority)
+  # @return [Array<BatchProductSyncJob>] Array of enqueued jobs
+  #
+  def sync_to_all_catalogs_batch(queue: :low_priority)
+    catalog_ids = catalogs.pluck(:id)
+    return [] if catalog_ids.empty?
+
+    jobs = catalog_ids.map do |catalog_id|
+      BatchProductSyncJob.set(queue: queue).perform_later([id], catalog_id)
+    end
+
+    Rails.logger.info(
+      "Enqueued #{jobs.size} batch sync jobs for product #{id} (#{sku})"
+    )
+
+    jobs
+  end
+
+  # Sync to specific catalog with deduplication
+  #
+  # @param catalog [Catalog] Catalog to sync to
+  # @param force [Boolean] Force sync even if recently synced
+  # @return [Boolean] true if sync was enqueued
+  #
+  def sync_to_catalog(catalog, force: false)
+    # Check deduplication unless forced
+    unless force
+      deduplicator = JobDeduplicator.new(
+        job_name: 'ProductSyncJob',
+        params: { product_id: id, catalog_id: catalog.id },
+        window: 30
+      )
+
+      unless deduplicator.unique?
+        Rails.logger.debug(
+          "Skipping duplicate sync for product #{id} (#{sku}) to catalog #{catalog.code}"
+        )
+        return false
+      end
+    end
+
+    ProductSyncJob.perform_later(self, catalog, Time.current)
+    true
+  end
+
+  # Class method to batch sync multiple products
+  #
+  # @param product_ids [Array<Integer>] Product IDs to sync
+  # @param catalog_id [Integer] Catalog ID to sync to
+  # @param queue [Symbol] Queue to use
+  # @return [BatchProductSyncJob] Enqueued job
+  #
+  def self.batch_sync_to_catalog(product_ids, catalog_id, queue: :low_priority)
+    BatchProductSyncJob.set(queue: queue).perform_later(product_ids, catalog_id)
+  end
+
+  # Class method to schedule batch sync during off-peak hours
+  #
+  # @param product_ids [Array<Integer>] Product IDs to sync
+  # @param catalog_id [Integer] Catalog ID to sync to
+  # @param off_peak_hour [Integer] Hour to run (0-23, default: 2 AM)
+  # @return [BatchProductSyncJob] Scheduled job
+  #
+  def self.schedule_batch_sync(product_ids, catalog_id, off_peak_hour: 2)
+    # Calculate time until next off-peak hour
+    now = Time.current
+    target_time = now.change(hour: off_peak_hour, min: 0, sec: 0)
+    target_time += 1.day if target_time <= now
+
+    wait_seconds = (target_time - now).to_i
+
+    Rails.logger.info(
+      "Scheduling batch sync of #{product_ids.size} products to catalog #{catalog_id} " \
+      "at #{target_time} (in #{wait_seconds / 3600.0} hours)"
+    )
+
+    BatchProductSyncJob.set(wait: wait_seconds, queue: :low_priority)
+                       .perform_later(product_ids, catalog_id)
   end
 
   private
