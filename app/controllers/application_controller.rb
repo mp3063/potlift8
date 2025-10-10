@@ -1,4 +1,196 @@
 class ApplicationController < ActionController::Base
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
   allow_browser versions: :modern
+
+  # Make authentication helpers available in views
+  helper_method :current_user, :current_company, :authenticated?, :current_user_name, :current_potlift_company
+
+  # Enforce authentication for all controllers by default
+  # Controllers can skip with: skip_before_action :require_authentication
+  before_action :require_authentication
+
+  private
+
+  # Require user to be authenticated
+  #
+  # Security:
+  # - Checks for valid session
+  # - Validates token expiration
+  # - Automatically refreshes expired tokens
+  # - Stores return URL for redirect after login
+  #
+  # @example Skip authentication for public actions
+  #   class PublicController < ApplicationController
+  #     skip_before_action :require_authentication
+  #   end
+  def require_authentication
+    return if authenticated?
+
+    # Store the URL the user tried to access
+    store_location_for_return
+
+    # Redirect to login
+    redirect_to auth_login_path, alert: 'Please sign in to continue.'
+  end
+
+  # Check if user is authenticated
+  #
+  # @return [Boolean] true if user has valid session
+  def authenticated?
+    # Check if session has required authentication data
+    return false unless session[:user_id].present? && session[:access_token].present?
+
+    # Check if session has not timed out (24 hours)
+    authenticated_at = session[:authenticated_at]
+    if authenticated_at.nil? || Time.now.to_i - authenticated_at > 86400
+      Rails.logger.info("Session timeout for user: #{session[:user_id]}")
+      reset_session
+      return false
+    end
+
+    # Check if access token is expired and refresh if needed
+    if token_expired?
+      begin
+        refresh_access_token
+      rescue StandardError => e
+        Rails.logger.error("Token refresh failed: #{e.message}")
+        reset_session
+        return false
+      end
+    end
+
+    true
+  end
+
+  # Get current authenticated user information
+  #
+  # @return [Hash, nil] User information from session or nil if not authenticated
+  #
+  # @example In controller
+  #   def show
+  #     @user_email = current_user[:email]
+  #   end
+  #
+  # @example In view
+  #   <p>Welcome, <%= current_user[:email] %></p>
+  def current_user
+    return nil unless authenticated?
+
+    @current_user ||= {
+      id: session[:user_id],
+      email: session[:email],
+      name: session[:user_name]
+    }
+  end
+
+  # Get current user's name
+  #
+  # @return [String, nil] User's name or nil
+  def current_user_name
+    current_user&.dig(:name)
+  end
+
+  # Get current authenticated user's company information
+  #
+  # @return [Hash, nil] Company information from session or nil if not authenticated
+  #
+  # @example In controller
+  #   def index
+  #     @company_code = current_company[:code]
+  #     @company_name = current_company[:name]
+  #   end
+  #
+  # @example In view
+  #   <p>Company: <%= current_company[:name] %></p>
+  def current_company
+    return nil unless authenticated? && session[:company_code].present?
+
+    @current_company ||= {
+      id: session[:company_id],
+      code: session[:company_code],
+      name: session[:company_name]
+    }
+  end
+
+  # Get current Potlift company model instance
+  #
+  # Synchronizes company from Authlift8 OAuth provider and returns
+  # the local Company model instance for multi-tenancy.
+  #
+  # This method:
+  # 1. Gets company data from OAuth session (current_company)
+  # 2. Syncs with local database using Company.from_authlift8
+  # 3. Returns memoized Company model instance
+  #
+  # @return [Company, nil] Company model instance or nil if not authenticated
+  #
+  # @example In controller
+  #   def index
+  #     @products = current_potlift_company.products
+  #   end
+  #
+  # @example In view
+  #   <p>Company: <%= current_potlift_company.name %></p>
+  #
+  def current_potlift_company
+    return nil unless current_company.present?
+
+    @current_potlift_company ||= begin
+      company_data = {
+        'id' => session[:company_id],
+        'code' => session[:company_code],
+        'name' => session[:company_name]
+      }
+      Company.from_authlift8(company_data)
+    end
+  end
+
+  # Check if access token is expired or about to expire
+  #
+  # @return [Boolean] true if token should be refreshed
+  def token_expired?
+    expires_at = session[:expires_at]
+    return true if expires_at.nil?
+
+    # Refresh if token expires in less than 5 minutes
+    Time.now.to_i >= (expires_at - 300)
+  end
+
+  # Refresh access token using refresh token
+  #
+  # @raise [StandardError] if refresh fails
+  def refresh_access_token
+    refresh_token = session[:refresh_token]
+    return unless refresh_token.present?
+
+    Rails.logger.info("Refreshing access token for user: #{session[:user_id]}")
+
+    tokens = authlift_client.refresh_token(refresh_token)
+
+    # Update session with new tokens
+    session[:access_token] = tokens[:access_token]
+    session[:refresh_token] = tokens[:refresh_token] if tokens[:refresh_token].present?
+    session[:expires_at] = tokens[:expires_at]
+
+    Rails.logger.info("Access token refreshed successfully")
+  rescue Authlift::Client::AuthenticationError => e
+    Rails.logger.error("Token refresh failed, user needs to re-authenticate: #{e.message}")
+    raise
+  end
+
+  # Store the current URL for redirect after authentication
+  def store_location_for_return
+    return unless request.get?
+    return if request.xhr? # Don't store AJAX requests
+    return if request.path == auth_login_path
+
+    session[:return_to] = request.fullpath
+  end
+
+  # Get or create Authlift client instance
+  #
+  # @return [Authlift::Client] OAuth2 client
+  def authlift_client
+    @authlift_client ||= Authlift::Client.new
+  end
 end

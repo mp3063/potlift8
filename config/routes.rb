@@ -9,6 +9,25 @@ Rails.application.routes.draw do
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
+  # OAuth2 authentication routes with Authlift8
+  # Security: State token validation, secure session handling
+  scope :auth, as: :auth do
+    # GET /auth/login - Initiate OAuth login flow
+    get 'login', to: 'sessions#new'
+
+    # GET /auth/callback - OAuth callback handler (receives code and state)
+    get 'callback', to: 'sessions#create'
+
+    # POST /auth/logout - Logout and clear session
+    post 'logout', to: 'sessions#destroy'
+
+    # DELETE /auth/logout - Alternative logout route (RESTful)
+    delete 'logout', to: 'sessions#destroy'
+  end
+
+  # Convenience route for logout (common user expectation)
+  get 'logout', to: 'sessions#destroy'
+
   # Defines the root path route ("/")
   # root "posts#index"
 end
