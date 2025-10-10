@@ -29,12 +29,12 @@ class Company < ApplicationRecord
   validates :authlift_id, uniqueness: true, allow_nil: true
 
   # Associations - prepared for future implementation
-  # has_many :products, dependent: :destroy
+  has_many :products, dependent: :destroy
   # has_many :catalogs, dependent: :destroy
-  # has_many :storages, dependent: :destroy
-  # has_many :labels, dependent: :destroy
-  # has_many :product_attributes, dependent: :destroy
-  # has_many :company_states, dependent: :destroy
+  has_many :storages, dependent: :destroy
+  has_many :labels, dependent: :destroy
+  has_many :product_attributes, dependent: :destroy
+  has_many :company_states, dependent: :destroy
 
   # Scopes
   scope :active, -> { where(active: true) }
