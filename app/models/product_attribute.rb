@@ -50,6 +50,7 @@ class ProductAttribute < ApplicationRecord
   belongs_to :company
   has_many :product_attribute_values, dependent: :destroy
   has_many :products, through: :product_attribute_values
+  has_many :catalog_item_attribute_values, dependent: :destroy
 
   # Scopes
   default_scope { order("attribute_position asc nulls last") }

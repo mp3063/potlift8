@@ -30,7 +30,7 @@ class Company < ApplicationRecord
 
   # Associations - prepared for future implementation
   has_many :products, dependent: :destroy
-  # has_many :catalogs, dependent: :destroy
+  has_many :catalogs, dependent: :destroy
   has_many :storages, dependent: :destroy
   has_many :labels, dependent: :destroy
   has_many :product_attributes, dependent: :destroy

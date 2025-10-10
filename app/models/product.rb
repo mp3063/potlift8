@@ -73,6 +73,10 @@ class Product < ApplicationRecord
   has_many :storages, through: :inventories
   has_many :product_assets, dependent: :destroy
 
+  # Catalog associations
+  has_many :catalog_items, dependent: :destroy
+  has_many :catalogs, through: :catalog_items
+
   # Product Configuration associations (for configurable and bundle products)
   # When this product is the superproduct (parent)
   has_many :product_configurations_as_super,
