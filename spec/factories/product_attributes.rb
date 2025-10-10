@@ -5,7 +5,7 @@ FactoryBot.define do
     sequence(:name) { |n| "Attribute #{n}" }
     pa_type { :patype_text }
     view_format { :view_format_general }
-    product_attribute_scope { :product_scope }
+    product_attribute_scope { :product_and_catalog_scope }  # Changed to most flexible scope as default
     mandatory { false }
     has_rules { false }
     rules { {} }
