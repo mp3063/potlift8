@@ -1,0 +1,111 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'net/http'
+require 'json'
+require 'uri'
+
+puts "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+puts "   Potlift8 OAuth Client Registration with Authlift8"
+puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+
+# Configuration
+AUTHLIFT_URL = ENV['AUTHLIFT8_SITE'] || 'http://localhost:3231'
+POTLIFT_URL = ENV.fetch('POTLIFT_URL', 'http://localhost:3246')
+REDIRECT_URI = "#{POTLIFT_URL}/auth/callback"
+
+puts "Configuration:"
+puts "  Authlift8 URL: #{AUTHLIFT_URL}"
+puts "  Potlift8 URL:  #{POTLIFT_URL}"
+puts "  Redirect URI:  #{REDIRECT_URI}"
+puts ""
+
+# Instructions for manual registration
+puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+puts "   MANUAL REGISTRATION STEPS"
+puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+
+puts "1. Open Authlift8 Admin Panel:"
+puts "   → #{AUTHLIFT_URL}/admin/oauth_applications/new\n"
+
+puts "2. Login with Super Admin credentials:"
+puts "   Email:    superadmin@authlift.com"
+puts "   Password: password123456\n"
+
+puts "3. Fill in the OAuth Application form:"
+puts "   ┌─────────────────────────────────────────────────┐"
+puts "   │ Name:         Potlift8                          │"
+puts "   │ Redirect URI: #{REDIRECT_URI.ljust(32)} │"
+puts "   │ Scopes:       public write                      │"
+puts "   │ Confidential: ✓ (CHECKED)                       │"
+puts "   │ Trusted:      ☐ (UNCHECKED)                     │"
+puts "   └─────────────────────────────────────────────────┘\n"
+
+puts "4. Click 'Submit' to create the application\n"
+
+puts "5. Copy the generated credentials:\n"
+
+puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+puts "   UPDATE YOUR .env FILE"
+puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+
+puts "Add these lines to /Users/sin/RubymineProjects/Ozz-Rails-8/Potlift8/.env:\n"
+
+puts "# Authlift8 OAuth Configuration"
+puts "AUTHLIFT8_SITE=#{AUTHLIFT_URL}"
+puts "AUTHLIFT8_CLIENT_ID=<paste_application_uid_here>"
+puts "AUTHLIFT8_CLIENT_SECRET=<paste_secret_here>"
+puts "AUTHLIFT8_REDIRECT_URI=#{REDIRECT_URI}"
+puts ""
+
+puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+puts "   VERIFICATION STEPS"
+puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+
+puts "1. Restart Potlift8 server:"
+puts "   $ bin/dev\n"
+
+puts "2. Visit the login page:"
+puts "   → #{POTLIFT_URL}/auth/login\n"
+
+puts "3. You should be redirected to Authlift8 for authentication\n"
+
+puts "4. After login, you'll be redirected back to Potlift8 with a valid session\n"
+
+puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+puts "   TESTING WITH CURL"
+puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+
+puts "# Test public key endpoint"
+puts "curl #{AUTHLIFT_URL}/api/v1/.well-known/jwks.json\n"
+
+puts "# Test OAuth authorization (replace CLIENT_ID)"
+puts "curl '#{AUTHLIFT_URL}/oauth/authorize?client_id=CLIENT_ID&redirect_uri=#{REDIRECT_URI}&response_type=code&scope=public&state=test123'\n"
+
+puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+puts "   TROUBLESHOOTING"
+puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+
+puts "If OAuth flow fails, check:"
+puts "  1. Authlift8 is running on port 3231"
+puts "  2. Potlift8 is running on port 3246"
+puts "  3. Redirect URI matches exactly (including http://)"
+puts "  4. Client credentials are correct in .env"
+puts "  5. Check Potlift8 logs: log/development.log"
+puts "  6. Check Authlift8 logs for errors\n"
+
+puts "Common errors:"
+puts "  • 'redirect_uri mismatch' → Check AUTHLIFT8_REDIRECT_URI"
+puts "  • 'invalid_client' → Check CLIENT_ID and CLIENT_SECRET"
+puts "  • 'JWT verification failed' → Check public key endpoint\n"
+
+puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+puts "   ADDITIONAL RESOURCES"
+puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+
+puts "Documentation:"
+puts "  • OAUTH_CLIENT_REGISTRATION.md - Detailed registration guide"
+puts "  • AUTHLIFT_SECURITY_ASSESSMENT.md - Security analysis"
+puts "  • QUICKSTART_OAUTH2.md - Quick start guide\n"
+
+puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"

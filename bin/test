@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# bin/test - Run RSpec test suite
+
+set -e
+
+# Load environment variables from .env if it exists
+if [ -f .env ]; then
+  export $(grep -v '^#' .env | xargs)
+fi
+
+# Set test environment
+export RAILS_ENV=test
+
+# Run RSpec with all arguments passed to this script
+bundle exec rspec "$@"
