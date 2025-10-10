@@ -34,6 +34,9 @@
 # - write_attribute_value(code, value) to set attribute values
 #
 class Product < ApplicationRecord
+  include InventoryCalculator
+  include ProductStateMachine
+
   # Product Types
   enum :product_type, {
     sellable: 1,
@@ -70,6 +73,21 @@ class Product < ApplicationRecord
   has_many :storages, through: :inventories
   has_many :product_assets, dependent: :destroy
 
+  # Product Configuration associations (for configurable and bundle products)
+  # When this product is the superproduct (parent)
+  has_many :product_configurations_as_super,
+           class_name: 'ProductConfiguration',
+           foreign_key: 'superproduct_id',
+           dependent: :destroy
+  has_many :subproducts, through: :product_configurations_as_super, source: :subproduct
+
+  # When this product is the subproduct (child)
+  has_many :product_configurations_as_sub,
+           class_name: 'ProductConfiguration',
+           foreign_key: 'subproduct_id',
+           dependent: :destroy
+  has_many :superproducts, through: :product_configurations_as_sub, source: :superproduct
+
   # Validations
   validates :company, presence: true
   validates :sku, presence: true, uniqueness: { scope: :company_id, case_sensitive: false }
@@ -87,6 +105,89 @@ class Product < ApplicationRecord
   scope :bundle_products, -> { where(product_type: :bundle) }
   scope :by_sku, ->(sku) { where(sku: sku) }
   scope :by_ean, ->(ean) { where(ean: ean) }
+
+  # Performance-Optimized Scopes with Eager Loading
+  #
+  # These scopes use includes/preload to avoid N+1 queries when accessing associations.
+  # Use these when you need to iterate over products and access their related data.
+  #
+  # Performance Guidelines:
+  # - includes: Use when you'll filter or sort by association attributes
+  # - preload: Use when you'll only access association data (no filtering/sorting)
+  # - eager_load: Use when you need LEFT OUTER JOIN behavior
+  #
+  # Examples:
+  #   Product.with_inventory.each { |p| p.inventories.sum(:value) } # No N+1
+  #   Product.with_attributes.each { |p| p.attribute_values_hash } # No N+1
+  #   Product.with_labels.each { |p| p.labels.pluck(:name) } # No N+1
+  #
+
+  # Eager load inventories with their storage information
+  # Use when: Displaying product inventory across multiple storages
+  # Prevents: N+1 queries on inventories and storages
+  scope :with_inventory, -> {
+    includes(inventories: :storage)
+  }
+
+  # Eager load product attribute values with product attributes
+  # Use when: Displaying or filtering by product attributes
+  # Prevents: N+1 queries on product_attribute_values and product_attributes
+  scope :with_attributes, -> {
+    includes(product_attribute_values: :product_attribute)
+  }
+
+  # Eager load product labels with label information
+  # Use when: Displaying product categories, tags, or filtering by labels
+  # Prevents: N+1 queries on product_labels and labels
+  scope :with_labels, -> {
+    includes(product_labels: :label)
+  }
+
+  # Eager load subproducts (variants/bundle components)
+  # Use when: Displaying configurable products or bundles with their variants
+  # Prevents: N+1 queries on product_configurations and subproducts
+  scope :with_subproducts, -> {
+    includes(product_configurations_as_super: :subproduct)
+  }
+
+  # Eager load superproducts (parent products)
+  # Use when: Displaying variant products with their parent configurable product
+  # Prevents: N+1 queries on product_configurations and superproducts
+  scope :with_superproducts, -> {
+    includes(product_configurations_as_sub: :superproduct)
+  }
+
+  # Comprehensive eager loading for product listing pages
+  # Use when: Displaying full product details with all relationships
+  # Warning: This loads a lot of data, use only when necessary
+  scope :with_all_associations, -> {
+    includes(
+      :company,
+      :product_assets,
+      inventories: :storage,
+      product_attribute_values: :product_attribute,
+      product_labels: :label,
+      product_configurations_as_super: :subproduct
+    )
+  }
+
+  # Performance-optimized scope for inventory calculations
+  # Preloads only the data needed for inventory sums
+  scope :with_inventory_summary, -> {
+    preload(:inventories)
+  }
+
+  # Scope for recent products sorted by updated_at
+  # Uses the composite index (company_id, updated_at) for optimal performance
+  scope :recently_updated, ->(limit = 10) {
+    order(updated_at: :desc).limit(limit)
+  }
+
+  # Scope for products with specific status and type (uses composite index)
+  # Optimized to use the index_products_on_company_status_type index
+  scope :by_status_and_type, ->(status, type) {
+    where(product_status: status, product_type: type)
+  }
 
   # Callbacks
   before_validation :normalize_sku
@@ -195,6 +296,41 @@ class Product < ApplicationRecord
   #
   def available?
     product_status_active? && in_stock?
+  end
+
+  # Product Relationship Helper Methods
+  #
+  # Check if this product has variants (is a configurable product with subproducts)
+  #
+  # @return [Boolean] true if product is configurable and has subproducts
+  #
+  # @example
+  #   t_shirt.has_variants? # => true (configurable with size variants)
+  #   bundle.has_variants? # => false (bundle, not configurable)
+  #   simple_product.has_variants? # => false (sellable, not configurable)
+  #
+  def has_variants?
+    product_type_configurable? && subproducts.any?
+  end
+
+  # Check if this product is a variant (is a subproduct of a configurable product)
+  #
+  # @return [Boolean] true if product is a subproduct of any superproduct
+  #
+  # @example
+  #   size_small.is_variant? # => true (subproduct of t-shirt)
+  #   t_shirt.is_variant? # => false (is the superproduct)
+  #
+  def is_variant?
+    superproducts.any?
+  end
+
+  # Alias for subproducts to maintain compatibility with pot3
+  #
+  # @return [ActiveRecord::Associations::CollectionProxy] Collection of variant products
+  #
+  def variants
+    subproducts
   end
 
   private

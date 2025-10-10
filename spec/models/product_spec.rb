@@ -33,6 +33,12 @@ RSpec.describe Product, type: :model do
     it { is_expected.to have_many(:inventories).dependent(:destroy) }
     it { is_expected.to have_many(:storages).through(:inventories) }
     it { is_expected.to have_many(:product_assets).dependent(:destroy) }
+
+    # Product configuration associations
+    it { is_expected.to have_many(:product_configurations_as_super).dependent(:destroy) }
+    it { is_expected.to have_many(:subproducts).through(:product_configurations_as_super) }
+    it { is_expected.to have_many(:product_configurations_as_sub).dependent(:destroy) }
+    it { is_expected.to have_many(:superproducts).through(:product_configurations_as_sub) }
   end
 
   # Test validations
@@ -575,6 +581,105 @@ RSpec.describe Product, type: :model do
            .and change { ProductLabel.count }.by(-labels_count)
            .and change { Inventory.count }.by(-inventory_count)
            .and change { ProductAsset.count }.by(-assets_count)
+      end
+    end
+  end
+
+  # Test product relationship helper methods
+  describe 'product relationship helper methods' do
+    let(:company) { create(:company) }
+
+    describe '#has_variants?' do
+      context 'for configurable products with subproducts' do
+        let(:configurable) { create(:product, :configurable_variant, company: company) }
+        let(:variant1) { create(:product, :sellable, company: company) }
+        let(:variant2) { create(:product, :sellable, company: company) }
+
+        before do
+          create(:product_configuration, superproduct: configurable, subproduct: variant1)
+          create(:product_configuration, superproduct: configurable, subproduct: variant2)
+        end
+
+        it 'returns true' do
+          expect(configurable.has_variants?).to be true
+        end
+      end
+
+      context 'for configurable products without subproducts' do
+        let(:configurable) { create(:product, :configurable_variant, company: company) }
+
+        it 'returns false' do
+          expect(configurable.has_variants?).to be false
+        end
+      end
+
+      context 'for bundle products' do
+        let(:bundle) { create(:product, :bundle, company: company) }
+        let(:component) { create(:product, :sellable, company: company) }
+
+        before do
+          create(:product_configuration, superproduct: bundle, subproduct: component)
+        end
+
+        it 'returns false (bundles are not variants)' do
+          expect(bundle.has_variants?).to be false
+        end
+      end
+
+      context 'for sellable products' do
+        let(:sellable) { create(:product, :sellable, company: company) }
+
+        it 'returns false' do
+          expect(sellable.has_variants?).to be false
+        end
+      end
+    end
+
+    describe '#is_variant?' do
+      context 'for products that are subproducts' do
+        let(:configurable) { create(:product, :configurable_variant, company: company) }
+        let(:variant) { create(:product, :sellable, company: company) }
+
+        before do
+          create(:product_configuration, superproduct: configurable, subproduct: variant)
+        end
+
+        it 'returns true' do
+          expect(variant.is_variant?).to be true
+        end
+      end
+
+      context 'for products that are not subproducts' do
+        let(:product) { create(:product, :sellable, company: company) }
+
+        it 'returns false' do
+          expect(product.is_variant?).to be false
+        end
+      end
+
+      context 'for configurable products' do
+        let(:configurable) { create(:product, :configurable_variant, company: company) }
+
+        it 'returns false (they are superproducts, not variants)' do
+          expect(configurable.is_variant?).to be false
+        end
+      end
+    end
+
+    describe '#variants' do
+      let(:configurable) { create(:product, :configurable_variant, company: company) }
+      let(:variant1) { create(:product, :sellable, company: company) }
+      let(:variant2) { create(:product, :sellable, company: company) }
+
+      before do
+        create(:product_configuration, superproduct: configurable, subproduct: variant1)
+        create(:product_configuration, superproduct: configurable, subproduct: variant2)
+      end
+
+      it 'returns all subproducts (alias for compatibility)' do
+        expect(configurable.variants).to eq(configurable.subproducts)
+        expect(configurable.variants.count).to eq(2)
+        expect(configurable.variants).to include(variant1, variant2)
       end
     end
   end

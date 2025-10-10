@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_10_191157) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_10_194146) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -44,6 +44,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_10_191157) do
     t.date "eta"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["product_id", "storage_id", "value"], name: "index_inventories_on_product_storage_value", comment: "Optimizes inventory lookups and saldo calculations"
     t.index ["product_id", "storage_id"], name: "inventories_product_storage_unique_index", unique: true
     t.index ["product_id"], name: "index_inventories_on_product_id"
     t.index ["storage_id"], name: "index_inventories_on_storage_id"
@@ -64,6 +65,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_10_191157) do
     t.integer "label_positions"
     t.integer "product_default_restriction", default: 1
     t.index ["company_id", "full_code"], name: "index_labels_on_company_id_and_full_code", unique: true
+    t.index ["company_id", "label_type", "parent_label_id"], name: "index_labels_on_company_type_parent", comment: "Optimizes label filtering and hierarchy traversal"
     t.index ["company_id"], name: "index_labels_on_company_id"
     t.index ["parent_label_id"], name: "index_labels_on_parent_label_id"
   end
@@ -91,6 +93,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_10_191157) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["product_attribute_id"], name: "index_product_attribute_values_on_product_attribute_id"
+    t.index ["product_id", "product_attribute_id", "value"], name: "index_pav_on_product_attribute_value", comment: "Optimizes product attribute value searches with covering index"
     t.index ["product_id", "product_attribute_id"], name: "pavs_index", unique: true
     t.index ["product_id"], name: "index_product_attribute_values_on_product_id"
   end
@@ -117,6 +120,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_10_191157) do
     t.index ["company_id"], name: "index_product_attributes_on_company_id"
   end
 
+  create_table "product_configurations", force: :cascade do |t|
+    t.bigint "superproduct_id", null: false
+    t.bigint "subproduct_id", null: false
+    t.integer "configuration_position"
+    t.jsonb "info", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["subproduct_id"], name: "index_product_configurations_on_subproduct_id"
+    t.index ["superproduct_id", "subproduct_id"], name: "index_product_configs_on_super_and_sub", unique: true
+    t.index ["superproduct_id"], name: "index_product_configurations_on_superproduct_id"
+  end
+
   create_table "product_labels", force: :cascade do |t|
     t.bigint "product_id", null: false
     t.bigint "label_id", null: false
@@ -141,7 +156,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_10_191157) do
     t.jsonb "info", default: {}, null: false
     t.jsonb "cache", default: {}, null: false
     t.integer "product_status"
+    t.index ["company_id", "product_status", "product_type"], name: "index_products_on_company_status_type", comment: "Optimizes product filtering by company, status, and type"
     t.index ["company_id", "sku"], name: "products_company_sku_unique_index", unique: true
+    t.index ["company_id", "updated_at"], name: "index_products_on_company_updated_at", comment: "Optimizes product sorting by updated_at within company scope"
     t.index ["company_id"], name: "index_products_on_company_id"
     t.index ["product_status"], name: "index_products_on_product_status"
     t.index ["product_type"], name: "index_products_on_product_type"
@@ -178,6 +195,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_10_191157) do
   add_foreign_key "product_attribute_values", "product_attributes"
   add_foreign_key "product_attribute_values", "products"
   add_foreign_key "product_attributes", "companies"
+  add_foreign_key "product_configurations", "products", column: "subproduct_id"
+  add_foreign_key "product_configurations", "products", column: "superproduct_id"
   add_foreign_key "product_labels", "labels"
   add_foreign_key "product_labels", "products"
   add_foreign_key "products", "companies"

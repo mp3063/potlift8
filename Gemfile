@@ -30,6 +30,8 @@ gem "jwt", "~> 2.7"
 gem "faraday", "~> 2.7"
 # Environment variable management
 gem "dotenv-rails", groups: [:development, :test]
+# State machine for product lifecycle management
+gem "aasm", "~> 5.5"
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[ windows jruby ]
@@ -70,6 +72,9 @@ group :development, :test do
 
   # Interactive debugging console
   gem "pry-rails"
+
+  # N+1 query detection [https://github.com/flyerhzm/bullet]
+  gem "bullet"
 end
 
 group :test do

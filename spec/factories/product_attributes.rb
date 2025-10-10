@@ -8,7 +8,7 @@ FactoryBot.define do
     product_attribute_scope { :product_scope }
     mandatory { false }
     has_rules { false }
-    rules { nil }
+    rules { {} }
     attribute_position { nil }
     info { {} }
 
