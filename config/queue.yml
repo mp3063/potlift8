@@ -1,18 +1,80 @@
+# Solid Queue Configuration for Potlift8
+# This configuration defines multiple queue priorities and worker/dispatcher settings
+# for optimal background job processing in a Rails 8 application
+
 default: &default
+  # Dispatchers are responsible for picking up scheduled jobs and enqueuing them
   dispatchers:
+    # High-priority dispatcher for time-sensitive operations
     - polling_interval: 1
       batch_size: 500
+      # Queues served by this dispatcher
+      queues:
+        - high_priority
+        - default
+        - low_priority
+      # Concurrency controls how many jobs can be dispatched in parallel
+      concurrency_maintenance_interval: 600
+
+  # Workers process the actual jobs from the queues
   workers:
-    - queues: "*"
-      threads: 3
-      processes: <%= ENV.fetch("JOB_CONCURRENCY", 1) %>
+    # High-priority worker pool for critical operations
+    # (inventory sync, catalog updates, real-time operations)
+    - queues: high_priority
+      threads: 5
+      processes: <%= ENV.fetch("HIGH_PRIORITY_CONCURRENCY", 2) %>
       polling_interval: 0.1
+      # More threads and faster polling for urgent jobs
+
+    # Default priority worker pool for standard operations
+    # (product updates, notifications, routine tasks)
+    - queues: default
+      threads: 3
+      processes: <%= ENV.fetch("DEFAULT_CONCURRENCY", 2) %>
+      polling_interval: 0.5
+
+    # Low-priority worker pool for background maintenance
+    # (cleanup, reports, analytics, bulk operations)
+    - queues: low_priority
+      threads: 2
+      processes: <%= ENV.fetch("LOW_PRIORITY_CONCURRENCY", 1) %>
+      polling_interval: 1
 
 development:
   <<: *default
+  # Override for development: fewer processes to save resources
+  workers:
+    - queues: high_priority
+      threads: 2
+      processes: 1
+      polling_interval: 0.1
+
+    - queues: default
+      threads: 2
+      processes: 1
+      polling_interval: 0.5
+
+    - queues: low_priority
+      threads: 1
+      processes: 1
+      polling_interval: 1
 
 test:
   <<: *default
+  # Test environment: minimal resources, inline processing preferred
+  workers:
+    - queues: "*"
+      threads: 1
+      processes: 1
+      polling_interval: 0.1
+  dispatchers:
+    - polling_interval: 1
+      batch_size: 100
 
 production:
   <<: *default
+  # Production uses the full configuration with environment-based scaling
+  # Set environment variables to control concurrency:
+  # - HIGH_PRIORITY_CONCURRENCY: Number of high-priority worker processes
+  # - DEFAULT_CONCURRENCY: Number of default worker processes
+  # - LOW_PRIORITY_CONCURRENCY: Number of low-priority worker processes
