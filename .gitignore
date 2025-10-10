@@ -11,8 +11,9 @@
 /vendor/bundle
 /vendor/cache
 
-# Ignore all environment files.
+# Ignore all environment files (except .env.example)
 /.env*
+!/.env.example
 
 # Ignore all logfiles and tempfiles.
 /log/*
@@ -43,3 +44,7 @@
 /tmp
 .mcp*
 /.idea
+
+# RSpec and Testing
+/coverage/
+/spec/examples.txt
