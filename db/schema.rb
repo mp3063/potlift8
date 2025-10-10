@@ -10,9 +10,50 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_10_194146) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_10_202339) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "catalog_item_attribute_values", force: :cascade do |t|
+    t.bigint "catalog_item_id", null: false
+    t.bigint "product_attribute_id", null: false
+    t.text "value"
+    t.jsonb "info", default: {}
+    t.boolean "ready", default: true
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["catalog_item_id", "product_attribute_id"], name: "ciav_index", unique: true
+  end
+
+  create_table "catalog_items", force: :cascade do |t|
+    t.bigint "catalog_id", null: false
+    t.bigint "product_id", null: false
+    t.integer "priority"
+    t.integer "catalog_item_state", default: 0, null: false
+    t.jsonb "info", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["catalog_id", "product_id"], name: "index_catalog_items_on_catalog_id_and_product_id", unique: true
+    t.index ["catalog_item_state"], name: "index_catalog_items_on_catalog_item_state"
+    t.index ["priority"], name: "index_catalog_items_on_priority"
+  end
+
+  create_table "catalogs", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.string "code", null: false
+    t.string "name", null: false
+    t.integer "catalog_type", null: false
+    t.string "currency_code", default: "eur", null: false
+    t.jsonb "info", default: {}
+    t.jsonb "cache", default: {}
+    t.bigint "sync_lock_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["catalog_type"], name: "index_catalogs_on_catalog_type"
+    t.index ["company_id", "code"], name: "index_catalogs_on_company_id_and_code", unique: true
+    t.index ["currency_code"], name: "index_catalogs_on_currency_code"
+    t.index ["sync_lock_id"], name: "index_catalogs_on_sync_lock_id"
+  end
 
   create_table "companies", force: :cascade do |t|
     t.string "code", null: false
@@ -186,6 +227,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_10_194146) do
     t.datetime "updated_at", null: false
   end
 
+  add_foreign_key "catalog_item_attribute_values", "catalog_items"
+  add_foreign_key "catalog_item_attribute_values", "product_attributes"
+  add_foreign_key "catalog_items", "catalogs"
+  add_foreign_key "catalog_items", "products"
+  add_foreign_key "catalogs", "companies"
+  add_foreign_key "catalogs", "sync_locks"
   add_foreign_key "company_states", "companies"
   add_foreign_key "inventories", "products"
   add_foreign_key "inventories", "storages"
