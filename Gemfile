@@ -22,6 +22,15 @@ gem "jbuilder"
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 # gem "bcrypt", "~> 3.1.7"
 
+# OAuth2 client for Authlift8 integration
+gem "oauth2", "~> 2.0"
+# JWT token validation with RS256 signature verification
+gem "jwt", "~> 2.7"
+# HTTP client for API requests
+gem "faraday", "~> 2.7"
+# Environment variable management
+gem "dotenv-rails", groups: [:development, :test]
+
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[ windows jruby ]
 
@@ -51,6 +60,35 @@ group :development, :test do
 
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
+
+  # RSpec testing framework
+  gem "rspec-rails", "~> 7.1"
+
+  # Test data generation
+  gem "factory_bot_rails"
+  gem "faker"
+
+  # Interactive debugging console
+  gem "pry-rails"
+end
+
+group :test do
+  # Model matchers for RSpec
+  gem "shoulda-matchers"
+
+  # Database cleaning strategies
+  gem "database_cleaner-active_record"
+
+  # Code coverage analysis
+  gem "simplecov", require: false
+
+  # HTTP request stubbing and recording
+  gem "vcr"
+  gem "webmock"
+
+  # System testing
+  gem "capybara"
+  gem "selenium-webdriver"
 end
 
 group :development do
