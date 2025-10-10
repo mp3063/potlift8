@@ -7,195 +7,346 @@ RSpec.describe SyncLock, type: :model do
       expect(build(:sync_lock)).to be_valid
     end
 
-    it 'creates valid sync locks with traits' do
-      expect(create(:sync_lock, :recent)).to be_valid
-      expect(create(:sync_lock, :old)).to be_valid
-      expect(create(:sync_lock, :today)).to be_valid
+    it 'creates valid sync lock' do
+      sync_lock = create(:sync_lock)
+      expect(sync_lock).to be_persisted
+      expect(sync_lock.timestamp).to be_present
     end
+  end
+
+  # Test associations
+  describe 'associations' do
+    it { is_expected.to have_many(:products).dependent(:nullify) }
+    it { is_expected.to have_many(:catalogs).dependent(:nullify) }
   end
 
   # Test validations
   describe 'validations' do
     it { is_expected.to validate_presence_of(:timestamp) }
-  end
 
-  # Test associations
-  describe 'associations' do
-    it 'can have associated products' do
-      sync_lock = create(:sync_lock)
-      product = create(:product, sync_lock: sync_lock)
+    it 'validates uniqueness of timestamp' do
+      create(:sync_lock, timestamp: 'product:123')
+      duplicate = build(:sync_lock, timestamp: 'product:123')
 
-      expect(product.sync_lock).to eq(sync_lock)
+      expect(duplicate).not_to be_valid
+      expect(duplicate.errors[:timestamp]).to include('has already been taken')
     end
   end
 
-  # Test timestamp field
-  describe 'timestamp field' do
-    it 'stores string timestamps' do
-      sync_lock = create(:sync_lock, timestamp: '2025-10-10-1500')
-      expect(sync_lock.timestamp).to eq('2025-10-10-1500')
-    end
-
-    it 'allows various timestamp formats' do
-      date_format = create(:sync_lock, timestamp: '2025-10-10')
-      datetime_format = create(:sync_lock, timestamp: '2025-10-10-1500')
-      iso_format = create(:sync_lock, timestamp: Time.current.iso8601)
-
-      expect(date_format.timestamp).to eq('2025-10-10')
-      expect(datetime_format.timestamp).to eq('2025-10-10-1500')
-      expect(iso_format.timestamp).to be_present
-    end
-
-    it 'requires timestamp to be present' do
-      sync_lock = build(:sync_lock, timestamp: nil)
-      expect(sync_lock).not_to be_valid
-      expect(sync_lock.errors[:timestamp]).to include("can't be blank")
-    end
-
-    it 'allows duplicate timestamps' do
-      timestamp = '2025-10-10-1200'
-      create(:sync_lock, timestamp: timestamp)
-      duplicate = build(:sync_lock, timestamp: timestamp)
-      expect(duplicate).to be_valid
+  # Test constants
+  describe 'constants' do
+    it 'defines LOCK_TIMEOUT' do
+      expect(SyncLock::LOCK_TIMEOUT).to eq(5.minutes)
     end
   end
 
-  # Integration tests
-  describe 'integration' do
-    let(:sync_lock) { create(:sync_lock, timestamp: '2025-10-10-1200') }
+  # Test lock lifecycle
+  describe '#active?' do
+    context 'when lock was recently updated' do
+      let(:lock) { create(:sync_lock) }
 
-    context 'product synchronization tracking' do
-      let(:company) { create(:company) }
-
-      it 'groups products by sync operation' do
-        product1 = create(:product, company: company, sync_lock: sync_lock)
-        product2 = create(:product, company: company, sync_lock: sync_lock)
-        product3 = create(:product, company: company, sync_lock: sync_lock)
-
-        synced_products = Product.where(sync_lock: sync_lock)
-        expect(synced_products).to contain_exactly(product1, product2, product3)
-      end
-
-      it 'allows products from different syncs' do
-        sync1 = create(:sync_lock, timestamp: '2025-10-10-1000')
-        sync2 = create(:sync_lock, timestamp: '2025-10-10-1100')
-
-        product1 = create(:product, company: company, sync_lock: sync1)
-        product2 = create(:product, company: company, sync_lock: sync2)
-
-        expect(Product.where(sync_lock: sync1)).to contain_exactly(product1)
-        expect(Product.where(sync_lock: sync2)).to contain_exactly(product2)
-      end
-
-      it 'allows products without sync_lock' do
-        product_with_sync = create(:product, company: company, sync_lock: sync_lock)
-        product_without_sync = create(:product, company: company, sync_lock: nil)
-
-        expect(product_with_sync.sync_lock).to eq(sync_lock)
-        expect(product_without_sync.sync_lock).to be_nil
+      it 'returns true' do
+        expect(lock.active?).to be true
       end
     end
 
-    context 'sync batch identification' do
-      let(:company) { create(:company) }
-
-      it 'identifies all products from a sync batch' do
-        batch_sync = create(:sync_lock, :with_products, products_count: 5)
-        expect(Product.where(sync_lock: batch_sync).count).to eq(5)
-      end
-
-      it 'supports multiple sync operations' do
-        morning_sync = create(:sync_lock, timestamp: '2025-10-10-0800')
-        noon_sync = create(:sync_lock, timestamp: '2025-10-10-1200')
-        evening_sync = create(:sync_lock, timestamp: '2025-10-10-1800')
-
-        create(:product, company: company, sync_lock: morning_sync)
-        create(:product, company: company, sync_lock: noon_sync)
-        create(:product, company: company, sync_lock: evening_sync)
-
-        expect(Product.where(sync_lock: morning_sync).count).to eq(1)
-        expect(Product.where(sync_lock: noon_sync).count).to eq(1)
-        expect(Product.where(sync_lock: evening_sync).count).to eq(1)
-      end
-    end
-
-    context 'sync history tracking' do
-      it 'maintains history of sync operations' do
-        create(:sync_lock, timestamp: '2025-10-08-1200')
-        create(:sync_lock, timestamp: '2025-10-09-1200')
-        create(:sync_lock, timestamp: '2025-10-10-1200')
-
-        expect(SyncLock.count).to eq(3)
-        timestamps = SyncLock.pluck(:timestamp).sort
-        expect(timestamps).to eq(['2025-10-08-1200', '2025-10-09-1200', '2025-10-10-1200'])
-      end
-    end
-
-    context 'recent vs old syncs' do
-      let!(:recent) { create(:sync_lock, :recent) }
-      let!(:old) { create(:sync_lock, :old) }
-
-      it 'distinguishes between recent and old syncs' do
-        expect(recent.created_at).to be > old.created_at
-      end
-    end
-
-    context 'sync lock deletion' do
-      let(:company) { create(:company) }
-      let!(:product) { create(:product, company: company, sync_lock: sync_lock) }
-
-      it 'can be deleted' do
-        expect { sync_lock.destroy }.to change { SyncLock.count }.by(-1)
-      end
-
-      it 'nullifies product sync_lock_id when deleted' do
-        sync_lock.destroy
-        expect(product.reload.sync_lock_id).to be_nil
-      end
-    end
-
-    context 'timestamp formats for different use cases' do
-      it 'supports date-only format for daily syncs' do
-        sync = create(:sync_lock, timestamp: Date.current.to_s)
-        expect(sync.timestamp).to match(/\d{4}-\d{2}-\d{2}/)
-      end
-
-      it 'supports datetime format for hourly syncs' do
-        sync = create(:sync_lock, timestamp: Time.current.strftime('%Y-%m-%d-%H%M'))
-        expect(sync.timestamp).to match(/\d{4}-\d{2}-\d{2}-\d{4}/)
-      end
-
-      it 'supports custom format strings' do
-        custom_format = "sync-#{Time.current.to_i}"
-        sync = create(:sync_lock, timestamp: custom_format)
-        expect(sync.timestamp).to eq(custom_format)
-      end
-    end
-
-    context 'querying sync operations' do
-      let(:company) { create(:company) }
+    context 'when lock is expired (older than LOCK_TIMEOUT)' do
+      let(:lock) { create(:sync_lock) }
 
       before do
-        sync1 = create(:sync_lock, timestamp: '2025-10-10-1000')
-        sync2 = create(:sync_lock, timestamp: '2025-10-10-1200')
-
-        create_list(:product, 3, company: company, sync_lock: sync1)
-        create_list(:product, 5, company: company, sync_lock: sync2)
+        lock.update_column(:updated_at, 6.minutes.ago)
       end
 
-      it 'can find products by sync timestamp' do
-        sync = SyncLock.find_by(timestamp: '2025-10-10-1000')
-        expect(Product.where(sync_lock: sync).count).to eq(3)
+      it 'returns false' do
+        expect(lock.active?).to be false
+      end
+    end
+
+    context 'when lock is exactly at timeout boundary' do
+      let(:lock) { create(:sync_lock) }
+
+      before do
+        lock.update_column(:updated_at, 5.minutes.ago)
       end
 
-      it 'can count products per sync' do
-        syncs_with_counts = SyncLock.all.map do |sync|
-          [sync.timestamp, Product.where(sync_lock: sync).count]
-        end.to_h
-
-        expect(syncs_with_counts['2025-10-10-1000']).to eq(3)
-        expect(syncs_with_counts['2025-10-10-1200']).to eq(5)
+      it 'returns false' do
+        expect(lock.active?).to be false
       end
+    end
+  end
+
+  describe '#expired?' do
+    it 'returns opposite of active?' do
+      lock = create(:sync_lock)
+      expect(lock.expired?).to eq(!lock.active?)
+
+      lock.update_column(:updated_at, 6.minutes.ago)
+      expect(lock.expired?).to eq(!lock.active?)
+    end
+  end
+
+  describe '#refresh!' do
+    let(:lock) { create(:sync_lock) }
+
+    it 'updates the timestamp' do
+      old_time = lock.updated_at
+      sleep 0.01
+      lock.refresh!
+
+      expect(lock.updated_at).to be > old_time
+    end
+
+    it 'extends the lock period' do
+      lock.update_column(:updated_at, 6.minutes.ago)
+      expect(lock.active?).to be false
+
+      lock.refresh!
+      expect(lock.active?).to be true
+    end
+  end
+
+  describe '#release!' do
+    let(:lock) { create(:sync_lock) }
+
+    it 'destroys the lock record' do
+      lock_id = lock.id
+      lock.release!
+
+      expect(SyncLock.where(id: lock_id)).not_to exist
+    end
+
+    it 'returns true' do
+      expect(lock.release!).to be_truthy
+    end
+  end
+
+  # Test class methods
+  describe '.acquire' do
+    let(:resource_key) { 'product:123' }
+
+    context 'when no lock exists' do
+      it 'creates a new lock' do
+        expect {
+          SyncLock.acquire(resource_key)
+        }.to change { SyncLock.count }.by(1)
+      end
+
+      it 'returns the lock' do
+        lock = SyncLock.acquire(resource_key)
+        expect(lock).to be_a(SyncLock)
+        expect(lock.timestamp).to eq(resource_key)
+        expect(lock).to be_persisted
+      end
+
+      it 'sets the lock as active' do
+        lock = SyncLock.acquire(resource_key)
+        expect(lock.active?).to be true
+      end
+    end
+
+    context 'when active lock exists' do
+      let!(:existing_lock) { create(:sync_lock, timestamp: resource_key) }
+
+      it 'does not create a new lock' do
+        expect {
+          SyncLock.acquire(resource_key)
+        }.not_to change { SyncLock.count }
+      end
+
+      it 'returns nil' do
+        result = SyncLock.acquire(resource_key)
+        expect(result).to be_nil
+      end
+    end
+
+    context 'when expired lock exists' do
+      let!(:expired_lock) { create(:sync_lock, timestamp: resource_key) }
+
+      before do
+        expired_lock.update_column(:updated_at, 6.minutes.ago)
+      end
+
+      it 'refreshes the existing lock' do
+        expect {
+          SyncLock.acquire(resource_key)
+        }.not_to change { SyncLock.count }
+      end
+
+      it 'returns the refreshed lock' do
+        lock = SyncLock.acquire(resource_key)
+        expect(lock).to eq(expired_lock.reload)
+        expect(lock.active?).to be true
+      end
+
+      it 'updates the lock timestamp' do
+        old_time = expired_lock.updated_at
+        lock = SyncLock.acquire(resource_key)
+
+        expect(lock.updated_at).to be > old_time
+      end
+    end
+
+    context 'when race condition occurs' do
+      let(:resource_key) { 'product:456' }
+
+      it 'handles unique constraint violation gracefully' do
+        # Simulate race condition by creating lock while acquiring
+        allow(SyncLock).to receive(:create!).and_raise(ActiveRecord::RecordNotUnique)
+
+        result = SyncLock.acquire(resource_key)
+        expect(result).to be_nil
+      end
+    end
+  end
+
+  describe '.cleanup_expired' do
+    let!(:active_lock1) { create(:sync_lock, timestamp: 'product:1') }
+    let!(:active_lock2) { create(:sync_lock, timestamp: 'product:2') }
+    let!(:expired_lock1) { create(:sync_lock, timestamp: 'product:3') }
+    let!(:expired_lock2) { create(:sync_lock, timestamp: 'product:4') }
+
+    before do
+      expired_lock1.update_column(:updated_at, 6.minutes.ago)
+      expired_lock2.update_column(:updated_at, 10.minutes.ago)
+    end
+
+    it 'deletes expired locks' do
+      expect {
+        SyncLock.cleanup_expired
+      }.to change { SyncLock.count }.by(-2)
+    end
+
+    it 'keeps active locks' do
+      SyncLock.cleanup_expired
+
+      expect(SyncLock.pluck(:id)).to contain_exactly(active_lock1.id, active_lock2.id)
+    end
+
+    it 'returns count of deleted locks' do
+      deleted_count = SyncLock.cleanup_expired
+      expect(deleted_count).to eq(2)
+    end
+  end
+
+  # Test integration with products and catalogs
+  describe 'integration with products' do
+    let(:company) { create(:company) }
+    let(:sync_lock) { create(:sync_lock, timestamp: '2025-10-10-1500') }
+    let!(:product1) { create(:product, company: company, sync_lock: sync_lock) }
+    let!(:product2) { create(:product, company: company, sync_lock: sync_lock) }
+    let!(:other_product) { create(:product, company: company) }
+
+    it 'groups products by sync operation' do
+      synced_products = sync_lock.products
+      expect(synced_products).to contain_exactly(product1, product2)
+      expect(synced_products).not_to include(other_product)
+    end
+
+    it 'nullifies product sync_lock_id on deletion' do
+      sync_lock.destroy
+
+      expect(product1.reload.sync_lock_id).to be_nil
+      expect(product2.reload.sync_lock_id).to be_nil
+    end
+
+    it 'does not destroy products when lock is destroyed' do
+      expect {
+        sync_lock.destroy
+      }.not_to change { Product.count }
+    end
+  end
+
+  describe 'integration with catalogs' do
+    let(:company) { create(:company) }
+    let(:sync_lock) { create(:sync_lock, timestamp: '2025-10-10-1500') }
+    let!(:catalog1) { create(:catalog, company: company, sync_lock: sync_lock) }
+    let!(:catalog2) { create(:catalog, company: company, sync_lock: sync_lock) }
+
+    it 'groups catalogs by sync operation' do
+      synced_catalogs = sync_lock.catalogs
+      expect(synced_catalogs).to contain_exactly(catalog1, catalog2)
+    end
+
+    it 'nullifies catalog sync_lock_id on deletion' do
+      sync_lock.destroy
+
+      expect(catalog1.reload.sync_lock_id).to be_nil
+      expect(catalog2.reload.sync_lock_id).to be_nil
+    end
+  end
+
+  # Test historical sync tracking
+  describe 'historical sync tracking' do
+    let(:company) { create(:company) }
+
+    it 'tracks sync batches with timestamp identifiers' do
+      batch1_timestamp = '2025-10-10-1000'
+      batch2_timestamp = '2025-10-10-1100'
+
+      lock1 = create(:sync_lock, timestamp: batch1_timestamp)
+      lock2 = create(:sync_lock, timestamp: batch2_timestamp)
+
+      product1 = create(:product, company: company, sync_lock: lock1)
+      product2 = create(:product, company: company, sync_lock: lock1)
+      product3 = create(:product, company: company, sync_lock: lock2)
+
+      batch1_products = company.products.where(sync_lock: lock1)
+      batch2_products = company.products.where(sync_lock: lock2)
+
+      expect(batch1_products).to contain_exactly(product1, product2)
+      expect(batch2_products).to contain_exactly(product3)
+    end
+  end
+
+  # Test distributed locking scenarios
+  describe 'distributed locking scenarios' do
+    it 'prevents concurrent access to same resource' do
+      resource_key = 'product:789'
+
+      # First process acquires lock
+      lock1 = SyncLock.acquire(resource_key)
+      expect(lock1).to be_present
+      expect(lock1.active?).to be true
+
+      # Second process tries to acquire same lock
+      lock2 = SyncLock.acquire(resource_key)
+      expect(lock2).to be_nil
+
+      # After releasing, second process can acquire
+      lock1.release!
+      lock3 = SyncLock.acquire(resource_key)
+      expect(lock3).to be_present
+      expect(lock3.active?).to be true
+    end
+
+    it 'allows different resources to lock independently' do
+      lock1 = SyncLock.acquire('product:100')
+      lock2 = SyncLock.acquire('product:200')
+      lock3 = SyncLock.acquire('catalog:300')
+
+      expect(lock1).to be_present
+      expect(lock2).to be_present
+      expect(lock3).to be_present
+
+      expect(lock1.timestamp).to eq('product:100')
+      expect(lock2.timestamp).to eq('product:200')
+      expect(lock3.timestamp).to eq('catalog:300')
+    end
+
+    it 'automatically expires old locks' do
+      resource_key = 'product:999'
+
+      # First process acquires lock but doesn't release
+      lock1 = SyncLock.acquire(resource_key)
+      expect(lock1).to be_present
+
+      # Simulate timeout passing
+      lock1.update_column(:updated_at, 6.minutes.ago)
+
+      # Second process can now acquire the expired lock
+      lock2 = SyncLock.acquire(resource_key)
+      expect(lock2).to be_present
+      expect(lock2.active?).to be true
     end
   end
 end
