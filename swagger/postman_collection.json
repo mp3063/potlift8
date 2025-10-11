@@ -1,0 +1,262 @@
+{
+  "info": {
+    "name": "Potlift8 API",
+    "description": "Product Information Management API for cannabis inventory management",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "potlift8-api-v1"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{api_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3246/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "api_token",
+      "value": "your_api_token_here",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "List Products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/products?page=1&per_page=100",
+              "host": ["{{base_url}}"],
+              "path": ["products"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "per_page",
+                  "value": "100",
+                  "description": "Items per page (max 500)"
+                }
+              ]
+            },
+            "description": "List all active, sellable products for your company"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product by SKU",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/products/PROD001",
+              "host": ["{{base_url}}"],
+              "path": ["products", "PROD001"]
+            },
+            "description": "Get detailed product information by SKU"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product\": {\n    \"name\": \"Updated Product Name\",\n    \"product_status\": \"active\",\n    \"ean\": \"1234567890123\",\n    \"info\": {\n      \"description\": \"Premium quality product\",\n      \"thc_content\": \"22%\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/products/PROD001",
+              "host": ["{{base_url}}"],
+              "path": ["products", "PROD001"]
+            },
+            "description": "Update product information"
+          },
+          "response": []
+        }
+      ],
+      "description": "Product management endpoints"
+    },
+    {
+      "name": "Inventories",
+      "item": [
+        {
+          "name": "Update Inventory - Single Storage",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"PROD001\",\n  \"inventory\": {\n    \"updates\": [\n      {\n        \"storage_code\": \"MAIN\",\n        \"value\": 150\n      }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/inventories/update",
+              "host": ["{{base_url}}"],
+              "path": ["inventories", "update"]
+            },
+            "description": "Update inventory for a single storage location"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Inventory - Multiple Storages",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"PROD001\",\n  \"inventory\": {\n    \"updates\": [\n      {\n        \"storage_code\": \"MAIN\",\n        \"value\": 120\n      },\n      {\n        \"storage_code\": \"INCOMING\",\n        \"value\": 50,\n        \"eta\": \"2025-10-15\"\n      }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/inventories/update",
+              "host": ["{{base_url}}"],
+              "path": ["inventories", "update"]
+            },
+            "description": "Update inventory across multiple storage locations"
+          },
+          "response": []
+        }
+      ],
+      "description": "Inventory management endpoints"
+    },
+    {
+      "name": "Sync Tasks",
+      "item": [
+        {
+          "name": "Create Sync Task - Product Update",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"origin_event_id\": \"shopify3_evt_12345\",\n  \"direction\": \"inbound\",\n  \"event_type\": \"product.updated\",\n  \"key\": \"PROD001\",\n  \"load\": {\n    \"sku\": \"PROD001\",\n    \"name\": \"Updated Product Name\",\n    \"price\": 3299,\n    \"inventory\": 100\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/sync_tasks",
+              "host": ["{{base_url}}"],
+              "path": ["sync_tasks"]
+            },
+            "description": "Create sync task for product update from external system"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Sync Task - Inventory Update",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"origin_event_id\": \"m23_inv_67890\",\n  \"direction\": \"inbound\",\n  \"event_type\": \"inventory.updated\",\n  \"key\": \"PROD002\",\n  \"load\": {\n    \"sku\": \"PROD002\",\n    \"storage_code\": \"MAIN\",\n    \"value\": 250\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/sync_tasks",
+              "host": ["{{base_url}}"],
+              "path": ["sync_tasks"]
+            },
+            "description": "Create sync task for inventory update from external system"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Sync Task - Order Created",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"origin_event_id\": \"bizcart_order_54321\",\n  \"direction\": \"inbound\",\n  \"event_type\": \"order.created\",\n  \"key\": \"ORDER001\",\n  \"load\": {\n    \"order_id\": \"ORDER001\",\n    \"items\": [\n      {\n        \"sku\": \"PROD001\",\n        \"quantity\": 2\n      },\n      {\n        \"sku\": \"PROD002\",\n        \"quantity\": 1\n      }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/sync_tasks",
+              "host": ["{{base_url}}"],
+              "path": ["sync_tasks"]
+            },
+            "description": "Create sync task for order creation (inventory deduction)"
+          },
+          "response": []
+        }
+      ],
+      "description": "Synchronization task endpoints for external system integration"
+    }
+  ]
+}

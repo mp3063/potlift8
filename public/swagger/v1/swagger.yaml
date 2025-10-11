@@ -1,0 +1,973 @@
+openapi: 3.0.0
+info:
+  title: Potlift8 API
+  version: 1.0.0
+  description: |
+    # Potlift8 Product Information Management API
+
+    The Potlift8 API provides comprehensive access to cannabis inventory management functionality.
+    This API enables external systems (M23, Shopify3, Bizcart) to integrate with the Potlift8 PIM.
+
+    ## Authentication
+
+    All API requests require Bearer token authentication using your company's API token.
+    Include the token in the Authorization header:
+
+    ```
+    Authorization: Bearer YOUR_API_TOKEN
+    ```
+
+    To obtain your API token, contact your system administrator or regenerate it from the company settings.
+
+    ## Rate Limiting
+
+    API requests are rate-limited based on catalog configuration (default: 100 requests per 60 seconds).
+    Rate limit headers are included in responses:
+    - `X-RateLimit-Limit`: Maximum requests per period
+    - `X-RateLimit-Remaining`: Remaining requests in current period
+    - `X-RateLimit-Reset`: Unix timestamp when the rate limit resets
+
+    ## Multi-Tenancy
+
+    All API requests are automatically scoped to your company based on the API token.
+    You can only access data belonging to your company.
+
+    ## Response Format
+
+    All responses are in JSON format with consistent error structures:
+    - Success responses include the requested data
+    - Error responses include an `error` field with a descriptive message
+    - Validation errors include a `details` field with field-specific errors
+
+  contact:
+    name: Potlift8 API Support
+    email: support@potlift.com
+  license:
+    name: Proprietary
+    url: https://potlift.com/license
+
+servers:
+  - url: http://localhost:3246/api/v1
+    description: Development server
+  - url: https://api.potlift.com/v1
+    description: Production server
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Products
+    description: Product management endpoints
+  - name: Inventories
+    description: Inventory management endpoints
+  - name: Sync Tasks
+    description: Synchronization task processing endpoints
+
+paths:
+  /products:
+    get:
+      summary: List all products
+      description: |
+        Retrieve a list of all active, sellable products for your company.
+        Results include basic product information, attributes, and inventory levels.
+
+        This endpoint automatically filters to only show:
+        - Active products (product_status = active)
+        - Sellable products (product_type = sellable)
+
+        Use the `GET /products/{sku}` endpoint to retrieve detailed information
+        including subproducts, labels, and complete inventory details.
+      operationId: listProducts
+      tags:
+        - Products
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: per_page
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 500
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+              examples:
+                success:
+                  summary: List of products
+                  value:
+                    - sku: "PROD001"
+                      name: "Premium Cannabis Flower - Indica"
+                      product_status: "active"
+                      product_type: "sellable"
+                      ean: "1234567890123"
+                      total_saldo: 150
+                      info:
+                        description: "High quality indica strain"
+                        thc_content: "22%"
+                        cbd_content: "1%"
+                      attributes:
+                        price: "2999"
+                        weight: "3.5g"
+                        strain_type: "indica"
+                      inventory:
+                        - storage_code: "MAIN"
+                          storage_name: "Main Warehouse"
+                          value: 100
+                          default: true
+                        - storage_code: "INCOMING"
+                          storage_name: "Incoming Stock"
+                          value: 50
+                          eta: "2025-10-15"
+                    - sku: "PROD002"
+                      name: "Cannabis Oil - Full Spectrum"
+                      product_status: "active"
+                      product_type: "sellable"
+                      ean: "1234567890124"
+                      total_saldo: 75
+                      info:
+                        description: "Full spectrum CBD oil"
+                        thc_content: "0.3%"
+                        cbd_content: "15%"
+                      attributes:
+                        price: "4999"
+                        volume: "30ml"
+                      inventory:
+                        - storage_code: "MAIN"
+                          storage_name: "Main Warehouse"
+                          value: 75
+                          default: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /products/{sku}:
+    get:
+      summary: Get product by SKU
+      description: |
+        Retrieve detailed information about a specific product by its SKU.
+
+        This endpoint returns complete product information including:
+        - All product attributes (EAV pattern)
+        - Inventory across all storage locations
+        - Product labels and categorization
+        - Subproducts (for configurable and bundle products)
+        - Product assets (images, documents)
+
+        The SKU parameter is case-insensitive.
+      operationId: getProduct
+      tags:
+        - Products
+      parameters:
+        - name: sku
+          in: path
+          description: Product SKU (case-insensitive)
+          required: true
+          schema:
+            type: string
+          example: PROD001
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+              examples:
+                sellable:
+                  summary: Sellable product
+                  value:
+                    sku: "PROD001"
+                    name: "Premium Cannabis Flower - Indica"
+                    product_status: "active"
+                    product_type: "sellable"
+                    ean: "1234567890123"
+                    total_saldo: 150
+                    total_max_sellable_saldo: 100
+                    info:
+                      description: "High quality indica strain"
+                      thc_content: "22%"
+                      cbd_content: "1%"
+                    attributes:
+                      - code: "price"
+                        name: "Price"
+                        value: "2999"
+                      - code: "weight"
+                        name: "Weight"
+                        value: "3.5g"
+                      - code: "strain_type"
+                        name: "Strain Type"
+                        value: "indica"
+                    inventory:
+                      - storage_code: "MAIN"
+                        storage_name: "Main Warehouse"
+                        storage_type: "physical"
+                        value: 100
+                        default: true
+                      - storage_code: "INCOMING"
+                        storage_name: "Incoming Stock"
+                        storage_type: "incoming"
+                        value: 50
+                        eta: "2025-10-15"
+                    labels:
+                      - code: "flower"
+                        name: "Flower"
+                        label_type: "category"
+                      - code: "indica"
+                        name: "Indica"
+                        label_type: "strain"
+                    subproducts: []
+                configurable:
+                  summary: Configurable product with variants
+                  value:
+                    sku: "TSHIRT001"
+                    name: "Cannabis Logo T-Shirt"
+                    product_status: "active"
+                    product_type: "configurable"
+                    configuration_type: "variant"
+                    ean: null
+                    total_saldo: 300
+                    total_max_sellable_saldo: 300
+                    info:
+                      description: "High quality cotton t-shirt with logo"
+                    attributes:
+                      - code: "price"
+                        name: "Price"
+                        value: "2999"
+                      - code: "material"
+                        name: "Material"
+                        value: "100% Cotton"
+                    inventory: []
+                    labels:
+                      - code: "apparel"
+                        name: "Apparel"
+                        label_type: "category"
+                    subproducts:
+                      - sku: "TSHIRT001-S"
+                        name: "Cannabis Logo T-Shirt - Small"
+                        product_status: "active"
+                        product_type: "sellable"
+                        total_saldo: 100
+                      - sku: "TSHIRT001-M"
+                        name: "Cannabis Logo T-Shirt - Medium"
+                        product_status: "active"
+                        product_type: "sellable"
+                        total_saldo: 150
+                      - sku: "TSHIRT001-L"
+                        name: "Cannabis Logo T-Shirt - Large"
+                        product_status: "active"
+                        product_type: "sellable"
+                        total_saldo: 50
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    patch:
+      summary: Update product
+      description: |
+        Update an existing product's information.
+
+        You can update:
+        - Product name
+        - Product status (lifecycle state)
+        - EAN code
+        - Info JSONB field (metadata)
+
+        Note: You cannot change the product type or SKU through this endpoint.
+        Product attributes (EAV) should be updated through their dedicated endpoints.
+      operationId: updateProduct
+      tags:
+        - Products
+      parameters:
+        - name: sku
+          in: path
+          description: Product SKU (case-insensitive)
+          required: true
+          schema:
+            type: string
+          example: PROD001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductUpdate'
+            examples:
+              basic:
+                summary: Basic product update
+                value:
+                  product:
+                    name: "Premium Cannabis Flower - Indica (Updated)"
+                    product_status: "active"
+              status_change:
+                summary: Change product status
+                value:
+                  product:
+                    product_status: "discontinuing"
+              metadata:
+                summary: Update metadata
+                value:
+                  product:
+                    info:
+                      description: "Updated description"
+                      thc_content: "23%"
+                      cbd_content: "1.2%"
+      responses:
+        '200':
+          description: Product updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+              examples:
+                success:
+                  value:
+                    sku: "PROD001"
+                    name: "Premium Cannabis Flower - Indica (Updated)"
+                    product_status: "active"
+                    product_type: "sellable"
+                    ean: "1234567890123"
+                    total_saldo: 150
+                    info:
+                      description: "Updated description"
+                      thc_content: "23%"
+                      cbd_content: "1.2%"
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /inventories/update:
+    post:
+      summary: Update product inventory
+      description: |
+        Update inventory levels for a product across one or more storage locations.
+
+        This endpoint supports:
+        - Updating stock levels in multiple storages in a single request
+        - Setting ETA (estimated time of arrival) for incoming inventory
+        - Creating inventory records if they don't exist
+        - Atomic updates (all succeed or all fail)
+
+        The inventory update process will:
+        1. Find or create inventory records for specified storages
+        2. Update the stock values
+        3. Set ETA for incoming storage types
+        4. Recalculate total inventory across all storages
+      operationId: updateInventory
+      tags:
+        - Inventories
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryUpdate'
+            examples:
+              single_storage:
+                summary: Update single storage
+                value:
+                  sku: "PROD001"
+                  inventory:
+                    updates:
+                      - storage_code: "MAIN"
+                        value: 150
+              multiple_storages:
+                summary: Update multiple storages
+                value:
+                  sku: "PROD001"
+                  inventory:
+                    updates:
+                      - storage_code: "MAIN"
+                        value: 120
+                      - storage_code: "INCOMING"
+                        value: 50
+                        eta: "2025-10-15"
+              incoming_with_eta:
+                summary: Update incoming inventory with ETA
+                value:
+                  sku: "PROD002"
+                  inventory:
+                    updates:
+                      - storage_code: "INCOMING"
+                        value: 100
+                        eta: "2025-10-20"
+      responses:
+        '200':
+          description: Inventory updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryUpdateResponse'
+              examples:
+                success:
+                  value:
+                    success: true
+                    inventory:
+                      - storage_code: "MAIN"
+                        storage_name: "Main Warehouse"
+                        storage_type: "physical"
+                        value: 120
+                        default: true
+                      - storage_code: "INCOMING"
+                        storage_name: "Incoming Stock"
+                        storage_type: "incoming"
+                        value: 50
+                        eta: "2025-10-15"
+                    total_saldo: 170
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /sync_tasks:
+    post:
+      summary: Create sync task
+      description: |
+        Create a synchronization task for processing external system events.
+
+        This endpoint is used by external systems (M23, Shopify3, Bizcart) to:
+        - Notify Potlift8 of data changes
+        - Request data synchronization
+        - Process bidirectional sync events
+
+        Sync tasks are processed asynchronously in background jobs.
+        The response indicates that the task has been queued, not that it has completed.
+
+        **Sync Task Structure:**
+        - `origin_event_id`: Unique identifier from the originating system
+        - `direction`: Data flow direction (inbound/outbound)
+        - `event_type`: Type of event (create/update/delete)
+        - `load`: Event payload with actual data
+        - `key`: Entity identifier (e.g., product SKU)
+
+        **Event Types:**
+        - `product.created`: New product created in external system
+        - `product.updated`: Product updated in external system
+        - `product.deleted`: Product deleted in external system
+        - `inventory.updated`: Inventory changed in external system
+        - `order.created`: New order placed (affects inventory)
+      operationId: createSyncTask
+      tags:
+        - Sync Tasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncTask'
+            examples:
+              product_update:
+                summary: Product update from external system
+                value:
+                  origin_event_id: "shopify3_evt_12345"
+                  direction: "inbound"
+                  event_type: "product.updated"
+                  key: "PROD001"
+                  load:
+                    sku: "PROD001"
+                    name: "Updated Product Name"
+                    price: 3299
+                    inventory: 100
+              inventory_sync:
+                summary: Inventory sync from warehouse system
+                value:
+                  origin_event_id: "m23_inv_67890"
+                  direction: "inbound"
+                  event_type: "inventory.updated"
+                  key: "PROD002"
+                  load:
+                    sku: "PROD002"
+                    storage_code: "MAIN"
+                    value: 250
+              order_created:
+                summary: Order created (inventory deduction)
+                value:
+                  origin_event_id: "bizcart_order_54321"
+                  direction: "inbound"
+                  event_type: "order.created"
+                  key: "ORDER001"
+                  load:
+                    order_id: "ORDER001"
+                    items:
+                      - sku: "PROD001"
+                        quantity: 2
+                      - sku: "PROD002"
+                        quantity: 1
+      responses:
+        '200':
+          description: Sync task queued successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncTaskResponse'
+              examples:
+                success:
+                  value:
+                    success: true
+                    message: "Sync task queued for processing"
+                    task_id: "sync_task_123456"
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: API Token
+      description: |
+        API authentication using company API tokens.
+        Include your API token in the Authorization header as a Bearer token.
+
+  schemas:
+    Product:
+      type: object
+      description: Basic product information with attributes and inventory
+      required:
+        - sku
+        - name
+        - product_status
+        - product_type
+      properties:
+        sku:
+          type: string
+          description: Unique product identifier (case-insensitive)
+          example: "PROD001"
+        name:
+          type: string
+          description: Product name
+          example: "Premium Cannabis Flower - Indica"
+        product_status:
+          type: string
+          description: Product lifecycle status
+          enum:
+            - draft
+            - active
+            - incoming
+            - discontinuing
+            - disabled
+            - discontinued
+            - deleted
+          example: "active"
+        product_type:
+          type: string
+          description: Product type (affects inventory and catalog behavior)
+          enum:
+            - sellable
+            - configurable
+            - bundle
+          example: "sellable"
+        configuration_type:
+          type: string
+          nullable: true
+          description: Configuration type (only for configurable products)
+          enum:
+            - variant
+            - option
+          example: "variant"
+        ean:
+          type: string
+          nullable: true
+          description: European Article Number (barcode)
+          example: "1234567890123"
+        total_saldo:
+          type: integer
+          description: Total inventory across all storages
+          example: 150
+        info:
+          type: object
+          description: Additional product metadata (JSONB field)
+          additionalProperties: true
+          example:
+            description: "High quality indica strain"
+            thc_content: "22%"
+            cbd_content: "1%"
+        attributes:
+          type: object
+          description: Product attributes (EAV pattern) as key-value pairs
+          additionalProperties:
+            type: string
+          example:
+            price: "2999"
+            weight: "3.5g"
+            strain_type: "indica"
+        inventory:
+          type: array
+          description: Inventory levels across storage locations
+          items:
+            $ref: '#/components/schemas/InventoryItem'
+
+    ProductDetail:
+      allOf:
+        - $ref: '#/components/schemas/Product'
+        - type: object
+          properties:
+            total_max_sellable_saldo:
+              type: integer
+              description: Maximum sellable inventory (excluding incoming)
+              example: 100
+            attributes:
+              type: array
+              description: Detailed product attributes with metadata
+              items:
+                $ref: '#/components/schemas/ProductAttribute'
+            labels:
+              type: array
+              description: Product labels and categorization
+              items:
+                $ref: '#/components/schemas/Label'
+            subproducts:
+              type: array
+              description: Child products (variants for configurable, components for bundles)
+              items:
+                $ref: '#/components/schemas/SubProduct'
+
+    ProductUpdate:
+      type: object
+      properties:
+        product:
+          type: object
+          properties:
+            name:
+              type: string
+              description: Product name
+              example: "Updated Product Name"
+            product_status:
+              type: string
+              description: Product lifecycle status
+              enum:
+                - draft
+                - active
+                - incoming
+                - discontinuing
+                - disabled
+                - discontinued
+                - deleted
+              example: "active"
+            ean:
+              type: string
+              nullable: true
+              description: European Article Number
+              example: "1234567890123"
+            info:
+              type: object
+              description: Additional metadata (JSONB field)
+              additionalProperties: true
+              example:
+                description: "Updated description"
+                thc_content: "23%"
+
+    ProductAttribute:
+      type: object
+      description: Product attribute (EAV pattern)
+      properties:
+        code:
+          type: string
+          description: Attribute code (unique identifier)
+          example: "price"
+        name:
+          type: string
+          description: Human-readable attribute name
+          example: "Price"
+        value:
+          type: string
+          description: Attribute value
+          example: "2999"
+        attribute_type:
+          type: string
+          description: Data type for validation
+          enum:
+            - string
+            - integer
+            - decimal
+            - boolean
+            - date
+          example: "integer"
+
+    InventoryItem:
+      type: object
+      description: Inventory record for a specific storage location
+      properties:
+        storage_code:
+          type: string
+          description: Storage location identifier
+          example: "MAIN"
+        storage_name:
+          type: string
+          description: Storage location name
+          example: "Main Warehouse"
+        storage_type:
+          type: string
+          description: Storage type
+          enum:
+            - physical
+            - virtual
+            - incoming
+          example: "physical"
+        value:
+          type: integer
+          description: Stock quantity
+          example: 100
+        default:
+          type: boolean
+          description: Whether this is the default storage location
+          example: true
+        eta:
+          type: string
+          format: date
+          nullable: true
+          description: Estimated time of arrival (for incoming inventory)
+          example: "2025-10-15"
+
+    InventoryUpdate:
+      type: object
+      required:
+        - sku
+        - inventory
+      properties:
+        sku:
+          type: string
+          description: Product SKU (case-insensitive)
+          example: "PROD001"
+        inventory:
+          type: object
+          required:
+            - updates
+          properties:
+            updates:
+              type: array
+              description: Array of inventory updates for different storages
+              minItems: 1
+              items:
+                type: object
+                required:
+                  - storage_code
+                  - value
+                properties:
+                  storage_code:
+                    type: string
+                    description: Storage location code
+                    example: "MAIN"
+                  value:
+                    type: integer
+                    description: New stock quantity
+                    minimum: 0
+                    example: 150
+                  eta:
+                    type: string
+                    format: date
+                    nullable: true
+                    description: Estimated arrival date (for incoming storage)
+                    example: "2025-10-15"
+
+    InventoryUpdateResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Whether the update was successful
+          example: true
+        inventory:
+          type: array
+          description: Updated inventory records
+          items:
+            $ref: '#/components/schemas/InventoryItem'
+        total_saldo:
+          type: integer
+          description: Total inventory after update
+          example: 170
+
+    Label:
+      type: object
+      description: Product label for categorization and tagging
+      properties:
+        code:
+          type: string
+          description: Label code (unique identifier)
+          example: "flower"
+        name:
+          type: string
+          description: Human-readable label name
+          example: "Flower"
+        label_type:
+          type: string
+          description: Label type/category
+          example: "category"
+        info:
+          type: object
+          description: Additional label metadata
+          additionalProperties: true
+
+    SubProduct:
+      type: object
+      description: Child product (variant or bundle component)
+      properties:
+        sku:
+          type: string
+          description: Product SKU
+          example: "TSHIRT001-S"
+        name:
+          type: string
+          description: Product name
+          example: "Cannabis Logo T-Shirt - Small"
+        product_status:
+          type: string
+          description: Product status
+          example: "active"
+        product_type:
+          type: string
+          description: Product type
+          example: "sellable"
+        total_saldo:
+          type: integer
+          description: Total inventory
+          example: 100
+
+    SyncTask:
+      type: object
+      description: Synchronization task for external system integration
+      required:
+        - origin_event_id
+        - direction
+        - event_type
+        - load
+        - key
+      properties:
+        origin_event_id:
+          type: string
+          description: Unique identifier from originating system
+          example: "shopify3_evt_12345"
+        direction:
+          type: string
+          description: Data flow direction
+          enum:
+            - inbound
+            - outbound
+          example: "inbound"
+        event_type:
+          type: string
+          description: Type of synchronization event
+          example: "product.updated"
+        key:
+          type: string
+          description: Entity identifier (e.g., SKU, order ID)
+          example: "PROD001"
+        load:
+          type: object
+          description: Event payload containing actual data
+          additionalProperties: true
+          example:
+            sku: "PROD001"
+            name: "Updated Product Name"
+            price: 3299
+
+    SyncTaskResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Whether the task was queued successfully
+          example: true
+        message:
+          type: string
+          description: Response message
+          example: "Sync task queued for processing"
+        task_id:
+          type: string
+          description: Unique task identifier for tracking
+          example: "sync_task_123456"
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: "Resource not found"
+
+    ValidationError:
+      type: object
+      properties:
+        error:
+          type: string
+          description: General error message
+          example: "Validation failed"
+        details:
+          type: object
+          description: Field-specific validation errors
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          example:
+            name:
+              - "can't be blank"
+            sku:
+              - "has already been taken"
+
+  responses:
+    Unauthorized:
+      description: Authentication failed or missing
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            missing_token:
+              value:
+                error: "Unauthorized"
+            invalid_token:
+              value:
+                error: "Invalid API token"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            product_not_found:
+              value:
+                error: "Couldn't find Product with SKU=INVALID"
+            storage_not_found:
+              value:
+                error: "Storage location not found: INVALID"
+
+    UnprocessableEntity:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationError'
+          examples:
+            validation_failed:
+              value:
+                error: "Validation failed"
+                details:
+                  name:
+                    - "can't be blank"
+                  sku:
+                    - "has already been taken"
