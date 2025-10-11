@@ -28,6 +28,27 @@ Rails.application.routes.draw do
   # Convenience route for logout (common user expectation)
   get 'logout', to: 'sessions#destroy'
 
+  # API v1 Routes
+  # RESTful API endpoints for external systems (M23, Shopify3, Bizcart)
+  # Authentication: Bearer token (Company.api_token)
+  namespace :api do
+    namespace :v1 do
+      # Products API
+      # - GET /api/v1/products - List active, sellable products
+      # - GET /api/v1/products/:sku - Show product details
+      # - PATCH /api/v1/products/:sku - Update product
+      resources :products, only: [:index, :show, :update], param: :sku
+
+      # Inventories API
+      # - POST /api/v1/inventories/update - Update product inventory
+      post 'inventories/update', to: 'inventories#update_inventory'
+
+      # Sync Tasks API
+      # - POST /api/v1/sync_tasks - Receive sync task from external system
+      resources :sync_tasks, only: [:create]
+    end
+  end
+
   # Defines the root path route ("/")
   # root "posts#index"
 end
