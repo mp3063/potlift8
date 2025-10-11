@@ -23,6 +23,9 @@
 # for automatic scoping of queries to current company context.
 #
 class Company < ApplicationRecord
+  # Callbacks
+  before_create :generate_api_token
+
   # Validations
   validates :code, presence: true, uniqueness: { case_sensitive: false }
   validates :name, presence: true
@@ -83,5 +86,27 @@ class Company < ApplicationRecord
     # Save and return
     company.save!
     company
+  end
+
+  # Regenerate the API token
+  #
+  # @return [String] The new API token
+  #
+  def regenerate_api_token!
+    update!(api_token: generate_api_token)
+    api_token
+  end
+
+  private
+
+  # Generate a secure random API token
+  #
+  # @return [String] A 32-character hex token
+  #
+  def generate_api_token
+    self.api_token = loop do
+      token = SecureRandom.hex(32)
+      break token unless Company.exists?(api_token: token)
+    end
   end
 end
