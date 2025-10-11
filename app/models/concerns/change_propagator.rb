@@ -100,9 +100,8 @@ module ChangePropagator
   # @param timestamp [Time] When the change occurred
   #
   def propagate_to_catalogs(timestamp)
-    # Eager load catalogs to prevent N+1 queries
-    # Use includes to load the association efficiently
-    catalogs_to_sync = catalogs.includes(:company).to_a
+    # Load catalogs efficiently
+    catalogs_to_sync = catalogs.to_a
 
     if catalogs_to_sync.empty?
       Rails.logger.debug(
