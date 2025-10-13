@@ -1,0 +1,40 @@
+<div class="space-y-6">
+  <div>
+    <h1 class="text-2xl font-semibold text-gray-900">Search</h1>
+  </div>
+
+  <!-- Search Form -->
+  <div class="bg-white shadow rounded-lg p-6">
+    <%= form_with url: search_path, method: :get, class: "space-y-4" do |form| %>
+      <div>
+        <%= form.label :q, "Search query", class: "block text-sm font-medium text-gray-700" %>
+        <%= form.text_field :q,
+          value: @query,
+          placeholder: "Search products, storages, attributes...",
+          class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm",
+          autofocus: true %>
+      </div>
+
+      <%= form.submit "Search", class: "inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" %>
+    <% end %>
+  </div>
+
+  <!-- Search Results -->
+  <% if @query.present? %>
+    <div class="bg-white shadow rounded-lg p-6">
+      <h2 class="text-lg font-medium text-gray-900 mb-4">Search Results for "<%= @query %>"</h2>
+
+      <div class="text-sm text-gray-500">
+        <p>Search functionality will be implemented in a future phase.</p>
+        <p class="mt-2">Expected features:</p>
+        <ul class="list-disc list-inside mt-2 space-y-1">
+          <li>Full-text search across products, storages, attributes, labels, and catalogs</li>
+          <li>Fuzzy matching for typo tolerance</li>
+          <li>Results grouped by model type</li>
+          <li>Highlighted search terms</li>
+          <li>Recent searches</li>
+        </ul>
+      </div>
+    </div>
+  <% end %>
+</div>
