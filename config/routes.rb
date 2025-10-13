@@ -61,7 +61,17 @@ Rails.application.routes.draw do
   get 'search', to: 'search#index', as: :search
 
   # Resource routes
-  resources :products
+  resources :products do
+    member do
+      post :duplicate
+    end
+    collection do
+      post :bulk_destroy
+      post :bulk_update_labels
+      get :validate_sku
+    end
+  end
+
   resources :storages
   resources :product_attributes
   resources :labels
