@@ -10,9 +10,23 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_11_103216) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_13_074531) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "active_admin_comments", force: :cascade do |t|
+    t.string "namespace"
+    t.text "body"
+    t.string "resource_type"
+    t.bigint "resource_id"
+    t.string "author_type"
+    t.bigint "author_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["author_type", "author_id"], name: "index_active_admin_comments_on_author"
+    t.index ["namespace"], name: "index_active_admin_comments_on_namespace"
+    t.index ["resource_type", "resource_id"], name: "index_active_admin_comments_on_resource"
+  end
 
   create_table "catalog_item_attribute_values", force: :cascade do |t|
     t.bigint "catalog_item_id", null: false
@@ -67,6 +81,17 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_11_103216) do
     t.index ["api_token"], name: "index_companies_on_api_token", unique: true
     t.index ["authlift_id"], name: "index_companies_on_authlift_id", unique: true
     t.index ["code"], name: "index_companies_on_code", unique: true
+  end
+
+  create_table "company_memberships", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "company_id", null: false
+    t.string "role", default: "member", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id"], name: "index_company_memberships_on_company_id"
+    t.index ["user_id", "company_id"], name: "index_company_memberships_on_user_id_and_company_id", unique: true
+    t.index ["user_id"], name: "index_company_memberships_on_user_id"
   end
 
   create_table "company_states", force: :cascade do |t|
@@ -229,12 +254,27 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_11_103216) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "users", force: :cascade do |t|
+    t.string "oauth_sub", null: false
+    t.string "email", null: false
+    t.string "name"
+    t.datetime "last_sign_in_at"
+    t.bigint "company_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id"], name: "index_users_on_company_id"
+    t.index ["email"], name: "index_users_on_email", unique: true
+    t.index ["oauth_sub"], name: "index_users_on_oauth_sub", unique: true
+  end
+
   add_foreign_key "catalog_item_attribute_values", "catalog_items"
   add_foreign_key "catalog_item_attribute_values", "product_attributes"
   add_foreign_key "catalog_items", "catalogs"
   add_foreign_key "catalog_items", "products"
   add_foreign_key "catalogs", "companies"
   add_foreign_key "catalogs", "sync_locks"
+  add_foreign_key "company_memberships", "companies"
+  add_foreign_key "company_memberships", "users"
   add_foreign_key "company_states", "companies"
   add_foreign_key "inventories", "products"
   add_foreign_key "inventories", "storages"
@@ -251,4 +291,5 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_11_103216) do
   add_foreign_key "products", "companies"
   add_foreign_key "products", "sync_locks"
   add_foreign_key "storages", "companies"
+  add_foreign_key "users", "companies"
 end

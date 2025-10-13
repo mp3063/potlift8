@@ -38,6 +38,9 @@ class Company < ApplicationRecord
   has_many :labels, dependent: :destroy
   has_many :product_attributes, dependent: :destroy
   has_many :company_states, dependent: :destroy
+  has_many :users, dependent: :destroy
+  has_many :company_memberships, dependent: :destroy
+  has_many :members, through: :company_memberships, source: :user
 
   # Scopes
   scope :active, -> { where(active: true) }
