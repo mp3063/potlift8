@@ -196,6 +196,7 @@ class Product < ApplicationRecord
   }
 
   # Callbacks
+  before_validation :generate_sku_if_missing
   before_validation :normalize_sku
 
   # EAV Helper Methods
@@ -302,6 +303,49 @@ class Product < ApplicationRecord
   #
   def available?
     product_status_active? && in_stock?
+  end
+
+  # Check if product is active (alias for product_status_active?)
+  #
+  # @return [Boolean] true if product status is active
+  #
+  def active?
+    product_status_active?
+  end
+
+  # Virtual attribute for form checkbox
+  # Maps to product_status enum (active = true, anything else = false)
+  #
+  # @return [Boolean] true if status is active
+  #
+  def active
+    product_status_active?
+  end
+
+  # Virtual attribute setter for form checkbox
+  # Sets product_status to active if truthy, draft if falsy
+  #
+  # @param value [Boolean, String] Checkbox value
+  #
+  def active=(value)
+    self.product_status = ActiveModel::Type::Boolean.new.cast(value) ? :active : :draft
+  end
+
+  # Get product description from info JSONB field
+  #
+  # @return [String, nil] Description or nil
+  #
+  def description
+    info&.dig('description')
+  end
+
+  # Set product description in info JSONB field
+  #
+  # @param value [String] Description text
+  #
+  def description=(value)
+    self.info ||= {}
+    self.info['description'] = value
   end
 
   # Product Relationship Helper Methods
@@ -423,10 +467,75 @@ class Product < ApplicationRecord
                        .perform_later(product_ids, catalog_id)
   end
 
+  # Duplicate this product
+  #
+  # Creates a copy of the product with a "_COPY" suffix on SKU and "(Copy)" suffix on name.
+  # Copies attribute values and labels to the new product.
+  #
+  # @return [Product] The duplicated product
+  #
+  # @example
+  #   original = Product.find(123)
+  #   copy = original.duplicate!
+  #   copy.sku # => "ORIG_COPY_A1B2"
+  #   copy.name # => "Original Product (Copy)"
+  #
+  def duplicate!
+    new_product = dup
+    new_product.sku = generate_unique_sku("#{sku}_COPY")
+    new_product.name = "#{name} (Copy)"
+
+    transaction do
+      new_product.save!
+
+      # Duplicate attribute values
+      product_attribute_values.each do |pav|
+        new_product.product_attribute_values.create!(
+          product_attribute: pav.product_attribute,
+          value: pav.value,
+          info: pav.info
+        )
+      end
+
+      # Copy labels
+      new_product.label_ids = label_ids
+    end
+
+    new_product
+  end
+
   private
+
+  # Generate SKU if not provided
+  # Uses format: PRD_XXXXXXXX (8 random hex characters)
+  def generate_sku_if_missing
+    return if sku.present?
+    return unless company.present? # Need company for uniqueness check
+
+    self.sku = generate_unique_sku('PRD')
+  end
 
   # Normalize SKU by stripping whitespace and converting to uppercase
   def normalize_sku
     self.sku = sku.to_s.strip.upcase if sku.present?
+  end
+
+  # Generate a unique SKU with the given prefix
+  #
+  # Appends a random hexadecimal suffix to ensure uniqueness within the company.
+  # Loops until a unique SKU is found.
+  #
+  # @param prefix [String] The SKU prefix (e.g., "PRD", "ORIG_COPY")
+  # @return [String] A unique SKU for this company
+  #
+  # @example
+  #   generate_unique_sku("PRD") # => "PRD_A1B2C3D4"
+  #   generate_unique_sku("ORIG_COPY") # => "ORIG_COPY_E5F6G7H8"
+  #
+  def generate_unique_sku(prefix)
+    loop do
+      candidate = "#{prefix}_#{SecureRandom.hex(4).upcase}"
+      break candidate unless company.products.exists?(sku: candidate)
+    end
   end
 end
