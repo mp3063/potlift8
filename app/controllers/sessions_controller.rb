@@ -109,15 +109,25 @@ class SessionsController < ApplicationController
       # Extract user information from JWT payload
       user_payload = tokens[:user_payload]
 
+      # Find or create user from OAuth payload
+      user = User.find_or_create_from_oauth(user_payload)
+
+      unless user
+        Rails.logger.error("Failed to create user from OAuth payload")
+        reset_session
+        redirect_to root_path, alert: 'Authentication failed. Unable to create user account.'
+        return
+      end
+
       # Store authentication data in session
       # Note: In production, consider using encrypted session store
-      store_authentication_session(tokens, user_payload)
+      store_authentication_session(user, tokens, user_payload)
 
       # Clear OAuth state
       session.delete(:oauth_state)
       session.delete(:oauth_initiated_at)
 
-      Rails.logger.info("User authenticated: #{user_payload['sub']}")
+      Rails.logger.info("User authenticated: #{user.oauth_sub} (ID: #{user.id})")
 
       # Redirect to intended destination or root
       redirect_to session.delete(:return_to) || root_path, notice: 'Successfully signed in.'
@@ -185,21 +195,22 @@ class SessionsController < ApplicationController
   #   "membership": {"role": "admin", "scopes": ["read", "write"]}
   # }
   #
+  # @param user [User] The authenticated user record
   # @param tokens [Hash] Token information
   # @param user_payload [Hash] User payload from JWT
-  def store_authentication_session(tokens, user_payload)
+  def store_authentication_session(user, tokens, user_payload)
     # Extract user data
     user_data = user_payload['user'] || {}
     company_data = user_payload['company'] || {}
     membership_data = user_payload['membership'] || {}
 
-    # Store user information
-    session[:user_id] = user_payload['sub'] || user_data['id']
-    session[:email] = user_data['email']
-    session[:first_name] = user_data['first_name']
-    session[:last_name] = user_data['last_name']
+    # Store user ID (database record ID, not oauth_sub)
+    session[:user_id] = user.id
+
+    # Store additional user information for convenience
+    session[:email] = user.email
+    session[:user_name] = user.name
     session[:locale] = user_data['locale']
-    session[:user_name] = [user_data['first_name'], user_data['last_name']].compact.join(' ').presence
 
     # Store company information
     session[:company_id] = company_data['id']

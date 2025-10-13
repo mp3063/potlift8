@@ -62,32 +62,28 @@ class ApplicationController < ActionController::Base
     true
   end
 
-  # Get current authenticated user information
+  # Get current authenticated user
   #
-  # @return [Hash, nil] User information from session or nil if not authenticated
+  # @return [User, nil] User model instance or nil if not authenticated
   #
   # @example In controller
   #   def show
-  #     @user_email = current_user[:email]
+  #     @user_email = current_user.email
   #   end
   #
   # @example In view
-  #   <p>Welcome, <%= current_user[:email] %></p>
+  #   <p>Welcome, <%= current_user.name %></p>
   def current_user
     return nil unless authenticated?
 
-    @current_user ||= {
-      id: session[:user_id],
-      email: session[:email],
-      name: session[:user_name]
-    }
+    @current_user ||= User.find_by(id: session[:user_id])
   end
 
   # Get current user's name
   #
   # @return [String, nil] User's name or nil
   def current_user_name
-    current_user&.dig(:name)
+    current_user&.name
   end
 
   # Get current authenticated user's company information
