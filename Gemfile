@@ -46,6 +46,9 @@ gem "solid_cable"
 # Redis for rate limiting, job deduplication, and performance monitoring
 gem "redis", "~> 5.0"
 
+# CSV export functionality (required in Ruby 3.4+)
+gem "csv", "~> 3.3"
+
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
 
@@ -105,3 +108,4 @@ group :development do
   # Use console on exceptions pages [https://github.com/rails/web-console]
   gem "web-console"
 end
+gem 'pagy', '~> 9.0'
