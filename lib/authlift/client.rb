@@ -8,6 +8,9 @@ require 'openssl'
 module Authlift
   # OAuth2 client for Authlift8 integration with comprehensive security features
   #
+  # Authlift8 uses Doorkeeper OAuth2 provider which returns user data in the
+  # access_token JWT itself (no separate id_token).
+  #
   # Security Features:
   # - RS256 JWT signature verification
   # - State token validation (CSRF protection)
@@ -18,8 +21,8 @@ module Authlift
   # @example Basic usage
   #   client = Authlift::Client.new
   #   auth_url = client.authorization_url(state: SecureRandom.hex(32))
-  #   tokens = client.exchange_code(code, state)
-  #   payload = client.decode_jwt(tokens[:id_token])
+  #   tokens = client.exchange_code(code, state, expected_state)
+  #   payload = tokens[:user_payload]  # Already decoded from access_token
   class Client
     class AuthenticationError < StandardError; end
     class TokenValidationError < StandardError; end
@@ -59,7 +62,7 @@ module Authlift
     #   state = SecureRandom.hex(32)
     #   session[:oauth_state] = state
     #   redirect_to client.authorization_url(state: state)
-    def authorization_url(state:, scope: 'openid profile email')
+    def authorization_url(state:, scope: 'public')
       raise ArgumentError, 'state cannot be blank' if state.blank?
       raise ArgumentError, 'state must be at least 32 characters' if state.length < 32
 
@@ -71,6 +74,9 @@ module Authlift
     end
 
     # Exchange authorization code for tokens
+    #
+    # Authlift8 uses Doorkeeper OAuth2 provider which returns the user payload
+    # in the access_token itself (JWT format), NOT in a separate id_token.
     #
     # Security:
     # - Validates state token to prevent CSRF attacks
@@ -100,19 +106,20 @@ module Authlift
         client_secret: client_secret
       )
 
-      # Extract tokens
+      # Extract tokens from response
       access_token = token_response.token
       refresh_token = token_response.refresh_token
-      id_token = token_response.params['id_token']
       expires_at = token_response.expires_at
 
-      # Validate and decode JWT
-      user_payload = decode_jwt(id_token)
+      # IMPORTANT: Authlift8/Doorkeeper returns user data in the access_token JWT itself
+      # There is no separate id_token in the OAuth response
+      # Decode the access_token to extract user payload
+      user_payload = decode_jwt(access_token)
 
       {
         access_token: access_token,
         refresh_token: refresh_token,
-        id_token: id_token,
+        id_token: nil, # Authlift8 doesn't use separate id_token
         expires_at: expires_at,
         user_payload: user_payload
       }
@@ -123,22 +130,25 @@ module Authlift
 
     # Decode and validate JWT token with RS256 signature verification
     #
+    # Used internally to decode the access_token JWT from Authlift8.
+    # Can also be used to decode refresh tokens if needed.
+    #
     # Security:
     # - Verifies RS256 signature using public key
     # - Validates token expiration
     # - Validates issuer and audience claims
     # - Automatic public key refresh on verification failure
     #
-    # @param token [String] JWT token to decode
+    # @param token [String] JWT token to decode (typically the access_token)
     # @param retry_on_failure [Boolean] Whether to retry with fresh public key (internal use)
     # @return [Hash] Decoded JWT payload
     # @raise [TokenValidationError] if validation fails
     #
     # @example
-    #   payload = client.decode_jwt(id_token)
+    #   payload = client.decode_jwt(access_token)
     #   user_id = payload['sub']
-    #   email = payload['email']
-    #   company_id = payload['company_id']
+    #   email = payload.dig('user', 'email')
+    #   company_id = payload.dig('company', 'id')
     def decode_jwt(token, retry_on_failure: true)
       raise ArgumentError, 'token cannot be blank' if token.blank?
 
