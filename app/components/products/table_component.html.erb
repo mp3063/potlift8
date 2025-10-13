@@ -1,0 +1,184 @@
+<%= helpers.turbo_frame_tag "products_table" do %>
+  <div class="mt-8 flow-root">
+    <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+      <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+        <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+          <table class="min-w-full divide-y divide-gray-300">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
+                  <input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" data-action="change->bulk-actions#toggleAll" aria-label="Select all products">
+                </th>
+                <th scope="col" class="py-3.5 pl-4 pr-3 text-left sm:pl-6">
+                  <%= sort_link('sku', 'SKU') %>
+                  <%= sort_icon('sku') %>
+                </th>
+                <th scope="col" class="px-3 py-3.5 text-left">
+                  <%= sort_link('name', 'Name') %>
+                  <%= sort_icon('name') %>
+                </th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                  Type
+                </th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                  Labels
+                </th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                  Inventory
+                </th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                  Status
+                </th>
+                <th scope="col" class="px-3 py-3.5 text-left">
+                  <%= sort_link('created_at', 'Created') %>
+                  <%= sort_icon('created_at') %>
+                </th>
+                <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                  <span class="sr-only">Actions</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 bg-white">
+              <% if products.any? %>
+                <% products.each do |product| %>
+                  <tr class="hover:bg-gray-50" data-product-id="<%= product.id %>">
+                    <td class="whitespace-nowrap py-4 pl-4 pr-3 sm:pl-6">
+                      <input
+                        type="checkbox"
+                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                        data-bulk-actions-target="checkbox"
+                        data-action="change->bulk-actions#toggleCheckbox"
+                        value="<%= product.id %>"
+                        aria-label="Select <%= product.name %>"
+                      >
+                    </td>
+                    <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                      <%= helpers.link_to product.sku, helpers.product_path(product), class: "text-indigo-600 hover:text-indigo-900" %>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-900">
+                      <%= product.name %>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                      <%= type_badge(product) %>
+                    </td>
+                    <td class="px-3 py-4 text-sm text-gray-500">
+                      <div class="flex flex-wrap gap-1">
+                        <% product.labels.limit(3).each do |label| %>
+                          <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">
+                            <%= label.name %>
+                          </span>
+                        <% end %>
+                        <% if product.labels.count > 3 %>
+                          <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">
+                            +<%= product.labels.count - 3 %>
+                          </span>
+                        <% end %>
+                      </div>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                      <%= product.total_inventory %>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                      <%= status_badge(product) %>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                      <%= product.created_at.strftime('%Y-%m-%d') %>
+                    </td>
+                    <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                      <div class="flex justify-end gap-x-2">
+                        <%= helpers.link_to helpers.edit_product_path(product), class: "text-indigo-600 hover:text-indigo-900", title: "Edit #{product.name}" do %>
+                          <%= edit_icon %>
+                          <span class="sr-only">Edit</span>
+                        <% end %>
+
+                        <%= helpers.link_to helpers.duplicate_product_path(product), data: { turbo_method: :post }, class: "text-gray-600 hover:text-gray-900", title: "Duplicate #{product.name}" do %>
+                          <%= duplicate_icon %>
+                          <span class="sr-only">Duplicate</span>
+                        <% end %>
+
+                        <%= helpers.button_to helpers.product_path(product),
+                            method: :delete,
+                            form: { data: { turbo_confirm: "Are you sure you want to delete #{product.name}?" } },
+                            class: "text-red-600 hover:text-red-900",
+                            title: "Delete #{product.name}" do %>
+                          <%= trash_icon %>
+                          <span class="sr-only">Delete</span>
+                        <% end %>
+                      </div>
+                    </td>
+                  </tr>
+                <% end %>
+              <% else %>
+                <tr>
+                  <td colspan="9" class="text-center py-12">
+                    <%= package_icon %>
+                    <h3 class="mt-2 text-sm font-semibold text-gray-900">No products</h3>
+                    <p class="mt-1 text-sm text-gray-500">Get started by creating a new product.</p>
+                    <div class="mt-6">
+                      <%= helpers.link_to helpers.new_product_path, class: "inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500" do %>
+                        <%= plus_icon %>
+                        <span class="ml-1.5">New Product</span>
+                      <% end %>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+
+          <!-- Pagination -->
+          <% if products.any? %>
+            <div class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+              <div class="flex flex-1 justify-between sm:hidden">
+                <% if pagy.prev %>
+                  <%= helpers.link_to "Previous", helpers.products_path(page: pagy.prev), class: "relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50" %>
+                <% else %>
+                  <span class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-400 cursor-not-allowed">Previous</span>
+                <% end %>
+                <% if pagy.next %>
+                  <%= helpers.link_to "Next", helpers.products_path(page: pagy.next), class: "relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50" %>
+                <% else %>
+                  <span class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-400 cursor-not-allowed">Next</span>
+                <% end %>
+              </div>
+              <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                <div>
+                  <p class="text-sm text-gray-700">
+                    Showing
+                    <span class="font-medium"><%= pagy.from %></span>
+                    to
+                    <span class="font-medium"><%= pagy.to %></span>
+                    of
+                    <span class="font-medium"><%= pagy.count %></span>
+                    results
+                  </p>
+                </div>
+                <div>
+                  <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                    <%= helpers.link_to helpers.products_path(page: pagy.prev), class: "relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 #{!pagy.prev ? 'pointer-events-none opacity-50' : ''}", aria_label: "Previous page" do %>
+                      <span class="sr-only">Previous</span>
+                      <%= chevron_left_icon %>
+                    <% end %>
+
+                    <% pagy.series.each do |item| %>
+                      <% if item.is_a?(Integer) %>
+                        <%= helpers.link_to item, helpers.products_path(page: item), class: "relative inline-flex items-center px-4 py-2 text-sm font-semibold #{item == pagy.page ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600' : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'}", aria_label: "Page #{item}", aria_current: (item == pagy.page ? 'page' : nil) %>
+                      <% elsif item == :gap %>
+                        <span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300" aria-hidden="true">...</span>
+                      <% end %>
+                    <% end %>
+
+                    <%= helpers.link_to helpers.products_path(page: pagy.next), class: "relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 #{!pagy.next ? 'pointer-events-none opacity-50' : ''}", aria_label: "Next page" do %>
+                      <span class="sr-only">Next</span>
+                      <%= chevron_right_icon %>
+                    <% end %>
+                  </nav>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
