@@ -49,3 +49,5 @@
 /coverage/
 /spec/examples.txt
 CLAUDE.md
+
+/node_modules
