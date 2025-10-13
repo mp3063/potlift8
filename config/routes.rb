@@ -49,6 +49,21 @@ Rails.application.routes.draw do
     end
   end
 
-  # Defines the root path route ("/")
-  # root "posts#index"
+  # Authenticated routes
+  # Require user authentication for all routes below
+  # Dashboard, products, storages, attributes, labels, catalogs
+  root 'dashboard#index'
+
+  # Company switching (for users with multiple companies)
+  post 'switch_company/:id', to: 'companies#switch', as: :switch_company
+
+  # Global search
+  get 'search', to: 'search#index', as: :search
+
+  # Resource routes
+  resources :products
+  resources :storages
+  resources :product_attributes
+  resources :labels
+  resources :catalogs
 end

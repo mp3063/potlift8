@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" class="h-full bg-gray-50">
   <head>
-    <title><%= content_for(:title) || "Potlift8" %></title>
+    <title><%= content_for(:title) || "Potlift8 - Product Information Management" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="turbo-cache-control" content="no-cache">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <%= csrf_meta_tags %>
@@ -22,9 +23,32 @@
     <%= javascript_importmap_tags %>
   </head>
 
-  <body>
-    <main class="container mx-auto mt-28 px-5 flex">
+  <body class="h-full" data-controller="layout">
+    <% if authenticated? %>
+      <div class="min-h-full">
+        <%= render SidebarComponent.new(
+          items: navigation_items,
+          active_path: request.path,
+          company: current_potlift_company
+        ) %>
+
+        <div class="lg:pl-72">
+          <%= render TopbarComponent.new(
+            user: current_user,
+            company: current_potlift_company,
+            companies: []
+          ) %>
+
+          <main class="py-10">
+            <div class="px-4 sm:px-6 lg:px-8">
+              <%= render FlashComponent.new %>
+              <%= yield %>
+            </div>
+          </main>
+        </div>
+      </div>
+    <% else %>
       <%= yield %>
-    </main>
+    <% end %>
   </body>
 </html>
