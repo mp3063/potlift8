@@ -56,10 +56,20 @@ if defined?(Bullet)
 
     # Log warnings to bullet.log
     Bullet.bullet_logger = true
+
+    # Detect N+1 queries
+    Bullet.n_plus_one_query_enable = true
+
+    # Disable unused eager loading detection in tests (causes false positives with find_each)
+    # find_each loads records in batches, so eager loading may not be used
+    Bullet.unused_eager_loading_enable = false
+
+    # Detect missing counter cache columns
+    Bullet.counter_cache_enable = true
   end
 
-  # Common configuration for both environments
-  if Rails.env.development? || Rails.env.test?
+  # Development Environment Configuration - Common settings
+  if Rails.env.development?
     # Detect N+1 queries
     Bullet.n_plus_one_query_enable = true
 

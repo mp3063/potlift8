@@ -26,8 +26,9 @@ Rails.application.configure do
   config.consider_all_requests_local = true
   config.cache_store = :null_store
 
-  # Render exception templates for rescuable exceptions and raise for other exceptions.
-  config.action_dispatch.show_exceptions = :rescuable
+  # Raise all exceptions in tests so they can be caught by RSpec expectations
+  # This allows tests to use expect { }.to raise_error patterns
+  config.action_dispatch.show_exceptions = :none
 
   # Disable request forgery protection in test environment.
   config.action_controller.allow_forgery_protection = false
