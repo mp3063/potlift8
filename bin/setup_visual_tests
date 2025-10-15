@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+set -e
+
+echo "==================================="
+echo "Visual Testing Setup"
+echo "==================================="
+echo ""
+
+# Check if gems are installed
+echo "Checking gems..."
+if ! bundle list | grep -q "capybara-screenshot-diff"; then
+  echo "Installing visual testing gems..."
+  bundle install
+else
+  echo "✓ Gems already installed"
+fi
+
+echo ""
+echo "==================================="
+echo "Setup Complete!"
+echo "==================================="
+echo ""
+echo "Next steps:"
+echo ""
+echo "1. Generate initial baselines:"
+echo "   SCREENSHOT_BASELINE=1 bundle exec rspec --tag visual"
+echo ""
+echo "2. Commit baselines to Git:"
+echo "   git add spec/visual/"
+echo "   git commit -m 'Add initial visual regression baselines'"
+echo ""
+echo "3. Run visual tests:"
+echo "   bundle exec rspec --tag visual"
+echo ""
+echo "4. View documentation:"
+echo "   open docs/VISUAL_TESTING.md"
+echo ""
+echo "For help, see: docs/VISUAL_TESTING_RECOMMENDATION.md"
+echo ""
