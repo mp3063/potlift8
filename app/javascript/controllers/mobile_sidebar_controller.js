@@ -10,12 +10,13 @@ import { Controller } from "@hotwired/stimulus"
 //   - overlay: The mobile sidebar overlay element
 //
 // Actions:
+//   - toggle: Toggle mobile sidebar open/closed
 //   - open: Show mobile sidebar
 //   - close: Hide mobile sidebar
 //
 // Usage:
 //   <div data-controller="mobile-sidebar">
-//     <button data-action="click->mobile-sidebar#open">Open menu</button>
+//     <button data-action="click->mobile-sidebar#toggle">Toggle menu</button>
 //     <div data-mobile-sidebar-target="overlay" class="hidden">
 //       <!-- Sidebar content -->
 //       <button data-action="click->mobile-sidebar#close">Close</button>
@@ -24,6 +25,15 @@ import { Controller } from "@hotwired/stimulus"
 //
 export default class extends Controller {
   static targets = ["overlay"]
+
+  // Toggle mobile sidebar open/closed state
+  toggle() {
+    if (this.overlayTarget.classList.contains("hidden")) {
+      this.open()
+    } else {
+      this.close()
+    }
+  }
 
   // Open mobile sidebar
   //
