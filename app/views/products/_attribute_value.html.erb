@@ -1,0 +1,43 @@
+<div class="group relative" data-controller="inline-editor" data-inline-editor-url-value="<%= product_attribute_value_path(product, attribute) %>">
+  <div class="flex items-center justify-between" data-inline-editor-target="display">
+    <span><%= value&.value || "—" %></span>
+    <button type="button"
+            class="ml-2 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 transition-opacity"
+            data-action="click->inline-editor#edit"
+            aria-label="Edit <%= attribute.name %>">
+      <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path d="M2.695 14.763l-1.262 3.154a.5.5 0 00.65.65l3.155-1.262a4 4 0 001.343-.885L17.5 5.5a2.121 2.121 0 00-3-3L3.58 13.42a4 4 0 00-.885 1.343z" />
+      </svg>
+    </button>
+  </div>
+
+  <div class="hidden" data-inline-editor-target="editor">
+    <%= form_with url: product_attribute_value_path(product, attribute),
+                  method: :patch,
+                  data: {
+                    inline_editor_target: "form",
+                    action: "turbo:submit-end->inline-editor#handleSubmit"
+                  } do |form| %>
+      <% view_format = attribute.view_format || 'general' %>
+      <%= render "attribute_editors/#{view_format}_editor", form: form, attribute: attribute, value: value %>
+
+      <div class="mt-2 flex gap-x-2">
+        <%= render Ui::ButtonComponent.new(
+          type: "submit",
+          size: :sm,
+          variant: :primary
+        ) do %>
+          Save
+        <% end %>
+        <%= render Ui::ButtonComponent.new(
+          type: "button",
+          size: :sm,
+          variant: :secondary,
+          data: { action: "click->inline-editor#cancel" }
+        ) do %>
+          Cancel
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>

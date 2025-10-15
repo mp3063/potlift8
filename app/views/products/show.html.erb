@@ -1,11 +1,11 @@
 <div class="px-4 sm:px-6 lg:px-8">
-  <!-- Page Header -->
+  <!-- Page Header with Breadcrumbs -->
   <div class="mb-8">
     <nav class="flex mb-4" aria-label="Breadcrumb">
       <ol role="list" class="flex items-center space-x-4">
         <li>
           <div>
-            <%= link_to products_path, class: "text-gray-400 hover:text-gray-500" do %>
+            <%= link_to products_path, class: "text-gray-600 hover:text-gray-700" do %>
               <svg class="h-5 w-5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                 <path fill-rule="evenodd" d="M9.293 2.293a1 1 0 011.414 0l7 7A1 1 0 0117 11h-1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-3a1 1 0 00-1-1H9a1 1 0 00-1 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-6H3a1 1 0 01-.707-1.707l7-7z" clip-rule="evenodd" />
               </svg>
@@ -40,20 +40,30 @@
         </p>
       </div>
       <div class="mt-4 sm:mt-0 flex gap-x-3">
-        <%= link_to edit_product_path(@product), class: "inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" do %>
+        <%= render Ui::ButtonComponent.new(
+          href: edit_product_path(@product),
+          variant: :secondary
+        ) do %>
           <svg class="-ml-0.5 mr-1.5 h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path d="M2.695 14.763l-1.262 3.154a.5.5 0 00.65.65l3.155-1.262a4 4 0 001.343-.885L17.5 5.5a2.121 2.121 0 00-3-3L3.58 13.42a4 4 0 00-.885 1.343z" />
           </svg>
           Edit
         <% end %>
-        <%= link_to duplicate_product_path(@product), data: { turbo_method: :post }, class: "inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" do %>
+        <%= render Ui::ButtonComponent.new(
+          href: duplicate_product_path(@product),
+          variant: :secondary,
+          data: { turbo_method: :post }
+        ) do %>
           <svg class="-ml-0.5 mr-1.5 h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path d="M7 3.5A1.5 1.5 0 018.5 2h3.879a1.5 1.5 0 011.06.44l3.122 3.12A1.5 1.5 0 0117 6.622V12.5a1.5 1.5 0 01-1.5 1.5h-1v-3.379a3 3 0 00-.879-2.121L10.5 5.379A3 3 0 008.379 4.5H7v-1z" />
             <path d="M4.5 6A1.5 1.5 0 003 7.5v9A1.5 1.5 0 004.5 18h7a1.5 1.5 0 001.5-1.5v-5.879a1.5 1.5 0 00-.44-1.06L9.44 6.439A1.5 1.5 0 008.378 6H4.5z" />
           </svg>
           Duplicate
         <% end %>
-        <%= button_to product_path(@product), method: :delete, form: { data: { turbo_confirm: "Are you sure you want to delete #{@product.name}?" } }, class: "inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500" do %>
+        <%= button_to product_path(@product),
+            method: :delete,
+            form: { data: { turbo_confirm: "Are you sure you want to delete #{@product.name}?" } },
+            class: "inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600" do %>
           <svg class="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clip-rule="evenodd" />
           </svg>
@@ -65,140 +75,19 @@
 
   <!-- Product Details Grid -->
   <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-    <!-- Main Details Card -->
-    <div class="lg:col-span-2">
-      <div class="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
-        <div class="px-4 py-6 sm:p-8">
-          <h2 class="text-base font-semibold leading-7 text-gray-900">Product Information</h2>
-          <dl class="mt-6 space-y-6 divide-y divide-gray-100 text-sm leading-6">
-            <div class="pt-6 sm:flex">
-              <dt class="font-medium text-gray-900 sm:w-64 sm:flex-none sm:pr-6">SKU</dt>
-              <dd class="mt-1 flex justify-between gap-x-6 sm:mt-0 sm:flex-auto">
-                <div class="font-mono text-gray-900"><%= @product.sku %></div>
-              </dd>
-            </div>
-            <div class="pt-6 sm:flex">
-              <dt class="font-medium text-gray-900 sm:w-64 sm:flex-none sm:pr-6">Name</dt>
-              <dd class="mt-1 flex justify-between gap-x-6 sm:mt-0 sm:flex-auto">
-                <div class="text-gray-900"><%= @product.name %></div>
-              </dd>
-            </div>
-            <div class="pt-6 sm:flex">
-              <dt class="font-medium text-gray-900 sm:w-64 sm:flex-none sm:pr-6">Product Type</dt>
-              <dd class="mt-1 flex justify-between gap-x-6 sm:mt-0 sm:flex-auto">
-                <% color = @product.product_type_sellable? ? 'blue' : (@product.product_type_configurable? ? 'purple' : 'orange') %>
-                <span class="inline-flex items-center rounded-md bg-<%= color %>-50 px-2 py-1 text-xs font-medium text-<%= color %>-700 ring-1 ring-inset ring-<%= color %>-600/20">
-                  <%= @product.product_type.titleize %>
-                </span>
-              </dd>
-            </div>
-            <% if @product.description.present? %>
-              <div class="pt-6 sm:flex">
-                <dt class="font-medium text-gray-900 sm:w-64 sm:flex-none sm:pr-6">Description</dt>
-                <dd class="mt-1 flex justify-between gap-x-6 sm:mt-0 sm:flex-auto">
-                  <div class="text-gray-900"><%= simple_format(@product.description) %></div>
-                </dd>
-              </div>
-            <% end %>
-            <div class="pt-6 sm:flex">
-              <dt class="font-medium text-gray-900 sm:w-64 sm:flex-none sm:pr-6">Status</dt>
-              <dd class="mt-1 flex justify-between gap-x-6 sm:mt-0 sm:flex-auto">
-                <% if @product.active? %>
-                  <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Active</span>
-                <% else %>
-                  <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">Inactive</span>
-                <% end %>
-              </dd>
-            </div>
-            <% if @product.ean.present? %>
-              <div class="pt-6 sm:flex">
-                <dt class="font-medium text-gray-900 sm:w-64 sm:flex-none sm:pr-6">EAN</dt>
-                <dd class="mt-1 flex justify-between gap-x-6 sm:mt-0 sm:flex-auto">
-                  <div class="font-mono text-gray-900"><%= @product.ean %></div>
-                </dd>
-              </div>
-            <% end %>
-            <div class="pt-6 sm:flex">
-              <dt class="font-medium text-gray-900 sm:w-64 sm:flex-none sm:pr-6">Created</dt>
-              <dd class="mt-1 flex justify-between gap-x-6 sm:mt-0 sm:flex-auto">
-                <div class="text-gray-900"><%= @product.created_at.strftime('%B %d, %Y at %I:%M %p') %></div>
-              </dd>
-            </div>
-            <div class="pt-6 sm:flex">
-              <dt class="font-medium text-gray-900 sm:w-64 sm:flex-none sm:pr-6">Last Updated</dt>
-              <dd class="mt-1 flex justify-between gap-x-6 sm:mt-0 sm:flex-auto">
-                <div class="text-gray-900"><%= @product.updated_at.strftime('%B %d, %Y at %I:%M %p') %></div>
-              </dd>
-            </div>
-          </dl>
-        </div>
-      </div>
+    <!-- Main Content -->
+    <div class="lg:col-span-2 space-y-6">
+      <%= render Products::ImagesComponent.new(product: @product) %>
+      <%= render Products::BasicInfoComponent.new(product: @product) %>
+      <%= render Products::AttributesComponent.new(product: @product, attributes: @attribute_values) %>
+      <%= render Products::LabelsComponent.new(product: @product) %>
     </div>
 
-    <!-- Sidebar Cards -->
+    <!-- Sidebar -->
     <div class="space-y-6">
-      <!-- Labels Card -->
-      <div class="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
-        <div class="px-4 py-6 sm:p-8">
-          <h2 class="text-base font-semibold leading-7 text-gray-900">Labels</h2>
-          <% if @product.labels.any? %>
-            <div class="mt-4 flex flex-wrap gap-2">
-              <% @product.labels.each do |label| %>
-                <span class="inline-flex items-center rounded-full bg-gray-100 px-3 py-0.5 text-sm font-medium text-gray-800">
-                  <%= label.name %>
-                </span>
-              <% end %>
-            </div>
-          <% else %>
-            <p class="mt-4 text-sm text-gray-500">No labels assigned</p>
-          <% end %>
-        </div>
-      </div>
-
-      <!-- Inventory Card -->
-      <div class="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
-        <div class="px-4 py-6 sm:p-8">
-          <h2 class="text-base font-semibold leading-7 text-gray-900">Inventory</h2>
-          <div class="mt-4">
-            <dl class="space-y-3 text-sm">
-              <div class="flex justify-between">
-                <dt class="text-gray-500">Total Inventory</dt>
-                <dd class="font-semibold text-gray-900"><%= @product.total_inventory %></dd>
-              </div>
-              <% if @product.inventories.any? %>
-                <div class="pt-3 border-t border-gray-100">
-                  <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">By Storage</dt>
-                  <% @product.inventories.each do |inventory| %>
-                    <div class="flex justify-between py-1">
-                      <dd class="text-gray-600"><%= inventory.storage.name %></dd>
-                      <dd class="font-medium text-gray-900"><%= inventory.value %></dd>
-                    </div>
-                  <% end %>
-                </div>
-              <% end %>
-            </dl>
-          </div>
-        </div>
-      </div>
+      <%= render Products::StatusCardComponent.new(product: @product) %>
+      <%= render Products::InventorySummaryComponent.new(product: @product) %>
+      <%= render Products::ActivityTimelineComponent.new(product: @product) %>
     </div>
   </div>
-
-  <!-- Attribute Values Section -->
-  <% if @attribute_values.any? %>
-    <div class="mt-6">
-      <div class="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
-        <div class="px-4 py-6 sm:p-8">
-          <h2 class="text-base font-semibold leading-7 text-gray-900">Attributes</h2>
-          <dl class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            <% @attribute_values.each do |attr_value| %>
-              <div class="border-t border-gray-100 pt-4">
-                <dt class="text-sm font-medium text-gray-500"><%= attr_value.product_attribute.name %></dt>
-                <dd class="mt-1 text-sm text-gray-900"><%= attr_value.value %></dd>
-              </div>
-            <% end %>
-          </dl>
-        </div>
-      </div>
-    </div>
-  <% end %>
 </div>
