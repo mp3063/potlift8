@@ -1,0 +1,251 @@
+<div class="px-4 sm:px-6 lg:px-8">
+  <!-- Breadcrumb Navigation -->
+  <nav class="flex mb-4" aria-label="Breadcrumb">
+    <ol role="list" class="flex items-center space-x-4">
+      <li>
+        <div>
+          <%= link_to root_path, class: "text-gray-600 hover:text-gray-700" do %>
+            <svg class="h-5 w-5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M9.293 2.293a1 1 0 011.414 0l7 7A1 1 0 0117 11h-1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-3a1 1 0 00-1-1H9a1 1 0 00-1 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-6H3a1 1 0 01-.707-1.707l7-7z" clip-rule="evenodd" />
+            </svg>
+            <span class="sr-only">Home</span>
+          <% end %>
+        </div>
+      </li>
+      <li>
+        <div class="flex items-center">
+          <svg class="h-5 w-5 flex-shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+          </svg>
+          <%= link_to "Storages", storages_path, class: "ml-4 text-sm font-medium text-gray-500 hover:text-gray-700" %>
+        </div>
+      </li>
+      <li>
+        <div class="flex items-center">
+          <svg class="h-5 w-5 flex-shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+          </svg>
+          <span class="ml-4 text-sm font-medium text-gray-500" aria-current="page"><%= @storage.name %></span>
+        </div>
+      </li>
+    </ol>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="sm:flex sm:items-center mb-8">
+    <div class="sm:flex-auto">
+      <h1 class="text-3xl font-semibold leading-6 text-gray-900">
+        <%= @storage.name %>
+      </h1>
+      <div class="mt-2 flex items-center gap-2">
+        <%= render Ui::BadgeComponent.new(variant: :info, size: :md) do %>
+          <%= @storage.storage_type.titleize %>
+        <% end %>
+        <%= render Ui::BadgeComponent.new(variant: :gray, size: :md) do %>
+          <%= @storage.code %>
+        <% end %>
+      </div>
+      <p class="mt-2 text-sm text-gray-700">
+        Inventory for this storage location
+      </p>
+    </div>
+    <div class="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
+      <%= render Ui::ButtonComponent.new(
+        variant: :primary,
+        onclick: "alert('Adjust inventory functionality coming soon')"
+      ) do %>
+        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        </svg>
+        Adjust Inventory
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Inventory Table -->
+  <% if @inventories.any? %>
+    <%= render Ui::CardComponent.new(padding: :none) do %>
+      <div class="overflow-x-auto" data-controller="inventory-table">
+        <table class="min-w-full divide-y divide-gray-300">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
+                SKU
+              </th>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                Product Name
+              </th>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                Type
+              </th>
+              <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">
+                On Hand
+              </th>
+              <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">
+                Restock Level
+              </th>
+              <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">
+                ETA Qty
+              </th>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                ETA Date
+              </th>
+              <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">
+                Available
+              </th>
+              <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                <span class="sr-only">Actions</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 bg-white">
+            <% @inventories.each do |inventory| %>
+              <% product = inventory.product %>
+              <% is_low_stock = inventory.value < (product.info&.dig('restock_level') || 0) %>
+              <tr class="hover:bg-gray-50">
+                <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                  <%= link_to product.sku, product_path(product), class: "text-blue-600 hover:text-blue-700" %>
+                </td>
+                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-900">
+                  <%= product.name %>
+                </td>
+                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                  <%= render Ui::BadgeComponent.new(variant: :gray, size: :sm) do %>
+                    <%= product.product_type_before_type_cast == 1 ? 'Sellable' : product.product_type_before_type_cast == 2 ? 'Configurable' : 'Bundle' %>
+                  <% end %>
+                </td>
+                <td class="whitespace-nowrap px-3 py-4 text-sm text-right font-medium <%= is_low_stock ? 'text-red-600' : 'text-gray-900' %>">
+                  <%= number_with_delimiter(inventory.value) %>
+                </td>
+                <td class="whitespace-nowrap px-3 py-4 text-sm text-right text-gray-500">
+                  <%= number_with_delimiter(product.info&.dig('restock_level') || 0) %>
+                </td>
+                <td class="whitespace-nowrap px-3 py-4 text-sm text-right">
+                  <%= turbo_frame_tag dom_id(inventory, :eta_quantity) do %>
+                    <span class="text-gray-900">
+                      <%= number_with_delimiter(inventory.info&.dig('eta_quantity') || 0) %>
+                    </span>
+                  <% end %>
+                </td>
+                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-900">
+                  <%= turbo_frame_tag dom_id(inventory, :eta_date) do %>
+                    <% if inventory.info&.dig('eta_date').present? %>
+                      <%= Date.parse(inventory.info['eta_date']).strftime('%Y-%m-%d') rescue '-' %>
+                    <% else %>
+                      <span class="text-gray-500">-</span>
+                    <% end %>
+                  <% end %>
+                </td>
+                <td class="whitespace-nowrap px-3 py-4 text-sm text-right font-medium text-gray-900">
+                  <%= number_with_delimiter(inventory.value + (inventory.info&.dig('eta_quantity') || 0)) %>
+                </td>
+                <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                  <%= render Ui::ButtonComponent.new(
+                    variant: :ghost,
+                    size: :sm,
+                    onclick: "alert('Adjust inventory for #{product.sku}')"
+                  ) do %>
+                    Adjust
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% end %>
+
+    <!-- Summary Stats -->
+    <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-3">
+      <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 truncate">
+                  Total Products
+                </dt>
+                <dd class="text-lg font-semibold text-gray-900">
+                  <%= number_with_delimiter(@inventories.count) %>
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 truncate">
+                  Total Units
+                </dt>
+                <dd class="text-lg font-semibold text-gray-900">
+                  <%= number_with_delimiter(@storage.total_inventory) %>
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 truncate">
+                  Expected Incoming
+                </dt>
+                <dd class="text-lg font-semibold text-gray-900">
+                  <%= number_with_delimiter(@inventories.sum { |i| i.info&.dig('eta_quantity') || 0 }) %>
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% else %>
+    <!-- Empty State -->
+    <div class="text-center py-12">
+      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+      </svg>
+      <h3 class="mt-2 text-sm font-semibold text-gray-900">
+        No inventory in this storage
+      </h3>
+      <p class="mt-1 text-sm text-gray-500">
+        This storage location doesn't have any products yet.
+      </p>
+      <div class="mt-6">
+        <%= render Ui::ButtonComponent.new(
+          variant: :primary,
+          onclick: "alert('Add inventory functionality coming soon')"
+        ) do %>
+          <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+          Add Inventory
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>
