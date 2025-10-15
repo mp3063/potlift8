@@ -1,0 +1,56 @@
+# Design Tokens for Potlift8
+# Aligned with Authlift8 Design System
+
+colors:
+  primary:
+    old: indigo
+    new: blue
+
+  mappings:
+    indigo-50: blue-50
+    indigo-100: blue-100
+    indigo-200: blue-200
+    indigo-300: blue-300
+    indigo-400: blue-400
+    indigo-500: blue-500
+    indigo-600: blue-600
+    indigo-700: blue-700
+    indigo-800: blue-800
+    indigo-900: blue-900
+    indigo-950: blue-950
+
+color_palette:
+  primary:
+    blue-50: "#eff6ff"    # Backgrounds
+    blue-100: "#dbeafe"   # Hover backgrounds
+    blue-500: "#3b82f6"   # Focus rings
+    blue-600: "#2563eb"   # Primary brand
+    blue-700: "#1d4ed8"   # Hover states
+
+  success:
+    green-50: "#f0fdf4"
+    green-600: "#16a34a"
+    green-700: "#15803d"
+    green-800: "#166534"
+
+  danger:
+    red-50: "#fef2f2"
+    red-600: "#dc2626"
+    red-700: "#b91c1c"
+    red-800: "#991b1b"
+
+  warning:
+    yellow-50: "#fefce8"
+    yellow-600: "#ca8a04"
+    yellow-800: "#854d0e"
+
+  neutral:
+    gray-50: "#f9fafb"
+    gray-100: "#f3f4f6"
+    gray-200: "#e5e7eb"
+    gray-300: "#d1d5db"
+    gray-400: "#9ca3af"
+    gray-500: "#6b7280"
+    gray-600: "#4b5563"
+    gray-700: "#374151"
+    gray-900: "#111827"
