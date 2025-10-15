@@ -55,10 +55,10 @@ RSpec.describe Products::FormComponent, type: :component do
       expect(page).to have_button(type: 'submit')
     end
 
-    it 'includes cancel link' do
+    it 'includes cancel button' do
       render_inline(described_class.new(product: product, url: url, method: method))
 
-      expect(page).to have_link('Cancel', href: '/products')
+      expect(page).to have_button('Cancel')
     end
 
     it 'sets Stimulus controller' do
@@ -137,13 +137,13 @@ RSpec.describe Products::FormComponent, type: :component do
       render_inline(described_class.new(product: product, url: url, method: method))
 
       expect(page).to have_css('.bg-red-50')
-      expect(page).to have_text('There were 2 errors with your submission')
+      expect(page).to have_text('There are 2 errors with your submission')
     end
 
     it 'displays error icon' do
       render_inline(described_class.new(product: product, url: url, method: method))
 
-      expect(page).to have_css('svg.text-red-400')
+      expect(page).to have_css('svg.text-red-500')
     end
 
     it 'lists all error messages' do
@@ -156,7 +156,7 @@ RSpec.describe Products::FormComponent, type: :component do
     it 'adds error styling to SKU field' do
       render_inline(described_class.new(product: product, url: url, method: method))
 
-      expect(page).to have_css('input#product_sku.ring-red-300')
+      expect(page).to have_css('input#product_sku.border-red-300')
     end
 
     it 'displays inline error message for SKU' do
@@ -171,7 +171,7 @@ RSpec.describe Products::FormComponent, type: :component do
 
       render_inline(described_class.new(product: product, url: url, method: method))
 
-      expect(page).to have_text('There was 1 error with your submission')
+      expect(page).to have_text('There is 1 error with your submission')
     end
   end
 
@@ -235,31 +235,8 @@ RSpec.describe Products::FormComponent, type: :component do
     end
   end
 
-  describe 'responsive grid layout' do
-    let(:product) { Product.new(company: company) }
-    let(:url) { '/products' }
-    let(:method) { :post }
-
-    it 'uses grid layout for form fields' do
-      render_inline(described_class.new(product: product, url: url, method: method))
-
-      expect(page).to have_css('.grid.grid-cols-1.gap-x-6.gap-y-8')
-    end
-
-    it 'makes SKU and Type fields half-width on larger screens' do
-      render_inline(described_class.new(product: product, url: url, method: method))
-
-      # SKU should be in a column span 3 (half of 6)
-      expect(page).to have_css('.sm\\:col-span-3', count: 2) # SKU and Type
-    end
-
-    it 'makes Name and Description full-width' do
-      render_inline(described_class.new(product: product, url: url, method: method))
-
-      # Name and Description should span all 6 columns
-      expect(page).to have_css('.sm\\:col-span-6', count: 3) # Name, Description, Active
-    end
-  end
+  # NOTE: Responsive grid layout tests removed - form uses simpler stack layout with space-y-4
+  # The form is organized in cards with vertical stacking, not a grid layout
 
   describe 'accessibility' do
     let(:product) { Product.new(company: company) }
@@ -315,19 +292,19 @@ RSpec.describe Products::FormComponent, type: :component do
       render_inline(described_class.new(product: product, url: url, method: method))
 
       # Check for Tailwind form classes
-      expect(page).to have_css('input.rounded-md')
+      expect(page).to have_css('input.rounded-lg')
       expect(page).to have_css('input.shadow-sm')
-      expect(page).to have_css('select.rounded-md')
-      expect(page).to have_css('textarea.rounded-md')
+      expect(page).to have_css('select.rounded-lg')
+      expect(page).to have_css('textarea.rounded-lg')
     end
 
     it 'applies focus styles' do
       render_inline(described_class.new(product: product, url: url, method: method))
 
-      # Check for focus ring classes
-      expect(page).to have_css('input.focus\\:ring-2')
-      expect(page).to have_css('select.focus\\:ring-2')
-      expect(page).to have_css('textarea.focus\\:ring-2')
+      # Check for focus border and ring classes
+      expect(page).to have_css('input.focus\\:border-blue-500')
+      expect(page).to have_css('select.focus\\:ring-blue-500')
+      expect(page).to have_css('textarea.focus\\:ring-blue-500')
     end
 
     it 'applies error styles when field has errors' do
@@ -336,20 +313,22 @@ RSpec.describe Products::FormComponent, type: :component do
 
       render_inline(described_class.new(product: product, url: url, method: method))
 
-      expect(page).to have_css('input#product_sku.ring-red-300.focus\\:ring-red-600')
+      expect(page).to have_css('input#product_sku.border-red-300.focus\\:border-red-500')
     end
 
     it 'styles submit button' do
       render_inline(described_class.new(product: product, url: url, method: method))
 
-      expect(page).to have_css('input[type="submit"].bg-indigo-600')
-      expect(page).to have_css('input[type="submit"].hover\\:bg-indigo-500')
+      # Submit button is rendered via Ui::ButtonComponent (primary variant)
+      expect(page).to have_button(type: 'submit')
+      expect(page).to have_css('button[type="submit"].bg-blue-600')
     end
 
-    it 'styles cancel link' do
+    it 'styles cancel button' do
       render_inline(described_class.new(product: product, url: url, method: method))
 
-      expect(page).to have_css('a.text-gray-900', text: 'Cancel')
+      # Cancel button is rendered via Ui::ButtonComponent (secondary variant)
+      expect(page).to have_button('Cancel')
     end
   end
 
@@ -402,21 +381,8 @@ RSpec.describe Products::FormComponent, type: :component do
       end
     end
 
-    describe '#x_circle_icon' do
-      it 'returns SVG markup' do
-        icon = component.send(:x_circle_icon)
-
-        expect(icon).to include('svg')
-        expect(icon).to include('h-5 w-5')
-        expect(icon).to include('text-red-400')
-      end
-
-      it 'returns HTML safe string' do
-        icon = component.send(:x_circle_icon)
-
-        expect(icon).to be_html_safe
-      end
-    end
+    # NOTE: x_circle_icon test removed - error icons are now handled by Shared::FormErrorsComponent
+    # The FormComponent no longer has an x_circle_icon method
   end
 
   describe 'different product types' do
@@ -480,9 +446,9 @@ RSpec.describe Products::FormComponent, type: :component do
 
       render_inline(described_class.new(product: product, url: url, method: method))
 
-      expect(page).to have_css('input#product_sku.ring-red-300')
-      expect(page).to have_css('input#product_name.ring-red-300')
-      expect(page).to have_css('select#product_product_type.ring-red-300')
+      expect(page).to have_css('input#product_sku.border-red-300')
+      expect(page).to have_css('input#product_name.border-red-300')
+      expect(page).to have_css('select#product_product_type.border-red-300')
     end
 
     it 'displays no errors when product is valid' do

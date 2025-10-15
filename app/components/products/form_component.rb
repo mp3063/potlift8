@@ -1,20 +1,42 @@
 # frozen_string_literal: true
 
 module Products
-  # Product form component
+  # Product form component with organized card sections
   #
-  # Displays a product form with:
-  # - SKU field with auto-generation hint and validation
-  # - Product Type selector
-  # - Name and Description fields
-  # - Active status checkbox
-  # - Inline error messages
+  # Renders a comprehensive product creation/editing form organized into logical
+  # card sections. The form includes client-side validation via Stimulus and
+  # displays validation errors using the FormErrorsComponent.
   #
-  # Features:
-  # - Client-side SKU validation via Stimulus
-  # - Product type change handling
+  # **Form Sections:**
+  # - Basic Information: SKU, Name, Product Type
+  # - Additional Details: Description, Active status checkbox
+  #
+  # **Features:**
+  # - Card-based layout using Ui::CardComponent
+  # - Form error summary at the top
+  # - Client-side SKU validation via Stimulus (product-form controller)
+  # - Product type select dropdown with 3 types
   # - Accessible form labels and ARIA attributes
-  # - Responsive grid layout
+  # - Error states with proper styling and accessibility
+  # - Action buttons (Submit/Cancel) using Ui::ButtonComponent
+  # - Rich text editor support for description (if ActionText configured)
+  #
+  # **Accessibility:**
+  # - Proper label associations
+  # - ARIA attributes for form controls
+  # - Error messages linked to inputs
+  # - Focus management
+  # - Keyboard navigation
+  #
+  # **Stimulus Integration:**
+  # - Controller: product-form
+  # - Validates SKU format and uniqueness
+  # - Handles product type changes
+  #
+  # **Product Types:**
+  # - Sellable (1): Regular products sold directly
+  # - Configurable (2): Products with variants or options
+  # - Bundle (3): Products composed of multiple products
   #
   # @example New product form
   #   <%= render Products::FormComponent.new(
@@ -30,33 +52,88 @@ module Products
   #     method: :patch
   #   ) %>
   #
+  # @example With validation errors
+  #   <%= render Products::FormComponent.new(
+  #     product: @product, # @product.errors present
+  #     url: product_path(@product),
+  #     method: :patch
+  #   ) %>
+  #
+  # @see docs/DESIGN_SYSTEM.md Design System Documentation
+  # @see app/javascript/controllers/product_form_controller.js Stimulus Controller
+  # @see Ui::CardComponent Card layout component
+  # @see Ui::ButtonComponent Action buttons
+  #
   class FormComponent < ViewComponent::Base
+    # Initialize a new product form component
+    #
+    # @param product [Product] The product model instance (new or existing)
+    # @param url [String] The form submission URL (products_path or product_path)
+    # @param method [Symbol] The HTTP method (:post for create, :patch/:put for update)
+    #
+    # @example Create form
+    #   FormComponent.new(
+    #     product: Product.new,
+    #     url: products_path,
+    #     method: :post
+    #   )
+    #
+    # @example Edit form
+    #   FormComponent.new(
+    #     product: Product.find(123),
+    #     url: product_path(123),
+    #     method: :patch
+    #   )
+    #
+    # @return [FormComponent]
     def initialize(product:, url:, method:)
       @product = product
       @url = url
       @method = method
+      @company = product.company
     end
 
     private
 
-    attr_reader :product, :url, :method
-
-    # X-circle icon SVG for error display
-    def x_circle_icon
-      '<svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
-      </svg>'.html_safe
-    end
+    attr_reader :product, :url, :method, :company
 
     # Product type options for select dropdown
     #
+    # Returns an array of [label, value] pairs for the product type select field.
+    # Values correspond to the product_type enum in the Product model.
+    #
     # @return [Array<Array<String, Integer>>] Array of [label, value] pairs
+    #
+    # @example
+    #   product_type_options
+    #   # => [['Sellable', 1], ['Configurable', 2], ['Bundle', 3]]
     def product_type_options
       [
         ['Sellable', 1],
         ['Configurable', 2],
         ['Bundle', 3]
       ]
+    end
+
+    # Available labels for the current company
+    #
+    # Returns all labels ordered by hierarchy and position.
+    # Returns empty array if company is not present.
+    #
+    # @return [ActiveRecord::Relation] Labels for the company
+    #
+    def available_labels
+      return Label.none unless company.present?
+
+      company.labels.order(:label_positions, :name)
+    end
+
+    # Selected label IDs for the product
+    #
+    # @return [Array<Integer>] Array of label IDs
+    #
+    def selected_label_ids
+      product.label_ids
     end
   end
 end

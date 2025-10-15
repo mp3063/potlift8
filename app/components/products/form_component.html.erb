@@ -1,123 +1,225 @@
 <%= helpers.form_with model: product, url: url, method: method, data: { controller: "product-form", turbo: true }, class: "space-y-6" do |form| %>
-  <% if product.errors.any? %>
-    <div class="rounded-md bg-red-50 p-4" role="alert">
-      <div class="flex">
-        <div class="flex-shrink-0">
-          <%= x_circle_icon %>
-        </div>
-        <div class="ml-3">
-          <h3 class="text-sm font-medium text-red-800">
-            There <%= product.errors.count == 1 ? 'was' : 'were' %> <%= helpers.pluralize(product.errors.count, "error") %> with your submission:
-          </h3>
-          <div class="mt-2 text-sm text-red-700">
-            <ul role="list" class="list-disc space-y-1 pl-5">
-              <% product.errors.full_messages.each do |message| %>
-                <li><%= message %></li>
-              <% end %>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  <% end %>
+  <!-- Error Summary -->
+  <%= render Shared::FormErrorsComponent.new(errors: product.errors) %>
 
-  <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
-    <!-- SKU -->
-    <div class="sm:col-span-3">
-      <%= form.label :sku, "SKU", class: "block text-sm font-medium leading-6 text-gray-900" %>
-      <div class="mt-2">
+  <!-- Basic Information Section -->
+  <%= render Ui::CardComponent.new do |card| %>
+    <% card.with_header do %>
+      <h2 class="text-lg font-semibold text-gray-900">Basic Information</h2>
+    <% end %>
+
+    <div class="space-y-4">
+      <!-- SKU field -->
+      <div>
+        <%= form.label :sku, "SKU", class: "block text-sm font-medium text-gray-900 mb-1" %>
         <%= form.text_field :sku,
-            class: "block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 #{product.errors[:sku].any? ? 'ring-red-300 focus:ring-red-600' : ''}",
+            class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm #{product.errors[:sku].any? ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}",
             placeholder: "Auto-generated if left blank",
             data: {
               product_form_target: "sku",
               action: "blur->product-form#validateSku"
             },
             aria: {
-              describedby: "sku-description",
+              describedby: product.errors[:sku].any? ? "sku-error" : "sku-description",
               invalid: product.errors[:sku].any?
             } %>
+        <% if product.errors[:sku].any? %>
+          <p class="text-xs text-red-600 mt-1" id="sku-error" role="alert"><%= product.errors[:sku].first %></p>
+        <% else %>
+          <p class="text-xs text-gray-600 mt-1" id="sku-description">Leave blank to auto-generate a unique SKU</p>
+        <% end %>
       </div>
-      <% if product.errors[:sku].any? %>
-        <p class="mt-2 text-sm text-red-600" id="sku-error" role="alert"><%= product.errors[:sku].first %></p>
-      <% else %>
-        <p class="mt-2 text-sm text-gray-500" id="sku-description">Leave blank to auto-generate a unique SKU</p>
-      <% end %>
-    </div>
 
-    <!-- Product Type -->
-    <div class="sm:col-span-3">
-      <%= form.label :product_type, "Product Type", class: "block text-sm font-medium leading-6 text-gray-900" %>
-      <div class="mt-2">
+      <!-- Name field -->
+      <div>
+        <%= form.label :name, class: "block text-sm font-medium text-gray-900 mb-1" %>
+        <%= form.text_field :name,
+            class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm #{product.errors[:name].any? ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}",
+            placeholder: "Enter product name",
+            required: true,
+            aria: {
+              describedby: product.errors[:name].any? ? "name-error" : nil,
+              invalid: product.errors[:name].any?,
+              required: true
+            } %>
+        <% if product.errors[:name].any? %>
+          <p class="text-xs text-red-600 mt-1" id="name-error" role="alert"><%= product.errors[:name].first %></p>
+        <% end %>
+      </div>
+
+      <!-- Product Type select -->
+      <div>
+        <%= form.label :product_type, "Product Type", class: "block text-sm font-medium text-gray-900 mb-1" %>
         <%= form.select :product_type,
             product_type_options,
             { prompt: "Select a product type" },
-            class: "block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 #{product.errors[:product_type].any? ? 'ring-red-300 focus:ring-red-600' : ''}",
+            class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm #{product.errors[:product_type].any? ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}",
             data: {
               product_form_target: "productType",
               action: "change->product-form#handleTypeChange"
             },
             aria: {
+              describedby: product.errors[:product_type].any? ? "product-type-error" : nil,
               invalid: product.errors[:product_type].any?
             } %>
+        <% if product.errors[:product_type].any? %>
+          <p class="text-xs text-red-600 mt-1" id="product-type-error" role="alert"><%= product.errors[:product_type].first %></p>
+        <% end %>
       </div>
-      <% if product.errors[:product_type].any? %>
-        <p class="mt-2 text-sm text-red-600" role="alert"><%= product.errors[:product_type].first %></p>
-      <% end %>
     </div>
+  <% end %>
 
-    <!-- Name -->
-    <div class="sm:col-span-6">
-      <%= form.label :name, class: "block text-sm font-medium leading-6 text-gray-900" %>
-      <div class="mt-2">
-        <%= form.text_field :name,
-            class: "block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 #{product.errors[:name].any? ? 'ring-red-300 focus:ring-red-600' : ''}",
-            placeholder: "Enter product name",
-            required: true,
-            aria: {
-              invalid: product.errors[:name].any?
-            } %>
-      </div>
-      <% if product.errors[:name].any? %>
-        <p class="mt-2 text-sm text-red-600" role="alert"><%= product.errors[:name].first %></p>
-      <% end %>
-    </div>
+  <!-- Additional Details Section -->
+  <%= render Ui::CardComponent.new do |card| %>
+    <% card.with_header do %>
+      <h2 class="text-lg font-semibold text-gray-900">Additional Details</h2>
+    <% end %>
 
-    <!-- Description -->
-    <div class="sm:col-span-6">
-      <%= form.label :description, class: "block text-sm font-medium leading-6 text-gray-900" %>
-      <div class="mt-2">
+    <div class="space-y-4">
+      <!-- Description -->
+      <div>
+        <%= form.label :description, class: "block text-sm font-medium text-gray-900 mb-1" %>
         <%= form.text_area :description,
             rows: 4,
-            class: "block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6",
+            class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
             placeholder: "Enter product description",
             aria: {
               describedby: "description-hint"
             } %>
+        <p class="text-xs text-gray-600 mt-1" id="description-hint">Optional product description</p>
       </div>
-      <p class="mt-2 text-sm text-gray-500" id="description-hint">Optional product description</p>
-    </div>
 
-    <!-- Active Status -->
-    <div class="sm:col-span-6">
-      <div class="relative flex gap-x-3">
+      <!-- Active Status -->
+      <div class="relative flex items-start">
         <div class="flex h-6 items-center">
           <%= form.check_box :active,
-              class: "h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600",
+              class: "h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500",
               aria: {
                 describedby: "active-description"
               } %>
         </div>
-        <div class="text-sm leading-6">
-          <%= form.label :active, class: "font-medium text-gray-900" %>
-          <p class="text-gray-500" id="active-description">Product is active and available for use</p>
+        <div class="ml-3 text-sm leading-6">
+          <%= form.label :active, class: "font-medium text-gray-900" do %>
+            Active
+          <% end %>
+          <p class="text-xs text-gray-600" id="active-description">Product is active and available for use</p>
         </div>
       </div>
     </div>
-  </div>
+  <% end %>
 
-  <div class="mt-6 flex items-center justify-end gap-x-6">
-    <%= helpers.link_to "Cancel", helpers.products_path, class: "text-sm font-semibold leading-6 text-gray-900 hover:text-gray-700" %>
-    <%= form.submit class: "rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed" %>
+  <!-- Labels Section -->
+  <%= render Ui::CardComponent.new do |card| %>
+    <% card.with_header do %>
+      <h2 class="text-lg font-semibold text-gray-900">Labels</h2>
+    <% end %>
+
+    <div class="space-y-4" data-controller="label-form-selector">
+      <div>
+        <label for="label-search" class="block text-sm font-medium text-gray-900 mb-1">
+          Select Labels
+        </label>
+        <p class="text-xs text-gray-600 mb-3" id="label-search-hint">
+          Choose labels to categorize this product. Click on a label to add it.
+        </p>
+
+        <!-- Search input -->
+        <div class="relative mb-3">
+          <input
+            type="text"
+            id="label-search"
+            placeholder="Search labels..."
+            class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            data-label-form-selector-target="search"
+            data-action="input->label-form-selector#filterLabels"
+            aria-describedby="label-search-hint"
+          >
+          <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+            <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
+            </svg>
+          </div>
+        </div>
+
+        <!-- Available labels (clickable) -->
+        <div class="max-h-48 overflow-y-auto border border-gray-200 rounded-lg bg-gray-50 p-3" data-label-form-selector-target="labelList">
+          <% if available_labels.any? %>
+            <div class="space-y-1">
+              <% available_labels.each do |label| %>
+                <button
+                  type="button"
+                  class="w-full text-left px-3 py-2 rounded-md text-sm hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-blue-50 transition-colors"
+                  data-label-id="<%= label.id %>"
+                  data-label-name="<%= label.full_name %>"
+                  data-label-color="<%= label.info&.dig('color') || '#6b7280' %>"
+                  data-action="click->label-form-selector#addLabel"
+                  data-label-form-selector-target="labelOption"
+                  aria-label="Add label <%= label.full_name %>"
+                >
+                  <div class="flex items-center gap-2">
+                    <span class="h-2 w-2 rounded-full flex-shrink-0" style="background-color: <%= label.info&.dig('color') || '#6b7280' %>" aria-hidden="true"></span>
+                    <span class="text-gray-900"><%= label.full_name %></span>
+                  </div>
+                </button>
+              <% end %>
+            </div>
+          <% else %>
+            <p class="text-sm text-gray-500 text-center py-4">No labels available. Create labels first to categorize products.</p>
+          <% end %>
+        </div>
+
+        <!-- Empty state for no results -->
+        <div class="hidden max-h-48 border border-gray-200 rounded-lg bg-gray-50 p-3" data-label-form-selector-target="emptyState">
+          <p class="text-sm text-gray-500 text-center py-4">No labels found matching your search.</p>
+        </div>
+      </div>
+
+      <!-- Selected labels (tags) -->
+      <div>
+        <label class="block text-sm font-medium text-gray-900 mb-2">
+          Selected Labels
+        </label>
+        <div class="flex flex-wrap gap-2 min-h-[2.5rem] p-3 border border-gray-200 rounded-lg bg-white" data-label-form-selector-target="selectedContainer" role="list" aria-label="Selected labels">
+          <% if selected_label_ids.any? %>
+            <% product.labels.each do |label| %>
+              <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm bg-blue-100 text-blue-800 border border-blue-200" data-label-id="<%= label.id %>" role="listitem">
+                <span class="h-2 w-2 rounded-full flex-shrink-0" style="background-color: <%= label.info&.dig('color') || '#2563eb' %>" aria-hidden="true"></span>
+                <span class="font-medium"><%= label.full_name %></span>
+                <button
+                  type="button"
+                  class="ml-1 inline-flex items-center justify-center h-4 w-4 rounded-full hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-colors"
+                  data-action="click->label-form-selector#removeLabel"
+                  data-label-id="<%= label.id %>"
+                  aria-label="Remove label <%= label.full_name %>"
+                >
+                  <svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                  </svg>
+                </button>
+              </span>
+            <% end %>
+          <% else %>
+            <p class="text-sm text-gray-500 py-1" data-label-form-selector-target="emptyMessage">No labels selected. Click on labels above to add them.</p>
+          <% end %>
+        </div>
+
+        <!-- Hidden checkboxes for form submission -->
+        <div class="hidden" data-label-form-selector-target="hiddenInputs">
+          <% selected_label_ids.each do |label_id| %>
+            <%= form.check_box :label_ids, { multiple: true, checked: true, class: "label-checkbox", data: { label_id: label_id } }, label_id, nil %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Form Actions -->
+  <div class="flex justify-end gap-2">
+    <%= render Ui::ButtonComponent.new(variant: :secondary, type: "button", onclick: "window.location.href='#{helpers.products_path}'") do %>
+      Cancel
+    <% end %>
+    <%= render Ui::ButtonComponent.new(variant: :primary, type: "submit") do %>
+      <%= product.new_record? ? "Create Product" : "Update Product" %>
+    <% end %>
   </div>
 <% end %>
