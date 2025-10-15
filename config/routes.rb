@@ -104,5 +104,11 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :catalogs
+  resources :catalogs, param: :code do
+    member do
+      get :items
+      patch :reorder_items
+      get :export
+    end
+  end
 end
