@@ -138,9 +138,8 @@ module Shared
       content_tag(:div, class: "hidden md:flex md:items-center md:gap-6") do
         concat(nav_link("Dashboard", helpers.root_path))
         concat(nav_link("Products", helpers.products_path))
+        concat(nav_link("Storages", helpers.storages_path))
         concat(nav_link("Catalogs", helpers.catalogs_path))
-        # TODO: Uncomment when Inventory feature is implemented
-        # concat(nav_link("Inventory", helpers.inventories_path))
         # TODO: Uncomment when Reports feature is implemented
         # concat(nav_link("Reports", helpers.reports_path))
       end

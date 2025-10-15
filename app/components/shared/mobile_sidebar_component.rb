@@ -101,9 +101,8 @@ module Shared
       content_tag(:nav, class: "p-4 space-y-2") do
         concat(mobile_nav_link("Dashboard", helpers.root_path))
         concat(mobile_nav_link("Products", helpers.products_path))
+        concat(mobile_nav_link("Storages", helpers.storages_path))
         concat(mobile_nav_link("Catalogs", helpers.catalogs_path))
-        # TODO: Uncomment when Inventory feature is implemented
-        # concat(mobile_nav_link("Inventory", helpers.inventories_path))
         # TODO: Uncomment when Reports feature is implemented
         # concat(mobile_nav_link("Reports", helpers.reports_path))
       end
