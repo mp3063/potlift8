@@ -75,6 +75,11 @@ class Product < ApplicationRecord
   has_many :storages, through: :inventories
   has_many :product_assets, dependent: :destroy
 
+  # ActiveStorage associations
+  # Multiple images can be attached to a product for product detail pages
+  # Images are ordered by attachment order (first attached = primary image)
+  has_many_attached :images
+
   # Catalog associations
   has_many :catalog_items, dependent: :destroy
   has_many :catalogs, through: :catalog_items
