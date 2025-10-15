@@ -1,0 +1,183 @@
+<%= form_with model: catalog, class: "space-y-8" do |form| %>
+  <!-- Error Messages -->
+  <% if catalog.errors.any? %>
+    <div class="rounded-lg bg-red-50 border border-red-200 p-4" role="alert">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-red-800">
+            <%= pluralize(catalog.errors.count, "error") %> prohibited this catalog from being saved:
+          </h3>
+          <div class="mt-2 text-sm text-red-700">
+            <ul class="list-disc list-inside space-y-1">
+              <% catalog.errors.full_messages.each do |message| %>
+                <li><%= message %></li>
+              <% end %>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Basic Information -->
+  <div class="bg-white shadow-sm rounded-lg border border-gray-200">
+    <div class="px-6 py-5 border-b border-gray-200">
+      <h3 class="text-lg font-semibold text-gray-900">Basic Information</h3>
+      <p class="mt-1 text-sm text-gray-500">Essential details about the catalog</p>
+    </div>
+    <div class="px-6 py-6 space-y-6">
+      <!-- Name -->
+      <div>
+        <%= form.label :name, class: "block text-sm font-medium text-gray-700 mb-1" do %>
+          Name <span class="text-red-600" aria-hidden="true">*</span>
+        <% end %>
+        <%= form.text_field :name,
+          required: true,
+          placeholder: "e.g., Main Webshop",
+          class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm #{'border-red-300 focus:border-red-500 focus:ring-red-500' if catalog.errors[:name].any?}",
+          aria_required: "true",
+          aria_invalid: catalog.errors[:name].any?,
+          aria_describedby: (catalog.errors[:name].any? ? "name-error" : nil) %>
+        <% if catalog.errors[:name].any? %>
+          <p class="mt-2 text-sm text-red-600" id="name-error">
+            <%= catalog.errors[:name].first %>
+          </p>
+        <% end %>
+      </div>
+
+      <!-- Code -->
+      <div>
+        <%= form.label :code, class: "block text-sm font-medium text-gray-700 mb-1" do %>
+          Code <span class="text-red-600" aria-hidden="true">*</span>
+        <% end %>
+        <p class="text-sm text-gray-500 mb-2">Lowercase alphanumeric with dashes only (used in URLs)</p>
+        <%= form.text_field :code,
+          required: true,
+          placeholder: "e.g., main-webshop",
+          pattern: "[a-z0-9-]+",
+          class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm font-mono #{'border-red-300 focus:border-red-500 focus:ring-red-500' if catalog.errors[:code].any?}",
+          aria_required: "true",
+          aria_invalid: catalog.errors[:code].any?,
+          aria_describedby: (catalog.errors[:code].any? ? "code-error" : "code-help") %>
+        <% if catalog.errors[:code].any? %>
+          <p class="mt-2 text-sm text-red-600" id="code-error">
+            <%= catalog.errors[:code].first %>
+          </p>
+        <% else %>
+          <p class="mt-2 text-sm text-gray-500" id="code-help">
+            This code will be used in URLs and cannot be changed after creation
+          </p>
+        <% end %>
+      </div>
+
+      <!-- Description -->
+      <div>
+        <%= form.label :description, class: "block text-sm font-medium text-gray-700 mb-1" %>
+        <%= form.text_area :description,
+          rows: 3,
+          placeholder: "Optional description of this catalog's purpose...",
+          class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm #{'border-red-300 focus:border-red-500 focus:ring-red-500' if catalog.errors[:description].any?}",
+          aria_invalid: catalog.errors[:description].any?,
+          aria_describedby: (catalog.errors[:description].any? ? "description-error" : nil) %>
+        <% if catalog.errors[:description].any? %>
+          <p class="mt-2 text-sm text-red-600" id="description-error">
+            <%= catalog.errors[:description].first %>
+          </p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Catalog Settings -->
+  <div class="bg-white shadow-sm rounded-lg border border-gray-200">
+    <div class="px-6 py-5 border-b border-gray-200">
+      <h3 class="text-lg font-semibold text-gray-900">Catalog Settings</h3>
+      <p class="mt-1 text-sm text-gray-500">Configure catalog type and currency</p>
+    </div>
+    <div class="px-6 py-6 space-y-6">
+      <!-- Catalog Type -->
+      <div>
+        <%= form.label :catalog_type, class: "block text-sm font-medium text-gray-700 mb-1" do %>
+          Catalog Type <span class="text-red-600" aria-hidden="true">*</span>
+        <% end %>
+        <%= form.select :catalog_type,
+          options_for_select([
+            ["Webshop - Customer-facing online store", "webshop"],
+            ["Supply - B2B or wholesale catalog", "supply"]
+          ], catalog.catalog_type),
+          {},
+          {
+            required: true,
+            class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm #{'border-red-300 focus:border-red-500 focus:ring-red-500' if catalog.errors[:catalog_type].any?}",
+            aria_required: "true",
+            aria_invalid: catalog.errors[:catalog_type].any?,
+            aria_describedby: (catalog.errors[:catalog_type].any? ? "catalog-type-error" : nil)
+          } %>
+        <% if catalog.errors[:catalog_type].any? %>
+          <p class="mt-2 text-sm text-red-600" id="catalog-type-error">
+            <%= catalog.errors[:catalog_type].first %>
+          </p>
+        <% end %>
+      </div>
+
+      <!-- Currency Code -->
+      <div>
+        <%= form.label :currency_code, class: "block text-sm font-medium text-gray-700 mb-1" do %>
+          Currency <span class="text-red-600" aria-hidden="true">*</span>
+        <% end %>
+        <%= form.select :currency_code,
+          options_for_select([
+            ["EUR - Euro", "eur"],
+            ["SEK - Swedish Krona", "sek"],
+            ["NOK - Norwegian Krone", "nok"]
+          ], catalog.currency_code),
+          {},
+          {
+            required: true,
+            class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm #{'border-red-300 focus:border-red-500 focus:ring-red-500' if catalog.errors[:currency_code].any?}",
+            aria_required: "true",
+            aria_invalid: catalog.errors[:currency_code].any?,
+            aria_describedby: (catalog.errors[:currency_code].any? ? "currency-code-error" : nil)
+          } %>
+        <% if catalog.errors[:currency_code].any? %>
+          <p class="mt-2 text-sm text-red-600" id="currency-code-error">
+            <%= catalog.errors[:currency_code].first %>
+          </p>
+        <% end %>
+      </div>
+
+      <!-- Active Status -->
+      <div class="flex items-start">
+        <div class="flex items-center h-5">
+          <%= form.check_box :active,
+            class: "h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500",
+            aria_describedby: "active-description" %>
+        </div>
+        <div class="ml-3">
+          <%= form.label :active, class: "font-medium text-sm text-gray-700" do %>
+            Active
+          <% end %>
+          <p class="text-sm text-gray-500" id="active-description">
+            Enable this catalog for use across the system
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Actions -->
+  <div class="flex items-center justify-end gap-3 pt-6 border-t border-gray-200">
+    <%= link_to "Cancel",
+      catalog.persisted? ? catalog_path(catalog.code) : catalogs_path,
+      class: "inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200" %>
+
+    <%= form.submit catalog.persisted? ? "Update Catalog" : "Create Catalog",
+      class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200",
+      data: { disable_with: catalog.persisted? ? "Updating..." : "Creating..." } %>
+  </div>
+<% end %>
