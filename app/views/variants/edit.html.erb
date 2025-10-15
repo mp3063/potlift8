@@ -1,0 +1,39 @@
+<% content_for :page_header do %>
+  <nav class="flex mb-4" aria-label="Breadcrumb">
+    <ol role="list" class="flex items-center space-x-4">
+      <li>
+        <%= link_to products_path, class: "text-sm font-medium text-gray-500 hover:text-gray-700" do %>
+          Products
+        <% end %>
+      </li>
+      <li class="flex items-center">
+        <svg class="h-5 w-5 flex-shrink-0 text-gray-400" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
+        </svg>
+        <%= link_to product_path(@product), class: "ml-4 text-sm font-medium text-gray-500 hover:text-gray-700" do %>
+          <%= @product.name %>
+        <% end %>
+      </li>
+      <li class="flex items-center">
+        <svg class="h-5 w-5 flex-shrink-0 text-gray-400" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
+        </svg>
+        <%= link_to product_variants_path(@product), class: "ml-4 text-sm font-medium text-gray-500 hover:text-gray-700" do %>
+          Variants
+        <% end %>
+      </li>
+      <li class="flex items-center">
+        <svg class="h-5 w-5 flex-shrink-0 text-gray-400" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
+        </svg>
+        <span class="ml-4 text-sm font-medium text-gray-700" aria-current="page">Edit Variant</span>
+      </li>
+    </ol>
+  </nav>
+
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-bold text-gray-900">Edit Variant</h1>
+  </div>
+<% end %>
+
+<%= render 'form', variant: @variant %>

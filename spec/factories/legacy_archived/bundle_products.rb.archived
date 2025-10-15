@@ -1,0 +1,31 @@
+FactoryBot.define do
+  factory :bundle_product do
+    association :bundle, factory: [:product, :bundle]
+    association :subproduct, factory: [:product, :sellable]
+    quantity { 1 }
+
+    # Trait with specific quantity
+    trait :quantity_two do
+      quantity { 2 }
+    end
+
+    trait :quantity_three do
+      quantity { 3 }
+    end
+
+    # Trait with inventory on subproduct
+    trait :with_subproduct_inventory do
+      transient do
+        subproduct_stock { 100 }
+      end
+
+      after(:create) do |bundle_product, evaluator|
+        storage = create(:storage, company: bundle_product.bundle.company)
+        create(:inventory,
+               product: bundle_product.subproduct,
+               storage: storage,
+               value: evaluator.subproduct_stock)
+      end
+    end
+  end
+end

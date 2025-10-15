@@ -1,0 +1,132 @@
+<% content_for :page_header do %>
+  <nav class="flex mb-4" aria-label="Breadcrumb">
+    <ol role="list" class="flex items-center space-x-4">
+      <li>
+        <%= link_to products_path, class: "text-sm font-medium text-gray-500 hover:text-gray-700" do %>
+          Products
+        <% end %>
+      </li>
+      <li class="flex items-center">
+        <svg class="h-5 w-5 flex-shrink-0 text-gray-400" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
+        </svg>
+        <%= link_to product_path(@product), class: "ml-4 text-sm font-medium text-gray-500 hover:text-gray-700" do %>
+          <%= @product.name %>
+        <% end %>
+      </li>
+      <li class="flex items-center">
+        <svg class="h-5 w-5 flex-shrink-0 text-gray-400" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
+        </svg>
+        <span class="ml-4 text-sm font-medium text-gray-700" aria-current="page">Configurations</span>
+      </li>
+    </ol>
+  </nav>
+
+  <div class="md:flex md:items-center md:justify-between">
+    <div class="min-w-0 flex-1">
+      <h1 class="text-2xl font-bold text-gray-900">Configuration Dimensions</h1>
+      <p class="mt-2 text-sm text-gray-700">
+        Define configuration dimensions (like Size, Color, Material) for <%= @product.name %>
+      </p>
+    </div>
+    <div class="mt-4 flex md:ml-4 md:mt-0 gap-3">
+      <%= render Ui::ButtonComponent.new(
+        variant: :secondary,
+        tag: :a,
+        href: product_variants_path(@product)
+      ) do %>
+        <svg class="-ml-0.5 mr-1.5 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+        Manage Variants
+      <% end %>
+
+      <%= render Ui::ButtonComponent.new(
+        variant: :primary,
+        tag: :a,
+        href: new_product_configuration_path(@product)
+      ) do %>
+        <svg class="-ml-0.5 mr-1.5 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        New Configuration
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
+<% if @configurations.any? %>
+  <div class="space-y-4">
+    <% @configurations.each do |configuration| %>
+      <%= render Ui::CardComponent.new(padding: :none) do |card| %>
+        <% card.with_header do %>
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900"><%= configuration.name %></h3>
+              <p class="text-sm text-gray-500">Code: <%= configuration.code %></p>
+            </div>
+          </div>
+        <% end %>
+
+        <% card.with_action do %>
+          <%= render Ui::ButtonComponent.new(
+            variant: :secondary,
+            size: :sm,
+            tag: :a,
+            href: edit_product_configuration_path(@product, configuration)
+          ) do %>
+            Edit
+          <% end %>
+        <% end %>
+
+        <% card.with_action do %>
+          <%= render Ui::ButtonComponent.new(
+            variant: :danger,
+            size: :sm,
+            tag: :button,
+            form: {
+              action: product_configuration_path(@product, configuration),
+              method: :delete,
+              data: { turbo_method: :delete, turbo_confirm: "Delete this configuration? This will fail if variants exist." }
+            }
+          ) do %>
+            Delete
+          <% end %>
+        <% end %>
+
+        <div class="px-6 py-4">
+          <h4 class="text-sm font-medium text-gray-700 mb-3">Configuration Values:</h4>
+          <% if configuration.configuration_values.any? %>
+            <div class="flex flex-wrap gap-2">
+              <% configuration.configuration_values.order(:position).each do |value| %>
+                <%= render Ui::BadgeComponent.new(variant: :gray, size: :md) do %>
+                  <%= value.value %>
+                <% end %>
+              <% end %>
+            </div>
+          <% else %>
+            <p class="text-sm text-gray-500">No values defined yet. Edit this configuration to add values.</p>
+          <% end %>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+<% else %>
+  <%= render Shared::EmptyStateComponent.new(
+    title: "No configurations",
+    description: "Configuration dimensions define the attributes that distinguish variants (like Size, Color, or Material).",
+    icon: :package
+  ) do %>
+    <%= render Ui::ButtonComponent.new(
+      variant: :primary,
+      tag: :a,
+      href: new_product_configuration_path(@product)
+    ) do %>
+      <svg class="-ml-0.5 mr-1.5 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      Create First Configuration
+    <% end %>
+  <% end %>
+<% end %>

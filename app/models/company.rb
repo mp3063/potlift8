@@ -79,7 +79,9 @@ class Company < ApplicationRecord
     return nil if code.blank? || name.blank?
 
     # Find or initialize company by code (primary identifier)
-    company = find_or_initialize_by(code: code)
+    # Use case-insensitive search to match validation
+    code = code.to_s.strip.upcase
+    company = where('UPPER(code) = ?', code).first_or_initialize(code: code)
 
     # Update attributes
     company.authlift_id = authlift_id if authlift_id.present?

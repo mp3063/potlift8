@@ -1,0 +1,12 @@
+FactoryBot.define do
+  factory :variant_configuration_value do
+    variant
+    configuration
+    configuration_value
+
+    # Ensure configuration_value belongs to the configuration
+    after(:build) do |vcv|
+      vcv.configuration_value.configuration = vcv.configuration if vcv.configuration_value && vcv.configuration
+    end
+  end
+end

@@ -1,0 +1,58 @@
+FactoryBot.define do
+  factory :variant do
+    association :configurable_product, factory: [:product, :configurable_variant]
+    association :variant_product, factory: [:product, :sellable]
+    position { 1 }
+
+    # Trait for variant with configuration values
+    trait :with_configuration_values do
+      transient do
+        configuration_values_count { 2 }
+      end
+
+      after(:create) do |variant, evaluator|
+        # Create configurations on the configurable product
+        size_config = create(:configuration, :size, product: variant.configurable_product)
+        color_config = create(:configuration, :color, product: variant.configurable_product)
+
+        # Link configuration values to variant
+        create(:variant_configuration_value,
+               variant: variant,
+               configuration: size_config,
+               configuration_value: size_config.configuration_values.first)
+        create(:variant_configuration_value,
+               variant: variant,
+               configuration: color_config,
+               configuration_value: color_config.configuration_values.first)
+      end
+    end
+
+    # Trait for small red variant
+    trait :small_red do
+      after(:create) do |variant|
+        size_config = create(:configuration, :size, product: variant.configurable_product)
+        color_config = create(:configuration, :color, product: variant.configurable_product)
+
+        size_value = size_config.configuration_values.find_by(value: 'Small')
+        color_value = color_config.configuration_values.find_by(value: 'Red')
+
+        create(:variant_configuration_value,
+               variant: variant,
+               configuration: size_config,
+               configuration_value: size_value)
+        create(:variant_configuration_value,
+               variant: variant,
+               configuration: color_config,
+               configuration_value: color_value)
+      end
+    end
+
+    # Trait for variant with inventory
+    trait :with_inventory do
+      after(:create) do |variant|
+        storage = create(:storage, company: variant.variant_product.company)
+        create(:inventory, product: variant.variant_product, storage: storage, value: 50)
+      end
+    end
+  end
+end

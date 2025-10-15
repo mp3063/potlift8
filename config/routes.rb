@@ -77,6 +77,31 @@ Rails.application.routes.draw do
     # Nested resources for product detail page
     resources :images, only: [:create, :destroy], controller: 'product_images'
     resources :attribute_values, only: [:update], controller: 'product_attribute_values', param: :attribute_id
+    resources :inventories, only: [:index, :update], controller: 'product_inventories'
+
+    # Advanced product features (Phase 14-16)
+    # Configurations and Variants
+    resources :configurations, only: [:index, :new, :create, :edit, :update, :destroy]
+    resources :variants, only: [:index, :new, :create, :edit, :update, :destroy] do
+      collection do
+        post :generate  # Generate all variant combinations
+        patch :reorder  # Reorder variants via drag-and-drop
+      end
+    end
+
+    # Bundle Products
+    resources :bundle_products, only: [:index, :create, :update, :destroy] do
+      collection do
+        patch :reorder  # Reorder bundle products
+      end
+    end
+
+    # Related Products
+    resources :related_products, only: [:index, :create, :destroy] do
+      collection do
+        patch :reorder  # Reorder related products
+      end
+    end
   end
 
   resources :storages do

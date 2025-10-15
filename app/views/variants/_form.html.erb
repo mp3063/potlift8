@@ -1,0 +1,170 @@
+<%= form_with(model: variant, url: variant.persisted? ? product_variant_path(@product, variant) : product_variants_path(@product)) do |form| %>
+  <% if variant.errors.any? %>
+    <%= render Shared::FormErrorsComponent.new(model: variant) %>
+  <% end %>
+
+  <%= render Ui::CardComponent.new do |card| %>
+    <% card.with_header do %>
+      <h3 class="text-lg font-semibold text-gray-900">Variant Product Details</h3>
+    <% end %>
+
+    <%= form.fields_for :variant_product do |product_form| %>
+      <div class="space-y-6">
+        <!-- SKU Field -->
+        <div>
+          <%= product_form.label :sku, "SKU", class: "block text-sm font-medium text-gray-700 mb-1" %>
+          <p class="text-xs text-gray-500 mb-2">
+            Unique product identifier
+          </p>
+          <%= product_form.text_field :sku,
+            class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+            placeholder: "e.g., TSH-BLU-M",
+            required: true,
+            aria: { required: true } %>
+        </div>
+
+        <!-- Name Field -->
+        <div>
+          <%= product_form.label :name, "Variant Name", class: "block text-sm font-medium text-gray-700 mb-1" %>
+          <p class="text-xs text-gray-500 mb-2">
+            Leave blank to auto-generate from configuration values
+          </p>
+          <%= product_form.text_field :name,
+            class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+            placeholder: "Auto-generated if blank" %>
+        </div>
+
+        <!-- Description Field -->
+        <div>
+          <%= product_form.label :description, "Description", class: "block text-sm font-medium text-gray-700 mb-1" %>
+          <%= product_form.text_area :description,
+            rows: 4,
+            class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+            placeholder: "Optional variant-specific description" %>
+        </div>
+
+        <!-- Active Status -->
+        <div class="flex items-center">
+          <%= product_form.check_box :active,
+            class: "h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500",
+            id: "variant_variant_product_active" %>
+          <%= product_form.label :active, "Active", class: "ml-2 block text-sm text-gray-700" %>
+          <p class="ml-2 text-xs text-gray-500">(Variant is available for sale)</p>
+        </div>
+      </div>
+    <% end %>
+  <% end %>
+
+  <!-- Configuration Values Section -->
+  <%= render Ui::CardComponent.new(class: "mt-6") do |card| %>
+    <% card.with_header do %>
+      <h3 class="text-lg font-semibold text-gray-900">Configuration Values</h3>
+      <p class="text-sm text-gray-600 mt-1">
+        Select the configuration values that define this variant
+      </p>
+    <% end %>
+
+    <div class="space-y-6">
+      <%= form.fields_for :variant_configuration_values do |vcv_form| %>
+        <% configuration = vcv_form.object.configuration || @configurations.find { |c| c.id == vcv_form.object.configuration_id } %>
+        <% next unless configuration %>
+
+        <div>
+          <%= vcv_form.label :configuration_value_id, configuration.name, class: "block text-sm font-medium text-gray-700 mb-2" %>
+
+          <%= vcv_form.hidden_field :configuration_id, value: configuration.id %>
+
+          <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            <% configuration.configuration_values.order(:position).each do |config_value| %>
+              <label class="relative flex cursor-pointer rounded-lg border border-gray-300 bg-white p-4 hover:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2">
+                <%= vcv_form.radio_button :configuration_value_id,
+                  config_value.id,
+                  class: "sr-only",
+                  checked: vcv_form.object.configuration_value_id == config_value.id %>
+
+                <span class="flex flex-1">
+                  <span class="flex flex-col">
+                    <span class="block text-sm font-medium text-gray-900">
+                      <%= config_value.value %>
+                    </span>
+                  </span>
+                </span>
+
+                <!-- Selected Ring -->
+                <svg class="h-5 w-5 text-blue-600 hidden" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
+                </svg>
+              </label>
+            <% end %>
+          </div>
+
+          <%= vcv_form.hidden_field :_destroy %>
+        </div>
+      <% end %>
+
+      <% if @configurations.present? && form.object.variant_configuration_values.empty? %>
+        <% @configurations.each do |configuration| %>
+          <%= form.fields_for :variant_configuration_values, form.object.variant_configuration_values.build(configuration: configuration) do |vcv_form| %>
+            <div>
+              <%= vcv_form.label :configuration_value_id, configuration.name, class: "block text-sm font-medium text-gray-700 mb-2" %>
+
+              <%= vcv_form.hidden_field :configuration_id, value: configuration.id %>
+
+              <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                <% configuration.configuration_values.order(:position).each do |config_value| %>
+                  <label class="relative flex cursor-pointer rounded-lg border border-gray-300 bg-white p-4 hover:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2">
+                    <%= vcv_form.radio_button :configuration_value_id,
+                      config_value.id,
+                      class: "sr-only" %>
+
+                    <span class="flex flex-1">
+                      <span class="flex flex-col">
+                        <span class="block text-sm font-medium text-gray-900">
+                          <%= config_value.value %>
+                        </span>
+                      </span>
+                    </span>
+
+                    <!-- Selected Ring -->
+                    <svg class="h-5 w-5 text-blue-600 hidden" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
+                    </svg>
+                  </label>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+      <% end %>
+    </div>
+  <% end %>
+
+  <!-- Form Actions -->
+  <div class="mt-6 flex items-center justify-end gap-3">
+    <%= link_to "Cancel", product_variants_path(@product), class: "inline-flex items-center justify-center font-medium rounded-lg transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 px-4 py-2 text-sm bg-white hover:bg-gray-50 focus:ring-blue-500 text-gray-700 border border-gray-300" %>
+
+    <%= render Ui::ButtonComponent.new(variant: :primary, type: "submit") do %>
+      <%= variant.persisted? ? 'Update Variant' : 'Create Variant' %>
+    <% end %>
+  </div>
+
+  <style>
+    /* Show checkmark when radio is selected */
+    input[type="radio"]:checked ~ span svg {
+      display: block;
+    }
+    /* Highlight selected option */
+    input[type="radio"]:checked ~ span {
+      color: rgb(37 99 235); /* blue-600 */
+    }
+    input[type="radio"]:checked {
+      & + span {
+        border-color: rgb(37 99 235); /* blue-600 */
+      }
+    }
+    label:has(input[type="radio"]:checked) {
+      border-color: rgb(37 99 235) !important; /* blue-600 */
+      background-color: rgb(239 246 255); /* blue-50 */
+    }
+  </style>
+<% end %>

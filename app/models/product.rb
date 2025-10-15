@@ -99,6 +99,13 @@ class Product < ApplicationRecord
            dependent: :destroy
   has_many :superproducts, through: :product_configurations_as_sub, source: :superproduct
 
+  # Configuration associations (Phase 14-16)
+  has_many :configurations, dependent: :destroy
+
+  # Related product associations (Phase 14-16)
+  has_many :related_products, dependent: :destroy
+  has_many :related_to_products, class_name: 'RelatedProduct', foreign_key: 'related_to_id', dependent: :destroy
+
   # Validations
   validates :company, presence: true
   validates :sku, presence: true, uniqueness: { scope: :company_id, case_sensitive: false }
@@ -386,6 +393,63 @@ class Product < ApplicationRecord
   #
   def variants
     subproducts
+  end
+
+  # Related Product Helper Methods (Phase 14-16)
+  #
+  # Get cross-sell products (commonly bought together)
+  #
+  # @return [Array<Product>] Array of cross-sell products
+  #
+  # @example
+  #   phone.cross_sell_products # => [phone_case, screen_protector]
+  #
+  def cross_sell_products
+    related_products.relation_type_cross_sell.includes(:related_to).map(&:related_to)
+  end
+
+  # Get upsell products (higher-end alternatives)
+  #
+  # @return [Array<Product>] Array of upsell products
+  #
+  # @example
+  #   phone.upsell_products # => [premium_phone, flagship_phone]
+  #
+  def upsell_products
+    related_products.relation_type_upsell.includes(:related_to).map(&:related_to)
+  end
+
+  # Get alternative products (substitutes)
+  #
+  # @return [Array<Product>] Array of alternative products
+  #
+  # @example
+  #   product.alternative_products # => [similar_product_a, similar_product_b]
+  #
+  def alternative_products
+    related_products.relation_type_alternative.includes(:related_to).map(&:related_to)
+  end
+
+  # Get accessory products (complementary items)
+  #
+  # @return [Array<Product>] Array of accessory products
+  #
+  # @example
+  #   phone.accessory_products # => [phone_case, charger, earphones]
+  #
+  def accessory_products
+    related_products.relation_type_accessory.includes(:related_to).map(&:related_to)
+  end
+
+  # Get similar products (same category/attributes)
+  #
+  # @return [Array<Product>] Array of similar products
+  #
+  # @example
+  #   product.similar_products # => [product_x, product_y]
+  #
+  def similar_products
+    related_products.relation_type_similar.includes(:related_to).map(&:related_to)
   end
 
   # Batch Sync Helper Methods

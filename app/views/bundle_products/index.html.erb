@@ -1,0 +1,201 @@
+<% content_for :page_header do %>
+  <nav class="flex mb-4" aria-label="Breadcrumb">
+    <ol role="list" class="flex items-center space-x-4">
+      <li>
+        <%= link_to products_path, class: "text-sm font-medium text-gray-500 hover:text-gray-700" do %>
+          Products
+        <% end %>
+      </li>
+      <li class="flex items-center">
+        <svg class="h-5 w-5 flex-shrink-0 text-gray-400" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
+        </svg>
+        <%= link_to product_path(@product), class: "ml-4 text-sm font-medium text-gray-500 hover:text-gray-700" do %>
+          <%= @product.name %>
+        <% end %>
+      </li>
+      <li class="flex items-center">
+        <svg class="h-5 w-5 flex-shrink-0 text-gray-400" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
+        </svg>
+        <span class="ml-4 text-sm font-medium text-gray-700" aria-current="page">Bundle Composition</span>
+      </li>
+    </ol>
+  </nav>
+
+  <div class="md:flex md:items-center md:justify-between">
+    <div class="min-w-0 flex-1">
+      <h1 class="text-2xl font-bold text-gray-900">Bundle Composition</h1>
+      <div class="mt-2 flex items-center gap-4 text-sm">
+        <span class="text-gray-700">
+          Available inventory: <span class="font-semibold text-gray-900"><%= @product.bundle_available_inventory %></span> bundles
+        </span>
+        <span class="text-gray-500">(limited by lowest subproduct inventory)</span>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<div class="space-y-6" data-controller="bundle-manager" data-bundle-manager-product-id-value="<%= @product.id %>">
+  <!-- Current Bundle Products -->
+  <%= render Ui::CardComponent.new do |card| %>
+    <% card.with_header do %>
+      <h3 class="text-lg font-semibold text-gray-900">Bundle Products</h3>
+      <p class="text-sm text-gray-600 mt-1">
+        <%= pluralize(@bundle_products.count, 'product') %> in bundle
+      </p>
+    <% end %>
+
+    <% if @bundle_products.any? %>
+      <ul role="list" class="divide-y divide-gray-200">
+        <% @bundle_products.each do |bundle_product| %>
+          <li class="flex items-center justify-between py-4" id="<%= dom_id(bundle_product) %>">
+            <div class="flex items-center min-w-0 flex-1">
+              <!-- Product Avatar -->
+              <div class="flex-shrink-0">
+                <span class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-blue-600">
+                  <span class="text-sm font-medium leading-none text-white">
+                    <%= bundle_product.subproduct.sku[0, 2].upcase %>
+                  </span>
+                </span>
+              </div>
+
+              <!-- Product Info -->
+              <div class="ml-4 flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-900 truncate">
+                  <%= link_to bundle_product.subproduct.name, product_path(bundle_product.subproduct), class: "text-blue-600 hover:text-blue-900 hover:underline" %>
+                </p>
+                <p class="text-sm text-gray-500">
+                  SKU: <%= bundle_product.subproduct.sku %> •
+                  Inventory: <%= bundle_product.subproduct.total_inventory %> units •
+                  Available bundles: <%= (bundle_product.subproduct.total_inventory / bundle_product.quantity).floor %>
+                </p>
+              </div>
+            </div>
+
+            <!-- Quantity and Actions -->
+            <div class="ml-4 flex items-center gap-x-4">
+              <%= turbo_frame_tag dom_id(bundle_product, :quantity) do %>
+                <div class="flex items-center gap-2" data-quantity-display data-quantity="<%= bundle_product.quantity %>" data-bundle-product-id="<%= bundle_product.id %>">
+                  <span class="text-sm font-medium text-gray-900">
+                    Qty: <%= bundle_product.quantity %>
+                  </span>
+                  <button
+                    type="button"
+                    data-action="click->bundle-manager#editQuantity"
+                    class="text-blue-600 hover:text-blue-900"
+                    aria-label="Edit quantity">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </button>
+                </div>
+              <% end %>
+
+              <%= button_to product_bundle_product_path(@product, bundle_product),
+                  method: :delete,
+                  form: { data: { turbo_confirm: "Remove #{bundle_product.subproduct.name} from bundle?" } },
+                  class: "text-red-600 hover:text-red-900",
+                  aria: { label: "Remove from bundle" } do %>
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              <% end %>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <div class="text-center py-8">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+        <h3 class="mt-2 text-sm font-semibold text-gray-900">No products in bundle</h3>
+        <p class="mt-1 text-sm text-gray-500">Get started by adding products below.</p>
+      </div>
+    <% end %>
+  <% end %>
+
+  <!-- Add Product to Bundle -->
+  <%= render Ui::CardComponent.new do |card| %>
+    <% card.with_header do %>
+      <h3 class="text-lg font-semibold text-gray-900">Add Product to Bundle</h3>
+    <% end %>
+
+    <%= form_with model: @product.bundle_products.build, url: product_bundle_products_path(@product), class: "space-y-4" do |form| %>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <!-- Product Selection -->
+        <div class="sm:col-span-2">
+          <%= form.label :subproduct_id, "Product", class: "block text-sm font-medium text-gray-700 mb-1" %>
+          <% if @available_products.any? %>
+            <%= form.select :subproduct_id,
+                options_from_collection_for_select(@available_products, :id, :name),
+                { prompt: "Select a product..." },
+                class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+                required: true,
+                aria: { required: true } %>
+            <p class="mt-1 text-xs text-gray-500">
+              <%= @available_products.count %> products available
+            </p>
+          <% else %>
+            <div class="rounded-lg border-2 border-dashed border-gray-300 p-4">
+              <p class="text-sm text-gray-600">
+                All available products are already in this bundle. Create new products to add more items.
+              </p>
+            </div>
+          <% end %>
+        </div>
+
+        <!-- Quantity -->
+        <div>
+          <%= form.label :quantity, "Quantity", class: "block text-sm font-medium text-gray-700 mb-1" %>
+          <%= form.number_field :quantity,
+              value: 1,
+              min: 1,
+              class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+              required: true,
+              aria: { required: true, describedby: "quantity-help" } %>
+          <p id="quantity-help" class="mt-1 text-xs text-gray-500">
+            Units per bundle
+          </p>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <div class="flex items-center justify-between pt-2">
+        <p class="text-xs text-gray-500">
+          Bundle must contain at least 2 different products or total quantity > 1
+        </p>
+        <% if @available_products.any? %>
+          <%= render Ui::ButtonComponent.new(variant: :primary, type: "submit") do %>
+            <svg class="-ml-0.5 mr-1.5 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Add to Bundle
+          <% end %>
+        <% end %>
+      </div>
+    <% end %>
+  <% end %>
+
+  <!-- Bundle Inventory Calculation Info -->
+  <div class="rounded-lg border border-blue-200 bg-blue-50 p-4">
+    <div class="flex">
+      <div class="flex-shrink-0">
+        <svg class="h-5 w-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+        </svg>
+      </div>
+      <div class="ml-3 flex-1">
+        <h3 class="text-sm font-medium text-blue-800">How bundle inventory is calculated</h3>
+        <div class="mt-2 text-sm text-blue-700">
+          <p>
+            Bundle inventory is limited by the subproduct with the lowest available quantity.
+            For example, if a bundle contains 2x Product A (100 in stock) and 1x Product B (50 in stock),
+            you can create maximum 50 bundles (limited by Product B).
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

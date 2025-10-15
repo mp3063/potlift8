@@ -37,6 +37,7 @@ class ProductConfiguration < ApplicationRecord
   }
 
   validate :prevent_circular_dependency
+  validate :prevent_circular_bundle_dependency, if: -> { superproduct&.product_type_bundle? && subproduct&.product_type_bundle? }
   validate :validate_superproduct_type
   validate :validate_subproduct_type
 
@@ -74,6 +75,39 @@ class ProductConfiguration < ApplicationRecord
   def prevent_circular_dependency
     if superproduct_id == subproduct_id
       errors.add(:base, "A product cannot be its own subproduct")
+    end
+  end
+
+  # Prevent circular bundle dependencies (Bundle A contains Bundle B contains Bundle A)
+  # Only applies when both superproduct and subproduct are bundles
+  def prevent_circular_bundle_dependency
+    if circular_bundle_exists?(subproduct, superproduct)
+      errors.add(:base, "Circular bundle dependency detected")
+    end
+  end
+
+  # Recursively check if a bundle contains the target bundle
+  # Uses depth-first search with visited tracking to prevent infinite loops
+  #
+  # @param bundle [Product] The bundle to search from
+  # @param target [Product] The target bundle to find
+  # @param visited [Set] Set of visited bundle IDs to prevent infinite loops
+  # @return [Boolean] true if circular dependency exists
+  def circular_bundle_exists?(bundle, target, visited = Set.new)
+    # If we found the target, circular dependency exists
+    return true if bundle.id == target.id
+
+    # If we've already visited this bundle, no need to check again
+    return false if visited.include?(bundle.id)
+
+    # Mark this bundle as visited
+    visited.add(bundle.id)
+
+    # Check all subproducts of this bundle
+    bundle.subproducts.any? do |sub|
+      # Only check bundle subproducts
+      next unless sub.product_type_bundle?
+      circular_bundle_exists?(sub, target, visited)
     end
   end
 
