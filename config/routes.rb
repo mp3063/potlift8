@@ -79,7 +79,11 @@ Rails.application.routes.draw do
     resources :attribute_values, only: [:update], controller: 'product_attribute_values', param: :attribute_id
   end
 
-  resources :storages
+  resources :storages do
+    member do
+      get :inventory
+    end
+  end
 
   resources :product_attributes do
     collection do

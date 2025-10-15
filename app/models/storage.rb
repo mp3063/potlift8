@@ -62,4 +62,37 @@ class Storage < ApplicationRecord
   def to_param
     code
   end
+
+  # Calculate total inventory across all products in this storage
+  #
+  # @return [Integer] Sum of all inventory values
+  #
+  # @example
+  #   storage.total_inventory # => 1500
+  #
+  def total_inventory
+    inventories.sum(:value)
+  end
+
+  # Count distinct products with inventory in this storage
+  #
+  # @return [Integer] Number of products with value > 0
+  #
+  # @example
+  #   storage.product_count # => 42
+  #
+  def product_count
+    inventories.where('value > 0').count
+  end
+
+  # Check if storage has any inventory
+  #
+  # @return [Boolean] true if storage has any inventory with value > 0
+  #
+  # @example
+  #   storage.has_inventory? # => true
+  #
+  def has_inventory?
+    inventories.where('value > 0').exists?
+  end
 end
