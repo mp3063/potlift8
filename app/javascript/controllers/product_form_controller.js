@@ -85,8 +85,8 @@ export default class extends Controller {
     const skuField = this.skuTarget
 
     // Add error styling to input field
-    skuField.classList.add("ring-red-300", "focus:ring-red-600")
-    skuField.classList.remove("ring-gray-300", "focus:ring-indigo-600")
+    skuField.classList.add("border-red-300", "focus:border-red-500", "focus:ring-red-500")
+    skuField.classList.remove("border-gray-300", "focus:border-blue-500", "focus:ring-blue-500")
     skuField.setAttribute("aria-invalid", "true")
 
     // Find or create error message element
@@ -114,8 +114,8 @@ export default class extends Controller {
     const skuField = this.skuTarget
 
     // Remove error styling from input field
-    skuField.classList.remove("ring-red-300", "focus:ring-red-600")
-    skuField.classList.add("ring-gray-300", "focus:ring-indigo-600")
+    skuField.classList.remove("border-red-300", "focus:border-red-500", "focus:ring-red-500")
+    skuField.classList.add("border-gray-300", "focus:border-blue-500", "focus:ring-blue-500")
     skuField.setAttribute("aria-invalid", "false")
 
     // Remove error message element
