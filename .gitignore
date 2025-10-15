@@ -48,6 +48,13 @@
 # RSpec and Testing
 /coverage/
 /spec/examples.txt
+
+# Visual regression testing artifacts
+# Keep baseline images, ignore diffs and new screenshots
+spec/visual/**/*.diff.png
+spec/visual/**/*.new.png
+spec/visual/tmp/
+
 CLAUDE.md
 
 /node_modules

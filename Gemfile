@@ -34,6 +34,8 @@ gem "faraday", "~> 2.7"
 gem "dotenv-rails", groups: [:development, :test]
 # State machine for product lifecycle management
 gem "aasm", "~> 5.5"
+# List ordering for models (used by AttributeGroup and ProductAttribute)
+gem "acts_as_list", "~> 1.2"
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[ windows jruby ]
@@ -102,6 +104,13 @@ group :test do
   # System testing
   gem "capybara"
   gem "selenium-webdriver"
+
+  # Accessibility testing with axe-core
+  gem "axe-core-rspec"
+
+  # Visual regression testing
+  gem "capybara-screenshot", "~> 1.0"
+  gem "capybara-screenshot-diff", "~> 1.8"
 end
 
 group :development do
