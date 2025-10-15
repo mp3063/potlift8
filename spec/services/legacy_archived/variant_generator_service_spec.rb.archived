@@ -1,0 +1,414 @@
+require 'rails_helper'
+
+RSpec.describe VariantGeneratorService, type: :service do
+  let(:company) { create(:company) }
+  let(:configurable_product) { create(:product, :configurable_variant, company: company, name: 'T-Shirt') }
+
+  describe '#initialize' do
+    it 'initializes with a configurable product' do
+      service = VariantGeneratorService.new(configurable_product)
+      expect(service.product).to eq(configurable_product)
+    end
+
+    it 'raises error for non-configurable product' do
+      sellable = create(:product, :sellable, company: company)
+      expect {
+        VariantGeneratorService.new(sellable)
+      }.to raise_error(ArgumentError, 'Product must be configurable')
+    end
+  end
+
+  describe '#generate!' do
+    context 'with no configurations' do
+      it 'returns 0 and does not create variants' do
+        service = VariantGeneratorService.new(configurable_product)
+
+        expect {
+          count = service.generate!
+          expect(count).to eq(0)
+        }.not_to change { Variant.count }
+      end
+    end
+
+    context 'with one configuration (size)' do
+      let!(:size_config) { create(:configuration, :size, product: configurable_product) }
+
+      it 'generates variant for each value' do
+        service = VariantGeneratorService.new(configurable_product)
+
+        expect {
+          service.generate!
+        }.to change { Variant.count }.by(3) # Small, Medium, Large
+
+        expect(configurable_product.variants.count).to eq(3)
+      end
+
+      it 'creates variant products with correct naming' do
+        service = VariantGeneratorService.new(configurable_product)
+        service.generate!
+
+        variants = configurable_product.variants.order(:position)
+        expect(variants[0].variant_product.name).to eq('T-Shirt - Small')
+        expect(variants[1].variant_product.name).to eq('T-Shirt - Medium')
+        expect(variants[2].variant_product.name).to eq('T-Shirt - Large')
+      end
+
+      it 'links configuration values to variants' do
+        service = VariantGeneratorService.new(configurable_product)
+        service.generate!
+
+        small_value = size_config.configuration_values.find_by(value: 'Small')
+        variant_small = configurable_product.variants.joins(:configuration_values)
+                                            .find_by(configuration_values: { id: small_value.id })
+
+        expect(variant_small).to be_present
+        expect(variant_small.configuration_values).to include(small_value)
+      end
+
+      it 'returns correct count' do
+        service = VariantGeneratorService.new(configurable_product)
+        count = service.generate!
+
+        expect(count).to eq(3)
+      end
+    end
+
+    context 'with two configurations (size and color)' do
+      let!(:size_config) { create(:configuration, :size, product: configurable_product) }
+      let!(:color_config) { create(:configuration, :color, product: configurable_product) }
+
+      it 'generates all combinations (3 sizes × 3 colors = 9 variants)' do
+        service = VariantGeneratorService.new(configurable_product)
+
+        expect {
+          service.generate!
+        }.to change { Variant.count }.by(9)
+
+        expect(configurable_product.variants.count).to eq(9)
+      end
+
+      it 'creates variants with correct names' do
+        service = VariantGeneratorService.new(configurable_product)
+        service.generate!
+
+        # Check specific combinations
+        small_red = configurable_product.variants.find do |v|
+          values = v.configuration_values.pluck(:value)
+          values.include?('Small') && values.include?('Red')
+        end
+
+        expect(small_red).to be_present
+        expect(small_red.variant_product.name).to eq('T-Shirt - Small / Red')
+      end
+
+      it 'each variant has exactly 2 configuration values' do
+        service = VariantGeneratorService.new(configurable_product)
+        service.generate!
+
+        configurable_product.variants.each do |variant|
+          expect(variant.configuration_values.count).to eq(2)
+        end
+      end
+
+      it 'creates all size-color combinations' do
+        service = VariantGeneratorService.new(configurable_product)
+        service.generate!
+
+        sizes = ['Small', 'Medium', 'Large']
+        colors = ['Red', 'Blue', 'Green']
+
+        sizes.each do |size|
+          colors.each do |color|
+            variant = configurable_product.variants.find do |v|
+              values = v.configuration_values.pluck(:value)
+              values.include?(size) && values.include?(color)
+            end
+
+            expect(variant).to be_present, "Expected variant for #{size} / #{color} but not found"
+          end
+        end
+      end
+
+      it 'returns correct count' do
+        service = VariantGeneratorService.new(configurable_product)
+        count = service.generate!
+
+        expect(count).to eq(9)
+      end
+    end
+
+    context 'with three configurations (size, color, material)' do
+      let!(:size_config) { create(:configuration, :size, product: configurable_product) }
+      let!(:color_config) { create(:configuration, :color, product: configurable_product) }
+      let!(:material_config) { create(:configuration, :material, product: configurable_product) }
+
+      it 'generates all combinations (3 × 3 × 2 = 18 variants)' do
+        service = VariantGeneratorService.new(configurable_product)
+
+        expect {
+          service.generate!
+        }.to change { Variant.count }.by(18)
+
+        expect(configurable_product.variants.count).to eq(18)
+      end
+
+      it 'each variant has exactly 3 configuration values' do
+        service = VariantGeneratorService.new(configurable_product)
+        service.generate!
+
+        configurable_product.variants.each do |variant|
+          expect(variant.configuration_values.count).to eq(3)
+        end
+      end
+
+      it 'creates variant with all three dimensions' do
+        service = VariantGeneratorService.new(configurable_product)
+        service.generate!
+
+        variant = configurable_product.variants.find do |v|
+          values = v.configuration_values.pluck(:value)
+          values.include?('Small') && values.include?('Red') && values.include?('Cotton')
+        end
+
+        expect(variant).to be_present
+        expect(variant.variant_product.name).to eq('T-Shirt - Small / Red / Cotton')
+      end
+
+      it 'returns correct count' do
+        service = VariantGeneratorService.new(configurable_product)
+        count = service.generate!
+
+        expect(count).to eq(18)
+      end
+    end
+
+    context 'with existing variants' do
+      let!(:size_config) { create(:configuration, :size, product: configurable_product) }
+      let!(:color_config) { create(:configuration, :color, product: configurable_product) }
+
+      before do
+        # Create one variant manually
+        variant_product = create(:product, :sellable, company: company)
+        variant = create(:variant, configurable_product: configurable_product, variant_product: variant_product)
+
+        small_value = size_config.configuration_values.find_by(value: 'Small')
+        red_value = color_config.configuration_values.find_by(value: 'Red')
+
+        create(:variant_configuration_value, variant: variant, configuration: size_config, configuration_value: small_value)
+        create(:variant_configuration_value, variant: variant, configuration: color_config, configuration_value: red_value)
+      end
+
+      it 'skips existing combinations' do
+        service = VariantGeneratorService.new(configurable_product)
+
+        expect {
+          service.generate!
+        }.to change { Variant.count }.by(8) # 9 total - 1 existing = 8 new
+
+        expect(configurable_product.variants.count).to eq(9)
+      end
+
+      it 'does not duplicate existing variants' do
+        service = VariantGeneratorService.new(configurable_product)
+        service.generate!
+
+        small_red_variants = configurable_product.variants.select do |v|
+          values = v.configuration_values.pluck(:value)
+          values.include?('Small') && values.include?('Red')
+        end
+
+        expect(small_red_variants.count).to eq(1)
+      end
+    end
+
+    context 'with configuration values in specific order' do
+      let!(:color_config) { create(:configuration, :color, product: configurable_product, position: 1) }
+      let!(:size_config) { create(:configuration, :size, product: configurable_product, position: 2) }
+
+      it 'orders variant name by configuration position' do
+        service = VariantGeneratorService.new(configurable_product)
+        service.generate!
+
+        variant = configurable_product.variants.find do |v|
+          values = v.configuration_values.pluck(:value)
+          values.include?('Red') && values.include?('Small')
+        end
+
+        # Color (position 1) should come before Size (position 2)
+        expect(variant.variant_product.name).to eq('T-Shirt - Red / Small')
+      end
+    end
+  end
+
+  describe '#validate_configuration' do
+    context 'with valid configurations' do
+      let!(:size_config) { create(:configuration, :size, product: configurable_product) }
+
+      it 'returns true' do
+        service = VariantGeneratorService.new(configurable_product)
+        expect(service.validate_configuration).to be true
+      end
+    end
+
+    context 'with configurations but no values' do
+      let!(:empty_config) { create(:configuration, product: configurable_product, name: 'Empty', code: 'empty') }
+
+      it 'returns false' do
+        service = VariantGeneratorService.new(configurable_product)
+        expect(service.validate_configuration).to be false
+      end
+    end
+
+    context 'with no configurations' do
+      it 'returns false' do
+        service = VariantGeneratorService.new(configurable_product)
+        expect(service.validate_configuration).to be false
+      end
+    end
+  end
+
+  describe 'error handling' do
+    let!(:size_config) { create(:configuration, :size, product: configurable_product) }
+
+    it 'rolls back on error during generation' do
+      service = VariantGeneratorService.new(configurable_product)
+
+      # Simulate an error during generation
+      allow_any_instance_of(Product).to receive(:save!).and_raise(ActiveRecord::RecordInvalid)
+
+      expect {
+        service.generate! rescue nil
+      }.not_to change { Variant.count }
+    end
+
+    it 'handles variant creation failure gracefully' do
+      service = VariantGeneratorService.new(configurable_product)
+
+      # Mock a validation failure
+      allow_any_instance_of(Variant).to receive(:valid?).and_return(false)
+
+      expect {
+        count = service.generate!
+        expect(count).to eq(0)
+      }.not_to change { Variant.count }
+    end
+  end
+
+  describe 'performance considerations' do
+    let!(:size_config) { create(:configuration, :size, product: configurable_product) }
+    let!(:color_config) { create(:configuration, :color, product: configurable_product) }
+
+    it 'generates variants in bulk efficiently' do
+      service = VariantGeneratorService.new(configurable_product)
+
+      # Measure database queries (use query counting gem if available)
+      start_time = Time.current
+      service.generate!
+      duration = Time.current - start_time
+
+      # Should complete in reasonable time (< 1 second for 9 variants)
+      expect(duration).to be < 1.second
+    end
+
+    it 'creates all variants in a single transaction' do
+      service = VariantGeneratorService.new(configurable_product)
+
+      # If any variant fails, all should be rolled back
+      expect(ActiveRecord::Base).to receive(:transaction).and_call_original
+
+      service.generate!
+    end
+  end
+
+  describe 'integration scenarios' do
+    context 'real-world t-shirt example' do
+      let!(:size_config) do
+        config = create(:configuration, product: configurable_product, name: 'Size', code: 'size', position: 1)
+        create(:configuration_value, configuration: config, value: 'XS', position: 1)
+        create(:configuration_value, configuration: config, value: 'S', position: 2)
+        create(:configuration_value, configuration: config, value: 'M', position: 3)
+        create(:configuration_value, configuration: config, value: 'L', position: 4)
+        create(:configuration_value, configuration: config, value: 'XL', position: 5)
+        config
+      end
+
+      let!(:color_config) do
+        config = create(:configuration, product: configurable_product, name: 'Color', code: 'color', position: 2)
+        create(:configuration_value, configuration: config, value: 'Black', position: 1)
+        create(:configuration_value, configuration: config, value: 'White', position: 2)
+        create(:configuration_value, configuration: config, value: 'Navy', position: 3)
+        config
+      end
+
+      it 'generates 15 variants (5 sizes × 3 colors)' do
+        service = VariantGeneratorService.new(configurable_product)
+
+        expect {
+          count = service.generate!
+          expect(count).to eq(15)
+        }.to change { Variant.count }.by(15)
+      end
+
+      it 'all variants have correct SKU format' do
+        service = VariantGeneratorService.new(configurable_product)
+        service.generate!
+
+        configurable_product.variants.each do |variant|
+          expect(variant.variant_product.sku).to be_present
+          expect(variant.variant_product.sku).to match(/^SKU\d+$/)
+        end
+      end
+
+      it 'all variants belong to same company' do
+        service = VariantGeneratorService.new(configurable_product)
+        service.generate!
+
+        configurable_product.variants.each do |variant|
+          expect(variant.variant_product.company_id).to eq(company.id)
+        end
+      end
+    end
+  end
+
+  describe 'edge cases' do
+    it 'handles single configuration with single value' do
+      config = create(:configuration, product: configurable_product, name: 'Option', code: 'option')
+      create(:configuration_value, configuration: config, value: 'Only Choice')
+
+      service = VariantGeneratorService.new(configurable_product)
+
+      expect {
+        count = service.generate!
+        expect(count).to eq(1)
+      }.to change { Variant.count }.by(1)
+    end
+
+    it 'handles many configuration values' do
+      config = create(:configuration, product: configurable_product, name: 'Size', code: 'size')
+      10.times do |i|
+        create(:configuration_value, configuration: config, value: "Size #{i + 1}")
+      end
+
+      service = VariantGeneratorService.new(configurable_product)
+
+      expect {
+        service.generate!
+      }.to change { Variant.count }.by(10)
+    end
+
+    it 'handles unicode characters in configuration values' do
+      config = create(:configuration, product: configurable_product, name: 'Size', code: 'size')
+      create(:configuration_value, configuration: config, value: 'Größe XL')
+      create(:configuration_value, configuration: config, value: 'サイズ M')
+
+      service = VariantGeneratorService.new(configurable_product)
+
+      expect {
+        service.generate!
+      }.to change { Variant.count }.by(2)
+
+      variant = configurable_product.variants.first
+      expect(variant.variant_product.name).to include(configurable_product.name)
+    end
+  end
+end

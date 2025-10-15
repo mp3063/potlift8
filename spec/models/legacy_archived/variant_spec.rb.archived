@@ -1,0 +1,305 @@
+require 'rails_helper'
+
+RSpec.describe Variant, type: :model do
+  # Test factories
+  describe 'factories' do
+    it 'has a valid factory' do
+      expect(build(:variant)).to be_valid
+    end
+
+    it 'creates valid variants with traits' do
+      expect(create(:variant, :with_configuration_values)).to be_valid
+      expect(create(:variant, :with_inventory)).to be_valid
+    end
+  end
+
+  # Test associations
+  describe 'associations' do
+    it { is_expected.to belong_to(:configurable_product).class_name('Product') }
+    it { is_expected.to belong_to(:variant_product).class_name('Product') }
+    it { is_expected.to have_many(:variant_configuration_values).dependent(:destroy) }
+    it { is_expected.to have_many(:configuration_values).through(:variant_configuration_values) }
+  end
+
+  # Test validations
+  describe 'validations' do
+    subject { build(:variant) }
+
+    context 'variant_product_id uniqueness' do
+      let(:configurable) { create(:product, :configurable_variant) }
+      let(:variant_product) { create(:product, :sellable) }
+
+      before do
+        create(:variant, configurable_product: configurable, variant_product: variant_product)
+      end
+
+      it 'validates uniqueness scoped to configurable product' do
+        duplicate = build(:variant, configurable_product: configurable, variant_product: variant_product)
+        expect(duplicate).not_to be_valid
+        expect(duplicate.errors[:variant_product_id]).to include('has already been taken')
+      end
+
+      it 'allows same variant product for different configurable products' do
+        other_configurable = create(:product, :configurable_variant)
+        variant = build(:variant, configurable_product: other_configurable, variant_product: variant_product)
+        expect(variant).to be_valid
+      end
+    end
+  end
+
+  # Test acts_as_list
+  describe 'acts_as_list' do
+    let(:configurable) { create(:product, :configurable_variant) }
+
+    it 'sets position on create' do
+      variant1 = create(:variant, configurable_product: configurable)
+      variant2 = create(:variant, configurable_product: configurable)
+      variant3 = create(:variant, configurable_product: configurable)
+
+      expect(variant1.position).to eq(1)
+      expect(variant2.position).to eq(2)
+      expect(variant3.position).to eq(3)
+    end
+
+    it 'can reorder variants' do
+      variant1 = create(:variant, configurable_product: configurable)
+      variant2 = create(:variant, configurable_product: configurable)
+      variant3 = create(:variant, configurable_product: configurable)
+
+      variant3.move_to_top
+      variant1.reload
+      variant2.reload
+      variant3.reload
+
+      expect(variant3.position).to eq(1)
+      expect(variant1.position).to eq(2)
+      expect(variant2.position).to eq(3)
+    end
+
+    it 'scopes position to configurable product' do
+      other_configurable = create(:product, :configurable_variant)
+
+      variant1 = create(:variant, configurable_product: configurable)
+      variant2 = create(:variant, configurable_product: other_configurable)
+
+      expect(variant1.position).to eq(1)
+      expect(variant2.position).to eq(1) # Same position but different configurable product
+    end
+  end
+
+  # Test variant name auto-generation
+  describe 'variant name auto-generation' do
+    let(:configurable) { create(:product, :configurable_variant, name: 'T-Shirt') }
+    let(:size_config) { create(:configuration, :size, product: configurable) }
+    let(:color_config) { create(:configuration, :color, product: configurable) }
+    let(:variant_product) { create(:product, :sellable, name: '') }
+
+    it 'generates variant name from configuration values' do
+      variant = create(:variant, configurable_product: configurable, variant_product: variant_product)
+
+      size_value = size_config.configuration_values.find_by(value: 'Small')
+      color_value = color_config.configuration_values.find_by(value: 'Red')
+
+      create(:variant_configuration_value,
+             variant: variant,
+             configuration: size_config,
+             configuration_value: size_value)
+      create(:variant_configuration_value,
+             variant: variant,
+             configuration: color_config,
+             configuration_value: color_value)
+
+      variant.send(:generate_variant_name)
+      variant.variant_product.save
+
+      expect(variant.variant_product.name).to eq('T-Shirt - Small / Red')
+    end
+
+    it 'does not overwrite existing variant name' do
+      variant_product_with_name = create(:product, :sellable, name: 'Custom Name')
+      variant = build(:variant, configurable_product: configurable, variant_product: variant_product_with_name)
+
+      variant.valid? # Triggers before_validation callback
+
+      expect(variant.variant_product.name).to eq('Custom Name')
+    end
+
+    it 'uses configuration position for name ordering' do
+      # Ensure color comes before size in position
+      size_config.update(position: 2)
+      color_config.update(position: 1)
+
+      variant = create(:variant, configurable_product: configurable, variant_product: variant_product)
+
+      size_value = size_config.configuration_values.find_by(value: 'Large')
+      color_value = color_config.configuration_values.find_by(value: 'Blue')
+
+      create(:variant_configuration_value,
+             variant: variant,
+             configuration: size_config,
+             configuration_value: size_value)
+      create(:variant_configuration_value,
+             variant: variant,
+             configuration: color_config,
+             configuration_value: color_value)
+
+      variant.send(:generate_variant_name)
+      variant.variant_product.save
+
+      # Should be Color / Size due to position
+      expect(variant.variant_product.name).to eq('T-Shirt - Blue / Large')
+    end
+  end
+
+  # Test configuration values association
+  describe 'configuration values' do
+    let(:configurable) { create(:product, :configurable_variant) }
+    let(:size_config) { create(:configuration, :size, product: configurable) }
+    let(:color_config) { create(:configuration, :color, product: configurable) }
+    let(:variant) { create(:variant, configurable_product: configurable) }
+
+    it 'can associate multiple configuration values' do
+      size_value = size_config.configuration_values.first
+      color_value = color_config.configuration_values.first
+
+      create(:variant_configuration_value,
+             variant: variant,
+             configuration: size_config,
+             configuration_value: size_value)
+      create(:variant_configuration_value,
+             variant: variant,
+             configuration: color_config,
+             configuration_value: color_value)
+
+      expect(variant.configuration_values.count).to eq(2)
+      expect(variant.configuration_values).to include(size_value, color_value)
+    end
+
+    it 'deletes configuration values when variant is destroyed' do
+      size_value = size_config.configuration_values.first
+
+      create(:variant_configuration_value,
+             variant: variant,
+             configuration: size_config,
+             configuration_value: size_value)
+
+      expect {
+        variant.destroy
+      }.to change { VariantConfigurationValue.count }.by(-1)
+    end
+  end
+
+  # Integration tests
+  describe 'integration' do
+    context 'complete variant with configurations' do
+      let(:company) { create(:company) }
+      let(:configurable) { create(:product, :configurable_variant, company: company, name: 'Hoodie') }
+      let!(:size_config) { create(:configuration, :size, product: configurable) }
+      let!(:color_config) { create(:configuration, :color, product: configurable) }
+
+      it 'creates variant with all configuration dimensions' do
+        variant_product = create(:product, :sellable, company: company)
+        variant = create(:variant, configurable_product: configurable, variant_product: variant_product)
+
+        size_value = size_config.configuration_values.find_by(value: 'Medium')
+        color_value = color_config.configuration_values.find_by(value: 'Green')
+
+        create(:variant_configuration_value,
+               variant: variant,
+               configuration: size_config,
+               configuration_value: size_value)
+        create(:variant_configuration_value,
+               variant: variant,
+               configuration: color_config,
+               configuration_value: color_value)
+
+        expect(variant.variant_configuration_values.count).to eq(2)
+        expect(variant.configuration_values.pluck(:value)).to contain_exactly('Medium', 'Green')
+      end
+    end
+
+    context 'variant with inventory' do
+      let(:variant) { create(:variant, :with_inventory) }
+
+      it 'variant product has inventory' do
+        expect(variant.variant_product.total_inventory).to eq(50)
+      end
+
+      it 'variant product tracks inventory independently' do
+        storage = create(:storage, company: variant.variant_product.company)
+        create(:inventory, product: variant.variant_product, storage: storage, value: 25)
+
+        expect(variant.variant_product.total_inventory).to eq(75)
+      end
+    end
+
+    context 'multiple variants for same configurable' do
+      let(:configurable) { create(:product, :configurable_variant) }
+      let(:size_config) { create(:configuration, :size, product: configurable) }
+
+      it 'creates multiple variants with different values' do
+        small = size_config.configuration_values.find_by(value: 'Small')
+        medium = size_config.configuration_values.find_by(value: 'Medium')
+        large = size_config.configuration_values.find_by(value: 'Large')
+
+        variant_small = create(:variant, configurable_product: configurable)
+        variant_medium = create(:variant, configurable_product: configurable)
+        variant_large = create(:variant, configurable_product: configurable)
+
+        create(:variant_configuration_value, variant: variant_small, configuration: size_config, configuration_value: small)
+        create(:variant_configuration_value, variant: variant_medium, configuration: size_config, configuration_value: medium)
+        create(:variant_configuration_value, variant: variant_large, configuration: size_config, configuration_value: large)
+
+        expect(configurable.variants.count).to eq(3)
+      end
+    end
+  end
+
+  # Edge cases
+  describe 'edge cases' do
+    let(:configurable) { create(:product, :configurable_variant) }
+
+    it 'variant can exist without configuration values' do
+      variant = create(:variant, configurable_product: configurable)
+      expect(variant).to be_valid
+      expect(variant.configuration_values.count).to eq(0)
+    end
+
+    it 'prevents circular references' do
+      product = create(:product, :configurable_variant)
+      # Product cannot be its own variant
+      expect {
+        create(:variant, configurable_product: product, variant_product: product)
+      }.to raise_error(ActiveRecord::RecordInvalid)
+    end
+
+    it 'handles variant product deletion' do
+      variant = create(:variant, configurable_product: configurable)
+      variant_product = variant.variant_product
+
+      expect {
+        variant_product.destroy
+      }.to change { Variant.count }.by(-1)
+    end
+  end
+
+  # Multi-tenancy
+  describe 'multi-tenancy' do
+    let(:company) { create(:company) }
+    let(:other_company) { create(:company) }
+    let(:configurable) { create(:product, :configurable_variant, company: company) }
+    let(:variant_product) { create(:product, :sellable, company: company) }
+    let(:other_variant_product) { create(:product, :sellable, company: other_company) }
+
+    it 'variant product must be from same company as configurable' do
+      expect {
+        create(:variant, configurable_product: configurable, variant_product: other_variant_product)
+      }.to raise_error(ActiveRecord::RecordInvalid)
+    end
+
+    it 'variant is valid when products are from same company' do
+      variant = build(:variant, configurable_product: configurable, variant_product: variant_product)
+      expect(variant).to be_valid
+    end
+  end
+end

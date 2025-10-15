@@ -1,0 +1,175 @@
+require 'rails_helper'
+
+RSpec.describe VariantConfigurationValue, type: :model do
+  # Test factories
+  describe 'factories' do
+    it 'has a valid factory' do
+      expect(build(:variant_configuration_value)).to be_valid
+    end
+  end
+
+  # Test associations
+  describe 'associations' do
+    it { is_expected.to belong_to(:variant) }
+    it { is_expected.to belong_to(:configuration) }
+    it { is_expected.to belong_to(:configuration_value) }
+  end
+
+  # Test validations
+  describe 'validations' do
+    subject { build(:variant_configuration_value) }
+
+    context 'configuration_id uniqueness' do
+      let(:variant) { create(:variant) }
+      let(:configuration) { create(:configuration, :size, product: variant.configurable_product) }
+      let(:value1) { configuration.configuration_values.first }
+      let(:value2) { configuration.configuration_values.second }
+
+      before do
+        create(:variant_configuration_value,
+               variant: variant,
+               configuration: configuration,
+               configuration_value: value1)
+      end
+
+      it 'validates uniqueness of configuration per variant' do
+        duplicate = build(:variant_configuration_value,
+                          variant: variant,
+                          configuration: configuration,
+                          configuration_value: value2)
+        expect(duplicate).not_to be_valid
+        expect(duplicate.errors[:configuration_id]).to include('has already been taken')
+      end
+
+      it 'allows same configuration for different variants' do
+        other_variant = create(:variant, configurable_product: variant.configurable_product)
+        vcv = build(:variant_configuration_value,
+                    variant: other_variant,
+                    configuration: configuration,
+                    configuration_value: value1)
+        expect(vcv).to be_valid
+      end
+    end
+  end
+
+  # Integration tests
+  describe 'integration' do
+    let(:configurable) { create(:product, :configurable_variant) }
+    let(:size_config) { create(:configuration, :size, product: configurable) }
+    let(:color_config) { create(:configuration, :color, product: configurable) }
+    let(:variant) { create(:variant, configurable_product: configurable) }
+
+    context 'linking variant to configuration values' do
+      it 'creates complete variant with all configuration dimensions' do
+        size_value = size_config.configuration_values.find_by(value: 'Small')
+        color_value = color_config.configuration_values.find_by(value: 'Red')
+
+        vcv_size = create(:variant_configuration_value,
+                          variant: variant,
+                          configuration: size_config,
+                          configuration_value: size_value)
+        vcv_color = create(:variant_configuration_value,
+                           variant: variant,
+                           configuration: color_config,
+                           configuration_value: color_value)
+
+        expect(variant.variant_configuration_values.count).to eq(2)
+        expect(variant.configuration_values).to include(size_value, color_value)
+      end
+
+      it 'tracks which configuration each value belongs to' do
+        size_value = size_config.configuration_values.find_by(value: 'Medium')
+        color_value = color_config.configuration_values.find_by(value: 'Blue')
+
+        vcv_size = create(:variant_configuration_value,
+                          variant: variant,
+                          configuration: size_config,
+                          configuration_value: size_value)
+        vcv_color = create(:variant_configuration_value,
+                           variant: variant,
+                           configuration: color_config,
+                           configuration_value: color_value)
+
+        expect(vcv_size.configuration).to eq(size_config)
+        expect(vcv_color.configuration).to eq(color_config)
+      end
+    end
+
+    context 'deletion cascade' do
+      let!(:vcv) do
+        size_value = size_config.configuration_values.first
+        create(:variant_configuration_value,
+               variant: variant,
+               configuration: size_config,
+               configuration_value: size_value)
+      end
+
+      it 'deletes when variant is destroyed' do
+        expect {
+          variant.destroy
+        }.to change { VariantConfigurationValue.count }.by(-1)
+      end
+
+      it 'remains when configuration value is destroyed' do
+        size_value = vcv.configuration_value
+        expect {
+          size_value.destroy
+        }.to change { VariantConfigurationValue.count }.by(-1)
+      end
+    end
+  end
+
+  # Edge cases
+  describe 'edge cases' do
+    let(:configurable) { create(:product, :configurable_variant) }
+    let(:variant) { create(:variant, configurable_product: configurable) }
+    let(:configuration) { create(:configuration, :size, product: configurable) }
+
+    it 'configuration value must belong to specified configuration' do
+      other_config = create(:configuration, :color, product: configurable)
+      color_value = other_config.configuration_values.first
+
+      vcv = build(:variant_configuration_value,
+                  variant: variant,
+                  configuration: configuration, # size config
+                  configuration_value: color_value) # color value
+
+      expect(vcv).not_to be_valid
+    end
+
+    it 'configuration must belong to variant\'s configurable product' do
+      other_product = create(:product, :configurable_variant)
+      other_config = create(:configuration, :size, product: other_product)
+      other_value = other_config.configuration_values.first
+
+      vcv = build(:variant_configuration_value,
+                  variant: variant,
+                  configuration: other_config,
+                  configuration_value: other_value)
+
+      expect(vcv).not_to be_valid
+    end
+  end
+
+  # Multi-tenancy
+  describe 'multi-tenancy' do
+    let(:company) { create(:company) }
+    let(:other_company) { create(:company) }
+    let(:configurable) { create(:product, :configurable_variant, company: company) }
+    let(:variant) { create(:variant, configurable_product: configurable) }
+    let(:configuration) { create(:configuration, :size, product: configurable) }
+
+    it 'all entities must belong to same company' do
+      other_product = create(:product, :configurable_variant, company: other_company)
+      other_config = create(:configuration, :size, product: other_product)
+      other_value = other_config.configuration_values.first
+
+      vcv = build(:variant_configuration_value,
+                  variant: variant,
+                  configuration: other_config,
+                  configuration_value: other_value)
+
+      expect(vcv).not_to be_valid
+    end
+  end
+end

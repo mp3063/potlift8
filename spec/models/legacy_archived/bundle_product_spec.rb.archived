@@ -1,0 +1,308 @@
+require 'rails_helper'
+
+RSpec.describe BundleProduct, type: :model do
+  # Test factories
+  describe 'factories' do
+    it 'has a valid factory' do
+      expect(build(:bundle_product)).to be_valid
+    end
+
+    it 'creates valid bundle products with traits' do
+      expect(create(:bundle_product, :quantity_two)).to be_valid
+      expect(create(:bundle_product, :with_subproduct_inventory)).to be_valid
+    end
+  end
+
+  # Test associations
+  describe 'associations' do
+    it { is_expected.to belong_to(:bundle).class_name('Product') }
+    it { is_expected.to belong_to(:subproduct).class_name('Product') }
+  end
+
+  # Test validations
+  describe 'validations' do
+    subject { build(:bundle_product) }
+
+    it { is_expected.to validate_presence_of(:quantity) }
+    it { is_expected.to validate_numericality_of(:quantity).is_greater_than(0) }
+
+    context 'subproduct_id uniqueness' do
+      let(:bundle) { create(:product, :bundle) }
+      let(:subproduct) { create(:product, :sellable) }
+
+      before do
+        create(:bundle_product, bundle: bundle, subproduct: subproduct, quantity: 2)
+      end
+
+      it 'validates uniqueness scoped to bundle' do
+        duplicate = build(:bundle_product, bundle: bundle, subproduct: subproduct, quantity: 3)
+        expect(duplicate).not_to be_valid
+        expect(duplicate.errors[:subproduct_id]).to include('has already been taken')
+      end
+
+      it 'allows same subproduct for different bundles' do
+        other_bundle = create(:product, :bundle)
+        bp = build(:bundle_product, bundle: other_bundle, subproduct: subproduct, quantity: 2)
+        expect(bp).to be_valid
+      end
+    end
+
+    context 'quantity validation' do
+      let(:bundle) { create(:product, :bundle) }
+      let(:subproduct) { create(:product, :sellable) }
+
+      it 'rejects zero quantity' do
+        bp = build(:bundle_product, bundle: bundle, subproduct: subproduct, quantity: 0)
+        expect(bp).not_to be_valid
+        expect(bp.errors[:quantity]).to be_present
+      end
+
+      it 'rejects negative quantity' do
+        bp = build(:bundle_product, bundle: bundle, subproduct: subproduct, quantity: -5)
+        expect(bp).not_to be_valid
+        expect(bp.errors[:quantity]).to be_present
+      end
+
+      it 'accepts positive quantity' do
+        bp = build(:bundle_product, bundle: bundle, subproduct: subproduct, quantity: 10)
+        expect(bp).to be_valid
+      end
+    end
+  end
+
+  # Test minimum composition validation
+  describe 'minimum composition validation' do
+    let(:company) { create(:company) }
+    let(:bundle) { create(:product, :bundle, company: company) }
+    let(:subproduct1) { create(:product, :sellable, company: company) }
+    let(:subproduct2) { create(:product, :sellable, company: company) }
+
+    context 'with only one product and quantity 1' do
+      it 'is invalid' do
+        bp = build(:bundle_product, bundle: bundle, subproduct: subproduct1, quantity: 1)
+
+        # This should be invalid because bundle would have only 1 product with quantity 1
+        expect(bp).not_to be_valid
+        expect(bp.errors[:base]).to include('Bundle must contain at least 2 products or quantity > 1')
+      end
+    end
+
+    context 'with one product but quantity > 1' do
+      it 'is valid' do
+        bp = build(:bundle_product, bundle: bundle, subproduct: subproduct1, quantity: 2)
+        expect(bp).to be_valid
+      end
+    end
+
+    context 'with two products each quantity 1' do
+      before do
+        create(:bundle_product, bundle: bundle, subproduct: subproduct1, quantity: 1)
+      end
+
+      it 'is valid' do
+        bp = build(:bundle_product, bundle: bundle, subproduct: subproduct2, quantity: 1)
+        expect(bp).to be_valid
+      end
+    end
+
+    context 'with multiple products' do
+      before do
+        create(:bundle_product, bundle: bundle, subproduct: subproduct1, quantity: 1)
+        create(:bundle_product, bundle: bundle, subproduct: subproduct2, quantity: 1)
+      end
+
+      it 'is valid with more than 2 products' do
+        subproduct3 = create(:product, :sellable, company: company)
+        bp = build(:bundle_product, bundle: bundle, subproduct: subproduct3, quantity: 1)
+        expect(bp).to be_valid
+      end
+    end
+  end
+
+  # Test bundle inventory calculation
+  describe 'bundle inventory calculation' do
+    let(:company) { create(:company) }
+    let(:bundle) { create(:product, :bundle, company: company) }
+    let(:storage) { create(:storage, company: company) }
+
+    context 'with two subproducts' do
+      let(:subproduct1) { create(:product, :sellable, company: company) }
+      let(:subproduct2) { create(:product, :sellable, company: company) }
+
+      before do
+        create(:inventory, product: subproduct1, storage: storage, value: 100)
+        create(:inventory, product: subproduct2, storage: storage, value: 50)
+
+        create(:bundle_product, bundle: bundle, subproduct: subproduct1, quantity: 2)
+        create(:bundle_product, bundle: bundle, subproduct: subproduct2, quantity: 1)
+      end
+
+      it 'calculates bundle availability based on lowest subproduct' do
+        # subproduct1: 100 / 2 = 50 bundles
+        # subproduct2: 50 / 1 = 50 bundles
+        # Result: min(50, 50) = 50
+        expect(bundle.bundle_available_inventory).to eq(50)
+      end
+    end
+
+    context 'with limiting subproduct' do
+      let(:subproduct1) { create(:product, :sellable, company: company) }
+      let(:subproduct2) { create(:product, :sellable, company: company) }
+
+      before do
+        create(:inventory, product: subproduct1, storage: storage, value: 100)
+        create(:inventory, product: subproduct2, storage: storage, value: 15)
+
+        create(:bundle_product, bundle: bundle, subproduct: subproduct1, quantity: 1)
+        create(:bundle_product, bundle: bundle, subproduct: subproduct2, quantity: 2)
+      end
+
+      it 'is limited by subproduct with lowest availability' do
+        # subproduct1: 100 / 1 = 100 bundles
+        # subproduct2: 15 / 2 = 7 bundles (floor)
+        # Result: min(100, 7) = 7
+        expect(bundle.bundle_available_inventory).to eq(7)
+      end
+    end
+
+    context 'with out of stock subproduct' do
+      let(:subproduct1) { create(:product, :sellable, company: company) }
+      let(:subproduct2) { create(:product, :sellable, company: company) }
+
+      before do
+        create(:inventory, product: subproduct1, storage: storage, value: 100)
+        create(:inventory, product: subproduct2, storage: storage, value: 0)
+
+        create(:bundle_product, bundle: bundle, subproduct: subproduct1, quantity: 1)
+        create(:bundle_product, bundle: bundle, subproduct: subproduct2, quantity: 1)
+      end
+
+      it 'returns 0 when any subproduct is out of stock' do
+        expect(bundle.bundle_available_inventory).to eq(0)
+      end
+    end
+
+    context 'with high quantity requirements' do
+      let(:subproduct) { create(:product, :sellable, company: company) }
+
+      before do
+        create(:inventory, product: subproduct, storage: storage, value: 47)
+        create(:bundle_product, bundle: bundle, subproduct: subproduct, quantity: 10)
+      end
+
+      it 'correctly floors division result' do
+        # 47 / 10 = 4.7 → 4 bundles
+        expect(bundle.bundle_available_inventory).to eq(4)
+      end
+    end
+  end
+
+  # Integration tests
+  describe 'integration' do
+    let(:company) { create(:company) }
+    let(:bundle) { create(:product, :bundle, company: company, name: 'Gift Set') }
+    let(:storage) { create(:storage, company: company) }
+
+    context 'complete bundle with multiple subproducts' do
+      let(:item1) { create(:product, :sellable, company: company, name: 'Item 1') }
+      let(:item2) { create(:product, :sellable, company: company, name: 'Item 2') }
+      let(:item3) { create(:product, :sellable, company: company, name: 'Item 3') }
+
+      before do
+        create(:inventory, product: item1, storage: storage, value: 100)
+        create(:inventory, product: item2, storage: storage, value: 75)
+        create(:inventory, product: item3, storage: storage, value: 50)
+
+        create(:bundle_product, bundle: bundle, subproduct: item1, quantity: 2)
+        create(:bundle_product, bundle: bundle, subproduct: item2, quantity: 1)
+        create(:bundle_product, bundle: bundle, subproduct: item3, quantity: 3)
+      end
+
+      it 'bundle has all subproducts' do
+        expect(bundle.bundle_products.count).to eq(3)
+        expect(bundle.subproducts).to include(item1, item2, item3)
+      end
+
+      it 'calculates correct inventory across all subproducts' do
+        # item1: 100 / 2 = 50
+        # item2: 75 / 1 = 75
+        # item3: 50 / 3 = 16
+        # min(50, 75, 16) = 16
+        expect(bundle.bundle_available_inventory).to eq(16)
+      end
+
+      it 'tracks individual quantities' do
+        bp1 = bundle.bundle_products.find_by(subproduct: item1)
+        bp2 = bundle.bundle_products.find_by(subproduct: item2)
+        bp3 = bundle.bundle_products.find_by(subproduct: item3)
+
+        expect(bp1.quantity).to eq(2)
+        expect(bp2.quantity).to eq(1)
+        expect(bp3.quantity).to eq(3)
+      end
+    end
+
+    context 'bundle deletion cascade' do
+      let(:subproduct) { create(:product, :sellable, company: company) }
+      let!(:bundle_product) { create(:bundle_product, bundle: bundle, subproduct: subproduct) }
+
+      it 'deletes bundle_products when bundle is destroyed' do
+        expect {
+          bundle.destroy
+        }.to change { BundleProduct.count }.by(-1)
+      end
+
+      it 'does not delete subproducts when bundle is destroyed' do
+        expect {
+          bundle.destroy
+        }.not_to change { Product.where(id: subproduct.id).count }
+      end
+    end
+  end
+
+  # Edge cases
+  describe 'edge cases' do
+    let(:company) { create(:company) }
+    let(:bundle) { create(:product, :bundle, company: company) }
+
+    it 'bundle cannot contain itself' do
+      expect {
+        create(:bundle_product, bundle: bundle, subproduct: bundle, quantity: 1)
+      }.to raise_error(ActiveRecord::RecordInvalid)
+    end
+
+    it 'handles decimal quantities by using integer' do
+      subproduct = create(:product, :sellable, company: company)
+      bp = build(:bundle_product, bundle: bundle, subproduct: subproduct, quantity: 1.5)
+
+      # Quantity should be stored as integer (1 or 2 depending on rounding)
+      expect(bp.quantity).to be_a(Integer)
+    end
+
+    it 'bundle can have very large quantities' do
+      subproduct = create(:product, :sellable, company: company)
+      bp = create(:bundle_product, bundle: bundle, subproduct: subproduct, quantity: 1000)
+      expect(bp).to be_valid
+    end
+  end
+
+  # Multi-tenancy
+  describe 'multi-tenancy' do
+    let(:company) { create(:company) }
+    let(:other_company) { create(:company) }
+    let(:bundle) { create(:product, :bundle, company: company) }
+    let(:subproduct) { create(:product, :sellable, company: company) }
+    let(:other_subproduct) { create(:product, :sellable, company: other_company) }
+
+    it 'subproduct must be from same company as bundle' do
+      expect {
+        create(:bundle_product, bundle: bundle, subproduct: other_subproduct, quantity: 1)
+      }.to raise_error(ActiveRecord::RecordInvalid)
+    end
+
+    it 'bundle product is valid when products are from same company' do
+      bp = build(:bundle_product, bundle: bundle, subproduct: subproduct, quantity: 1)
+      expect(bp).to be_valid
+    end
+  end
+end
