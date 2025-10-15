@@ -82,12 +82,12 @@ RSpec.describe Products::TableComponent, type: :component do
 
         # Active products
         within("tr[data-product-id='#{product1.id}']") do
-          expect(page).to have_css('span.bg-green-50', text: 'Active')
+          expect(page).to have_css('span.bg-green-100', text: 'Active')
         end
 
         # Draft products
         within("tr[data-product-id='#{product2.id}']") do
-          expect(page).to have_css('span.bg-gray-50', text: 'Inactive')
+          expect(page).to have_css('span.bg-yellow-100', text: 'Draft')
         end
       end
 
@@ -224,7 +224,7 @@ RSpec.describe Products::TableComponent, type: :component do
         ))
 
         # Should have active styling on SKU column
-        expect(page).to have_css('a.text-indigo-600', text: 'SKU')
+        expect(page).to have_css('a.text-blue-600', text: 'SKU')
       end
 
       it 'displays sort direction indicator' do
@@ -295,12 +295,12 @@ RSpec.describe Products::TableComponent, type: :component do
         expect(page).to have_link('Next')
       end
 
-      it 'disables previous link on first page' do
+      it 'shows pagination component' do
         pagy = Pagy.new(count: 30, page: 1, limit: 10)
         render_inline(described_class.new(products: products.limit(10), pagy: pagy))
 
-        # Previous button should be disabled
-        expect(page).to have_css('a.pointer-events-none.opacity-50')
+        # Should render pagination (detailed behavior tested in PaginationComponent spec)
+        expect(page).to have_text('Showing')
       end
     end
 
@@ -393,58 +393,62 @@ RSpec.describe Products::TableComponent, type: :component do
   end
 
   describe 'helper methods' do
-    let(:component) do
-      products = Product.none
-      pagy = Pagy.new(count: 0, page: 1, limit: 25)
-      described_class.new(products: products, pagy: pagy)
-    end
-
     describe '#status_badge' do
-      it 'returns active badge for active products' do
+      it 'returns badge for active products' do
         product = create(:product, company: company, product_status: :active)
-        badge = component.send(:status_badge, product)
+        pagy = Pagy.new(count: 1, page: 1, limit: 25)
 
-        expect(badge).to include('Active')
-        expect(badge).to include('bg-green-50')
-        expect(badge).to include('text-green-700')
+        render_inline(described_class.new(products: Product.where(id: product.id), pagy: pagy))
+
+        within("tr[data-product-id='#{product.id}']") do
+          expect(page).to have_css('span.bg-green-100', text: 'Active')
+        end
       end
 
-      it 'returns inactive badge for non-active products' do
+      it 'returns badge for draft products' do
         product = create(:product, company: company, product_status: :draft)
-        badge = component.send(:status_badge, product)
+        pagy = Pagy.new(count: 1, page: 1, limit: 25)
 
-        expect(badge).to include('Inactive')
-        expect(badge).to include('bg-gray-50')
-        expect(badge).to include('text-gray-600')
+        render_inline(described_class.new(products: Product.where(id: product.id), pagy: pagy))
+
+        within("tr[data-product-id='#{product.id}']") do
+          expect(page).to have_css('span.bg-yellow-100', text: 'Draft')
+        end
       end
     end
 
     describe '#type_badge' do
-      it 'returns blue badge for sellable products' do
+      it 'returns badge for sellable products' do
         product = create(:product, company: company, product_type: :sellable)
-        badge = component.send(:type_badge, product)
+        pagy = Pagy.new(count: 1, page: 1, limit: 25)
 
-        expect(badge).to include('Sellable')
-        expect(badge).to include('bg-blue-50')
-        expect(badge).to include('text-blue-700')
+        render_inline(described_class.new(products: Product.where(id: product.id), pagy: pagy))
+
+        within("tr[data-product-id='#{product.id}']") do
+          expect(page).to have_css('span.bg-blue-100', text: 'Sellable')
+        end
       end
 
-      it 'returns purple badge for configurable products' do
+      it 'returns badge for configurable products' do
         product = create(:product, company: company, product_type: :configurable, configuration_type: :variant)
-        badge = component.send(:type_badge, product)
+        pagy = Pagy.new(count: 1, page: 1, limit: 25)
 
-        expect(badge).to include('Configurable')
-        expect(badge).to include('bg-purple-50')
-        expect(badge).to include('text-purple-700')
+        render_inline(described_class.new(products: Product.where(id: product.id), pagy: pagy))
+
+        within("tr[data-product-id='#{product.id}']") do
+          expect(page).to have_css('span.bg-yellow-100', text: 'Configurable')
+        end
       end
 
-      it 'returns orange badge for bundle products' do
+      it 'returns badge for bundle products' do
         product = create(:product, company: company, product_type: :bundle)
-        badge = component.send(:type_badge, product)
+        pagy = Pagy.new(count: 1, page: 1, limit: 25)
 
-        expect(badge).to include('Bundle')
-        expect(badge).to include('bg-orange-50')
-        expect(badge).to include('text-orange-700')
+        render_inline(described_class.new(products: Product.where(id: product.id), pagy: pagy))
+
+        within("tr[data-product-id='#{product.id}']") do
+          expect(page).to have_css('span.bg-gray-100', text: 'Bundle')
+        end
       end
     end
 

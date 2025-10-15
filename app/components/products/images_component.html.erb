@@ -1,0 +1,77 @@
+<%= render Ui::CardComponent.new do |card| %>
+  <% card.with_header do %>
+    <h3 class="text-base font-semibold leading-6 text-gray-900">Images</h3>
+  <% end %>
+
+  <% if has_images? %>
+    <!-- Main Image -->
+    <div class="aspect-w-16 aspect-h-9 rounded-lg bg-gray-100 overflow-hidden mb-4" data-controller="product-images">
+      <% if main_image %>
+        <%= image_tag main_image, class: "object-cover w-full h-full", alt: "#{product.name} - Main image", data: { product_images_target: "mainImage" } %>
+      <% end %>
+    </div>
+
+    <!-- Thumbnails -->
+    <div class="grid grid-cols-4 gap-4 mb-4" data-product-images-target="thumbnails">
+      <% images.each_with_index do |image, index| %>
+        <div class="relative aspect-w-1 aspect-h-1 rounded-lg bg-gray-100 overflow-hidden cursor-pointer group"
+             data-product-images-target="thumbnail"
+             data-image-id="<%= image.id %>"
+             data-action="click->product-images#selectImage">
+          <%= image_tag image, class: "object-cover w-full h-full", alt: "#{product.name} - Image #{index + 1}" %>
+
+          <!-- Overlay on hover -->
+          <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center">
+            <%= button_tag type: "button",
+                class: "opacity-0 group-hover:opacity-100 transition-opacity text-white p-2 rounded-full hover:bg-white hover:bg-opacity-20",
+                data: { action: "click->product-images#deleteImage:stop", image_id: image.id },
+                aria: { label: "Delete image #{index + 1}" } do %>
+              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            <% end %>
+          </div>
+
+          <!-- Position indicator -->
+          <div class="absolute top-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded" aria-label="Image position">
+            <%= index + 1 %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <!-- Upload Area -->
+  <div class="mt-4">
+    <%= form_with url: product_images_path(product), method: :post, multipart: true, data: { controller: "image-upload", turbo: false } do |form| %>
+      <div class="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-blue-400 transition-colors"
+           data-image-upload-target="dropzone"
+           data-action="drop->image-upload#handleDrop dragover->image-upload#handleDragOver dragleave->image-upload#handleDragLeave">
+        <div class="space-y-1 text-center">
+          <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <div class="flex text-sm text-gray-600">
+            <label for="file-upload" class="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+              <span>Upload files</span>
+              <%= form.file_field :images,
+                  multiple: true,
+                  accept: "image/*",
+                  class: "sr-only",
+                  id: "file-upload",
+                  data: {
+                    image_upload_target: "input",
+                    action: "change->image-upload#handleFiles"
+                  } %>
+            </label>
+            <p class="pl-1">or drag and drop</p>
+          </div>
+          <p class="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+        </div>
+      </div>
+
+      <!-- Progress bars -->
+      <div class="mt-4 space-y-2" data-image-upload-target="progressContainer"></div>
+    <% end %>
+  </div>
+<% end %>

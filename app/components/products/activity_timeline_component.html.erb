@@ -1,0 +1,55 @@
+<%= render Ui::CardComponent.new do |card| %>
+  <% card.with_header do %>
+    <h3 class="text-base font-semibold leading-6 text-gray-900">Recent Activity</h3>
+  <% end %>
+
+  <% if has_activities? %>
+    <div class="flow-root">
+      <ul role="list" class="-mb-8">
+        <% recent_activities.each_with_index do |activity, index| %>
+          <li>
+            <div class="relative pb-8">
+              <!-- Connecting line (except for last item) -->
+              <% if index < recent_activities.length - 1 %>
+                <span class="absolute left-4 top-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+              <% end %>
+
+              <div class="relative flex space-x-3">
+                <!-- Icon -->
+                <div>
+                  <span class="h-8 w-8 rounded-full bg-gray-50 flex items-center justify-center ring-8 ring-white">
+                    <svg class="h-5 w-5 <%= activity_color(activity[:type]) %>" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="<%= activity_icon_path(activity[:type]) %>" />
+                    </svg>
+                  </span>
+                </div>
+
+                <!-- Content -->
+                <div class="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
+                  <div>
+                    <p class="text-sm text-gray-900">
+                      <%= activity[:description] %>
+                      <% if activity[:user].present? %>
+                        <span class="font-medium text-gray-900">by <%= activity[:user] %></span>
+                      <% end %>
+                    </p>
+                  </div>
+                  <div class="whitespace-nowrap text-right text-xs text-gray-500" title="<%= activity[:timestamp].strftime('%B %d, %Y at %I:%M %p') %>">
+                    <%= time_ago_in_words(activity[:timestamp]) %> ago
+                  </div>
+                </div>
+              </div>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+  <% else %>
+    <div class="text-center py-6">
+      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <p class="mt-2 text-sm text-gray-500">No recent activity</p>
+    </div>
+  <% end %>
+<% end %>

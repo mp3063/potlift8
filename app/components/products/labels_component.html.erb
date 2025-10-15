@@ -1,0 +1,58 @@
+<%= render Ui::CardComponent.new do |card| %>
+  <% card.with_header do %>
+    <h3 class="text-base font-semibold leading-6 text-gray-900">Labels</h3>
+  <% end %>
+
+  <div data-controller="product-labels" data-product-labels-product-id-value="<%= product.id %>">
+    <!-- Current Labels -->
+    <% if has_labels? %>
+      <div class="flex flex-wrap gap-2 mb-4" data-product-labels-target="container">
+        <% product.labels.each do |label| %>
+          <span class="inline-flex items-center gap-x-1 rounded-md bg-blue-50 px-2 py-1 text-sm font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+            <%= label.name %>
+            <%= button_to remove_label_product_path(product, label_id: label.id),
+                method: :delete,
+                form_class: "inline",
+                class: "group relative -mr-1 h-3.5 w-3.5 rounded-sm hover:bg-blue-600/20",
+                data: { turbo_frame: "_top" } do %>
+              <span class="sr-only">Remove <%= label.name %></span>
+              <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+              </svg>
+            <% end %>
+          </span>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="text-sm text-gray-500 mb-4">No labels assigned</p>
+    <% end %>
+
+    <!-- Add Label Form -->
+    <% if available_labels.any? %>
+      <%= form_with url: add_label_product_path(product),
+                    method: :post,
+                    data: {
+                      controller: "label-selector",
+                      action: "turbo:submit-end->label-selector#handleSubmit"
+                    },
+                    class: "flex gap-x-2" do |form| %>
+        <%= form.select :label_id,
+            options_from_collection_for_select(available_labels, :id, :name),
+            { prompt: "Select a label..." },
+            class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+            data: { label_selector_target: "select" },
+            aria: { label: "Select label to add" } %>
+
+        <%= render Ui::ButtonComponent.new(
+          type: "submit",
+          variant: :primary,
+          size: :md
+        ) do %>
+          Add
+        <% end %>
+      <% end %>
+    <% else %>
+      <p class="text-sm text-gray-500">All available labels are assigned</p>
+    <% end %>
+  </div>
+<% end %>

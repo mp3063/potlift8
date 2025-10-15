@@ -1,0 +1,38 @@
+<%= render Ui::CardComponent.new do |card| %>
+  <% card.with_header do %>
+    <h3 class="text-base font-semibold leading-6 text-gray-900">Inventory</h3>
+  <% end %>
+
+  <!-- Total Inventory -->
+  <div class="mb-4">
+    <div class="flex items-baseline">
+      <span class="text-3xl font-bold text-gray-900"><%= total_inventory %></span>
+      <span class="ml-2 text-sm text-gray-500">total units</span>
+    </div>
+  </div>
+
+  <!-- Storage Locations -->
+  <% if has_storage_locations? %>
+    <dl class="space-y-2">
+      <% storage_locations.each do |inventory| %>
+        <div class="flex items-center justify-between text-sm">
+          <dt class="text-gray-500"><%= inventory.storage.name %></dt>
+          <dd class="font-medium text-gray-900"><%= inventory.value || 0 %></dd>
+        </div>
+      <% end %>
+    </dl>
+
+    <div class="mt-4">
+      <%= helpers.link_to "View Details",
+          helpers.product_inventories_path(product),
+          class: "text-sm font-medium text-blue-600 hover:text-blue-500" %>
+    </div>
+  <% else %>
+    <div class="text-center py-4">
+      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+      </svg>
+      <p class="mt-2 text-sm text-gray-500">No inventory locations</p>
+    </div>
+  <% end %>
+<% end %>
