@@ -64,16 +64,41 @@ Rails.application.routes.draw do
   resources :products do
     member do
       post :duplicate
+      post :add_label
+      delete :remove_label
+      patch :toggle_active
     end
     collection do
       post :bulk_destroy
       post :bulk_update_labels
       get :validate_sku
     end
+
+    # Nested resources for product detail page
+    resources :images, only: [:create, :destroy], controller: 'product_images'
+    resources :attribute_values, only: [:update], controller: 'product_attribute_values', param: :attribute_id
   end
 
   resources :storages
-  resources :product_attributes
-  resources :labels
+
+  resources :product_attributes do
+    collection do
+      patch :reorder
+      get :validate_code
+    end
+  end
+
+  resources :attribute_groups do
+    collection do
+      patch :reorder
+    end
+  end
+
+  resources :labels do
+    collection do
+      patch :reorder
+    end
+  end
+
   resources :catalogs
 end

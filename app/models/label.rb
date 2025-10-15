@@ -52,6 +52,21 @@ class Label < ApplicationRecord
   scope :root_labels, -> { where(parent_label_id: nil) }
   scope :without_parents, -> { where(parent_label_id: nil) }
 
+  # Eager load sublabels recursively up to 3 levels deep to prevent N+1 queries
+  # This is used in the index view where we render a tree with product counts
+  scope :with_sublabels_tree, -> {
+    includes(
+      :products,
+      sublabels: [
+        :products,
+        sublabels: [
+          :products,
+          :sublabels
+        ]
+      ]
+    )
+  }
+
   # Enum for product association restrictions
   enum :product_default_restriction, {
     allow: 1,

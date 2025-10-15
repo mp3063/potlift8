@@ -37,6 +37,7 @@ class Company < ApplicationRecord
   has_many :storages, dependent: :destroy
   has_many :labels, dependent: :destroy
   has_many :product_attributes, dependent: :destroy
+  has_many :attribute_groups, dependent: :destroy
   has_many :company_states, dependent: :destroy
   has_many :users, dependent: :destroy
   has_many :company_memberships, dependent: :destroy
