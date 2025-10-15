@@ -1,0 +1,140 @@
+<%
+  # Recursive tree node partial for hierarchical label display
+  # Locals: label (required), level (required, default: 0)
+  level ||= 0
+  has_sublabels = label.sublabels.any?
+  direct_products_count = label.products.size
+  total_products_count = label.all_products_including_sublabels.size
+  indent_class = "pl-#{level * 8}"
+%>
+
+<div class="group hover:bg-gray-50 transition-colors" data-label-tree-target="node" data-label-id="<%= label.id %>">
+  <div class="flex items-center gap-3 py-3 px-4 <%= indent_class %>">
+    <!-- Expand/Collapse Button -->
+    <% if has_sublabels %>
+      <button
+        type="button"
+        class="flex-shrink-0 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+        data-action="click->label-tree#toggle"
+        data-label-tree-target="toggleButton"
+        data-label-id="<%= label.id %>"
+        aria-expanded="false"
+        aria-controls="sublabels-<%= label.id %>"
+        aria-label="<%= has_sublabels ? 'Expand sublabels' : 'No sublabels' %>">
+        <svg class="w-5 h-5 transform transition-transform" data-label-tree-target="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+    <% else %>
+      <div class="w-5 h-5 flex-shrink-0"></div>
+    <% end %>
+
+    <!-- Drag Handle (visible on hover) -->
+    <button
+      type="button"
+      class="flex-shrink-0 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded cursor-move"
+      data-label-tree-target="dragHandle"
+      aria-label="Reorder <%= label.name %>">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    </button>
+
+    <!-- Color Indicator -->
+    <% if label.info&.dig('color').present? %>
+      <div
+        class="flex-shrink-0 w-4 h-4 rounded-full border border-gray-300"
+        style="background-color: <%= label.info['color'] %>;"
+        aria-hidden="true">
+      </div>
+    <% else %>
+      <div class="w-4 h-4 flex-shrink-0"></div>
+    <% end %>
+
+    <!-- Label Info (Clickable) -->
+    <div class="flex-1 min-w-0">
+      <%= link_to label_path(label), class: "group/link flex items-center gap-2" do %>
+        <span class="font-medium text-gray-900 group-hover/link:text-blue-600 transition-colors">
+          <%= label.name %>
+        </span>
+        <span class="text-xs text-gray-500">
+          (<%= label.code %>)
+        </span>
+      <% end %>
+    </div>
+
+    <!-- Stats -->
+    <div class="flex items-center gap-4 text-sm text-gray-600">
+      <!-- Product Count -->
+      <div class="flex items-center gap-1" title="<%= direct_products_count %> direct, <%= total_products_count %> total">
+        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+        <span class="font-medium"><%= direct_products_count %></span>
+        <% if total_products_count != direct_products_count %>
+          <span class="text-gray-400">(<%= total_products_count %>)</span>
+        <% end %>
+      </div>
+
+      <!-- Sublabels Count -->
+      <% if has_sublabels %>
+        <div class="flex items-center gap-1" title="<%= label.sublabels.size %> sublabels">
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+          </svg>
+          <span><%= label.sublabels.size %></span>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Actions (visible on hover) -->
+    <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+      <!-- Add Sublabel -->
+      <%= link_to new_label_path(parent_id: label.id),
+        class: "text-gray-600 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-1 transition-colors",
+        title: "Add sublabel to #{label.name}",
+        aria_label: "Add sublabel to #{label.name}" do %>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+      <% end %>
+
+      <!-- Edit -->
+      <%= link_to edit_label_path(label),
+        class: "text-gray-600 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-1 transition-colors",
+        title: "Edit #{label.name}",
+        aria_label: "Edit #{label.name}" do %>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+      <% end %>
+
+      <!-- Delete -->
+      <%= button_to label_path(label),
+        method: :delete,
+        form: {
+          data: { turbo_confirm: "Are you sure you want to delete '#{label.name}'?#{has_sublabels ? ' This label has sublabels.' : ''}#{direct_products_count > 0 ? " This label is assigned to #{direct_products_count} products." : ''}" }
+        },
+        class: "text-gray-600 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 rounded p-1 transition-colors",
+        title: "Delete #{label.name}",
+        aria_label: "Delete #{label.name}" do %>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Sublabels (recursive) -->
+  <% if has_sublabels %>
+    <div
+      id="sublabels-<%= label.id %>"
+      class="hidden"
+      data-label-tree-target="children"
+      data-parent-id="<%= label.id %>">
+      <% label.sublabels.each do |sublabel| %>
+        <%= render "tree_node", label: sublabel, level: level + 1 %>
+      <% end %>
+    </div>
+  <% end %>
+</div>
