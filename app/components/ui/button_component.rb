@@ -85,7 +85,7 @@ module Ui
     # Base classes applied to all buttons
     BASE_CLASSES = "inline-flex items-center justify-center font-medium rounded-lg transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
 
-    attr_reader :variant, :size, :disabled, :type, :loading, :icon, :icon_position, :aria_label
+    attr_reader :variant, :size, :disabled, :type, :loading, :icon, :icon_position, :aria_label, :href
 
     # Initialize a new button component
     #
@@ -97,6 +97,7 @@ module Ui
     # @param icon [String] SVG icon markup to display alongside text (optional)
     # @param icon_position [Symbol] Position of icon (:left or :right, defaults to :left)
     # @param aria_label [String] Aria label for accessibility (required for icon-only buttons without text)
+    # @param href [String] URL for link buttons (renders <a> instead of <button>)
     # @param options [Hash] Additional HTML attributes (e.g., class, id, data, title)
     #
     # @example Basic initialization
@@ -106,6 +107,12 @@ module Ui
     #   ButtonComponent.new(
     #     variant: :secondary,
     #     data: { action: "click->modal#close" }
+    #   )
+    #
+    # @example As a link
+    #   ButtonComponent.new(
+    #     variant: :secondary,
+    #     href: "/products/123/edit"
     #   )
     #
     # @return [ButtonComponent]
@@ -118,6 +125,7 @@ module Ui
       icon: nil,
       icon_position: :left,
       aria_label: nil,
+      href: nil,
       **options
     )
       @variant = variant
@@ -128,14 +136,19 @@ module Ui
       @icon = icon
       @icon_position = icon_position
       @aria_label = aria_label
+      @href = href
       @options = options
     end
 
     # Renders the button component
     #
-    # @return [String] HTML button element with all styling and content
+    # @return [String] HTML button or link element with all styling and content
     def call
-      content_tag(:button, button_content, **html_options)
+      if @href.present?
+        link_to(@href, **html_options) { button_content }
+      else
+        content_tag(:button, button_content, **html_options)
+      end
     end
 
     private
@@ -146,11 +159,17 @@ module Ui
     #
     # @return [String] HTML content for button interior
     def button_content
-      content_tag(:span, class: "flex items-center gap-2") do
-        concat(loading_spinner) if @loading
-        concat(icon_element) if @icon && @icon_position == :left && !@loading
-        concat(content_tag(:span, content))
-        concat(icon_element) if @icon && @icon_position == :right && !@loading
+      # If we have component-managed icons/loading, wrap in flex container
+      if @loading || @icon.present?
+        content_tag(:span, class: "flex items-center gap-2") do
+          concat(loading_spinner) if @loading
+          concat(icon_element) if @icon && @icon_position == :left && !@loading
+          concat(content)
+          concat(icon_element) if @icon && @icon_position == :right && !@loading
+        end
+      else
+        # No wrapper needed if content manages its own layout
+        content
       end
     end
 
@@ -180,17 +199,31 @@ module Ui
     # Builds HTML attributes hash for the button element
     #
     # Merges button-specific attributes with custom options.
+    # Handles links and buttons differently.
     #
     # @return [Hash] HTML attributes including type, disabled, class, aria
     def html_options
       options = {
-        type: @type,
-        disabled: @disabled,
         class: button_classes,
         **@options
       }
 
-      options[:aria] = { label: @aria_label } if @aria_label.present?
+      # Build aria attributes hash
+      aria_attrs = {}
+
+      if @href.present?
+        # For links, add pointer-events-none and opacity if disabled
+        options[:class] += " pointer-events-none" if @disabled
+        aria_attrs[:disabled] = "true" if @disabled
+      else
+        # For buttons, use standard type and disabled attributes
+        options[:type] = @type
+        options[:disabled] = @disabled
+      end
+
+      aria_attrs[:label] = @aria_label if @aria_label.present?
+      options[:aria] = aria_attrs unless aria_attrs.empty?
+
       options
     end
 
