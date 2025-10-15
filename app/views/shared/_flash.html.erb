@@ -1,0 +1,10 @@
+<%# Flash partial for turbo_stream updates
+  Renders flash messages using FlashComponent
+
+  Usage:
+    turbo_stream.update('flash', partial: 'shared/flash', locals: { flash: flash })
+
+  Parameters:
+    @param flash [ActionDispatch::Flash::FlashHash] Flash messages hash
+%>
+<%= render FlashComponent.new(flash: flash) %>

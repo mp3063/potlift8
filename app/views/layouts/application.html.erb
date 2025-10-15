@@ -40,11 +40,11 @@
       <%= render Shared::MobileSidebarComponent.new %>
 
       <!-- Flash Messages (below navbar, fixed positioning) -->
-      <% if flash.any? %>
-        <div class="fixed top-16 right-4 z-50 w-full max-w-sm">
+      <div id="flash" class="fixed top-16 right-4 z-50 w-full max-w-sm">
+        <% if flash.any? %>
           <%= render FlashComponent.new(flash: flash) %>
-        </div>
-      <% end %>
+        <% end %>
+      </div>
 
       <!-- Main Content Area -->
       <main id="main-content" class="pt-16">

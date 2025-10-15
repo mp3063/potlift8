@@ -159,6 +159,32 @@ RSpec.describe '/products/:product_id/attribute_values', type: :request do
         expect(value.value).to be_nil
       end
     end
+
+    context 'with turbo_stream format' do
+      it 'returns turbo_stream response with flash message on success' do
+        patch product_attribute_value_path(product, product_attribute, format: :turbo_stream),
+              params: { value: '1999' }
+
+        expect(response).to have_http_status(:success)
+        expect(response.media_type).to eq('text/vnd.turbo-stream.html')
+        expect(response.body).to include('Price updated successfully')
+      end
+
+      it 'returns turbo_stream response with error flash on validation failure' do
+        # Create a mock that will cause validation to fail
+        allow_any_instance_of(ProductAttributeValue).to receive(:save).and_return(false)
+        allow_any_instance_of(ProductAttributeValue).to receive(:errors).and_return(
+          double(full_messages: ['Value is invalid'])
+        )
+
+        patch product_attribute_value_path(product, product_attribute, format: :turbo_stream),
+              params: { value: 'invalid' }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.media_type).to eq('text/vnd.turbo-stream.html')
+        expect(response.body).to include('Failed to update Price')
+      end
+    end
   end
 
   describe 'authentication requirements' do
