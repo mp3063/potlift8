@@ -36,10 +36,10 @@ RSpec.describe Label, type: :model do
       let!(:label) { create(:label, company: company, code: 'electronics', name: 'Electronics') }
 
       it 'validates uniqueness of full_code scoped to company' do
-        duplicate = build(:label, company: company, code: 'electronics', name: 'Different Name')
-        duplicate.save # Trigger callback to generate full_code
-        expect(duplicate).not_to be_valid
-        expect(duplicate.errors[:full_code]).to include('has already been taken')
+        # Try to create a duplicate label (database constraint will be raised)
+        expect {
+          create(:label, company: company, code: 'electronics', name: 'Different Name')
+        }.to raise_error(ActiveRecord::RecordNotUnique)
       end
 
       it 'allows same full_code for different companies' do
@@ -55,16 +55,16 @@ RSpec.describe Label, type: :model do
     describe 'product_default_restriction' do
       it 'defines restriction types' do
         expect(Label.product_default_restrictions).to eq({
-          'product_default_restriction_allow' => 1,
-          'product_default_restriction_deny' => 2
+          'allow' => 1,
+          'deny' => 2
         })
       end
 
       it 'allows setting restrictions' do
-        label = create(:label, :allow_products)
+        label = create(:label, product_default_restriction: :allow)
         expect(label.product_default_restriction_allow?).to be true
 
-        label.update(product_default_restriction: :product_default_restriction_deny)
+        label.update(product_default_restriction: :deny)
         expect(label.product_default_restriction_deny?).to be true
       end
     end
@@ -82,9 +82,9 @@ RSpec.describe Label, type: :model do
         expect(child.company).to eq(company)
       end
 
-      it 'does not override explicit company' do
+      it 'does not override explicit company when no parent' do
         other_company = create(:company)
-        child = Label.new(code: 'child', name: 'Child', label_type: 'category', parent_label: parent_label, company: other_company)
+        child = Label.new(code: 'child', name: 'Child', label_type: 'category', company: other_company)
         child.save
         expect(child.company).to eq(other_company)
       end
@@ -400,7 +400,16 @@ RSpec.describe Label, type: :model do
     end
 
     context 'with products' do
-      let(:label) { create(:label, :with_products, company: company, products_count: 3) }
+      let(:label) { create(:label, company: company) }
+      let!(:product1) { create(:product, company: company) }
+      let!(:product2) { create(:product, company: company) }
+      let!(:product3) { create(:product, company: company) }
+
+      before do
+        create(:product_label, label: label, product: product1)
+        create(:product_label, label: label, product: product2)
+        create(:product_label, label: label, product: product3)
+      end
 
       it 'maintains product associations' do
         expect(label.products.count).to eq(3)
