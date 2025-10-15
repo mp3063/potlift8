@@ -229,6 +229,154 @@ RSpec.describe Catalog, type: :model do
         expect(catalog.products_count).to eq(5)
       end
     end
+
+    describe '#rate_limit_config' do
+      it 'returns default rate limit config when not set' do
+        config = catalog.rate_limit_config
+        expect(config[:limit]).to eq(100)
+        expect(config[:period]).to eq(60)
+      end
+
+      it 'returns custom rate limit config when set' do
+        catalog.update(info: {
+          'rate_limit' => {
+            'limit' => 50,
+            'period' => 30
+          }
+        })
+
+        config = catalog.rate_limit_config
+        expect(config[:limit]).to eq(50)
+        expect(config[:period]).to eq(30)
+      end
+    end
+
+    describe '#update_rate_limit' do
+      it 'updates rate limit configuration' do
+        catalog.update_rate_limit(limit: 200, period: 120)
+
+        expect(catalog.info['rate_limit']['limit']).to eq(200)
+        expect(catalog.info['rate_limit']['period']).to eq(120)
+        expect(catalog.info['rate_limit']['updated_at']).to be_present
+      end
+
+      it 'persists rate limit changes' do
+        catalog.update_rate_limit(limit: 150, period: 90)
+        catalog.reload
+
+        expect(catalog.info['rate_limit']['limit']).to eq(150)
+        expect(catalog.info['rate_limit']['period']).to eq(90)
+      end
+    end
+  end
+
+  # Test batch sync methods
+  describe 'batch sync methods' do
+    include ActiveJob::TestHelper
+
+    let(:company) { create(:company) }
+    let(:catalog) { create(:catalog, company: company) }
+
+    describe '#batch_sync_all_products' do
+      context 'with no products' do
+        it 'returns empty array and logs message' do
+          expect(Rails.logger).to receive(:info).with(/No products to sync/)
+          result = catalog.batch_sync_all_products
+          expect(result).to eq([])
+        end
+      end
+
+      context 'with products' do
+        let!(:product1) { create(:product, company: company) }
+        let!(:product2) { create(:product, company: company) }
+        let!(:product3) { create(:product, company: company) }
+
+        before do
+          create(:catalog_item, catalog: catalog, product: product1)
+          create(:catalog_item, catalog: catalog, product: product2)
+          create(:catalog_item, catalog: catalog, product: product3)
+        end
+
+        it 'enqueues single batch job when batch_size is nil' do
+          expect {
+            catalog.batch_sync_all_products(queue: :low_priority, batch_size: nil)
+          }.to have_enqueued_job(BatchProductSyncJob).exactly(1).times
+        end
+
+        it 'enqueues multiple batch jobs when batch_size is specified' do
+          expect {
+            catalog.batch_sync_all_products(queue: :low_priority, batch_size: 2)
+          }.to have_enqueued_job(BatchProductSyncJob).exactly(2).times
+        end
+
+        it 'uses correct queue for batch job' do
+          jobs = catalog.batch_sync_all_products(queue: :high_priority)
+          expect(jobs.first.queue_name).to match(/high_priority/)
+        end
+
+        it 'passes catalog_id to batch job' do
+          jobs = catalog.batch_sync_all_products
+          expect(jobs).to all(be_a(ActiveJob::Base))
+        end
+      end
+    end
+
+    describe '#batch_sync_active_products' do
+      let(:product1) { create(:product, company: company) }
+      let(:product2) { create(:product, company: company) }
+      let(:product3) { create(:product, company: company) }
+
+      before do
+        create(:catalog_item, catalog: catalog, product: product1, catalog_item_state: :active)
+        create(:catalog_item, catalog: catalog, product: product2, catalog_item_state: :active)
+        create(:catalog_item, catalog: catalog, product: product3, catalog_item_state: :inactive)
+      end
+
+      it 'enqueues job only for active products' do
+        expect {
+          catalog.batch_sync_active_products(queue: :low_priority)
+        }.to have_enqueued_job(BatchProductSyncJob).exactly(1).times
+      end
+
+      it 'returns nil when no active products' do
+        catalog.catalog_items.update_all(catalog_item_state: :inactive)
+        expect(Rails.logger).to receive(:info).with(/No active products to sync/)
+        result = catalog.batch_sync_active_products
+        expect(result).to be_nil
+      end
+    end
+
+    describe '#schedule_full_sync' do
+      let!(:product1) { create(:product, company: company) }
+      let!(:product2) { create(:product, company: company) }
+
+      before do
+        create(:catalog_item, catalog: catalog, product: product1)
+        create(:catalog_item, catalog: catalog, product: product2)
+      end
+
+      it 'schedules jobs for future execution' do
+        freeze_time do
+          expect {
+            catalog.schedule_full_sync(off_peak_hour: 2, batch_size: 1)
+          }.to have_enqueued_job(BatchProductSyncJob).exactly(2).times
+        end
+      end
+
+      it 'uses low_priority queue' do
+        freeze_time do
+          jobs = catalog.schedule_full_sync(off_peak_hour: 2)
+          expect(jobs.first.queue_name).to match(/low_priority/)
+        end
+      end
+
+      it 'returns empty array when no products' do
+        catalog.catalog_items.destroy_all
+        expect(Rails.logger).to receive(:info).with(/No products to sync/)
+        result = catalog.schedule_full_sync
+        expect(result).to eq([])
+      end
+    end
   end
 
   # Integration tests

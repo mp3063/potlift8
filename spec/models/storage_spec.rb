@@ -145,6 +145,128 @@ RSpec.describe Storage, type: :model do
         expect(storage.to_param).to eq('WAREHOUSE-01')
       end
     end
+
+    describe '#total_inventory' do
+      let(:company) { create(:company) }
+      let(:storage) { create(:storage, company: company) }
+
+      context 'with no inventory' do
+        it 'returns 0' do
+          expect(storage.total_inventory).to eq(0)
+        end
+      end
+
+      context 'with inventory records' do
+        before do
+          create(:inventory, storage: storage, value: 10)
+          create(:inventory, storage: storage, value: 25)
+          create(:inventory, storage: storage, value: 50)
+        end
+
+        it 'returns sum of all inventory values' do
+          expect(storage.total_inventory).to eq(85)
+        end
+      end
+
+      context 'with zero and negative values' do
+        before do
+          create(:inventory, storage: storage, value: 100)
+          create(:inventory, storage: storage, value: 0)
+          create(:inventory, storage: storage, value: -10)
+        end
+
+        it 'includes all values in the sum' do
+          expect(storage.total_inventory).to eq(90)
+        end
+      end
+    end
+
+    describe '#product_count' do
+      let(:company) { create(:company) }
+      let(:storage) { create(:storage, company: company) }
+
+      context 'with no inventory' do
+        it 'returns 0' do
+          expect(storage.product_count).to eq(0)
+        end
+      end
+
+      context 'with inventory records' do
+        before do
+          create(:inventory, storage: storage, value: 10)
+          create(:inventory, storage: storage, value: 25)
+          create(:inventory, storage: storage, value: 0)
+        end
+
+        it 'counts only inventories with value > 0' do
+          expect(storage.product_count).to eq(2)
+        end
+      end
+
+      context 'with negative values' do
+        before do
+          create(:inventory, storage: storage, value: 10)
+          create(:inventory, storage: storage, value: -5)
+        end
+
+        it 'does not count negative values' do
+          expect(storage.product_count).to eq(1)
+        end
+      end
+
+      context 'with only zero values' do
+        before do
+          create(:inventory, storage: storage, value: 0)
+          create(:inventory, storage: storage, value: 0)
+        end
+
+        it 'returns 0' do
+          expect(storage.product_count).to eq(0)
+        end
+      end
+    end
+
+    describe '#has_inventory?' do
+      let(:company) { create(:company) }
+      let(:storage) { create(:storage, company: company) }
+
+      context 'with no inventory' do
+        it 'returns false' do
+          expect(storage.has_inventory?).to be false
+        end
+      end
+
+      context 'with inventory value > 0' do
+        before do
+          create(:inventory, storage: storage, value: 10)
+        end
+
+        it 'returns true' do
+          expect(storage.has_inventory?).to be true
+        end
+      end
+
+      context 'with only zero inventory values' do
+        before do
+          create(:inventory, storage: storage, value: 0)
+        end
+
+        it 'returns false' do
+          expect(storage.has_inventory?).to be false
+        end
+      end
+
+      context 'with mixed values' do
+        before do
+          create(:inventory, storage: storage, value: 0)
+          create(:inventory, storage: storage, value: 10)
+        end
+
+        it 'returns true if any value > 0' do
+          expect(storage.has_inventory?).to be true
+        end
+      end
+    end
   end
 
   # Test JSONB fields
