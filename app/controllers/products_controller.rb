@@ -34,7 +34,7 @@ class ProductsController < ApplicationController
   #
   def index
     @products = current_potlift_company.products
-                                       .includes(:labels, :inventories)
+                                       .includes(:labels)
 
     # Load labels for filter dropdown
     load_filter_labels
@@ -457,8 +457,7 @@ class ProductsController < ApplicationController
   def load_filter_labels
     @available_labels = current_potlift_company.labels
                                                .root_labels
-                                               .includes(sublabels: :products)
-                                               .includes(:products)
+                                               .includes(sublabels: { sublabels: :sublabels })
                                                .order(:label_positions, :name)
 
     # Calculate product counts for each label (including sublabels)
