@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" class="h-full bg-gray-50">
   <head>
-    <title><%= content_for(:title) || "Potlift8 - Product Information Management" %></title>
+    <title><%= content_for(:title) || "Potlift8 - Cannabis Inventory Management" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="turbo-cache-control" content="no-cache">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -23,31 +23,45 @@
     <%= javascript_importmap_tags %>
   </head>
 
-  <body class="h-full" data-controller="layout">
+  <body class="h-full">
+    <!-- Skip to main content link (accessibility) -->
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-50 focus:p-4 focus:bg-blue-600 focus:text-white">
+      Skip to main content
+    </a>
+
     <% if authenticated? %>
-      <div class="min-h-full">
-        <%= render SidebarComponent.new(
-          items: navigation_items,
-          active_path: request.path,
-          company: current_potlift_company
-        ) %>
+      <!-- Fixed Navbar -->
+      <%= render Shared::NavbarComponent.new(
+        current_user: current_user,
+        current_company: current_potlift_company
+      ) %>
 
-        <div class="lg:pl-72">
-          <%= render TopbarComponent.new(
-            user: current_user,
-            company: current_potlift_company,
-            companies: []
-          ) %>
+      <!-- Mobile Sidebar -->
+      <%= render Shared::MobileSidebarComponent.new %>
 
-          <main class="py-10">
-            <div class="px-4 sm:px-6 lg:px-8">
-              <%= render FlashComponent.new %>
-              <%= yield %>
-            </div>
-          </main>
+      <!-- Flash Messages (below navbar, fixed positioning) -->
+      <% if flash.any? %>
+        <div class="fixed top-16 right-4 z-50 w-full max-w-sm">
+          <%= render FlashComponent.new(flash: flash) %>
         </div>
-      </div>
+      <% end %>
+
+      <!-- Main Content Area -->
+      <main id="main-content" class="pt-16">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+          <!-- Page Header (optional) -->
+          <% if content_for?(:page_header) %>
+            <div class="mb-8">
+              <%= yield :page_header %>
+            </div>
+          <% end %>
+
+          <!-- Main Content -->
+          <%= yield %>
+        </div>
+      </main>
     <% else %>
+      <!-- Unauthenticated layout (login, etc.) -->
       <%= yield %>
     <% end %>
   </body>
