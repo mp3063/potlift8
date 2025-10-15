@@ -1,0 +1,33 @@
+<div class="space-y-3">
+  <p class="text-sm font-medium text-gray-700">Special Price with Date Range</p>
+
+  <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <div>
+      <label class="block text-xs font-medium text-gray-600 mb-1">Amount (cents)</label>
+      <%= form.number_field :value,
+          value: value&.value,
+          step: "1",
+          min: "0",
+          placeholder: "0",
+          class: "block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6" %>
+    </div>
+
+    <div>
+      <label class="block text-xs font-medium text-gray-600 mb-1">From Date</label>
+      <%= form.date_field :special_price_from,
+          value: value&.info&.dig('special_price', 'from'),
+          class: "block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6" %>
+    </div>
+
+    <div>
+      <label class="block text-xs font-medium text-gray-600 mb-1">Until Date</label>
+      <%= form.date_field :special_price_until,
+          value: value&.info&.dig('special_price', 'until'),
+          class: "block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6" %>
+    </div>
+  </div>
+
+  <p class="text-xs text-gray-500">
+    Note: Full special_price editor requires JavaScript component for complex date handling.
+  </p>
+</div>

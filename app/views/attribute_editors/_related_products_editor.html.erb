@@ -1,0 +1,10 @@
+<div class="space-y-2">
+  <%= form.text_area :value,
+      value: value&.value,
+      rows: 3,
+      class: "block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 font-mono",
+      placeholder: "Enter product IDs or SKUs, one per line",
+      'aria-label': "Related product references for #{attribute.name}" %>
+  <p class="text-xs text-gray-500">Enter product IDs or SKUs of related products, one per line</p>
+  <p class="text-xs text-gray-500">Note: Full related products editor with search requires JavaScript component.</p>
+</div>

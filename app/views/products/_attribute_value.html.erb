@@ -18,7 +18,7 @@
                     inline_editor_target: "form",
                     action: "turbo:submit-end->inline-editor#handleSubmit"
                   } do |form| %>
-      <% view_format = attribute.view_format || 'general' %>
+      <% view_format = (attribute.view_format || 'view_format_general').to_s.sub('view_format_', '') %>
       <%= render "attribute_editors/#{view_format}_editor", form: form, attribute: attribute, value: value %>
 
       <div class="mt-2 flex gap-x-2">
