@@ -1,0 +1,72 @@
+<%#
+  Priority Editor for CatalogItem
+
+  Inline editing component for catalog item priority field.
+
+  Usage:
+    <%= render "catalog_items/priority_editor",
+               catalog: @catalog,
+               catalog_item: @catalog_item %>
+
+  Features:
+  - Display mode: Shows priority number with hover-visible edit icon
+  - Edit mode: Number input with Save/Cancel buttons
+  - Turbo Frame for seamless updates
+  - Keyboard accessible (Escape to cancel, Enter to submit)
+  - Uses inline_editor_controller.js
+%>
+
+<% catalog ||= catalog_item.catalog %>
+
+<div class="group relative" data-controller="inline-editor">
+  <!-- Display Mode -->
+  <div class="flex items-center" data-inline-editor-target="display">
+    <span class="font-medium text-gray-900">
+      <%= catalog_item.priority || "—" %>
+    </span>
+    <button type="button"
+            class="ml-2 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-gray-600 focus:opacity-100"
+            data-action="click->inline-editor#edit"
+            aria-label="Edit priority">
+      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+      </svg>
+    </button>
+  </div>
+
+  <!-- Edit Mode -->
+  <div class="hidden" data-inline-editor-target="editor" aria-hidden="true">
+    <%= form_with model: catalog_item,
+                  url: catalog_catalog_item_path(catalog, catalog_item),
+                  method: :patch,
+                  data: {
+                    inline_editor_target: "form",
+                    action: "turbo:submit-end->inline-editor#handleSubmit"
+                  } do |form| %>
+      <div class="flex items-center gap-x-2">
+        <label for="<%= form.field_id(:priority) %>" class="sr-only">
+          Priority
+        </label>
+        <%= form.number_field :priority,
+                              class: "w-20 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+                              placeholder: "0",
+                              min: 0 %>
+
+        <%= form.submit "Save",
+                        class: "inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" %>
+
+        <button type="button"
+                class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                data-action="click->inline-editor#cancel">
+          Cancel
+        </button>
+      </div>
+
+      <% if catalog_item.errors.any? %>
+        <div class="mt-2 text-sm text-red-600" role="alert">
+          <%= catalog_item.errors.full_messages.join(", ") %>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+</div>
