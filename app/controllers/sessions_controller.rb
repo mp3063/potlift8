@@ -33,6 +33,12 @@ class SessionsController < ApplicationController
   # @example
   #   <a href="/auth/login">Sign in with Authlift8</a>
   def new
+    # If there's an auth_error flag, show the login page with error instead of auto-redirecting
+    if session[:auth_error].present?
+      @error_message = session.delete(:auth_error)
+      render :new and return
+    end
+
     begin
       # Clear any existing session data
       reset_session
@@ -51,10 +57,12 @@ class SessionsController < ApplicationController
       redirect_to auth_url, allow_other_host: true
     rescue Authlift::Client::ConfigurationError => e
       Rails.logger.error("OAuth configuration error: #{e.message}")
-      redirect_to root_path, alert: 'Authentication service is not configured properly.'
+      @error_message = 'Authentication service is not configured properly.'
+      render :new
     rescue StandardError => e
       Rails.logger.error("OAuth initiation failed: #{e.class} - #{e.message}")
-      redirect_to root_path, alert: 'Unable to initiate authentication. Please try again.'
+      @error_message = 'Unable to initiate authentication. Please try again.'
+      render :new
     end
   end
 
@@ -113,9 +121,9 @@ class SessionsController < ApplicationController
       user = User.find_or_create_from_oauth(user_payload)
 
       unless user
-        Rails.logger.error("Failed to create user from OAuth payload")
-        reset_session
-        redirect_to root_path, alert: 'Authentication failed. Unable to create user account.'
+        Rails.logger.error("Failed to create user from OAuth payload - likely missing company data")
+        session[:auth_error] = 'Your account is not associated with a company. Please contact your administrator.'
+        redirect_to auth_login_path
         return
       end
 
