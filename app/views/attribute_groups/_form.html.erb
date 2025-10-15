@@ -1,0 +1,75 @@
+<%= form_with model: @attribute_group, url: @attribute_group.persisted? ? attribute_group_path(@attribute_group) : attribute_groups_path, class: "space-y-8 divide-y divide-gray-200" do |form| %>
+  <div class="space-y-8">
+    <div>
+      <% if @attribute_group.errors.any? %>
+        <div class="rounded-lg bg-red-50 p-4 mb-6">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <svg class="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-red-800">
+                There <%= @attribute_group.errors.count == 1 ? 'was' : 'were' %> <%= pluralize(@attribute_group.errors.count, "error") %>:
+              </h3>
+              <div class="mt-2 text-sm text-red-700">
+                <ul role="list" class="list-disc space-y-1 pl-5">
+                  <% @attribute_group.errors.full_messages.each do |message| %>
+                    <li><%= message %></li>
+                  <% end %>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <div>
+        <h3 class="text-lg font-medium leading-6 text-gray-900">Group Information</h3>
+        <p class="mt-1 text-sm text-gray-500">Organize attributes into logical groups.</p>
+      </div>
+
+      <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+        <!-- Name -->
+        <div class="sm:col-span-3">
+          <%= form.label :name, class: "block text-sm font-medium text-gray-700" %>
+          <%= form.text_field :name,
+              class: "mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm #{@attribute_group.errors[:name].any? ? 'border-red-300' : ''}",
+              placeholder: "e.g., Basic Information" %>
+          <% if @attribute_group.errors[:name].any? %>
+            <p class="mt-2 text-sm text-red-600"><%= @attribute_group.errors[:name].first %></p>
+          <% end %>
+        </div>
+
+        <!-- Code -->
+        <div class="sm:col-span-3">
+          <%= form.label :code, class: "block text-sm font-medium text-gray-700" %>
+          <%= form.text_field :code,
+              class: "mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm #{@attribute_group.errors[:code].any? ? 'border-red-300' : ''}",
+              placeholder: "e.g., basic_info" %>
+          <p class="mt-2 text-sm text-gray-500">Lowercase letters, numbers, and underscores only</p>
+          <% if @attribute_group.errors[:code].any? %>
+            <p class="mt-2 text-sm text-red-600"><%= @attribute_group.errors[:code].first %></p>
+          <% end %>
+        </div>
+
+        <!-- Description -->
+        <div class="sm:col-span-6">
+          <%= form.label :description, class: "block text-sm font-medium text-gray-700" %>
+          <%= form.text_area :description,
+              rows: 3,
+              class: "mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+              placeholder: "Optional description of this group" %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pt-5">
+    <div class="flex justify-end gap-x-3">
+      <%= link_to "Cancel", product_attributes_path, class: "rounded-lg bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" %>
+      <%= form.submit class: "rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600" %>
+    </div>
+  </div>
+<% end %>

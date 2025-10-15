@@ -1,0 +1,144 @@
+# frozen_string_literal: true
+
+# ProductAttributesController
+#
+# Manages CRUD operations for ProductAttributes with support for drag-and-drop
+# reordering and inline validation.
+#
+# Key Features:
+# - Attribute grouping with drag-and-drop ordering
+# - Inline code validation via JSON endpoint
+# - Options management for select/multiselect types
+# - Scoped to current_potlift_company
+#
+class ProductAttributesController < ApplicationController
+  before_action :set_product_attribute, only: [:show, :edit, :update, :destroy]
+  before_action :set_attribute_groups, only: [:new, :edit, :create, :update]
+
+  # GET /product_attributes
+  # Lists all attributes grouped by AttributeGroup
+  def index
+    @attribute_groups = current_potlift_company.attribute_groups
+      .includes(:product_attributes)
+      .order(:position)
+
+    @ungrouped_attributes = current_potlift_company.product_attributes
+      .where(attribute_group_id: nil)
+      .order(:attribute_position)
+  end
+
+  # GET /product_attributes/:code
+  def show
+    @attribute_values = @product_attribute.product_attribute_values
+      .includes(:product)
+      .order('products.name')
+      .limit(50)
+  end
+
+  # GET /product_attributes/new
+  def new
+    @product_attribute = current_potlift_company.product_attributes.build
+  end
+
+  # GET /product_attributes/:code/edit
+  def edit
+  end
+
+  # POST /product_attributes
+  def create
+    @product_attribute = current_potlift_company.product_attributes.build(product_attribute_params)
+
+    if @product_attribute.save
+      redirect_to product_attributes_path, notice: 'Attribute created successfully.'
+    else
+      render :new, status: :unprocessable_entity
+    end
+  end
+
+  # PATCH /product_attributes/:code
+  def update
+    if @product_attribute.update(product_attribute_params)
+      redirect_to product_attributes_path, notice: 'Attribute updated successfully.'
+    else
+      render :edit, status: :unprocessable_entity
+    end
+  end
+
+  # DELETE /product_attributes/:code
+  def destroy
+    if @product_attribute.product_attribute_values.any?
+      redirect_to product_attributes_path, alert: 'Cannot delete attribute with existing values.'
+    else
+      @product_attribute.destroy
+      redirect_to product_attributes_path, notice: 'Attribute deleted successfully.'
+    end
+  end
+
+  # PATCH /product_attributes/reorder
+  # Updates attribute positions within groups
+  def reorder
+    params[:order].each_with_index do |id, index|
+      attribute = current_potlift_company.product_attributes.find(id)
+      attribute.update_column(:attribute_position, index + 1)
+    end
+
+    head :ok
+  end
+
+  # GET /product_attributes/validate_code
+  # JSON endpoint for inline code validation
+  def validate_code
+    code = params[:code].to_s.strip
+    attribute_id = params[:id]
+
+    # Validate format (must be lowercase, no conversion)
+    unless code.match?(/\A[a-z0-9_]+\z/)
+      render json: { valid: false, message: 'Code must contain only lowercase letters, numbers, and underscores' }
+      return
+    end
+
+    # Check uniqueness within company (case-insensitive)
+    exists = current_potlift_company.product_attributes
+      .where('LOWER(code) = ?', code.downcase)
+      .where.not(id: attribute_id)
+      .exists?
+
+    if exists
+      render json: { valid: false, message: 'Code already exists' }
+    else
+      render json: { valid: true }
+    end
+  end
+
+  private
+
+  def set_product_attribute
+    @product_attribute = current_potlift_company.product_attributes.find_by!(code: params[:id])
+  end
+
+  def set_attribute_groups
+    @attribute_groups = current_potlift_company.attribute_groups.order(:position)
+  end
+
+  def product_attribute_params
+    params.require(:product_attribute).permit(
+      :name,
+      :code,
+      :view_format,
+      :attribute_group_id,
+      :mandatory,
+      :help_text,
+      :default_value,
+      :pa_type,
+      :description,
+      :product_attribute_scope,
+      options: []
+    ).tap do |permitted|
+      # Handle options array - store in info jsonb field
+      if permitted[:options].present?
+        permitted[:info] = { options: permitted[:options].compact_blank }
+        permitted.delete(:options)
+      end
+    end
+  end
+end

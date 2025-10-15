@@ -10,6 +10,7 @@ FactoryBot.define do
     has_rules { false }
     rules { {} }
     attribute_position { nil }
+    attribute_group { nil }  # Optional, ungrouped by default
     info { {} }
 
     # Trait for mandatory attribute
@@ -36,6 +37,24 @@ FactoryBot.define do
     # Trait with position
     trait :positioned do
       sequence(:attribute_position) { |n| n }
+    end
+
+    # Trait for grouped attributes
+    trait :grouped do
+      attribute_group
+    end
+
+    # Trait for grouped attribute with specific group
+    trait :in_pricing_group do
+      association :attribute_group, factory: [:attribute_group, :pricing_group]
+    end
+
+    trait :in_basic_info_group do
+      association :attribute_group, factory: [:attribute_group, :basic_info_group]
+    end
+
+    trait :in_dimensions_group do
+      association :attribute_group, factory: [:attribute_group, :dimensions_group]
     end
 
     # PA Type traits (7 types)

@@ -1,0 +1,8 @@
+<div class="flex items-center">
+  <%= form.check_box :value,
+      checked: value&.value == 'true' || value&.value == true,
+      class: "h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600" %>
+  <label class="ml-2 text-sm text-gray-700">
+    <%= attribute.name %>
+  </label>
+</div>

@@ -1,0 +1,223 @@
+<%= form_with model: @product_attribute, data: { controller: "attribute-form" }, class: "space-y-8 divide-y divide-gray-200" do |form| %>
+  <div class="space-y-8">
+    <div>
+      <% if @product_attribute.errors.any? %>
+        <div class="rounded-lg bg-red-50 p-4 mb-6">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <svg class="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-red-800">
+                There <%= @product_attribute.errors.count == 1 ? 'was' : 'were' %> <%= pluralize(@product_attribute.errors.count, "error") %>:
+              </h3>
+              <div class="mt-2 text-sm text-red-700">
+                <ul role="list" class="list-disc space-y-1 pl-5">
+                  <% @product_attribute.errors.full_messages.each do |message| %>
+                    <li><%= message %></li>
+                  <% end %>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <div>
+        <h3 class="text-lg font-medium leading-6 text-gray-900">Basic Information</h3>
+        <p class="mt-1 text-sm text-gray-500">Define the attribute's basic properties.</p>
+      </div>
+
+      <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+        <!-- Name -->
+        <div class="sm:col-span-3">
+          <%= form.label :name, class: "block text-sm font-medium text-gray-700" %>
+          <%= form.text_field :name,
+              class: "mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm #{@product_attribute.errors[:name].any? ? 'border-red-300' : ''}",
+              placeholder: "e.g., Weight" %>
+          <% if @product_attribute.errors[:name].any? %>
+            <p class="mt-2 text-sm text-red-600"><%= @product_attribute.errors[:name].first %></p>
+          <% end %>
+        </div>
+
+        <!-- Code -->
+        <div class="sm:col-span-3">
+          <%= form.label :code, class: "block text-sm font-medium text-gray-700" %>
+          <%= form.text_field :code,
+              class: "mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm #{@product_attribute.errors[:code].any? ? 'border-red-300' : ''}",
+              placeholder: "e.g., weight",
+              data: {
+                attribute_form_target: "code",
+                action: "blur->attribute-form#validateCode",
+                attribute_id: @product_attribute.persisted? ? @product_attribute.id : nil
+              } %>
+          <p class="mt-2 text-sm text-gray-500">Lowercase letters, numbers, and underscores only</p>
+          <% if @product_attribute.errors[:code].any? %>
+            <p class="mt-2 text-sm text-red-600"><%= @product_attribute.errors[:code].first %></p>
+          <% end %>
+        </div>
+
+        <!-- Attribute Type (pa_type) -->
+        <div class="sm:col-span-3">
+          <%= form.label :pa_type, "Attribute Type", class: "block text-sm font-medium text-gray-700" %>
+          <%= form.select :pa_type,
+              options_for_select(
+                [
+                  ['Text', 'patype_text'],
+                  ['Number', 'patype_number'],
+                  ['Boolean', 'patype_boolean'],
+                  ['Select', 'patype_select'],
+                  ['Multiselect', 'patype_multiselect'],
+                  ['Date', 'patype_date'],
+                  ['Rich Text', 'patype_rich_text']
+                ],
+                @product_attribute.pa_type
+              ),
+              { prompt: "Select type..." },
+              class: "mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+              data: {
+                attribute_form_target: "paType",
+                action: "change->attribute-form#handleTypeChange"
+              } %>
+          <p class="mt-2 text-sm text-gray-500">The data type for this attribute</p>
+        </div>
+
+        <!-- View Format -->
+        <div class="sm:col-span-3">
+          <%= form.label :view_format, "Display Format", class: "block text-sm font-medium text-gray-700" %>
+          <%= form.select :view_format,
+              options_for_select(
+                [
+                  ['General', 'view_format_general'],
+                  ['Price', 'view_format_price'],
+                  ['Weight', 'view_format_weight'],
+                  ['HTML', 'view_format_html'],
+                  ['EAN', 'view_format_ean'],
+                  ['Markdown', 'view_format_markdown'],
+                  ['Price Hash', 'view_format_price_hash'],
+                  ['External Image List', 'view_format_external_image_list'],
+                  ['Special Price', 'view_format_special_price'],
+                  ['Customer Group Price', 'view_format_customer_group_price'],
+                  ['Selectable', 'view_format_selectable'],
+                  ['Related Products', 'view_format_related_products']
+                ],
+                @product_attribute.view_format
+              ),
+              { prompt: "Select format..." },
+              class: "mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+              data: {
+                attribute_form_target: "viewFormat",
+                action: "change->attribute-form#handleFormatChange"
+              } %>
+          <p class="mt-2 text-sm text-gray-500">How the attribute value will be displayed and edited</p>
+        </div>
+
+        <!-- Attribute Group -->
+        <div class="sm:col-span-3">
+          <%= form.label :attribute_group_id, "Group", class: "block text-sm font-medium text-gray-700" %>
+          <%= form.select :attribute_group_id,
+              options_from_collection_for_select(@attribute_groups, :id, :name, @product_attribute.attribute_group_id),
+              { prompt: "No group (ungrouped)" },
+              class: "mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" %>
+        </div>
+
+        <!-- Scope -->
+        <div class="sm:col-span-3">
+          <%= form.label :product_attribute_scope, "Scope", class: "block text-sm font-medium text-gray-700" %>
+          <%= form.select :product_attribute_scope,
+              options_for_select(
+                [
+                  ['Product Only', 'product_scope'],
+                  ['Catalog Only', 'catalog_scope'],
+                  ['Product & Catalog', 'product_and_catalog_scope']
+                ],
+                @product_attribute.product_attribute_scope
+              ),
+              {},
+              class: "mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" %>
+          <p class="mt-2 text-sm text-gray-500">Where this attribute can be used</p>
+        </div>
+
+        <!-- Description -->
+        <div class="sm:col-span-6">
+          <%= form.label :description, class: "block text-sm font-medium text-gray-700" %>
+          <%= form.text_area :description,
+              rows: 3,
+              class: "mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+              placeholder: "Optional description" %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Options (for select/multiselect) -->
+    <div class="pt-8 hidden" data-attribute-form-target="optionsSection">
+      <div>
+        <h3 class="text-lg font-medium leading-6 text-gray-900">Options</h3>
+        <p class="mt-1 text-sm text-gray-500">Define the available options for this select field.</p>
+      </div>
+
+      <div class="mt-6">
+        <% existing_options = @product_attribute.info&.dig('options') || [] %>
+        <div data-controller="options-manager" data-options-manager-options-value="<%= existing_options.to_json %>">
+          <div class="space-y-2" data-options-manager-target="container">
+            <!-- Options will be added here dynamically -->
+          </div>
+
+          <button type="button"
+                  class="mt-4 inline-flex items-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+                  data-action="click->options-manager#addOption">
+            <svg class="-ml-0.5 mr-1.5 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Add Option
+          </button>
+
+          <%= form.hidden_field :options, data: { options_manager_target: "hiddenField" }, value: existing_options.to_json %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Flags -->
+    <div class="pt-8">
+      <div>
+        <h3 class="text-lg font-medium leading-6 text-gray-900">Behavior</h3>
+        <p class="mt-1 text-sm text-gray-500">Configure how this attribute behaves.</p>
+      </div>
+
+      <div class="mt-6 space-y-4">
+        <div class="relative flex items-start">
+          <div class="flex h-5 items-center">
+            <%= form.check_box :mandatory, class: "h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" %>
+          </div>
+          <div class="ml-3 text-sm">
+            <%= form.label :mandatory, class: "font-medium text-gray-700" %>
+            <p class="text-gray-500">This attribute must have a value</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Default Value -->
+    <div class="pt-8">
+      <div>
+        <h3 class="text-lg font-medium leading-6 text-gray-900">Default Value</h3>
+        <p class="mt-1 text-sm text-gray-500">Optional default value for new products.</p>
+      </div>
+
+      <div class="mt-6">
+        <%= form.text_field :default_value,
+            class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+            placeholder: "Default value (optional)" %>
+      </div>
+    </div>
+  </div>
+
+  <div class="pt-5">
+    <div class="flex justify-end gap-x-3">
+      <%= link_to "Cancel", product_attributes_path, class: "rounded-lg bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" %>
+      <%= form.submit class: "rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600" %>
+    </div>
+  </div>
+<% end %>

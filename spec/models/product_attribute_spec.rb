@@ -28,8 +28,24 @@ RSpec.describe ProductAttribute, type: :model do
   # Test associations
   describe 'associations' do
     it { is_expected.to belong_to(:company) }
+    it { is_expected.to belong_to(:attribute_group).optional }
     it { is_expected.to have_many(:product_attribute_values).dependent(:destroy) }
     it { is_expected.to have_many(:products).through(:product_attribute_values) }
+
+    context 'with attribute group' do
+      let(:company) { create(:company) }
+      let(:group) { create(:attribute_group, company: company) }
+      let(:attr) { create(:product_attribute, company: company, attribute_group: group) }
+
+      it 'belongs to an attribute group' do
+        expect(attr.attribute_group).to eq(group)
+      end
+
+      it 'can be ungrouped (nil group)' do
+        ungrouped = create(:product_attribute, company: company, attribute_group: nil)
+        expect(ungrouped.attribute_group).to be_nil
+      end
+    end
   end
 
   # Test validations
@@ -389,6 +405,148 @@ RSpec.describe ProductAttribute, type: :model do
     end
   end
 
+  # Test acts_as_list positioning within groups
+  describe 'acts_as_list positioning' do
+    let(:company) { create(:company) }
+    let(:group1) { create(:attribute_group, company: company) }
+    let(:group2) { create(:attribute_group, company: company) }
+
+    context 'position assignment' do
+      it 'assigns position automatically when created' do
+        attr1 = create(:product_attribute, company: company, attribute_group: group1)
+        attr2 = create(:product_attribute, company: company, attribute_group: group1)
+        attr3 = create(:product_attribute, company: company, attribute_group: group1)
+
+        expect(attr1.attribute_position).to eq(1)
+        expect(attr2.attribute_position).to eq(2)
+        expect(attr3.attribute_position).to eq(3)
+      end
+
+      it 'positions are scoped to company and attribute_group' do
+        attr1_g1 = create(:product_attribute, company: company, attribute_group: group1)
+        attr2_g1 = create(:product_attribute, company: company, attribute_group: group1)
+        attr1_g2 = create(:product_attribute, company: company, attribute_group: group2)
+        attr2_g2 = create(:product_attribute, company: company, attribute_group: group2)
+
+        # Each group has independent positioning starting at 1
+        expect(attr1_g1.attribute_position).to eq(1)
+        expect(attr2_g1.attribute_position).to eq(2)
+        expect(attr1_g2.attribute_position).to eq(1)
+        expect(attr2_g2.attribute_position).to eq(2)
+      end
+
+      it 'ungrouped attributes have separate positioning' do
+        attr1_grouped = create(:product_attribute, company: company, attribute_group: group1)
+        attr1_ungrouped = create(:product_attribute, company: company, attribute_group: nil)
+        attr2_grouped = create(:product_attribute, company: company, attribute_group: group1)
+        attr2_ungrouped = create(:product_attribute, company: company, attribute_group: nil)
+
+        # Grouped attributes
+        expect(attr1_grouped.attribute_position).to eq(1)
+        expect(attr2_grouped.attribute_position).to eq(2)
+
+        # Ungrouped attributes (separate sequence)
+        expect(attr1_ungrouped.attribute_position).to eq(1)
+        expect(attr2_ungrouped.attribute_position).to eq(2)
+      end
+
+      it 'different companies have independent positioning' do
+        other_company = create(:company)
+        attr1 = create(:product_attribute, company: company, attribute_group: group1)
+        attr2 = create(:product_attribute, company: other_company, attribute_group: nil)
+
+        expect(attr1.attribute_position).to eq(1)
+        expect(attr2.attribute_position).to eq(1)
+      end
+    end
+
+    context 'reordering methods' do
+      let!(:attr1) { create(:product_attribute, company: company, attribute_group: group1, name: 'First') }
+      let!(:attr2) { create(:product_attribute, company: company, attribute_group: group1, name: 'Second') }
+      let!(:attr3) { create(:product_attribute, company: company, attribute_group: group1, name: 'Third') }
+      let!(:attr_other_group) { create(:product_attribute, company: company, attribute_group: group2, name: 'Other Group') }
+
+      it 'moves attribute to top within group' do
+        attr3.move_to_top
+
+        expect(attr3.reload.attribute_position).to eq(1)
+        expect(attr1.reload.attribute_position).to eq(2)
+        expect(attr2.reload.attribute_position).to eq(3)
+      end
+
+      it 'moves attribute to bottom within group' do
+        attr1.move_to_bottom
+
+        expect(attr2.reload.attribute_position).to eq(1)
+        expect(attr3.reload.attribute_position).to eq(2)
+        expect(attr1.reload.attribute_position).to eq(3)
+      end
+
+      it 'moves attribute higher within group' do
+        attr3.move_higher
+
+        expect(attr1.reload.attribute_position).to eq(1)
+        expect(attr3.reload.attribute_position).to eq(2)
+        expect(attr2.reload.attribute_position).to eq(3)
+      end
+
+      it 'moves attribute lower within group' do
+        attr1.move_lower
+
+        expect(attr2.reload.attribute_position).to eq(1)
+        expect(attr1.reload.attribute_position).to eq(2)
+        expect(attr3.reload.attribute_position).to eq(3)
+      end
+
+      it 'does not affect other group positions' do
+        original_position = attr_other_group.attribute_position
+
+        attr2.move_to_top
+
+        expect(attr_other_group.reload.attribute_position).to eq(original_position)
+      end
+    end
+
+    context 'moving between groups' do
+      let!(:attr1) { create(:product_attribute, company: company, attribute_group: group1, attribute_position: 1) }
+      let!(:attr2) { create(:product_attribute, company: company, attribute_group: group1, attribute_position: 2) }
+      let!(:attr3) { create(:product_attribute, company: company, attribute_group: group2, attribute_position: 1) }
+
+      it 'reorders when attribute moves to different group' do
+        attr1.update(attribute_group: group2)
+
+        # attr1 should be added to end of group2
+        expect(attr1.reload.attribute_position).to eq(2)
+        expect(attr3.reload.attribute_position).to eq(1)
+
+        # group1 should be reordered
+        expect(attr2.reload.attribute_position).to eq(1)
+      end
+
+      it 'reorders when attribute becomes ungrouped' do
+        attr1.update(attribute_group: nil)
+
+        # attr1 gets new position in ungrouped sequence
+        expect(attr1.reload.attribute_position).to eq(1)
+
+        # group1 should be reordered
+        expect(attr2.reload.attribute_position).to eq(1)
+      end
+    end
+
+    context 'default_scope ordering' do
+      let!(:attr3) { create(:product_attribute, company: company, attribute_group: group1, attribute_position: 3) }
+      let!(:attr1) { create(:product_attribute, company: company, attribute_group: group1, attribute_position: 1) }
+      let!(:attr_nil) { create(:product_attribute, company: company, attribute_group: group1, attribute_position: nil) }
+      let!(:attr2) { create(:product_attribute, company: company, attribute_group: group1, attribute_position: 2) }
+
+      it 'orders by attribute_position asc with nulls last' do
+        attrs = group1.product_attributes.to_a
+        expect(attrs).to eq([attr1, attr2, attr3, attr_nil])
+      end
+    end
+  end
+
   # Integration tests
   describe 'integration' do
     let(:company) { create(:company) }
@@ -440,6 +598,38 @@ RSpec.describe ProductAttribute, type: :model do
         expect(select_attr.info['options']).to be_an(Array)
         expect(select_attr.info['options']).not_to be_empty
         expect(multiselect_attr.info['options']).to be_an(Array)
+      end
+    end
+
+    context 'grouped attributes' do
+      let(:group) { create(:attribute_group, :pricing_group, company: company) }
+      let(:attr1) { create(:product_attribute, :price_format, company: company, attribute_group: group, code: 'price') }
+      let(:attr2) { create(:product_attribute, :price_format, company: company, attribute_group: group, code: 'special_price') }
+      let(:ungrouped_attr) { create(:product_attribute, company: company, attribute_group: nil) }
+
+      it 'can belong to an attribute group' do
+        expect(attr1.attribute_group).to eq(group)
+        expect(attr2.attribute_group).to eq(group)
+        expect(ungrouped_attr.attribute_group).to be_nil
+      end
+
+      it 'maintains position within group' do
+        expect(attr1.attribute_position).to eq(1)
+        expect(attr2.attribute_position).to eq(2)
+      end
+
+      it 'can access group attributes' do
+        expect(group.product_attributes).to include(attr1, attr2)
+        expect(group.product_attributes).not_to include(ungrouped_attr)
+      end
+
+      it 'survives group deletion (nullifies group_id)' do
+        group.destroy
+
+        expect(attr1.reload.attribute_group_id).to be_nil
+        expect(attr2.reload.attribute_group_id).to be_nil
+        expect(ProductAttribute.exists?(attr1.id)).to be true
+        expect(ProductAttribute.exists?(attr2.id)).to be true
       end
     end
   end

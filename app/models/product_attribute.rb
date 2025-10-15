@@ -48,9 +48,15 @@ class ProductAttribute < ApplicationRecord
 
   # Associations
   belongs_to :company
+  belongs_to :attribute_group, class_name: 'AttributeGroup', optional: true
   has_many :product_attribute_values, dependent: :destroy
   has_many :products, through: :product_attribute_values
   has_many :catalog_item_attribute_values, dependent: :destroy
+
+  # List ordering scoped to company and attribute_group
+  # This allows independent positioning within each group or ungrouped attributes
+  # Using existing attribute_position column
+  acts_as_list scope: [:company_id, :attribute_group_id], column: :attribute_position
 
   # Scopes
   default_scope { order("attribute_position asc nulls last") }
