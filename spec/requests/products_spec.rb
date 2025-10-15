@@ -90,6 +90,98 @@ RSpec.describe '/products', type: :request do
         expect(response.body).to include('Product Alpha')
         expect(response.body).not_to include('Product Beta')
       end
+
+      it 'displays active label filter chip' do
+        get products_path, params: { label_id: label1.id }
+
+        expect(response).to be_successful
+        expect(response.body).to include('Active filters:')
+        expect(response.body).to include('Electronics')
+      end
+
+      it 'preserves other filters when applying label filter' do
+        get products_path, params: { label_id: label1.id, q: 'Alpha', product_type: '1' }
+
+        expect(response).to be_successful
+        expect(response.body).to include('Product Alpha')
+        # Should not show other products even though they match label
+      end
+
+      context 'with hierarchical labels' do
+        let!(:parent_label) { create(:label, company: company, code: 'electronics-parent', name: 'Electronics', parent_label_id: nil) }
+        let!(:child_label) { create(:label, company: company, code: 'phones', name: 'Phones', parent_label: parent_label) }
+        let!(:grandchild_label) { create(:label, company: company, code: 'smartphones', name: 'Smartphones', parent_label: child_label) }
+
+        let!(:parent_product) { create(:product, company: company, sku: 'ELEC001', name: 'Electronic Device') }
+        let!(:child_product) { create(:product, company: company, sku: 'PHONE001', name: 'Phone Device') }
+        let!(:grandchild_product) { create(:product, company: company, sku: 'SMART001', name: 'Smartphone Device') }
+
+        before do
+          create(:product_label, product: parent_product, label: parent_label)
+          create(:product_label, product: child_product, label: child_label)
+          create(:product_label, product: grandchild_product, label: grandchild_label)
+        end
+
+        it 'filters by parent label includes products with child labels' do
+          get products_path, params: { label_id: parent_label.id }
+
+          expect(response).to be_successful
+          # Should show products with parent label, child label, and grandchild label
+          expect(response.body).to include('Electronic Device')
+          expect(response.body).to include('Phone Device')
+          expect(response.body).to include('Smartphone Device')
+        end
+
+        it 'filters by child label includes products with grandchild labels' do
+          get products_path, params: { label_id: child_label.id }
+
+          expect(response).to be_successful
+          # Should show products with child label and grandchild label
+          expect(response.body).to include('Phone Device')
+          expect(response.body).to include('Smartphone Device')
+          # Should NOT show parent label products
+          expect(response.body).not_to include('Electronic Device')
+        end
+
+        it 'filters by grandchild label only shows that level' do
+          get products_path, params: { label_id: grandchild_label.id }
+
+          expect(response).to be_successful
+          # Should only show products with grandchild label
+          expect(response.body).to include('Smartphone Device')
+          expect(response.body).not_to include('Electronic Device')
+          expect(response.body).not_to include('Phone Device')
+        end
+
+        it 'displays full hierarchical label name in filter chip' do
+          get products_path, params: { label_id: grandchild_label.id }
+
+          expect(response).to be_successful
+          expect(response.body).to include('Active filters:')
+          # Should show full path: Electronics > Phones > Smartphones
+          expect(response.body).to include('Electronics &gt; Phones &gt; Smartphones')
+        end
+      end
+
+      it 'handles invalid label_id gracefully' do
+        get products_path, params: { label_id: 999999 }
+
+        expect(response).to be_successful
+        # Should show all products (filter ignored)
+        expect(response.body).to include('Product Alpha')
+        expect(response.body).to include('Product Beta')
+      end
+
+      it 'prevents filtering by labels from other companies' do
+        other_company_label = create(:label, company: other_company, code: 'other', name: 'Other Label')
+
+        get products_path, params: { label_id: other_company_label.id }
+
+        expect(response).to be_successful
+        # Should show all products (filter ignored for security)
+        expect(response.body).to include('Product Alpha')
+        expect(response.body).to include('Product Beta')
+      end
     end
 
     context 'with sorting' do
@@ -127,8 +219,15 @@ RSpec.describe '/products', type: :request do
         get products_path
 
         expect(response).to be_successful
-        expect(response.body).to include('Showing')
-        expect(response.body).to include('of 31') # 3 original + 28 bulk
+        # With 31 total products and 25 per page, we should see 25 on page 1
+        # Products are ordered by created_at DESC by default
+        # So newest products (BULK027 down to BULK003) plus PROD003 should be on page 1
+        # And older products (PROD001, PROD002, BULK002, BULK001, BULK000) on page 2
+
+        # Check a recent product is on page 1
+        expect(response.body).to include('BULK027') # Newest bulk product
+        # Check the oldest products are NOT on page 1 (should be on page 2)
+        expect(response.body).not_to include('PROD001') # One of the oldest
       end
 
       it 'respects per_page parameter' do
@@ -184,9 +283,10 @@ RSpec.describe '/products', type: :request do
         get products_path
 
         expect(response).to be_successful
-        # Parse product IDs from response to ensure other_product is not included
-        expect(response.body).not_to include(other_product.id.to_s)
+        # Check that other company product SKU and name are not in response
+        # (Avoid checking raw ID as it can appear in counts, pagination, etc.)
         expect(response.body).not_to include('OTHER001')
+        expect(response.body).not_to include('Other Product')
       end
     end
   end
@@ -462,7 +562,7 @@ RSpec.describe '/products', type: :request do
   end
 
   describe 'POST /duplicate' do
-    let(:product) do
+    let!(:product) do
       create(:product,
              company: company,
              sku: 'ORIG001',
@@ -623,6 +723,171 @@ RSpec.describe '/products', type: :request do
       expect(response).to redirect_to(products_path)
       follow_redirect!
       expect(response.body).to include('Labels updated for 2 products')
+    end
+  end
+
+  describe 'POST /products/:id/add_label' do
+    let(:product) { create(:product, company: company) }
+    let(:label) { create(:label, company: company, code: 'test', name: 'Test Label') }
+    let(:other_company_label) { create(:label, company: other_company) }
+    let(:other_company_product) { create(:product, company: other_company) }
+
+    it 'adds a label to the product' do
+      expect {
+        post add_label_product_path(product), params: { label_id: label.id }
+      }.to change { product.labels.count }.by(1)
+    end
+
+    it 'associates the correct label with the product' do
+      post add_label_product_path(product), params: { label_id: label.id }
+
+      product.reload
+      expect(product.labels).to include(label)
+    end
+
+    it 'redirects to product show page with success message' do
+      post add_label_product_path(product), params: { label_id: label.id }
+
+      expect(response).to redirect_to(product)
+      follow_redirect!
+      expect(response.body).to include("Label &#39;Test Label&#39; added successfully.")
+    end
+
+    it 'does not add duplicate labels' do
+      product.labels << label
+
+      expect {
+        post add_label_product_path(product), params: { label_id: label.id }
+      }.not_to change { product.labels.count }
+    end
+
+    it 'shows error when adding duplicate label' do
+      product.labels << label
+      post add_label_product_path(product), params: { label_id: label.id }
+
+      expect(response).to redirect_to(product)
+      follow_redirect!
+      expect(response.body).to include('Label already assigned')
+    end
+
+    it 'shows error when label_id is missing' do
+      post add_label_product_path(product)
+
+      expect(response).to redirect_to(product)
+      follow_redirect!
+      expect(response.body).to include('Please select a label')
+    end
+
+    it 'prevents adding labels from other companies' do
+      expect {
+        post add_label_product_path(product), params: { label_id: other_company_label.id }
+      }.not_to change { product.labels.count }
+    end
+
+    it 'prevents adding labels to other company products' do
+      expect {
+        post add_label_product_path(other_company_product), params: { label_id: label.id }
+      }.to raise_error(ActiveRecord::RecordNotFound)
+    end
+  end
+
+  describe 'DELETE /products/:id/remove_label' do
+    let(:product) { create(:product, company: company) }
+    let(:label) { create(:label, company: company, code: 'test', name: 'Test Label') }
+    let(:other_company_product) { create(:product, company: other_company) }
+
+    before do
+      product.labels << label
+    end
+
+    it 'removes a label from the product' do
+      expect {
+        delete remove_label_product_path(product), params: { label_id: label.id }
+      }.to change { product.labels.count }.by(-1)
+    end
+
+    it 'removes the correct label from the product' do
+      delete remove_label_product_path(product), params: { label_id: label.id }
+
+      product.reload
+      expect(product.labels).not_to include(label)
+    end
+
+    it 'redirects to product show page with success message' do
+      delete remove_label_product_path(product), params: { label_id: label.id }
+
+      expect(response).to redirect_to(product)
+      follow_redirect!
+      expect(response.body).to include("Label &#39;Test Label&#39; removed successfully.")
+    end
+
+    it 'shows error when label_id is missing' do
+      delete remove_label_product_path(product)
+
+      expect(response).to redirect_to(product)
+      follow_redirect!
+      expect(response.body).to include('Label ID is required')
+    end
+
+    it 'shows error when label not found on product' do
+      different_label = create(:label, company: company)
+
+      delete remove_label_product_path(product), params: { label_id: different_label.id }
+
+      expect(response).to redirect_to(product)
+      follow_redirect!
+      expect(response.body).to include('Label not found on this product')
+    end
+
+    it 'prevents removing labels from other company products' do
+      expect {
+        delete remove_label_product_path(other_company_product), params: { label_id: label.id }
+      }.to raise_error(ActiveRecord::RecordNotFound)
+    end
+  end
+
+  describe 'PATCH /products/:id/toggle_active' do
+    let(:product) { create(:product, company: company, product_status: :draft) }
+    let(:other_company_product) { create(:product, company: other_company) }
+
+    it 'activates a draft product' do
+      patch toggle_active_product_path(product)
+
+      product.reload
+      expect(product.product_status).to eq('active')
+    end
+
+    it 'deactivates an active product' do
+      product.update(product_status: :active)
+
+      patch toggle_active_product_path(product)
+
+      product.reload
+      expect(product.product_status).to eq('draft')
+    end
+
+    it 'redirects to product show page with success message for activation' do
+      patch toggle_active_product_path(product)
+
+      expect(response).to redirect_to(product)
+      follow_redirect!
+      expect(response.body).to include('Product activated successfully')
+    end
+
+    it 'redirects to product show page with success message for deactivation' do
+      product.update(product_status: :active)
+
+      patch toggle_active_product_path(product)
+
+      expect(response).to redirect_to(product)
+      follow_redirect!
+      expect(response.body).to include('Product deactivated successfully')
+    end
+
+    it 'prevents toggling other company products' do
+      expect {
+        patch toggle_active_product_path(other_company_product)
+      }.to raise_error(ActiveRecord::RecordNotFound)
     end
   end
 

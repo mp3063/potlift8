@@ -15,7 +15,7 @@
 # - Turbo Stream support for dynamic updates
 #
 class ProductsController < ApplicationController
-  before_action :set_product, only: [:show, :edit, :update, :destroy, :duplicate]
+  before_action :set_product, only: [:show, :edit, :update, :destroy, :duplicate, :add_label, :remove_label, :toggle_active]
 
   # GET /products
   # GET /products.turbo_stream
@@ -29,12 +29,15 @@ class ProductsController < ApplicationController
   # - sort: Sort column (sku, name, created_at, updated_at)
   # - direction: Sort direction (asc, desc)
   # - type: Filter by product_type (sellable, configurable, bundle)
-  # - label_id: Filter by label ID
+  # - label_id: Filter by label ID (includes sublabels)
   # - q: Search query (matches name or SKU)
   #
   def index
     @products = current_potlift_company.products
                                        .includes(:labels, :inventories)
+
+    # Load labels for filter dropdown
+    load_filter_labels
 
     # Apply filtering
     @products = apply_filters(@products)
@@ -63,9 +66,15 @@ class ProductsController < ApplicationController
   # Shows detailed product information.
   #
   def show
-    @attribute_values = @product.product_attribute_values
-                                .includes(:product_attribute)
-                                .order('product_attributes.code')
+    # Reload product with associations to ensure they're loaded
+    @product = current_potlift_company.products
+                                      .includes(product_attribute_values: :product_attribute)
+                                      .find(params[:id])
+
+    # Build attribute => value hash for the component
+    @attribute_values = @product.product_attribute_values.each_with_object({}) do |pav, hash|
+      hash[pav.product_attribute] = pav
+    end
   end
 
   # GET /products/new
@@ -167,10 +176,10 @@ class ProductsController < ApplicationController
     end
 
     # Eager load associations to prevent N+1 queries during destroy callbacks
-    products = current_potlift_company.products.where(id: product_ids).includes(:product_attribute_values, :labels)
+    products = current_potlift_company.products.where(id: product_ids).includes(:product_attribute_values, :labels, :inventories, :product_assets, :catalog_items, :product_configurations_as_super, :product_configurations_as_sub, images_attachments: :blob)
     count = products.destroy_all.size
 
-    redirect_to products_path, notice: "#{count} product(s) deleted successfully."
+    redirect_to products_path, notice: "#{count} #{'product'.pluralize(count)} deleted successfully."
   end
 
   # POST /products/bulk_update_labels
@@ -196,7 +205,7 @@ class ProductsController < ApplicationController
       count += 1
     end
 
-    redirect_to products_path, notice: "Labels updated for #{count} product(s)."
+    redirect_to products_path, notice: "Labels updated for #{count} #{'product'.pluralize(count)}."
   end
 
   # GET /products/validate_sku?sku=ABC123
@@ -226,6 +235,122 @@ class ProductsController < ApplicationController
       render json: { valid: false, message: 'SKU already exists' }
     else
       render json: { valid: true }
+    end
+  end
+
+  # POST /products/:id/add_label
+  # POST /products/:id/add_label.turbo_stream
+  #
+  # Adds a label to the product.
+  #
+  # Parameters:
+  # - label_id: The ID of the label to add
+  #
+  def add_label
+    label_id = params[:label_id]
+
+    if label_id.blank?
+      respond_to do |format|
+        format.html { redirect_to @product, alert: 'Please select a label.' }
+        format.turbo_stream { flash.now[:alert] = 'Please select a label.' }
+      end
+      return
+    end
+
+    # Verify label belongs to current company
+    label = current_potlift_company.labels.find_by(id: label_id)
+
+    unless label
+      respond_to do |format|
+        format.html { redirect_to @product, alert: 'Label not found.' }
+        format.turbo_stream { flash.now[:alert] = 'Label not found.' }
+      end
+      return
+    end
+
+    # Add label if not already present
+    if @product.labels.include?(label)
+      respond_to do |format|
+        format.html { redirect_to @product, alert: 'Label already assigned to this product.' }
+        format.turbo_stream { flash.now[:alert] = 'Label already assigned to this product.' }
+      end
+      return
+    end
+
+    @product.labels << label
+
+    respond_to do |format|
+      format.html { redirect_to @product, notice: "Label '#{label.name}' added successfully." }
+      format.turbo_stream { flash.now[:notice] = "Label '#{label.name}' added successfully." }
+    end
+  end
+
+  # DELETE /products/:id/remove_label
+  # DELETE /products/:id/remove_label.turbo_stream
+  #
+  # Removes a label from the product.
+  #
+  # Parameters:
+  # - label_id: The ID of the label to remove
+  #
+  def remove_label
+    label_id = params[:label_id]
+
+    if label_id.blank?
+      respond_to do |format|
+        format.html { redirect_to @product, alert: 'Label ID is required.' }
+        format.turbo_stream { flash.now[:alert] = 'Label ID is required.' }
+      end
+      return
+    end
+
+    # Verify label belongs to product
+    label = @product.labels.find_by(id: label_id)
+
+    unless label
+      respond_to do |format|
+        format.html { redirect_to @product, alert: 'Label not found on this product.' }
+        format.turbo_stream { flash.now[:alert] = 'Label not found on this product.' }
+      end
+      return
+    end
+
+    @product.labels.delete(label)
+
+    respond_to do |format|
+      format.html { redirect_to @product, notice: "Label '#{label.name}' removed successfully." }
+      format.turbo_stream { flash.now[:notice] = "Label '#{label.name}' removed successfully." }
+    end
+  end
+
+  # PATCH /products/:id/toggle_active
+  # PATCH /products/:id/toggle_active.turbo_stream
+  #
+  # Toggles the product's active status.
+  # If active, sets to draft. If not active, sets to active.
+  #
+  def toggle_active
+    if @product.active?
+      @product.product_status = :draft
+      status_text = 'deactivated'
+    else
+      @product.product_status = :active
+      status_text = 'activated'
+    end
+
+    if @product.save
+      respond_to do |format|
+        format.html { redirect_to @product, notice: "Product #{status_text} successfully." }
+        format.turbo_stream { flash.now[:notice] = "Product #{status_text} successfully." }
+      end
+    else
+      respond_to do |format|
+        format.html { redirect_to @product, alert: "Failed to update product: #{@product.errors.full_messages.join(', ')}" }
+        format.turbo_stream do
+          flash.now[:alert] = "Failed to update product: #{@product.errors.full_messages.join(', ')}"
+          render :show, status: :unprocessable_entity
+        end
+      end
     end
   end
 
@@ -264,15 +389,29 @@ class ProductsController < ApplicationController
       products = products.where(product_type: params[:type])
     end
 
-    # Filter by label
+    # Filter by product status
+    if params[:status].present? && Product.product_statuses.key?(params[:status])
+      products = products.where(product_status: params[:status])
+    end
+
+    # Filter by label (includes sublabels for hierarchical filtering)
     if params[:label_id].present?
-      products = products.joins(:labels).where(labels: { id: params[:label_id] })
+      begin
+        @current_label = current_potlift_company.labels.find(params[:label_id])
+        # Get all label IDs including descendants (sublabels)
+        label_ids = [@current_label.id] + @current_label.descendants.pluck(:id)
+        products = products.joins(:labels).where(labels: { id: label_ids }).distinct
+      rescue ActiveRecord::RecordNotFound
+        # Label not found or doesn't belong to company - ignore filter
+        @current_label = nil
+      end
     end
 
     # Search by name or SKU
     if params[:q].present?
       search_term = "%#{params[:q]}%"
-      products = products.where("name ILIKE ? OR sku ILIKE ?", search_term, search_term)
+      # Qualify table name to avoid ambiguity when joining labels
+      products = products.where("products.name ILIKE ? OR products.sku ILIKE ?", search_term, search_term)
     end
 
     products
@@ -309,5 +448,41 @@ class ProductsController < ApplicationController
               filename: "products_#{Time.current.strftime('%Y%m%d_%H%M%S')}.csv",
               type: 'text/csv',
               disposition: 'attachment'
+  end
+
+  # Load labels for filter dropdown with product counts
+  # Only loads root labels and their immediate children for performance
+  # Eager loads associations to prevent N+1 queries
+  #
+  def load_filter_labels
+    @available_labels = current_potlift_company.labels
+                                               .root_labels
+                                               .includes(sublabels: :products)
+                                               .includes(:products)
+                                               .order(:label_positions, :name)
+
+    # Calculate product counts for each label (including sublabels)
+    @label_product_counts = {}
+    @available_labels.each do |label|
+      # Count products with this label or any sublabel
+      label_ids = [label.id] + label.descendants.pluck(:id)
+      count = current_potlift_company.products
+                                     .joins(:labels)
+                                     .where(labels: { id: label_ids })
+                                     .distinct
+                                     .count
+      @label_product_counts[label.id] = count
+
+      # Also calculate counts for sublabels
+      label.sublabels.each do |sublabel|
+        sublabel_ids = [sublabel.id] + sublabel.descendants.pluck(:id)
+        sublabel_count = current_potlift_company.products
+                                                .joins(:labels)
+                                                .where(labels: { id: sublabel_ids })
+                                                .distinct
+                                                .count
+        @label_product_counts[sublabel.id] = sublabel_count
+      end
+    end
   end
 end
