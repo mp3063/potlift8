@@ -10,9 +10,10 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_15_140300) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_16_144852) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+  enable_extension "pg_trgm"
 
   create_table "active_admin_comments", force: :cascade do |t|
     t.string "namespace"
@@ -88,6 +89,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_15_140300) do
     t.jsonb "info", default: {}
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["catalog_id", "priority"], name: "index_catalog_items_on_catalog_priority", comment: "Optimizes ordered catalog product retrieval"
     t.index ["catalog_id", "product_id"], name: "index_catalog_items_on_catalog_id_and_product_id", unique: true
     t.index ["catalog_item_state"], name: "index_catalog_items_on_catalog_item_state"
     t.index ["priority"], name: "index_catalog_items_on_priority"
@@ -104,9 +106,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_15_140300) do
     t.bigint "sync_lock_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "catalog_items_count", default: 0, null: false
+    t.index ["catalog_items_count"], name: "index_catalogs_on_catalog_items_count", comment: "Optimizes catalog sorting by item count"
     t.index ["catalog_type"], name: "index_catalogs_on_catalog_type"
     t.index ["company_id", "code"], name: "index_catalogs_on_company_id_and_code", unique: true
     t.index ["currency_code"], name: "index_catalogs_on_currency_code"
+    t.index ["name"], name: "index_catalogs_on_name_trgm", opclass: :gin_trgm_ops, using: :gin, comment: "Trigram index for fast ILIKE searches on catalog names"
     t.index ["sync_lock_id"], name: "index_catalogs_on_sync_lock_id"
   end
 
@@ -177,6 +182,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_15_140300) do
     t.index ["product_id"], name: "index_configurations_on_product_id"
   end
 
+  create_table "customer_groups", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.string "name", null: false
+    t.string "code", null: false
+    t.decimal "discount_percent", precision: 5, scale: 2, default: "0.0"
+    t.jsonb "info", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id", "code"], name: "index_customer_groups_on_company_id_and_code", unique: true
+    t.index ["company_id", "name"], name: "index_customer_groups_on_company_id_and_name"
+    t.index ["company_id"], name: "index_customer_groups_on_company_id"
+  end
+
   create_table "inventories", force: :cascade do |t|
     t.bigint "product_id", null: false
     t.bigint "storage_id", null: false
@@ -189,6 +207,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_15_140300) do
     t.index ["product_id", "storage_id", "value"], name: "index_inventories_on_product_storage_value", comment: "Optimizes inventory lookups and saldo calculations"
     t.index ["product_id", "storage_id"], name: "inventories_product_storage_unique_index", unique: true
     t.index ["product_id"], name: "index_inventories_on_product_id"
+    t.index ["storage_id", "value"], name: "index_inventories_on_storage_value", comment: "Optimizes inventory queries by storage and stock level"
     t.index ["storage_id"], name: "index_inventories_on_storage_id"
   end
 
@@ -206,10 +225,31 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_15_140300) do
     t.bigint "parent_label_id"
     t.integer "label_positions"
     t.integer "product_default_restriction", default: 1
+    t.integer "products_count", default: 0, null: false
     t.index ["company_id", "full_code"], name: "index_labels_on_company_id_and_full_code", unique: true
     t.index ["company_id", "label_type", "parent_label_id"], name: "index_labels_on_company_type_parent", comment: "Optimizes label filtering and hierarchy traversal"
     t.index ["company_id"], name: "index_labels_on_company_id"
+    t.index ["name"], name: "index_labels_on_name_trgm", opclass: :gin_trgm_ops, using: :gin, comment: "Trigram index for fast ILIKE searches on label names"
     t.index ["parent_label_id"], name: "index_labels_on_parent_label_id"
+    t.index ["products_count"], name: "index_labels_on_products_count", comment: "Optimizes label filtering by product count"
+    t.index ["updated_at"], name: "index_labels_on_updated_at", comment: "Optimizes cache key generation for labels"
+  end
+
+  create_table "prices", force: :cascade do |t|
+    t.bigint "product_id", null: false
+    t.bigint "customer_group_id"
+    t.decimal "value", precision: 10, scale: 2, null: false
+    t.string "currency", default: "EUR", null: false
+    t.string "price_type", default: "base", null: false
+    t.datetime "valid_from"
+    t.datetime "valid_to"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_group_id"], name: "index_prices_on_customer_group_id"
+    t.index ["product_id", "customer_group_id"], name: "index_prices_on_product_id_and_customer_group_id", unique: true, where: "(customer_group_id IS NOT NULL)"
+    t.index ["product_id", "price_type"], name: "index_prices_on_product_id_and_price_type"
+    t.index ["product_id"], name: "index_prices_on_product_id"
+    t.index ["valid_from", "valid_to"], name: "index_prices_on_valid_from_and_valid_to"
   end
 
   create_table "product_assets", force: :cascade do |t|
@@ -234,10 +274,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_15_140300) do
     t.boolean "ready", default: false, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["product_attribute_id", "value"], name: "index_pav_on_attribute_value", comment: "Optimizes filtering by attribute and value"
     t.index ["product_attribute_id"], name: "index_product_attribute_values_on_product_attribute_id"
     t.index ["product_id", "product_attribute_id", "value"], name: "index_pav_on_product_attribute_value", comment: "Optimizes product attribute value searches with covering index"
     t.index ["product_id", "product_attribute_id"], name: "pavs_index", unique: true
     t.index ["product_id"], name: "index_product_attribute_values_on_product_id"
+    t.index ["updated_at"], name: "index_pav_on_updated_at", comment: "Optimizes cache key generation for attribute values"
   end
 
   create_table "product_attributes", force: :cascade do |t|
@@ -262,6 +304,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_15_140300) do
     t.index ["attribute_group_id"], name: "index_product_attributes_on_attribute_group_id"
     t.index ["company_id", "code"], name: "index_product_attributes_on_company_id_and_code", unique: true
     t.index ["company_id"], name: "index_product_attributes_on_company_id"
+    t.index ["name"], name: "index_product_attributes_on_name_trgm", opclass: :gin_trgm_ops, using: :gin, comment: "Trigram index for fast ILIKE searches on attribute names"
   end
 
   create_table "product_configurations", comment: "Links products to their variants (configurable) or components (bundle). Single source of truth for all product relationships.", force: :cascade do |t|
@@ -287,7 +330,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_15_140300) do
     t.bigint "label_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["label_id"], name: "index_product_labels_on_label_id"
+    t.index ["label_id"], name: "index_product_labels_on_label_id", comment: "Optimizes reverse label lookups"
     t.index ["product_id", "label_id"], name: "index_product_labels_on_product_id_and_label_id", unique: true
     t.index ["product_id"], name: "index_product_labels_on_product_id"
   end
@@ -306,13 +349,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_15_140300) do
     t.jsonb "info", default: {}, null: false
     t.jsonb "cache", default: {}, null: false
     t.integer "product_status"
+    t.integer "subproducts_count", default: 0, null: false
+    t.index ["company_id", "created_at"], name: "index_products_on_company_created_at", comment: "Optimizes date filtering and sorting for products"
     t.index ["company_id", "product_status", "product_type"], name: "index_products_on_company_status_type", comment: "Optimizes product filtering by company, status, and type"
     t.index ["company_id", "sku"], name: "products_company_sku_unique_index", unique: true
+    t.index ["company_id", "subproducts_count"], name: "index_products_on_company_and_subproducts_count", comment: "Optimizes queries for products with variants/components"
     t.index ["company_id", "updated_at"], name: "index_products_on_company_updated_at", comment: "Optimizes product sorting by updated_at within company scope"
     t.index ["company_id"], name: "index_products_on_company_id"
+    t.index ["name"], name: "index_products_on_name_trgm", opclass: :gin_trgm_ops, using: :gin, comment: "Trigram index for fast ILIKE searches on product names"
     t.index ["product_status"], name: "index_products_on_product_status"
     t.index ["product_type"], name: "index_products_on_product_type"
+    t.index ["sku"], name: "index_products_on_sku_trgm", opclass: :gin_trgm_ops, using: :gin, comment: "Trigram index for fast ILIKE searches on product SKUs"
     t.index ["sync_lock_id"], name: "index_products_on_sync_lock_id"
+    t.index ["updated_at"], name: "index_products_on_updated_at", comment: "Optimizes cache key generation and timestamp queries"
   end
 
   create_table "related_products", comment: "Product relationships for cross-sell, upsell, alternatives, accessories, etc.", force: :cascade do |t|
@@ -348,12 +397,27 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_15_140300) do
     t.integer "storage_status", default: 1, null: false
     t.index ["company_id", "code"], name: "storages_company_code_unique_index", unique: true
     t.index ["company_id"], name: "index_storages_on_company_id"
+    t.index ["name"], name: "index_storages_on_name_trgm", opclass: :gin_trgm_ops, using: :gin, comment: "Trigram index for fast ILIKE searches on storage names"
   end
 
   create_table "sync_locks", force: :cascade do |t|
     t.string "timestamp"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "translations", force: :cascade do |t|
+    t.string "translatable_type", null: false
+    t.bigint "translatable_id", null: false
+    t.string "locale", null: false
+    t.string "key", null: false
+    t.text "value"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["locale"], name: "index_translations_on_locale"
+    t.index ["translatable_type", "translatable_id", "locale", "key"], name: "index_translations_on_translatable_and_locale_and_key", unique: true
+    t.index ["translatable_type", "translatable_id", "locale"], name: "index_translations_on_type_id_locale", comment: "Optimizes translation lookups by type, ID, and locale"
+    t.index ["translatable_type", "translatable_id"], name: "index_translations_on_translatable"
   end
 
   create_table "users", force: :cascade do |t|
@@ -367,6 +431,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_15_140300) do
     t.index ["company_id"], name: "index_users_on_company_id"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["oauth_sub"], name: "index_users_on_oauth_sub", unique: true
+  end
+
+  create_table "versions", force: :cascade do |t|
+    t.string "whodunnit"
+    t.datetime "created_at"
+    t.bigint "item_id", null: false
+    t.string "item_type", null: false
+    t.string "event", null: false
+    t.text "object"
+    t.bigint "company_id"
+    t.index ["company_id", "item_type", "item_id"], name: "index_versions_on_company_item", comment: "Optimizes company-scoped version queries"
+    t.index ["company_id"], name: "index_versions_on_company_id", comment: "Multi-tenant filtering for version history"
+    t.index ["item_type", "item_id"], name: "index_versions_on_item_type_and_item_id"
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
@@ -384,10 +461,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_15_140300) do
   add_foreign_key "configuration_values", "configurations", on_delete: :cascade
   add_foreign_key "configurations", "companies", on_delete: :cascade
   add_foreign_key "configurations", "products", on_delete: :cascade
+  add_foreign_key "customer_groups", "companies"
   add_foreign_key "inventories", "products"
   add_foreign_key "inventories", "storages"
   add_foreign_key "labels", "companies"
   add_foreign_key "labels", "labels", column: "parent_label_id"
+  add_foreign_key "prices", "customer_groups"
+  add_foreign_key "prices", "products"
   add_foreign_key "product_assets", "products"
   add_foreign_key "product_attribute_values", "product_attributes"
   add_foreign_key "product_attribute_values", "products"
