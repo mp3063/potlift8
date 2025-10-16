@@ -1,0 +1,127 @@
+<div class="space-y-6">
+  <!-- Catalog Actions -->
+  <div class="flex items-center justify-between pb-4 border-b border-gray-200">
+    <div>
+      <h4 class="text-sm font-medium text-gray-900"><%= catalog_item.catalog.name %></h4>
+      <p class="mt-1 text-xs text-gray-500">
+        <%= render Ui::BadgeComponent.new(variant: catalog_item.active? ? :success : :gray, size: :sm) do %>
+          <%= catalog_item.catalog_item_state.titleize %>
+        <% end %>
+      </p>
+    </div>
+    <div class="flex gap-2">
+      <%= render Ui::ButtonComponent.new(variant: :secondary, size: :sm, href: catalog_items_path(catalog_item.catalog)) do %>
+        <svg class="-ml-0.5 mr-1.5 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+        </svg>
+        View Catalog
+      <% end %>
+      <%= button_to remove_from_catalog_product_path(product, catalog_id: catalog_item.catalog_id),
+            method: :delete,
+            form: { data: { turbo_confirm: "Remove #{product.name} from #{catalog_item.catalog.name}?" } },
+            class: "inline-flex items-center gap-x-1.5 rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600" do %>
+        <svg class="-ml-0.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+        </svg>
+        Remove from Catalog
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Attributes with Override Indication -->
+  <% if all_attributes.any? %>
+    <div class="space-y-4">
+      <% all_attributes.each do |product_attribute| %>
+        <% catalog_override = catalog_item.catalog_item_attribute_values.find { |ciav| ciav.product_attribute_id == product_attribute.id } %>
+        <% product_value = attribute_values[product_attribute] %>
+        <% next unless catalog_override.present? || (product_value.present? && product_value.value.present?) %>
+
+        <% if catalog_override.present? %>
+          <!-- Catalog override (normal opacity) -->
+          <div class="flex items-start justify-between py-3 border-b border-gray-200">
+            <div class="flex-1">
+              <dt class="text-sm font-medium text-gray-500 flex items-center gap-2">
+                <%= product_attribute.name %>
+                <span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
+                  Override
+                </span>
+              </dt>
+              <dd class="mt-1 text-sm text-gray-900">
+                <%= catalog_override.value %>
+              </dd>
+              <% if product_value.present? && product_value.value.present? && catalog_override.value != product_value.value %>
+                <dd class="mt-1 text-xs text-gray-500">
+                  Product value: <%= product_value.value %>
+                </dd>
+              <% end %>
+            </div>
+            <div class="ml-4 flex gap-1">
+              <!-- Edit button -->
+              <button type="button" class="text-gray-400 hover:text-gray-600" aria-label="Edit override for <%= product_attribute.name %>">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+              </button>
+              <!-- Remove override button -->
+              <button
+                type="button"
+                class="text-red-400 hover:text-red-600"
+                aria-label="Remove override for <%= product_attribute.name %>"
+                title="Remove override (use product value)">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        <% elsif product_value.present? && product_value.value.present? %>
+          <!-- Product fallback (grayed out) -->
+          <div class="flex items-start justify-between py-3 border-b border-gray-200 opacity-50">
+            <div class="flex-1">
+              <dt class="text-sm font-medium text-gray-500"><%= product_attribute.name %></dt>
+              <dd class="mt-1 text-sm text-gray-900">
+                <%= product_value.value %>
+              </dd>
+              <dd class="mt-1 text-xs text-gray-500">
+                Inherited from product
+              </dd>
+            </div>
+            <div class="ml-4">
+              <!-- Add override button -->
+              <button
+                type="button"
+                class="text-gray-400 hover:text-gray-600"
+                aria-label="Add override for <%= product_attribute.name %>"
+                title="Override for this catalog">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+
+    <!-- Add Override CTA -->
+    <% if catalog_item.catalog_item_attribute_values.count < all_attributes.count %>
+      <div class="pt-4 border-t border-gray-200">
+        <%= render Ui::ButtonComponent.new(variant: :secondary, size: :sm) do %>
+          <svg class="-ml-0.5 mr-1.5 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
+          Add Attribute Override
+        <% end %>
+      </div>
+    <% end %>
+  <% else %>
+    <div class="text-center py-12">
+      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+      </svg>
+      <h3 class="mt-2 text-sm font-medium text-gray-900">No attributes</h3>
+      <p class="mt-1 text-sm text-gray-500">No attributes are defined for this company yet.</p>
+    </div>
+  <% end %>
+</div>

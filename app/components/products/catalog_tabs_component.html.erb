@@ -1,0 +1,84 @@
+<div class="bg-white shadow rounded-lg" data-controller="catalog-tabs">
+  <!-- Tab Navigation -->
+  <div class="border-b border-gray-200">
+    <nav class="-mb-px flex space-x-1 overflow-x-auto px-6" aria-label="Catalog tabs" style="scrollbar-width: thin;">
+      <!-- Product Tab (always first) -->
+      <button
+        type="button"
+        data-catalog-tabs-target="tab"
+        data-tab-id="product"
+        data-action="click->catalog-tabs#showTab"
+        class="whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm rounded-t-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        role="tab"
+        aria-selected="true"
+        aria-controls="panel-product">
+        Product
+      </button>
+
+      <!-- Catalog Tabs (dynamic) -->
+      <% catalog_items.each do |catalog_item| %>
+        <button
+          type="button"
+          data-catalog-tabs-target="tab"
+          data-tab-id="<%= catalog_item.catalog.code %>"
+          data-action="click->catalog-tabs#showTab"
+          class="whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm rounded-t-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 inline-flex items-center gap-2"
+          role="tab"
+          aria-selected="false"
+          aria-controls="panel-<%= catalog_item.catalog.code %>">
+          <%= catalog_item.catalog.name %>
+          <% if catalog_item.catalog_item_attribute_values.any? %>
+            <span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
+              <%= catalog_item.catalog_item_attribute_values.count %>
+            </span>
+          <% end %>
+        </button>
+      <% end %>
+
+      <!-- Add to Catalog Button -->
+      <% if has_available_catalogs? %>
+        <button
+          type="button"
+          data-action="click->catalog-tabs#openAddModal"
+          class="whitespace-nowrap py-3 px-4 border-b-2 border-transparent font-medium text-sm text-gray-500 rounded-t-lg hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 inline-flex items-center gap-1"
+          aria-label="Add to catalog">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
+          Add to Catalog
+        </button>
+      <% end %>
+    </nav>
+  </div>
+
+  <!-- Tab Content -->
+  <div class="p-6">
+    <!-- Product Tab Content -->
+    <div
+      data-catalog-tabs-target="panel"
+      data-panel-id="product"
+      id="panel-product"
+      role="tabpanel"
+      aria-labelledby="tab-product">
+      <%= render partial: 'products/catalog_tabs/product_attributes', locals: { product: product, attribute_values: attribute_values, all_attributes: all_attributes } %>
+    </div>
+
+    <!-- Catalog Tab Content (dynamic) -->
+    <% catalog_items.each do |catalog_item| %>
+      <div
+        data-catalog-tabs-target="panel"
+        data-panel-id="<%= catalog_item.catalog.code %>"
+        id="panel-<%= catalog_item.catalog.code %>"
+        class="hidden"
+        role="tabpanel"
+        aria-labelledby="tab-<%= catalog_item.catalog.code %>">
+        <%= render partial: 'products/catalog_tabs/catalog_attributes', locals: { catalog_item: catalog_item, product: product, attribute_values: attribute_values, all_attributes: all_attributes } %>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Add to Catalog Modal -->
+  <% if has_available_catalogs? %>
+    <%= render partial: 'products/add_to_catalog_modal', locals: { product: product, available_catalogs: available_catalogs } %>
+  <% end %>
+</div>
