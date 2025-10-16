@@ -1,0 +1,122 @@
+<% content_for :page_header do %>
+  <div class="flex items-center justify-between">
+    <div>
+      <div class="flex items-center gap-3">
+        <%= link_to product_path(@product), class: "text-gray-500 hover:text-gray-700" do %>
+          <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          <span class="sr-only">Back to product</span>
+        <% end %>
+        <h1 class="text-2xl font-bold text-gray-900">Version History</h1>
+      </div>
+      <p class="mt-2 text-sm text-gray-700">
+        <%= @product.name %> (<%= @product.sku %>)
+      </p>
+    </div>
+  </div>
+<% end %>
+
+<% if @versions.any? %>
+  <%= render Ui::CardComponent.new(padding: :none) do %>
+    <!-- Timeline List -->
+    <div class="divide-y divide-gray-200">
+      <% @versions.each_with_index do |version, index| %>
+        <div class="p-6 hover:bg-gray-50 transition-colors duration-150">
+          <div class="flex items-start justify-between">
+            <!-- Version Info -->
+            <div class="flex-1">
+              <div class="flex items-center gap-3 mb-2">
+                <!-- Timeline Dot -->
+                <div class="flex-shrink-0">
+                  <% if index == 0 %>
+                    <div class="h-3 w-3 rounded-full bg-blue-600 ring-4 ring-blue-100"></div>
+                  <% else %>
+                    <div class="h-3 w-3 rounded-full bg-gray-300"></div>
+                  <% end %>
+                </div>
+
+                <!-- Timestamp -->
+                <div>
+                  <time class="text-sm font-medium text-gray-900" datetime="<%= version.created_at.iso8601 %>">
+                    <%= version.created_at.strftime("%B %d, %Y at %I:%M %p") %>
+                  </time>
+                  <% if index == 0 %>
+                    <%= render Ui::BadgeComponent.new(variant: :primary, size: :sm) do %>
+                      Current
+                    <% end %>
+                  <% end %>
+                </div>
+              </div>
+
+              <!-- User -->
+              <p class="ml-6 text-sm text-gray-600">
+                Changed by
+                <span class="font-medium text-gray-900">
+                  <%= version.whodunnit || "System" %>
+                </span>
+              </p>
+
+              <!-- Change Summary -->
+              <div class="ml-6 mt-2">
+                <% changed_attributes = version.changeset.keys rescue [] %>
+                <% if changed_attributes.any? %>
+                  <div class="text-sm text-gray-700">
+                    Modified:
+                    <span class="font-medium">
+                      <%= changed_attributes.map(&:humanize).join(", ") %>
+                    </span>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex-shrink-0 flex items-center gap-2 ml-4">
+              <%= link_to product_version_path(@product, version) do %>
+                <%= render Ui::ButtonComponent.new(variant: :secondary, size: :sm) do %>
+                  <svg class="h-4 w-4 mr-1.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  View
+                <% end %>
+              <% end %>
+
+              <% unless index == 0 %>
+                <%= button_to revert_product_version_path(@product, version), method: :post, form: { data: { turbo_confirm: "Are you sure you want to revert to this version?" } } do %>
+                  <%= render Ui::ButtonComponent.new(variant: :ghost, size: :sm) do %>
+                    <svg class="h-4 w-4 mr-1.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                    </svg>
+                    Revert
+                  <% end %>
+                <% end %>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <!-- Pagination -->
+  <% if @pagy %>
+    <div class="mt-6">
+      <%== pagy_nav(@pagy) %>
+    </div>
+  <% end %>
+<% else %>
+  <!-- Empty State -->
+  <%= render Shared::EmptyStateComponent.new(
+    title: "No version history",
+    description: "This product has no recorded changes yet",
+    icon: :clock
+  ) do %>
+    <%= link_to product_path(@product) do %>
+      <%= render Ui::ButtonComponent.new(variant: :secondary) do %>
+        Back to Product
+      <% end %>
+    <% end %>
+  <% end %>
+<% end %>

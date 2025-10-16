@@ -1,0 +1,30 @@
+<div class="rounded-lg border <%= style[:border] %> <%= style[:bg] %> p-4">
+  <div class="flex items-start justify-between mb-3">
+    <h4 class="text-sm font-medium text-gray-900"><%= formatted_attribute_name %></h4>
+    <%= render Ui::BadgeComponent.new(variant: style[:badge].to_sym, size: :sm) do %>
+      <%= style[:label] %>
+    <% end %>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- Before Value -->
+    <div>
+      <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+        Before
+      </div>
+      <div class="text-sm text-gray-900 <%= 'line-through text-gray-500' if removed? || modified? %>">
+        <%= display_value(old_value) %>
+      </div>
+    </div>
+
+    <!-- After Value -->
+    <div>
+      <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+        After
+      </div>
+      <div class="text-sm <%= 'font-bold text-gray-900' if added? || modified? %> <%= 'text-gray-900' if unchanged? %>">
+        <%= display_value(new_value) %>
+      </div>
+    </div>
+  </div>
+</div>

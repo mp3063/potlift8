@@ -271,6 +271,9 @@ GEM
       version_gem (~> 1.1, >= 1.1.9)
     ostruct (0.6.3)
     pagy (9.4.0)
+    paper_trail (16.0.0)
+      activerecord (>= 6.1)
+      request_store (~> 1.4)
     parallel (1.27.0)
     parser (3.3.9.0)
       ast (~> 2.4.1)
@@ -354,6 +357,8 @@ GEM
     regexp_parser (2.11.3)
     reline (0.6.2)
       io-console (~> 0.5)
+    request_store (1.7.0)
+      rack (>= 1.4)
     rexml (3.4.4)
     rspec-core (3.13.5)
       rspec-support (~> 3.13.0)
@@ -539,6 +544,7 @@ DEPENDENCIES
   kamal
   oauth2 (~> 2.0)
   pagy (~> 9.0)
+  paper_trail (~> 16.0)
   pg (~> 1.1)
   propshaft
   pry-rails

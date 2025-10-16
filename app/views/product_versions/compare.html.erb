@@ -1,0 +1,131 @@
+<% content_for :page_header do %>
+  <div class="flex items-center justify-between">
+    <div>
+      <div class="flex items-center gap-3">
+        <%= link_to product_versions_path(@product), class: "text-gray-500 hover:text-gray-700" do %>
+          <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          <span class="sr-only">Back to version history</span>
+        <% end %>
+        <h1 class="text-2xl font-bold text-gray-900">Compare Versions</h1>
+      </div>
+      <p class="mt-2 text-sm text-gray-700">
+        <%= @product.name %> (<%= @product.sku %>)
+      </p>
+    </div>
+  </div>
+<% end %>
+
+<!-- Version Selectors -->
+<%= render Ui::CardComponent.new do |card| %>
+  <% card.with_header do %>
+    <h3 class="text-lg font-semibold text-gray-900">Select Versions to Compare</h3>
+  <% end %>
+
+  <%= form_with url: compare_product_versions_path(@product), method: :get, class: "space-y-6" do |f| %>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- From Version -->
+      <div>
+        <label for="from-version" class="block text-sm font-medium text-gray-700">
+          From Version <span class="text-red-600" aria-hidden="true">*</span>
+          <span class="sr-only">(required)</span>
+        </label>
+        <%= f.select :from,
+          options_for_select(
+            @versions.map { |v| ["#{v.created_at.strftime('%b %d, %Y %I:%M %p')} - #{v.whodunnit || 'System'}", v.id] },
+            @from_version&.id
+          ),
+          {},
+          {
+            id: 'from-version',
+            class: 'mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm',
+            required: true,
+            'aria-required': 'true'
+          }
+        %>
+      </div>
+
+      <!-- To Version -->
+      <div>
+        <label for="to-version" class="block text-sm font-medium text-gray-700">
+          To Version <span class="text-red-600" aria-hidden="true">*</span>
+          <span class="sr-only">(required)</span>
+        </label>
+        <%= f.select :to,
+          options_for_select(
+            @versions.map { |v| ["#{v.created_at.strftime('%b %d, %Y %I:%M %p')} - #{v.whodunnit || 'System'}", v.id] },
+            @to_version&.id
+          ),
+          {},
+          {
+            id: 'to-version',
+            class: 'mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm',
+            required: true,
+            'aria-required': 'true'
+          }
+        %>
+      </div>
+    </div>
+
+    <div class="flex justify-end">
+      <%= render Ui::ButtonComponent.new(type: "submit", variant: :primary) do %>
+        <svg class="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+        </svg>
+        Compare Versions
+      <% end %>
+    </div>
+  <% end %>
+<% end %>
+
+<!-- Comparison Results -->
+<% if @from_version && @to_version %>
+  <div class="mt-8">
+    <!-- Version Info Banner -->
+    <div class="rounded-lg bg-blue-50 p-4 border border-blue-200 mb-6">
+      <div class="flex items-start">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3 flex-1">
+          <h3 class="text-sm font-medium text-blue-800">Comparing Versions</h3>
+          <div class="mt-2 text-sm text-blue-700">
+            <p>
+              <strong>From:</strong> <%= @from_version.created_at.strftime("%B %d, %Y at %I:%M %p") %>
+              by <%= @from_version.whodunnit || "System" %>
+            </p>
+            <p class="mt-1">
+              <strong>To:</strong> <%= @to_version.created_at.strftime("%B %d, %Y at %I:%M %p") %>
+              by <%= @to_version.whodunnit || "System" %>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Attribute Changes -->
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">Attribute Changes</h2>
+
+    <% if @comparison.any? %>
+      <div class="space-y-4">
+        <% @comparison.each do |attribute_name, (old_value, new_value)| %>
+          <%= render DiffViewComponent.new(
+            old_value: old_value,
+            new_value: new_value,
+            attribute_name: attribute_name
+          ) %>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
+        <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <p class="mt-2 text-sm text-gray-600">No differences found between these versions</p>
+      </div>
+    <% end %>
+  </div>
+<% end %>

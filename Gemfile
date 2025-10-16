@@ -51,6 +51,9 @@ gem "redis", "~> 5.0"
 # CSV export functionality (required in Ruby 3.4+)
 gem "csv", "~> 3.3"
 
+# Version control for models (audit trail)
+gem "paper_trail", "~> 16.0"
+
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
 
