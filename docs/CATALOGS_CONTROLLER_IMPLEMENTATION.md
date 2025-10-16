@@ -36,7 +36,7 @@ Lists all catalogs for the current company.
 Shows catalog details.
 
 **Behavior:**
-- Redirects to `items_catalog_path(@catalog)` to display catalog items
+- Redirects to `catalog_items_path(@catalog)` to display catalog items
 - Uses catalog `code` as URL parameter (not `id`)
 
 ---
@@ -243,8 +243,8 @@ end
 | GET | /catalogs/:code/edit | edit | edit_catalog_path(code) |
 | PATCH/PUT | /catalogs/:code | update | catalog_path(code) |
 | DELETE | /catalogs/:code | destroy | catalog_path(code) |
-| GET | /catalogs/:code/items | items | items_catalog_path(code) |
-| PATCH | /catalogs/:code/reorder_items | reorder_items | reorder_items_catalog_path(code) |
+| GET | /catalogs/:code/items | items | catalog_items_path(code) |
+| PATCH | /catalogs/:code/reorder_items | reorder_items | reorder_catalog_items_path(code) |
 | GET | /catalogs/:code/export | export | export_catalog_path(code) |
 
 ---

@@ -61,7 +61,7 @@ RSpec.describe '/catalogs', type: :request do
 
     it 'redirects to items action' do
       get catalog_path(catalog)
-      expect(response).to redirect_to(items_catalog_path(catalog))
+      expect(response).to redirect_to(catalog_items_path(catalog))
     end
 
     it 'prevents access to other company catalogs' do
@@ -79,12 +79,12 @@ RSpec.describe '/catalogs', type: :request do
     let!(:catalog_item2) { create(:catalog_item, catalog: catalog, product: product2, priority: 50) }
 
     it 'returns successful response' do
-      get items_catalog_path(catalog)
+      get catalog_items_path(catalog)
       expect(response).to be_successful
     end
 
     it 'displays catalog items ordered by priority' do
-      get items_catalog_path(catalog)
+      get catalog_items_path(catalog)
       expect(response.body).to include('PROD001')
       expect(response.body).to include('PROD002')
       # Higher priority (catalog_item1) should appear first
@@ -93,27 +93,27 @@ RSpec.describe '/catalogs', type: :request do
 
     context 'with search query' do
       it 'filters by product name' do
-        get items_catalog_path(catalog), params: { q: 'Product 1' }
+        get catalog_items_path(catalog), params: { q: 'Product 1' }
         expect(response).to be_successful
         expect(response.body).to include('PROD001')
         expect(response.body).not_to include('PROD002')
       end
 
       it 'filters by product SKU' do
-        get items_catalog_path(catalog), params: { q: 'PROD002' }
+        get catalog_items_path(catalog), params: { q: 'PROD002' }
         expect(response).to be_successful
         expect(response.body).to include('PROD002')
         expect(response.body).not_to include('PROD001')
       end
 
       it 'search is case insensitive' do
-        get items_catalog_path(catalog), params: { q: 'product 1' }
+        get catalog_items_path(catalog), params: { q: 'product 1' }
         expect(response).to be_successful
         expect(response.body).to include('PROD001')
       end
 
       it 'handles search with no results' do
-        get items_catalog_path(catalog), params: { q: 'NONEXISTENT' }
+        get catalog_items_path(catalog), params: { q: 'NONEXISTENT' }
         expect(response).to be_successful
       end
     end
@@ -128,18 +128,18 @@ RSpec.describe '/catalogs', type: :request do
       end
 
       it 'paginates results with default per_page (25)' do
-        get items_catalog_path(catalog)
+        get catalog_items_path(catalog)
         expect(response).to be_successful
         # Should not show all 30 items on first page
       end
 
       it 'respects per_page parameter' do
-        get items_catalog_path(catalog), params: { per_page: 10 }
+        get catalog_items_path(catalog), params: { per_page: 10 }
         expect(response).to be_successful
       end
 
       it 'navigates to second page' do
-        get items_catalog_path(catalog), params: { page: 2, per_page: 10 }
+        get catalog_items_path(catalog), params: { page: 2, per_page: 10 }
         expect(response).to be_successful
       end
     end
@@ -149,7 +149,7 @@ RSpec.describe '/catalogs', type: :request do
 
       it 'prevents access to other company catalog items' do
         expect {
-          get items_catalog_path(other_catalog)
+          get catalog_items_path(other_catalog)
         }.to raise_error(ActiveRecord::RecordNotFound)
       end
     end
@@ -378,7 +378,7 @@ RSpec.describe '/catalogs', type: :request do
 
     context 'with valid order' do
       it 'updates priorities based on order' do
-        patch reorder_items_catalog_path(catalog), params: {
+        patch reorder_catalog_items_path(catalog), params: {
           order: [item3.id, item1.id, item2.id]
         }
 
@@ -400,17 +400,17 @@ RSpec.describe '/catalogs', type: :request do
 
     context 'with invalid parameters' do
       it 'returns unprocessable_entity when order is missing' do
-        patch reorder_items_catalog_path(catalog), params: {}
+        patch reorder_catalog_items_path(catalog), params: {}
         expect(response).to have_http_status(:unprocessable_entity)
       end
 
       it 'returns unprocessable_entity when order is not an array' do
-        patch reorder_items_catalog_path(catalog), params: { order: 'invalid' }
+        patch reorder_catalog_items_path(catalog), params: { order: 'invalid' }
         expect(response).to have_http_status(:unprocessable_entity)
       end
 
       it 'returns unprocessable_entity when order contains invalid IDs' do
-        patch reorder_items_catalog_path(catalog), params: {
+        patch reorder_catalog_items_path(catalog), params: {
           order: [item1.id, 999999, item2.id]
         }
         expect(response).to have_http_status(:unprocessable_entity)
@@ -422,7 +422,7 @@ RSpec.describe '/catalogs', type: :request do
 
       it 'prevents reordering other company catalog items' do
         expect {
-          patch reorder_items_catalog_path(other_catalog), params: { order: [1, 2, 3] }
+          patch reorder_catalog_items_path(other_catalog), params: { order: [1, 2, 3] }
         }.to raise_error(ActiveRecord::RecordNotFound)
       end
     end
@@ -545,7 +545,7 @@ RSpec.describe '/catalogs', type: :request do
 
     it 'requires authentication for items' do
       catalog = create(:catalog, company: company)
-      get items_catalog_path(catalog)
+      get catalog_items_path(catalog)
       expect(response).to redirect_to(auth_login_path)
     end
 
@@ -579,7 +579,7 @@ RSpec.describe '/catalogs', type: :request do
 
     it 'requires authentication for reorder_items' do
       catalog = create(:catalog, company: company)
-      patch reorder_items_catalog_path(catalog), params: { order: [1, 2, 3] }
+      patch reorder_catalog_items_path(catalog), params: { order: [1, 2, 3] }
       expect(response).to redirect_to(auth_login_path)
     end
 
@@ -596,7 +596,7 @@ RSpec.describe '/catalogs', type: :request do
     it 'handles catalog with special characters in code' do
       catalog = create(:catalog, company: company, code: 'MAIN-CATALOG_01')
       get catalog_path(catalog)
-      expect(response).to redirect_to(items_catalog_path(catalog))
+      expect(response).to redirect_to(catalog_items_path(catalog))
     end
 
     it 'handles catalog with very long name' do
@@ -640,7 +640,7 @@ RSpec.describe '/catalogs', type: :request do
     end
 
     it 'responds to turbo_stream format for items' do
-      get items_catalog_path(catalog), as: :turbo_stream
+      get catalog_items_path(catalog), as: :turbo_stream
       expect(response).to be_successful
       expect(response.media_type).to eq('text/vnd.turbo-stream.html')
     end

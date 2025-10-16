@@ -33,22 +33,28 @@ class CatalogsController < ApplicationController
   # Shows catalog details (redirects to items action).
   #
   def show
-    redirect_to items_catalog_path(@catalog)
+    redirect_to catalog_items_path(@catalog)
   end
 
   # GET /catalogs/:code/items
   # GET /catalogs/:code/items.turbo_stream
   #
   # Lists catalog items (products in this catalog) with pagination and filtering.
+  # Includes HTTP caching via ETags for improved performance.
   #
   # Query Parameters:
   # - page: Page number (default: 1)
   # - per_page: Items per page (default: 25)
   # - q: Search query (matches product name or SKU)
   #
+  # HTTP Caching Strategy:
+  # - ETag based on catalog and maximum updated_at of catalog_items
+  # - Returns 304 Not Modified if content hasn't changed
+  # - Cache per page and search query
+  #
   def items
     @catalog_items = @catalog.catalog_items
-                             .includes(product: [:labels, :inventories, :product_attribute_values])
+                             .includes(:catalog_item_attribute_values, product: [:labels, :inventories, :product_attribute_values])
                              .by_priority
 
     # Apply search filter
@@ -61,6 +67,13 @@ class CatalogsController < ApplicationController
     respond_to do |format|
       format.html do
         @pagy, @catalog_items = pagy(@catalog_items, items: params[:per_page] || 25)
+
+        # HTTP caching with ETag (per page and search query)
+        fresh_when(
+          etag: [@catalog, @catalog_items.maximum(:updated_at), params[:page], params[:q]],
+          last_modified: [@catalog.updated_at, @catalog_items.maximum(:updated_at)].compact.max,
+          public: false
+        )
       end
 
       format.turbo_stream do
@@ -95,7 +108,9 @@ class CatalogsController < ApplicationController
     if @catalog.save
       respond_to do |format|
         format.html { redirect_to catalogs_path, notice: 'Catalog created successfully.' }
-        format.turbo_stream { flash.now[:notice] = 'Catalog created successfully.' }
+        format.turbo_stream do
+          redirect_to catalogs_path, notice: 'Catalog created successfully.'
+        end
       end
     else
       respond_to do |format|
@@ -115,7 +130,9 @@ class CatalogsController < ApplicationController
     if @catalog.update(catalog_params)
       respond_to do |format|
         format.html { redirect_to catalogs_path, notice: 'Catalog updated successfully.' }
-        format.turbo_stream { flash.now[:notice] = 'Catalog updated successfully.' }
+        format.turbo_stream do
+          redirect_to catalogs_path, notice: 'Catalog updated successfully.'
+        end
       end
     else
       respond_to do |format|
@@ -135,7 +152,9 @@ class CatalogsController < ApplicationController
 
     respond_to do |format|
       format.html { redirect_to catalogs_path, notice: 'Catalog deleted successfully.' }
-      format.turbo_stream { flash.now[:notice] = 'Catalog deleted successfully.' }
+      format.turbo_stream do
+        redirect_to catalogs_path, notice: 'Catalog deleted successfully.'
+      end
     end
   end
 
@@ -230,7 +249,7 @@ class CatalogsController < ApplicationController
   # Ensures catalog belongs to current company
   # Raises ActiveRecord::RecordNotFound if catalog not found or doesn't belong to company
   def set_catalog
-    @catalog = current_potlift_company.catalogs.find_by!(code: params[:id])
+    @catalog = current_potlift_company.catalogs.find_by!(code: params[:code])
   end
 
   # Strong parameters for catalog creation/update

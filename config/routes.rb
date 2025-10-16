@@ -59,6 +59,7 @@ Rails.application.routes.draw do
 
   # Global search
   get 'search', to: 'search#index', as: :search
+  get 'search/recent', to: 'search#recent', as: :search_recent
 
   # Resource routes
   resources :products do
@@ -102,6 +103,29 @@ Rails.application.routes.draw do
         patch :reorder  # Reorder related products
       end
     end
+
+    # Pricing (Phase 17-19)
+    resources :prices, only: [:index, :new, :create, :edit, :update, :destroy]
+
+    # Version History (Phase 17-19)
+    resources :versions, only: [:index, :show], controller: 'product_versions' do
+      member do
+        post :revert
+      end
+      collection do
+        get :compare
+      end
+    end
+  end
+
+  # Customer Groups (Phase 17-19)
+  resources :customer_groups
+
+  # Import/Export (Phase 17-19)
+  resources :imports, only: [:new, :create] do
+    member do
+      get :progress
+    end
   end
 
   resources :storages do
@@ -129,9 +153,11 @@ Rails.application.routes.draw do
     end
   end
 
+  # Custom route for catalog items (generates catalog_items_path)
+  get 'catalogs/:code/items', to: 'catalogs#items', as: :catalog_items
+
   resources :catalogs, param: :code do
     member do
-      get :items
       patch :reorder_items
       get :export
     end
