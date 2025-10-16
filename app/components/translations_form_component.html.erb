@@ -1,0 +1,132 @@
+<div data-controller="translation-tabs" class="space-y-6">
+  <!-- Tab Navigation -->
+  <div class="border-b border-gray-200">
+    <nav class="-mb-px flex space-x-8" aria-label="Translations">
+      <% available_locales.each do |locale| %>
+        <% config = locale_config(locale) %>
+        <button
+          type="button"
+          id="<%= tab_id(locale) %>"
+          data-translation-tabs-target="tab"
+          data-locale="<%= locale %>"
+          data-action="click->translation-tabs#switchTab"
+          class="<%= tab_classes(locale) %>"
+          role="tab"
+          aria-selected="<%= default_locale?(locale) ? 'true' : 'false' %>"
+          aria-controls="<%= panel_id(locale) %>">
+          <span class="mr-2"><%= config[:flag] %></span>
+          <%= config[:name] %>
+        </button>
+      <% end %>
+    </nav>
+  </div>
+
+  <!-- Tab Panels -->
+  <div class="mt-6">
+    <% available_locales.each do |locale| %>
+      <% translation = translation_for(locale) %>
+      <div
+        id="<%= panel_id(locale) %>"
+        data-translation-tabs-target="panel"
+        data-locale="<%= locale %>"
+        class="space-y-6 <%= 'hidden' unless default_locale?(locale) %>"
+        role="tabpanel"
+        aria-labelledby="<%= tab_id(locale) %>">
+
+        <% if form.present? %>
+          <!-- Form with nested fields (requires accepts_nested_attributes_for) -->
+          <%= form.fields_for :translations, translation do |translation_form| %>
+            <%= translation_form.hidden_field :locale, value: locale %>
+
+            <!-- Name Field -->
+            <div>
+              <label for="<%= "#{locale}-name" %>" class="block text-sm font-medium text-gray-700">
+                Name (<%= locale_config(locale)[:name] %>)
+                <span class="text-red-600" aria-hidden="true">*</span>
+                <span class="sr-only">(required)</span>
+              </label>
+              <%= translation_form.text_field :name,
+                id: "#{locale}-name",
+                required: default_locale?(locale),
+                class: "mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+                placeholder: "Enter product name in #{locale_config(locale)[:name]}",
+                'aria-required': default_locale?(locale) ? 'true' : 'false'
+              %>
+              <% if default_locale?(locale) %>
+                <p class="mt-2 text-sm text-gray-500">
+                  Default locale name is required
+                </p>
+              <% end %>
+            </div>
+
+            <!-- Description Field -->
+            <div>
+              <label for="<%= "#{locale}-description" %>" class="block text-sm font-medium text-gray-700">
+                Description (<%= locale_config(locale)[:name] %>)
+              </label>
+              <%= translation_form.text_area :description,
+                id: "#{locale}-description",
+                rows: 4,
+                class: "mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+                placeholder: "Enter product description in #{locale_config(locale)[:name]}"
+              %>
+            </div>
+          <% end %>
+        <% else %>
+          <!-- Standalone fields (not within form) -->
+          <!-- Name Field -->
+          <div>
+            <label for="<%= "#{locale}-name" %>" class="block text-sm font-medium text-gray-700">
+              Name (<%= locale_config(locale)[:name] %>)
+              <span class="text-red-600" aria-hidden="true">*</span>
+              <span class="sr-only">(required)</span>
+            </label>
+            <input
+              type="text"
+              id="<%= "#{locale}-name" %>"
+              name="translations[<%= locale %>][name]"
+              value="<%= translation.name %>"
+              required="<%= default_locale?(locale) %>"
+              class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              placeholder="Enter product name in <%= locale_config(locale)[:name] %>"
+              aria-required="<%= default_locale?(locale) ? 'true' : 'false' %>">
+            <% if default_locale?(locale) %>
+              <p class="mt-2 text-sm text-gray-500">
+                Default locale name is required
+              </p>
+            <% end %>
+          </div>
+
+          <!-- Description Field -->
+          <div>
+            <label for="<%= "#{locale}-description" %>" class="block text-sm font-medium text-gray-700">
+              Description (<%= locale_config(locale)[:name] %>)
+            </label>
+            <textarea
+              id="<%= "#{locale}-description" %>"
+              name="translations[<%= locale %>][description]"
+              rows="4"
+              class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              placeholder="Enter product description in <%= locale_config(locale)[:name] %>"><%= translation.description %></textarea>
+          </div>
+        <% end %>
+
+        <!-- Helper Text -->
+        <div class="rounded-lg bg-blue-50 p-4 border border-blue-200">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <svg class="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="ml-3">
+              <p class="text-sm text-blue-700">
+                Provide translations for <%= locale_config(locale)[:name] %> to improve the customer experience in this market.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
