@@ -1,0 +1,120 @@
+<div class="bg-white shadow-sm rounded-lg" data-controller="filter-panel">
+  <!-- Filter Toggle Button (Mobile) -->
+  <div class="lg:hidden px-4 py-3 border-b border-gray-200">
+    <button type="button"
+            class="flex items-center text-sm font-medium text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg"
+            data-action="click->filter-panel#toggleMobile"
+            aria-label="Toggle filters">
+      <svg class="mr-2 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+      </svg>
+      <span>Filters</span>
+      <% if active_filters? %>
+        <span class="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
+          <%= active_filter_count %>
+        </span>
+      <% end %>
+    </button>
+  </div>
+
+  <!-- Filter Panel -->
+  <div class="hidden lg:block" data-filter-panel-target="panel">
+    <div class="px-4 py-5">
+      <h3 class="text-sm font-medium text-gray-900 mb-4">Filters</h3>
+
+      <%= form_with url: request.path, method: :get, data: { turbo_frame: "products_table", action: "submit->filter-panel#submit" }, class: "space-y-6" do |form| %>
+        <!-- Product Type Filter -->
+        <% if available_filters[:product_types] %>
+          <div>
+            <%= form.label :product_type_id, "Product Type", class: "block text-sm font-medium text-gray-700 mb-2" %>
+            <%= form.select :product_type_id,
+                options_from_collection_for_select(available_filters[:product_types], :id, :name, filters[:product_type_id]),
+                { prompt: "All Types" },
+                class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" %>
+          </div>
+        <% end %>
+
+        <!-- Labels Filter (Multi-select) -->
+        <% if available_filters[:labels] %>
+          <div>
+            <%= form.label :label_ids, "Labels", class: "block text-sm font-medium text-gray-700 mb-2" %>
+            <div class="space-y-2 max-h-48 overflow-y-auto border border-gray-300 rounded-lg p-2 bg-white">
+              <% available_filters[:labels].each do |label| %>
+                <div class="flex items-center">
+                  <%= form.check_box :label_ids,
+                      { multiple: true, checked: Array(filters[:label_ids]).include?(label.id.to_s), class: "h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600" },
+                      label.id,
+                      nil %>
+                  <%= form.label "label_ids_#{label.id}", label.name, class: "ml-2 text-sm text-gray-700" %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
+        <!-- Status Filter -->
+        <div>
+          <%= form.label :status, "Status", class: "block text-sm font-medium text-gray-700 mb-2" %>
+          <%= form.select :status,
+              options_for_select([['All', ''], ['Active', 'active'], ['Draft', 'draft'], ['Discontinued', 'discontinued']], filters[:status]),
+              {},
+              class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" %>
+        </div>
+
+        <!-- Date Range Filter -->
+        <div>
+          <span class="block text-sm font-medium text-gray-700 mb-2">Created Date</span>
+          <div class="space-y-2">
+            <%= form.date_field :created_from,
+                value: filters[:created_from],
+                placeholder: "From",
+                class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" %>
+            <%= form.date_field :created_to,
+                value: filters[:created_to],
+                placeholder: "To",
+                class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" %>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-x-3">
+          <%= render Ui::ButtonComponent.new(type: "submit", variant: :primary, size: :sm) do %>
+            Apply Filters
+          <% end %>
+          <%= link_to clear_filters_url, class: "flex-1" do %>
+            <%= render Ui::ButtonComponent.new(variant: :secondary, size: :sm) do %>
+              Clear
+            <% end %>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<!-- Active Filter Chips -->
+<% if active_filters? %>
+  <div class="mt-4 flex flex-wrap gap-2" role="list" aria-label="Active filters">
+    <% active_filters.each do |key, value| %>
+      <% next if value.blank? || value == [] %>
+      <%= link_to remove_filter_url(key),
+          class: "inline-flex items-center gap-x-1.5 rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 hover:bg-blue-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
+          role: "listitem",
+          aria: { label: "Remove #{filter_display_name(key)} filter" } do %>
+        <span class="flex items-center gap-1.5">
+          <span class="font-semibold"><%= filter_display_name(key) %>:</span>
+          <span><%= filter_display_value(key, value) %></span>
+        </span>
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      <% end %>
+    <% end %>
+
+    <%= link_to clear_filters_url,
+        class: "inline-flex items-center gap-x-1 rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700 ring-1 ring-inset ring-gray-700/10 hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
+        aria: { label: "Clear all filters" } do %>
+      Clear All
+    <% end %>
+  </div>
+<% end %>
