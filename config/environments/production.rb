@@ -47,7 +47,25 @@ Rails.application.configure do
   config.active_support.report_deprecations = false
 
   # Replace the default in-process memory cache store with a durable alternative.
-  config.cache_store = :solid_cache_store
+  # Solid Cache Configuration (Redis-backed caching for Phase 20-21)
+  #
+  # Performance Optimization Strategy:
+  # - Fragment caching: Cache expensive view fragments (product lists, catalogs)
+  # - HTTP caching: ETags for conditional GET requests
+  # - Counter caches: Eliminate COUNT(*) queries
+  # - Query result caching: Cache expensive database queries
+  #
+  # Cache Store: Solid Cache (persistent, Redis-backed)
+  # - namespace: Isolates cache keys per environment
+  # - expires_in: Default TTL for cache entries (24 hours)
+  # - compress: Enable compression for entries > 1KB
+  # - compress_threshold: Minimum size (bytes) before compression
+  #
+  config.cache_store = :solid_cache_store,
+                       namespace: "potlift8_production",
+                       expires_in: 24.hours,
+                       compress: true,
+                       compress_threshold: 1.kilobytes
 
   # Replace the default in-process and non-durable queuing backend for Active Job.
   config.active_job.queue_adapter = :solid_queue

@@ -24,7 +24,10 @@ Rails.application.configure do
 
   # Show full error reports.
   config.consider_all_requests_local = true
-  config.cache_store = :null_store
+
+  # Use memory store for caching in tests (instead of null_store)
+  # This allows testing cache-dependent features like recent searches
+  config.cache_store = :memory_store
 
   # Raise all exceptions in tests so they can be caught by RSpec expectations
   # This allows tests to use expect { }.to raise_error patterns
