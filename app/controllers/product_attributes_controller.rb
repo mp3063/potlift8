@@ -132,11 +132,19 @@ class ProductAttributesController < ApplicationController
       :pa_type,
       :description,
       :product_attribute_scope,
-      options: []
+      :options
     ).tap do |permitted|
-      # Handle options array - store in info jsonb field
+      # Handle options - parse JSON string and store in info jsonb field
       if permitted[:options].present?
-        permitted[:info] = { options: permitted[:options].compact_blank }
+        # Options come as a JSON string from the hidden field
+        options_array = begin
+          JSON.parse(permitted[:options])
+        rescue JSON::ParserError
+          # If it's already an array (shouldn't happen but be safe)
+          permitted[:options].is_a?(Array) ? permitted[:options] : []
+        end
+
+        permitted[:info] = { options: options_array.compact_blank }
         permitted.delete(:options)
       end
     end
