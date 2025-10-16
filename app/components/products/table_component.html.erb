@@ -50,7 +50,7 @@
                 >
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                <%= helpers.link_to product.sku, helpers.product_path(product), class: "text-blue-600 hover:text-blue-900" %>
+                <%= helpers.link_to product.sku, helpers.product_path(product), class: "text-blue-600 hover:text-blue-900", data: { turbo_frame: "_top" } %>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                 <%= product.name %>
@@ -85,7 +85,7 @@
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <div class="flex justify-end gap-2">
-                  <%= helpers.link_to helpers.edit_product_path(product), class: "text-blue-600 hover:text-blue-900 inline-flex items-center", title: "Edit #{product.name}" do %>
+                  <%= helpers.link_to helpers.edit_product_path(product), class: "text-blue-600 hover:text-blue-900 inline-flex items-center", title: "Edit #{product.name}", data: { turbo_frame: "_top" } do %>
                     <%= edit_icon %>
                     <span class="sr-only">Edit</span>
                   <% end %>
@@ -114,7 +114,7 @@
               <h3 class="mt-2 text-sm font-semibold text-gray-900">No products</h3>
               <p class="mt-1 text-sm text-gray-500">Get started by creating a new product.</p>
               <div class="mt-6">
-                <%= helpers.link_to helpers.new_product_path, class: "inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" do %>
+                <%= helpers.link_to helpers.new_product_path, data: { turbo_frame: "_top" }, class: "inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" do %>
                   <%= plus_icon %>
                   <span class="ml-1.5">New Product</span>
                 <% end %>

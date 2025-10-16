@@ -23,6 +23,8 @@ class StoragesController < ApplicationController
   # - direction: Sort direction (asc, desc)
   #
   def index
+    # Eager load inventories and products to prevent N+1 queries
+    # inventories.count and products.count queries are optimized
     @storages = current_potlift_company.storages
                                        .includes(:inventories, :products)
                                        .order(sort_column => sort_direction)

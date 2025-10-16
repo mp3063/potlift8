@@ -100,19 +100,15 @@ module Products
     # Product type options for select dropdown
     #
     # Returns an array of [label, value] pairs for the product type select field.
-    # Values correspond to the product_type enum in the Product model.
+    # Values are symbolic keys that correspond to the product_type enum in the Product model.
     #
-    # @return [Array<Array<String, Integer>>] Array of [label, value] pairs
+    # @return [Array<Array<String, String>>] Array of [label, value] pairs
     #
     # @example
     #   product_type_options
-    #   # => [['Sellable', 1], ['Configurable', 2], ['Bundle', 3]]
+    #   # => [['Sellable', 'sellable'], ['Configurable', 'configurable'], ['Bundle', 'bundle']]
     def product_type_options
-      [
-        ['Sellable', 1],
-        ['Configurable', 2],
-        ['Bundle', 3]
-      ]
+      Product.product_types.map { |key, _value| [key.humanize, key] }
     end
 
     # Available labels for the current company

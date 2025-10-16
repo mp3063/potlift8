@@ -48,12 +48,12 @@ module Shared
 
     # Initialize a new navbar component
     #
-    # @param current_user [Hash, nil] Current user hash with id, email, name (from OAuth token)
+    # @param current_user [User, nil] Current user model instance
     # @param current_company [Company, nil] Current company model instance
     #
     # @example With authenticated user
     #   NavbarComponent.new(
-    #     current_user: { id: 1, email: 'user@example.com', name: 'John Doe' },
+    #     current_user: User.find(1),
     #     current_company: Company.find(1)
     #   )
     #
@@ -159,9 +159,35 @@ module Shared
       return unless @current_user
 
       content_tag(:div, class: "flex items-center gap-4") do
+        concat(render_search_button)
         concat(render_company_switcher) if @current_company
         concat(render_user_dropdown)
       end
+    end
+
+    # Renders the search button trigger
+    #
+    # Opens the global search modal when clicked.
+    #
+    # @return [String] HTML button element
+    def render_search_button
+      button_tag(
+        type: "button",
+        class: "p-2 text-gray-700 hover:bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors",
+        data: { action: "click->global-search#open" },
+        aria: { label: "Open search (Cmd+K)" }
+      ) do
+        concat(search_icon_svg)
+        concat(content_tag(:span, class: "sr-only") { "Search (⌘K)" })
+      end
+    end
+
+    def search_icon_svg
+      raw(<<~SVG)
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      SVG
     end
 
     def render_company_switcher
@@ -201,7 +227,7 @@ module Shared
     end
 
     def user_avatar
-      initials = @current_user[:name]&.split&.map(&:first)&.join&.upcase || "U"
+      initials = @current_user&.name&.split&.map(&:first)&.join&.upcase || "U"
       content_tag(:div, class: "h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center") do
         content_tag(:span, initials, class: "text-sm font-medium text-white")
       end
@@ -236,8 +262,8 @@ module Shared
 
     def dropdown_header
       content_tag(:div, class: "px-4 py-2") do
-        concat(content_tag(:p, @current_user[:name], class: "text-sm font-medium text-gray-900 truncate"))
-        concat(content_tag(:p, @current_user[:email], class: "text-xs text-gray-500 truncate"))
+        concat(content_tag(:p, @current_user&.name, class: "text-sm font-medium text-gray-900 truncate"))
+        concat(content_tag(:p, @current_user&.email, class: "text-xs text-gray-500 truncate"))
       end
     end
 

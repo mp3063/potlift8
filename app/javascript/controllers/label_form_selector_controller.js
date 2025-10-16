@@ -177,13 +177,17 @@ export default class extends Controller {
 
     const button = event.currentTarget
     const labelId = button.dataset.labelId
-    const tagElement = button.closest("[data-label-id]")
-    const labelName = tagElement.querySelector("span:not(.sr-only)").textContent.trim()
+    // Use parentElement to get the span tag (not the button itself)
+    const tagElement = button.parentElement
 
     if (!tagElement) {
       console.error("Could not find label tag element")
       return
     }
+
+    // Get label name from the font-medium span
+    const labelNameSpan = tagElement.querySelector("span.font-medium")
+    const labelName = labelNameSpan ? labelNameSpan.textContent.trim() : "Unknown"
 
     // Remove from selected set
     this.selectedLabels.delete(labelId)
