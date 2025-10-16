@@ -21,7 +21,7 @@
 #
 class CatalogItem < ApplicationRecord
   # Associations
-  belongs_to :catalog
+  belongs_to :catalog, counter_cache: :catalog_items_count
   belongs_to :product
   has_many :catalog_item_attribute_values, dependent: :destroy
 

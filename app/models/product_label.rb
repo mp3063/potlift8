@@ -18,7 +18,7 @@
 class ProductLabel < ApplicationRecord
   # Associations
   belongs_to :product
-  belongs_to :label
+  belongs_to :label, counter_cache: :products_count
 
   # Validations
   validates :product_id, uniqueness: { scope: :label_id }

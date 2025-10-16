@@ -54,6 +54,16 @@ class Catalog < ApplicationRecord
   scope :by_type, ->(type) { where(catalog_type: type) }
   scope :by_currency, ->(currency) { where(currency_code: currency) }
 
+  # Override to_param to use code instead of id in URLs
+  #
+  # This allows routes like /catalogs/WEB-EUR instead of /catalogs/1
+  #
+  # @return [String] The catalog code
+  #
+  def to_param
+    code
+  end
+
   # Check if catalog requires minimum price ratio
   #
   # @return [Boolean] true if catalog has a minimum ratio requirement
@@ -183,6 +193,41 @@ class Catalog < ApplicationRecord
     end
 
     jobs
+  end
+
+  # Get catalog description from info JSONB field
+  #
+  # @return [String, nil] Description or nil
+  #
+  def description
+    info&.dig('description')
+  end
+
+  # Set catalog description in info JSONB field
+  #
+  # @param value [String] Description text
+  #
+  def description=(value)
+    self.info ||= {}
+    self.info['description'] = value
+  end
+
+  # Check if catalog is active (from info JSONB field)
+  #
+  # @return [Boolean] true if active, defaults to true
+  #
+  def active?
+    # Default to true if not explicitly set to false
+    info&.dig('active') != false
+  end
+
+  # Set catalog active status in info JSONB field
+  #
+  # @param value [Boolean] Active status
+  #
+  def active=(value)
+    self.info ||= {}
+    self.info['active'] = ActiveModel::Type::Boolean.new.cast(value)
   end
 
   # Get rate limit configuration for this catalog
