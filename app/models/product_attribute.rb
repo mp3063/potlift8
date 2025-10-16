@@ -122,6 +122,14 @@ class ProductAttribute < ApplicationRecord
     code
   end
 
+  # Get options for select/multiselect attributes
+  #
+  # @return [Array<String>] List of available options
+  #
+  def options
+    info&.dig('options') || []
+  end
+
   # Formats an attribute value for JSON API response
   #
   # Applies view_format-specific formatting to display attribute values
