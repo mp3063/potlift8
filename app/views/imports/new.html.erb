@@ -1,0 +1,104 @@
+<% content_for :page_header do %>
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Import Products</h1>
+      <p class="mt-2 text-sm text-gray-700">Upload a CSV file to import or update products in bulk</p>
+    </div>
+  </div>
+<% end %>
+
+<div class="max-w-2xl mx-auto">
+  <%= render Ui::CardComponent.new do |card| %>
+    <% card.with_header do %>
+      <h3 class="text-lg font-semibold text-gray-900">Upload CSV File</h3>
+    <% end %>
+
+    <%= form_with url: imports_path, method: :post, multipart: true, class: "space-y-6" do |f| %>
+      <!-- Import Type Selection -->
+      <div>
+        <label for="import-type" class="block text-sm font-medium text-gray-700">
+          Import Type <span class="text-red-600" aria-hidden="true">*</span>
+          <span class="sr-only">(required)</span>
+        </label>
+        <%= f.select :import_type,
+          options_for_select([
+            ['Products', 'products'],
+            ['Catalog Items', 'catalog_items']
+          ]),
+          {},
+          {
+            id: 'import-type',
+            class: 'mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm',
+            required: true,
+            'aria-required': 'true'
+          }
+        %>
+        <p class="mt-2 text-sm text-gray-500">
+          Select the type of data you want to import
+        </p>
+      </div>
+
+      <!-- File Upload -->
+      <div>
+        <label for="csv-file" class="block text-sm font-medium text-gray-700">
+          CSV File <span class="text-red-600" aria-hidden="true">*</span>
+          <span class="sr-only">(required)</span>
+        </label>
+        <%= f.file_field :file,
+          id: 'csv-file',
+          accept: '.csv',
+          required: true,
+          class: 'mt-1 block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500',
+          'aria-required': 'true'
+        %>
+        <p class="mt-2 text-sm text-gray-500">
+          Maximum file size: 10MB. Only CSV files are accepted.
+        </p>
+      </div>
+
+      <!-- Instructions -->
+      <div class="rounded-lg bg-blue-50 p-4 border border-blue-200">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-blue-800">CSV Format Requirements</h3>
+            <div class="mt-2 text-sm text-blue-700">
+              <ul class="list-disc list-inside space-y-1">
+                <li>First row must contain column headers</li>
+                <li>Required columns: sku, name</li>
+                <li>Use comma (,) as delimiter</li>
+                <li>Dates in YYYY-MM-DD format</li>
+                <li>Numbers without currency symbols or thousands separators</li>
+              </ul>
+            </div>
+            <div class="mt-4">
+              <%= link_to download_template_imports_path(type: 'products'), class: "inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-700" do %>
+                <svg class="h-4 w-4 mr-1.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Download CSV Template
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="flex items-center justify-end gap-3 pt-4">
+        <%= link_to products_path do %>
+          <%= render Ui::ButtonComponent.new(variant: :secondary) { "Cancel" } %>
+        <% end %>
+        <%= render Ui::ButtonComponent.new(type: "submit", variant: :primary) do %>
+          <svg class="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+          Upload and Import
+        <% end %>
+      </div>
+    <% end %>
+  <% end %>
+</div>

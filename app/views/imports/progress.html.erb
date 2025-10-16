@@ -1,0 +1,144 @@
+<% content_for :page_header do %>
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Import Progress</h1>
+      <p class="mt-2 text-sm text-gray-700">Tracking your import job</p>
+    </div>
+  </div>
+<% end %>
+
+<div class="max-w-2xl mx-auto"
+     data-controller="import-progress"
+     data-import-progress-job-id-value="<%= @job_id %>"
+     data-import-progress-status-value="<%= @status %>">
+
+  <%= render Ui::CardComponent.new do %>
+    <!-- Processing State -->
+    <div data-import-progress-target="processing" class="<%= @status == 'processing' ? '' : 'hidden' %>">
+      <div class="text-center py-12">
+        <!-- Spinner Icon -->
+        <div class="mx-auto h-16 w-16 flex items-center justify-center">
+          <svg class="animate-spin h-16 w-16 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </div>
+
+        <h3 class="mt-6 text-lg font-semibold text-gray-900">Processing Import</h3>
+        <p class="mt-2 text-sm text-gray-600">Please wait while we import your data...</p>
+
+        <!-- Progress Bar -->
+        <div class="mt-8 w-full">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-gray-700">Progress</span>
+            <span class="text-sm font-medium text-blue-600" data-import-progress-target="percentage">0%</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+            <div
+              data-import-progress-target="progressBar"
+              class="bg-blue-600 h-3 rounded-full transition-all duration-500 ease-out"
+              style="width: 0%"
+              role="progressbar"
+              aria-valuenow="0"
+              aria-valuemin="0"
+              aria-valuemax="100">
+            </div>
+          </div>
+        </div>
+
+        <p class="mt-6 text-xs text-gray-500">
+          This page will automatically update when the import is complete
+        </p>
+      </div>
+    </div>
+
+    <!-- Completed State -->
+    <div data-import-progress-target="completed" class="<%= @status == 'completed' ? '' : 'hidden' %>">
+      <div class="text-center py-12">
+        <!-- Success Icon -->
+        <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100">
+          <svg class="h-10 w-10 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+
+        <h3 class="mt-6 text-lg font-semibold text-gray-900">Import Completed Successfully</h3>
+        <p class="mt-2 text-sm text-gray-600">Your data has been imported</p>
+
+        <!-- Import Stats -->
+        <div class="mt-8 grid grid-cols-3 gap-4">
+          <div class="bg-green-50 rounded-lg p-4 border border-green-200">
+            <div class="text-2xl font-bold text-green-900" data-import-progress-target="imported"><%= @imported || 0 %></div>
+            <div class="text-sm text-green-700">Imported</div>
+          </div>
+          <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+            <div class="text-2xl font-bold text-blue-900" data-import-progress-target="updated"><%= @updated || 0 %></div>
+            <div class="text-sm text-blue-700">Updated</div>
+          </div>
+          <div class="bg-red-50 rounded-lg p-4 border border-red-200">
+            <div class="text-2xl font-bold text-red-900" data-import-progress-target="errors"><%= @errors || 0 %></div>
+            <div class="text-sm text-red-700">Errors</div>
+          </div>
+        </div>
+
+        <div class="mt-8">
+          <%= link_to products_path do %>
+            <%= render Ui::ButtonComponent.new(variant: :primary) do %>
+              <svg class="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              View Products
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Failed State -->
+    <div data-import-progress-target="failed" class="<%= @status == 'failed' ? '' : 'hidden' %>">
+      <div class="text-center py-12">
+        <!-- Error Icon -->
+        <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100">
+          <svg class="h-10 w-10 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </div>
+
+        <h3 class="mt-6 text-lg font-semibold text-gray-900">Import Failed</h3>
+        <p class="mt-2 text-sm text-gray-600">There was an error processing your import</p>
+
+        <!-- Error Message -->
+        <% if @error_message.present? %>
+          <div class="mt-6 rounded-lg bg-red-50 p-4 border border-red-200 text-left">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800">Error Details</h3>
+                <div class="mt-2 text-sm text-red-700">
+                  <p><%= @error_message %></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <div class="mt-8 flex justify-center gap-3">
+          <%= link_to new_import_path do %>
+            <%= render Ui::ButtonComponent.new(variant: :primary) do %>
+              Try Again
+            <% end %>
+          <% end %>
+          <%= link_to products_path do %>
+            <%= render Ui::ButtonComponent.new(variant: :secondary) do %>
+              Back to Products
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>
