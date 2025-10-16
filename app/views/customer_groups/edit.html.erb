@@ -1,0 +1,37 @@
+<% content_for :page_header do %>
+  <div class="flex items-center justify-between">
+    <div>
+      <nav class="flex mb-3" aria-label="Breadcrumb">
+        <ol class="flex items-center space-x-2 text-sm">
+          <li>
+            <%= link_to customer_groups_path, class: "text-gray-500 hover:text-gray-700" do %>
+              Customer Groups
+            <% end %>
+          </li>
+          <li>
+            <svg class="h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </li>
+          <li>
+            <span class="text-gray-900 font-medium">Edit</span>
+          </li>
+        </ol>
+      </nav>
+      <h1 class="text-2xl font-bold text-gray-900">Edit Customer Group</h1>
+      <p class="mt-2 text-sm text-gray-700">
+        Update customer group information
+      </p>
+    </div>
+  </div>
+<% end %>
+
+<div class="max-w-2xl">
+  <%= render Ui::CardComponent.new do |card| %>
+    <% card.with_header do %>
+      <h3 class="text-lg font-semibold text-gray-900">Customer Group Information</h3>
+    <% end %>
+
+    <%= render "form" %>
+  <% end %>
+</div>
