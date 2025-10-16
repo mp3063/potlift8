@@ -15,7 +15,7 @@
 # - Turbo Stream support for dynamic updates
 #
 class ProductsController < ApplicationController
-  before_action :set_product, only: [:show, :edit, :update, :destroy, :duplicate, :add_label, :remove_label, :toggle_active]
+  before_action :set_product, only: [ :show, :edit, :update, :destroy, :duplicate, :add_label, :remove_label, :toggle_active, :add_to_catalog, :remove_from_catalog ]
 
   # GET /products
   # GET /products.turbo_stream
@@ -84,6 +84,7 @@ class ProductsController < ApplicationController
     @product = current_potlift_company.products
                                       .with_attributes
                                       .with_labels
+                                      .includes(catalog_items: [ :catalog, catalog_item_attribute_values: :product_attribute ])
                                       # TODO: Add .with_inventory when inventory is displayed in show view
                                       # TODO: Add .with_subproducts when variants/bundles are displayed in show view
                                       .find(params[:id])
@@ -94,6 +95,12 @@ class ProductsController < ApplicationController
       hash[pav.product_attribute] = pav
     end
 
+    # Load available catalogs for "Add to Catalog" modal
+    # Exclude catalogs the product is already in
+    @available_catalogs = current_potlift_company.catalogs
+                                                 .where.not(id: @product.catalog_items.map(&:catalog_id))
+                                                 .order(:name)
+
     # HTTP caching with ETag and Last-Modified headers
     # ETag includes all related data that affects the view
     # Returns 304 Not Modified if client has current version
@@ -101,13 +108,14 @@ class ProductsController < ApplicationController
       etag: [
         @product,
         @product.product_attribute_values.maximum(:updated_at),
-        @product.labels.maximum(:updated_at)
-        # TODO: Add inventories.maximum(:updated_at) when inventory is displayed
+        @product.labels.maximum(:updated_at),
+        @product.catalog_items.maximum(:updated_at)
       ],
       last_modified: [
         @product.updated_at,
         @product.product_attribute_values.maximum(:updated_at),
-        @product.labels.maximum(:updated_at)
+        @product.labels.maximum(:updated_at),
+        @product.catalog_items.maximum(:updated_at)
         # TODO: Add inventories.maximum(:updated_at) when inventory is displayed
       ].compact.max,
       public: false # Don't cache in public CDNs (multi-tenant data)
@@ -139,9 +147,9 @@ class ProductsController < ApplicationController
 
     if @product.save
       respond_to do |format|
-        format.html { redirect_to products_path, notice: 'Product created successfully.' }
+        format.html { redirect_to products_path, notice: "Product created successfully." }
         format.turbo_stream do
-          redirect_to products_path, notice: 'Product created successfully.'
+          redirect_to products_path, notice: "Product created successfully."
         end
       end
     else
@@ -161,9 +169,9 @@ class ProductsController < ApplicationController
   def update
     if @product.update(product_params)
       respond_to do |format|
-        format.html { redirect_to products_path, notice: 'Product updated successfully.' }
+        format.html { redirect_to products_path, notice: "Product updated successfully." }
         format.turbo_stream do
-          redirect_to products_path, notice: 'Product updated successfully.'
+          redirect_to products_path, notice: "Product updated successfully."
         end
       end
     else
@@ -183,9 +191,9 @@ class ProductsController < ApplicationController
     @product.destroy
 
     respond_to do |format|
-      format.html { redirect_to products_path, notice: 'Product deleted successfully.' }
+      format.html { redirect_to products_path, notice: "Product deleted successfully." }
       format.turbo_stream do
-        redirect_to products_path, notice: 'Product deleted successfully.'
+        redirect_to products_path, notice: "Product deleted successfully."
       end
     end
   end
@@ -214,7 +222,7 @@ class ProductsController < ApplicationController
     product_ids = params[:product_ids] || []
 
     if product_ids.empty?
-      redirect_to products_path, alert: 'No products selected.'
+      redirect_to products_path, alert: "No products selected."
       return
     end
 
@@ -238,7 +246,7 @@ class ProductsController < ApplicationController
     label_ids = params[:label_ids] || []
 
     if product_ids.empty?
-      redirect_to products_path, alert: 'No products selected.'
+      redirect_to products_path, alert: "No products selected."
       return
     end
 
@@ -263,7 +271,7 @@ class ProductsController < ApplicationController
     sku = params[:sku]
 
     if sku.blank?
-      render json: { valid: false, message: 'SKU cannot be blank' }
+      render json: { valid: false, message: "SKU cannot be blank" }
       return
     end
 
@@ -275,7 +283,7 @@ class ProductsController < ApplicationController
     existing = existing.where.not(id: params[:product_id]) if params[:product_id].present?
 
     if existing.exists?
-      render json: { valid: false, message: 'SKU already exists' }
+      render json: { valid: false, message: "SKU already exists" }
     else
       render json: { valid: true }
     end
@@ -294,8 +302,8 @@ class ProductsController < ApplicationController
 
     if label_id.blank?
       respond_to do |format|
-        format.html { redirect_to @product, alert: 'Please select a label.' }
-        format.turbo_stream { flash.now[:alert] = 'Please select a label.' }
+        format.html { redirect_to @product, alert: "Please select a label." }
+        format.turbo_stream { flash.now[:alert] = "Please select a label." }
       end
       return
     end
@@ -305,8 +313,8 @@ class ProductsController < ApplicationController
 
     unless label
       respond_to do |format|
-        format.html { redirect_to @product, alert: 'Label not found.' }
-        format.turbo_stream { flash.now[:alert] = 'Label not found.' }
+        format.html { redirect_to @product, alert: "Label not found." }
+        format.turbo_stream { flash.now[:alert] = "Label not found." }
       end
       return
     end
@@ -314,8 +322,8 @@ class ProductsController < ApplicationController
     # Add label if not already present
     if @product.labels.include?(label)
       respond_to do |format|
-        format.html { redirect_to @product, alert: 'Label already assigned to this product.' }
-        format.turbo_stream { flash.now[:alert] = 'Label already assigned to this product.' }
+        format.html { redirect_to @product, alert: "Label already assigned to this product." }
+        format.turbo_stream { flash.now[:alert] = "Label already assigned to this product." }
       end
       return
     end
@@ -341,8 +349,8 @@ class ProductsController < ApplicationController
 
     if label_id.blank?
       respond_to do |format|
-        format.html { redirect_to @product, alert: 'Label ID is required.' }
-        format.turbo_stream { flash.now[:alert] = 'Label ID is required.' }
+        format.html { redirect_to @product, alert: "Label ID is required." }
+        format.turbo_stream { flash.now[:alert] = "Label ID is required." }
       end
       return
     end
@@ -352,8 +360,8 @@ class ProductsController < ApplicationController
 
     unless label
       respond_to do |format|
-        format.html { redirect_to @product, alert: 'Label not found on this product.' }
-        format.turbo_stream { flash.now[:alert] = 'Label not found on this product.' }
+        format.html { redirect_to @product, alert: "Label not found on this product." }
+        format.turbo_stream { flash.now[:alert] = "Label not found on this product." }
       end
       return
     end
@@ -375,10 +383,10 @@ class ProductsController < ApplicationController
   def toggle_active
     if @product.active?
       @product.product_status = :draft
-      status_text = 'deactivated'
+      status_text = "deactivated"
     else
       @product.product_status = :active
-      status_text = 'activated'
+      status_text = "activated"
     end
 
     if @product.save
@@ -391,6 +399,126 @@ class ProductsController < ApplicationController
         format.html { redirect_to @product, alert: "Failed to update product: #{@product.errors.full_messages.join(', ')}" }
         format.turbo_stream do
           flash.now[:alert] = "Failed to update product: #{@product.errors.full_messages.join(', ')}"
+          render :show, status: :unprocessable_entity
+        end
+      end
+    end
+  end
+
+  # POST /products/:id/add_to_catalog
+  # POST /products/:id/add_to_catalog.turbo_stream
+  #
+  # Adds the product to a catalog with optional configuration.
+  #
+  # Parameters:
+  # - catalog_id: The ID of the catalog to add the product to
+  # - active: Whether the product should be active in the catalog (default: true)
+  # - priority: The priority order in the catalog (default: 0)
+  #
+  def add_to_catalog
+    catalog_id = params[:catalog_id]
+    active = params[:active] == "1"
+    priority = params[:priority].to_i
+
+    if catalog_id.blank?
+      respond_to do |format|
+        format.html { redirect_to @product, alert: "Please select a catalog." }
+        format.turbo_stream { flash.now[:alert] = "Please select a catalog." }
+      end
+      return
+    end
+
+    # Verify catalog belongs to current company
+    catalog = current_potlift_company.catalogs.find_by(id: catalog_id)
+
+    unless catalog
+      respond_to do |format|
+        format.html { redirect_to @product, alert: "Catalog not found." }
+        format.turbo_stream { flash.now[:alert] = "Catalog not found." }
+      end
+      return
+    end
+
+    # Check if product is already in catalog
+    if @product.catalog_items.exists?(catalog_id: catalog.id)
+      respond_to do |format|
+        format.html { redirect_to @product, alert: "Product is already in #{catalog.name}." }
+        format.turbo_stream { flash.now[:alert] = "Product is already in #{catalog.name}." }
+      end
+      return
+    end
+
+    # Create catalog item
+    catalog_item = @product.catalog_items.build(
+      catalog: catalog,
+      catalog_item_state: active ? :active : :inactive,
+      priority: priority
+    )
+
+    if catalog_item.save
+      respond_to do |format|
+        format.html { redirect_to @product, notice: "Product added to #{catalog.name} successfully." }
+        format.turbo_stream do
+          flash.now[:notice] = "Product added to #{catalog.name} successfully."
+          redirect_to @product
+        end
+      end
+    else
+      respond_to do |format|
+        format.html { redirect_to @product, alert: "Failed to add product to catalog: #{catalog_item.errors.full_messages.join(', ')}" }
+        format.turbo_stream do
+          flash.now[:alert] = "Failed to add product to catalog: #{catalog_item.errors.full_messages.join(', ')}"
+          render :show, status: :unprocessable_entity
+        end
+      end
+    end
+  end
+
+  # DELETE /products/:id/remove_from_catalog
+  # DELETE /products/:id/remove_from_catalog.turbo_stream
+  #
+  # Removes the product from a catalog.
+  #
+  # Parameters:
+  # - catalog_id: The ID of the catalog to remove the product from
+  #
+  def remove_from_catalog
+    catalog_id = params[:catalog_id]
+
+    if catalog_id.blank?
+      respond_to do |format|
+        format.html { redirect_to @product, alert: "Catalog ID is required." }
+        format.turbo_stream { flash.now[:alert] = "Catalog ID is required." }
+      end
+      return
+    end
+
+    # Find the catalog item
+    catalog_item = @product.catalog_items.find_by(catalog_id: catalog_id)
+
+    unless catalog_item
+      respond_to do |format|
+        format.html { redirect_to @product, alert: "Product is not in this catalog." }
+        format.turbo_stream { flash.now[:alert] = "Product is not in this catalog." }
+      end
+      return
+    end
+
+    catalog_name = catalog_item.catalog.name
+
+    if catalog_item.destroy
+      respond_to do |format|
+        format.html { redirect_to @product, notice: "Product removed from #{catalog_name} successfully." }
+        format.turbo_stream do
+          flash.now[:notice] = "Product removed from #{catalog_name} successfully."
+          redirect_to @product
+        end
+      end
+    else
+      respond_to do |format|
+        format.html { redirect_to @product, alert: "Failed to remove product from catalog: #{catalog_item.errors.full_messages.join(', ')}" }
+        format.turbo_stream do
+          flash.now[:alert] = "Failed to remove product from catalog: #{catalog_item.errors.full_messages.join(', ')}"
           render :show, status: :unprocessable_entity
         end
       end
@@ -442,7 +570,7 @@ class ProductsController < ApplicationController
       begin
         @current_label = current_potlift_company.labels.find(params[:label_id])
         # Get all label IDs including descendants (sublabels)
-        label_ids = [@current_label.id] + @current_label.descendants.pluck(:id)
+        label_ids = [ @current_label.id ] + @current_label.descendants.pluck(:id)
         products = products.joins(:labels).where(labels: { id: label_ids }).distinct
       rescue ActiveRecord::RecordNotFound
         # Label not found or doesn't belong to company - ignore filter
@@ -467,7 +595,7 @@ class ProductsController < ApplicationController
   #
   def sort_column
     allowed_columns = %w[sku name created_at updated_at]
-    allowed_columns.include?(params[:sort]) ? params[:sort] : 'created_at'
+    allowed_columns.include?(params[:sort]) ? params[:sort] : "created_at"
   end
 
   # Get sort direction from params
@@ -477,7 +605,7 @@ class ProductsController < ApplicationController
   #
   def sort_direction
     allowed_directions = %w[asc desc]
-    allowed_directions.include?(params[:direction]) ? params[:direction] : 'desc'
+    allowed_directions.include?(params[:direction]) ? params[:direction] : "desc"
   end
 
   # Send CSV export of products
@@ -489,8 +617,8 @@ class ProductsController < ApplicationController
 
     send_data csv_data,
               filename: "products_#{Time.current.strftime('%Y%m%d_%H%M%S')}.csv",
-              type: 'text/csv',
-              disposition: 'attachment'
+              type: "text/csv",
+              disposition: "attachment"
   end
 
   # Load labels for filter dropdown with product counts
@@ -507,7 +635,7 @@ class ProductsController < ApplicationController
     @label_product_counts = {}
     @available_labels.each do |label|
       # Count products with this label or any sublabel
-      label_ids = [label.id] + label.descendants.pluck(:id)
+      label_ids = [ label.id ] + label.descendants.pluck(:id)
       count = current_potlift_company.products
                                      .joins(:labels)
                                      .where(labels: { id: label_ids })
@@ -517,7 +645,7 @@ class ProductsController < ApplicationController
 
       # Also calculate counts for sublabels
       label.sublabels.each do |sublabel|
-        sublabel_ids = [sublabel.id] + sublabel.descendants.pluck(:id)
+        sublabel_ids = [ sublabel.id ] + sublabel.descendants.pluck(:id)
         sublabel_count = current_potlift_company.products
                                                 .joins(:labels)
                                                 .where(labels: { id: sublabel_ids })

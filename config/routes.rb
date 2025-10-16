@@ -68,6 +68,8 @@ Rails.application.routes.draw do
       post :add_label
       delete :remove_label
       patch :toggle_active
+      post :add_to_catalog
+      delete :remove_from_catalog
     end
     collection do
       post :bulk_destroy

@@ -1,0 +1,66 @@
+<%= render Ui::ModalComponent.new(size: :md, modal_id: "add_to_catalog_modal") do |modal| %>
+  <% modal.with_header do %>
+    Add <%= product.name %> to Catalog
+  <% end %>
+
+  <%= form_with model: product, url: add_to_catalog_product_path(product), method: :post, data: { turbo: true } do |f| %>
+    <div class="space-y-4">
+      <div>
+        <label for="catalog_id" class="block text-sm font-medium text-gray-700">
+          Select Catalog <span class="text-red-600" aria-hidden="true">*</span>
+          <span class="sr-only">(required)</span>
+        </label>
+        <%= select_tag :catalog_id,
+            options_for_select(
+              available_catalogs.map { |c| ["#{c.name} (#{c.code})", c.id] },
+              nil
+            ),
+            prompt: 'Choose a catalog',
+            required: true,
+            class: 'mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm',
+            aria: { required: true }
+        %>
+        <p class="mt-1 text-xs text-gray-500">Select the catalog to add this product to.</p>
+      </div>
+
+      <div class="flex items-start">
+        <%= check_box_tag :active, '1', true,
+            id: 'catalog_item_active',
+            class: 'h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mt-0.5'
+        %>
+        <div class="ml-3">
+          <%= label_tag :active, class: 'block text-sm font-medium text-gray-900' do %>
+            Active in catalog
+          <% end %>
+          <p class="text-xs text-gray-500">Product will be immediately visible in the catalog.</p>
+        </div>
+      </div>
+
+      <div>
+        <label for="priority" class="block text-sm font-medium text-gray-700">
+          Priority (optional)
+        </label>
+        <%= number_field_tag :priority, nil,
+            placeholder: '0',
+            class: 'mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm'
+        %>
+        <p class="mt-1 text-xs text-gray-500">Higher priority items appear first. Leave empty for default (0).</p>
+      </div>
+    </div>
+
+    <div class="mt-6 flex justify-end gap-x-2">
+      <%= render Ui::ButtonComponent.new(
+        variant: :secondary,
+        data: { action: 'click->modal#close' }
+      ) do %>
+        Cancel
+      <% end %>
+      <%= render Ui::ButtonComponent.new(type: "submit", variant: :primary) do %>
+        <svg class="-ml-0.5 mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+        Add to Catalog
+      <% end %>
+    </div>
+  <% end %>
+<% end %>
