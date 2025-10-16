@@ -15,26 +15,187 @@
           autofocus: true %>
       </div>
 
+      <div>
+        <%= form.label :scope, "Search in", class: "block text-sm font-medium text-gray-700" %>
+        <%= form.select :scope,
+          options_for_select([
+            ['All', 'all'],
+            ['Products', 'products'],
+            ['Storages', 'storage'],
+            ['Attributes', 'attributes'],
+            ['Labels', 'labels'],
+            ['Catalogs', 'catalogs']
+          ], @scope),
+          {},
+          class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" %>
+      </div>
+
       <%= form.submit "Search", class: "inline-flex justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" %>
     <% end %>
   </div>
 
   <!-- Search Results -->
-  <% if @query.present? %>
-    <div class="bg-white shadow rounded-lg p-6">
-      <h2 class="text-lg font-medium text-gray-900 mb-4">Search Results for "<%= @query %>"</h2>
+  <% if @query.present? && @results.present? %>
+    <% total_results = @results.values.flatten.size %>
 
-      <div class="text-sm text-gray-500">
-        <p>Search functionality will be implemented in a future phase.</p>
-        <p class="mt-2">Expected features:</p>
-        <ul class="list-disc list-inside mt-2 space-y-1">
-          <li>Full-text search across products, storages, attributes, labels, and catalogs</li>
-          <li>Fuzzy matching for typo tolerance</li>
-          <li>Results grouped by model type</li>
-          <li>Highlighted search terms</li>
-          <li>Recent searches</li>
-        </ul>
+    <% if total_results > 0 %>
+      <div class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-lg font-medium text-gray-900 mb-4">
+          Search Results for "<%= @query %>"
+          <span class="text-sm text-gray-500">(<%= total_results %> <%= total_results == 1 ? 'result' : 'results' %>)</span>
+        </h2>
+
+        <div class="space-y-6">
+          <!-- Products Results -->
+          <% if @results[:products]&.any? %>
+            <div>
+              <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-3">
+                Products (<%= @results[:products].size %>)
+              </h3>
+              <div class="space-y-2">
+                <% @results[:products].each do |product| %>
+                  <%= link_to product_path(product), class: "block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors" do %>
+                    <div class="flex items-center justify-between">
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate"><%= product.name %></p>
+                        <p class="text-sm text-gray-500"><%= product.sku %></p>
+                      </div>
+                      <div class="ml-4 flex items-center gap-2">
+                        <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+                          <%= product.product_type.titleize %>
+                        </span>
+                        <% if product.product_status_active? %>
+                          <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                            Active
+                          </span>
+                        <% else %>
+                          <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+                            <%= product.product_status.titleize %>
+                          </span>
+                        <% end %>
+                      </div>
+                    </div>
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+
+          <!-- Storage Results -->
+          <% if @results[:storage]&.any? %>
+            <div>
+              <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-3">
+                Storage Locations (<%= @results[:storage].size %>)
+              </h3>
+              <div class="space-y-2">
+                <% @results[:storage].each do |storage| %>
+                  <%= link_to storage_path(storage), class: "block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors" do %>
+                    <div class="flex items-center justify-between">
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate"><%= storage.name %></p>
+                        <p class="text-sm text-gray-500"><%= storage.code %></p>
+                      </div>
+                      <span class="ml-4 inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                        <%= storage.storage_type.titleize %>
+                      </span>
+                    </div>
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+
+          <!-- Product Attributes Results -->
+          <% if @results[:attributes]&.any? %>
+            <div>
+              <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-3">
+                Product Attributes (<%= @results[:attributes].size %>)
+              </h3>
+              <div class="space-y-2">
+                <% @results[:attributes].each do |attribute| %>
+                  <%= link_to product_attribute_path(attribute), class: "block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors" do %>
+                    <div class="flex items-center justify-between">
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate"><%= attribute.name %></p>
+                        <p class="text-sm text-gray-500"><%= attribute.code %></p>
+                      </div>
+                      <span class="ml-4 inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-800">
+                        <%= attribute.pa_type.sub('patype_', '').titleize %>
+                      </span>
+                    </div>
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+
+          <!-- Labels Results -->
+          <% if @results[:labels]&.any? %>
+            <div>
+              <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-3">
+                Labels (<%= @results[:labels].size %>)
+              </h3>
+              <div class="space-y-2">
+                <% @results[:labels].each do |label| %>
+                  <%= link_to label_path(label), class: "block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors" do %>
+                    <div class="flex items-center justify-between">
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate"><%= label.name %></p>
+                        <p class="text-sm text-gray-500"><%= label.full_name %></p>
+                      </div>
+                      <span class="ml-4 inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+                        <%= label.label_type.titleize %>
+                      </span>
+                    </div>
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+
+          <!-- Catalogs Results -->
+          <% if @results[:catalogs]&.any? %>
+            <div>
+              <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-3">
+                Catalogs (<%= @results[:catalogs].size %>)
+              </h3>
+              <div class="space-y-2">
+                <% @results[:catalogs].each do |catalog| %>
+                  <%= link_to catalog_path(catalog), class: "block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors" do %>
+                    <div class="flex items-center justify-between">
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate"><%= catalog.name %></p>
+                        <p class="text-sm text-gray-500"><%= catalog.code %></p>
+                      </div>
+                      <div class="ml-4 flex items-center gap-2">
+                        <span class="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-800">
+                          <%= catalog.catalog_type.titleize %>
+                        </span>
+                        <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+                          <%= catalog.currency_code.upcase %>
+                        </span>
+                      </div>
+                    </div>
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
       </div>
-    </div>
+    <% else %>
+      <!-- No Results -->
+      <div class="bg-white shadow rounded-lg p-6">
+        <div class="text-center">
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">No results found</h3>
+          <p class="mt-1 text-sm text-gray-500">
+            No results found for "<%= @query %>". Try searching with different keywords.
+          </p>
+        </div>
+      </div>
+    <% end %>
   <% end %>
 </div>
