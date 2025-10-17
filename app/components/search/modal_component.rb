@@ -46,59 +46,27 @@ module Search
     #
     # @return [String] HTML structure for global search modal
     def call
-      content_tag(:div, **modal_attributes) do
-        concat(render_modal_backdrop)
-      end
+      render_modal_backdrop
     end
 
     private
 
-    # Builds data attributes for Stimulus controller
+    # Renders the search dropdown container
     #
-    # @return [Hash] Data attributes for global-search controller
-    def modal_attributes
-      {
-        data: { controller: "global-search" }
-      }
-    end
-
-    # Renders the full-screen modal backdrop
-    #
-    # @return [String] HTML structure for modal backdrop
+    # @return [String] HTML structure for centered search dropdown
     def render_modal_backdrop
       content_tag(:div,
-        class: "fixed inset-0 z-50 overflow-y-auto hidden",
+        class: "fixed top-20 left-0 right-0 z-50 flex justify-center px-4 hidden",
         data: {
-          global_search_target: "modal",
-          action: "click->global-search#close"
+          global_search_target: "modal"
         },
         aria: {
           role: "dialog",
-          modal: "true",
           labelledby: "search-modal-title"
         }
       ) do
-        concat(render_overlay)
-        concat(render_modal_container)
-      end
-    end
-
-    # Renders the semi-transparent backdrop overlay
-    #
-    # @return [String] HTML div for backdrop overlay
-    def render_overlay
-      content_tag(:div,
-        class: "fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity"
-      )
-    end
-
-    # Renders the modal content container
-    #
-    # @return [String] HTML structure for modal container
-    def render_modal_container
-      content_tag(:div, class: "flex min-h-full items-start justify-center p-4 sm:p-6 pt-[10vh]") do
         content_tag(:div,
-          class: "relative w-full max-w-2xl transform overflow-hidden rounded-lg bg-white shadow-2xl transition-all",
+          class: "w-full max-w-2xl rounded-lg bg-white shadow-xl border border-gray-200",
           data: { action: "click->global-search#preventClose" }
         ) do
           concat(render_search_header)
@@ -157,7 +125,7 @@ module Search
     def render_close_button
       button_tag(
         type: "button",
-        class: "rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500",
+        class: "rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:bg-gray-100",
         data: { action: "click->global-search#close" },
         aria: { label: "Close search" }
       ) do

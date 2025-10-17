@@ -27,16 +27,19 @@ export default class extends Controller {
     // Listen for CMD/CTRL+K keyboard shortcut
     this.keyboardHandler = this.handleKeyboardShortcut.bind(this)
     document.addEventListener("keydown", this.keyboardHandler)
+
+    // Click outside handler
+    this.outsideClickHandler = this.handleOutsideClick.bind(this)
+
     this.debounceTimer = null
   }
 
   disconnect() {
     document.removeEventListener("keydown", this.keyboardHandler)
+    document.removeEventListener("click", this.outsideClickHandler)
     if (this.debounceTimer) {
       clearTimeout(this.debounceTimer)
     }
-    // Restore body scroll
-    document.body.style.overflow = ""
   }
 
   /**
@@ -58,30 +61,34 @@ export default class extends Controller {
   }
 
   /**
-   * Open the search modal
-   * - Shows modal
+   * Open the search dropdown
+   * - Shows dropdown
    * - Focuses input
-   * - Locks body scroll
    * - Loads recent searches
+   * - Adds outside click listener
    */
   open() {
     if (this.hasModalTarget) {
       this.modalTarget.classList.remove("hidden")
       this.inputTarget.focus()
-      document.body.style.overflow = "hidden"
 
       // Load recent searches if input is empty
       if (!this.inputTarget.value.trim()) {
         this.loadRecentSearches()
       }
+
+      // Add click listener after a short delay
+      setTimeout(() => {
+        document.addEventListener("click", this.outsideClickHandler)
+      }, 100)
     }
   }
 
   /**
-   * Close the search modal
-   * - Hides modal
+   * Close the search dropdown
+   * - Hides dropdown
    * - Clears input and results
-   * - Restores body scroll
+   * - Removes outside click listener
    */
   close(event) {
     if (event) event.preventDefault()
@@ -90,7 +97,7 @@ export default class extends Controller {
       this.modalTarget.classList.add("hidden")
       this.inputTarget.value = ""
       this.resultsTarget.innerHTML = ""
-      document.body.style.overflow = ""
+      document.removeEventListener("click", this.outsideClickHandler)
     }
   }
 
@@ -162,7 +169,7 @@ export default class extends Controller {
     // Products
     if (results.products && results.products.length > 0) {
       html += this.renderSection("Products", results.products, (product) => `
-        <a href="/products/${product.id}" class="block px-4 py-3 hover:bg-gray-50 transition-colors focus:outline-none focus:bg-gray-50">
+        <a href="/products/${product.id}" class="block px-4 py-3 hover:bg-gray-50 transition-colors focus:outline-none focus:bg-gray-100">
           <div class="flex items-center">
             <div class="flex-1 min-w-0">
               <p class="text-sm font-medium text-gray-900 truncate">${this.escapeHtml(product.name)}</p>
@@ -179,7 +186,7 @@ export default class extends Controller {
     // Storage Locations
     if (results.storage && results.storage.length > 0) {
       html += this.renderSection("Storage Locations", results.storage, (storage) => `
-        <a href="/storages/${storage.id}" class="block px-4 py-3 hover:bg-gray-50 transition-colors focus:outline-none focus:bg-gray-50">
+        <a href="/storages/${storage.id}" class="block px-4 py-3 hover:bg-gray-50 transition-colors focus:outline-none focus:bg-gray-100">
           <div class="flex items-center">
             <div class="flex-1 min-w-0">
               <p class="text-sm font-medium text-gray-900 truncate">${this.escapeHtml(storage.name)}</p>
@@ -193,7 +200,7 @@ export default class extends Controller {
     // Product Attributes
     if (results.attributes && results.attributes.length > 0) {
       html += this.renderSection("Product Attributes", results.attributes, (attribute) => `
-        <a href="/product_attributes/${attribute.id}" class="block px-4 py-3 hover:bg-gray-50 transition-colors focus:outline-none focus:bg-gray-50">
+        <a href="/product_attributes/${attribute.id}" class="block px-4 py-3 hover:bg-gray-50 transition-colors focus:outline-none focus:bg-gray-100">
           <div class="flex items-center">
             <div class="flex-1 min-w-0">
               <p class="text-sm font-medium text-gray-900 truncate">${this.escapeHtml(attribute.name)}</p>
@@ -207,7 +214,7 @@ export default class extends Controller {
     // Labels
     if (results.labels && results.labels.length > 0) {
       html += this.renderSection("Labels", results.labels, (label) => `
-        <a href="/labels/${label.id}" class="block px-4 py-3 hover:bg-gray-50 transition-colors focus:outline-none focus:bg-gray-50">
+        <a href="/labels/${label.id}" class="block px-4 py-3 hover:bg-gray-50 transition-colors focus:outline-none focus:bg-gray-100">
           <div class="flex items-center">
             <div class="flex-1 min-w-0">
               <p class="text-sm font-medium text-gray-900 truncate">${this.escapeHtml(label.name)}</p>
@@ -220,7 +227,7 @@ export default class extends Controller {
     // Catalogs
     if (results.catalogs && results.catalogs.length > 0) {
       html += this.renderSection("Catalogs", results.catalogs, (catalog) => `
-        <a href="/catalogs/${catalog.code}" class="block px-4 py-3 hover:bg-gray-50 transition-colors focus:outline-none focus:bg-gray-50">
+        <a href="/catalogs/${catalog.code}" class="block px-4 py-3 hover:bg-gray-50 transition-colors focus:outline-none focus:bg-gray-100">
           <div class="flex items-center">
             <div class="flex-1 min-w-0">
               <p class="text-sm font-medium text-gray-900 truncate">${this.escapeHtml(catalog.name)}</p>
@@ -293,7 +300,7 @@ export default class extends Controller {
               ${recentSearches.map(query => `
                 <button
                   type="button"
-                  class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:bg-gray-50 transition-colors"
+                  class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:bg-gray-100 transition-colors"
                   data-action="click->global-search#fillSearch"
                   data-query="${this.escapeHtml(query)}">
                   <div class="flex items-center gap-2">
@@ -376,10 +383,20 @@ export default class extends Controller {
   }
 
   /**
-   * Prevent modal close when clicking inside modal content
+   * Prevent dropdown close when clicking inside
    * @param {Event} event - Click event
    */
   preventClose(event) {
     event.stopPropagation()
+  }
+
+  /**
+   * Handle clicks outside the dropdown
+   * @param {Event} event - Click event
+   */
+  handleOutsideClick(event) {
+    if (this.hasModalTarget && !this.modalTarget.contains(event.target)) {
+      this.close()
+    }
   }
 }

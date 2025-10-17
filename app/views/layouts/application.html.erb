@@ -23,7 +23,7 @@
     <%= javascript_importmap_tags %>
   </head>
 
-  <body class="h-full">
+  <body class="h-full" <%= 'data-controller="global-search"'.html_safe if authenticated? %>>
     <!-- Skip to main content link (accessibility) -->
     <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-50 focus:p-4 focus:bg-blue-600 focus:text-white">
       Skip to main content
@@ -38,6 +38,9 @@
 
       <!-- Mobile Sidebar -->
       <%= render Shared::MobileSidebarComponent.new %>
+
+      <!-- Global Search Modal -->
+      <%= render Search::ModalComponent.new %>
 
       <!-- Flash Messages (below navbar, fixed positioning) -->
       <div id="flash" class="fixed top-16 right-4 z-50 w-full max-w-sm">

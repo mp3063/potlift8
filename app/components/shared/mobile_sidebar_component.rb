@@ -103,6 +103,7 @@ module Shared
         concat(mobile_nav_link("Products", helpers.products_path))
         concat(mobile_nav_link("Storages", helpers.storages_path))
         concat(mobile_nav_link("Catalogs", helpers.catalogs_path))
+        concat(mobile_nav_link("Attributes", helpers.product_attributes_path))
         # TODO: Uncomment when Reports feature is implemented
         # concat(mobile_nav_link("Reports", helpers.reports_path))
       end

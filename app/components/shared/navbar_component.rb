@@ -140,6 +140,7 @@ module Shared
         concat(nav_link("Products", helpers.products_path))
         concat(nav_link("Storages", helpers.storages_path))
         concat(nav_link("Catalogs", helpers.catalogs_path))
+        concat(nav_link("Attributes", helpers.product_attributes_path))
         # TODO: Uncomment when Reports feature is implemented
         # concat(nav_link("Reports", helpers.reports_path))
       end
