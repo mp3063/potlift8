@@ -209,7 +209,7 @@
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <div class="flex items-center justify-end gap-3">
-                  <%= link_to "#", class: "text-blue-600 hover:text-blue-900 transition-colors duration-150", title: "Edit item" do %>
+                  <%= link_to edit_product_path(catalog_item.product), class: "text-blue-600 hover:text-blue-900 transition-colors duration-150", title: "Edit product" do %>
                     Edit
                   <% end %>
                   <%= button_to "#", method: :delete, data: { turbo_confirm: "Remove this product from the catalog?" }, class: "text-red-600 hover:text-red-900 transition-colors duration-150", title: "Remove from catalog" do %>
