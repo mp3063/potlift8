@@ -54,8 +54,9 @@ class StoragesController < ApplicationController
   #
   def inventory
     # Get all inventories for this storage with products
+    # Only eager load what we need: product (for sku, name, product_type, info)
     @inventories = @storage.inventories
-                           .includes(product: [:labels, :inventories])
+                           .includes(:product)
                            .joins(:product)
 
     # Apply sorting
