@@ -50,15 +50,9 @@
       </p>
     </div>
     <div class="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
-      <%= render Ui::ButtonComponent.new(
-        variant: :primary,
-        onclick: "alert('Adjust inventory functionality coming soon')"
-      ) do %>
-        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-        </svg>
-        Adjust Inventory
-      <% end %>
+      <div class="text-sm text-gray-500 text-right">
+        Click "Adjust" on any product to modify inventory
+      </div>
     </div>
   </div>
 
@@ -143,7 +137,16 @@
                   <%= render Ui::ButtonComponent.new(
                     variant: :ghost,
                     size: :sm,
-                    onclick: "alert('Adjust inventory for #{product.sku}')"
+                    data: {
+                      action: "click->inventory-table#openAdjustModal",
+                      product_id: product.id,
+                      product_sku: product.sku,
+                      product_name: product.name,
+                      inventory_id: inventory.id,
+                      current_value: inventory.value,
+                      eta_quantity: inventory.info&.dig('eta_quantity') || 0,
+                      eta_date: inventory.info&.dig('eta_date') || ''
+                    }
                   ) do %>
                     Adjust
                   <% end %>
@@ -248,4 +251,7 @@
       </div>
     </div>
   <% end %>
+
+  <!-- Inventory Adjustment Modal -->
+  <%= render 'adjust_inventory_modal' %>
 </div>
