@@ -89,6 +89,20 @@
         <p class="text-xs text-gray-600 mt-1" id="description-hint">Optional product description</p>
       </div>
 
+      <!-- Restock Level -->
+      <div>
+        <%= form.label :restock_level, "Restock Level", class: "block text-sm font-medium text-gray-900 mb-1" %>
+        <%= form.number_field :restock_level,
+            value: product.info&.dig('restock_level') || 0,
+            min: 0,
+            class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+            placeholder: "0",
+            aria: {
+              describedby: "restock-level-hint"
+            } %>
+        <p class="text-xs text-gray-600 mt-1" id="restock-level-hint">Low stock threshold - inventory below this level will be highlighted in red</p>
+      </div>
+
       <!-- Active Status -->
       <div class="relative flex items-start">
         <div class="flex h-6 items-center">

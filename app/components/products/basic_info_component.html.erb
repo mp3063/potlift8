@@ -36,6 +36,15 @@
       </dd>
     </div>
 
+    <!-- Restock Level -->
+    <div class="sm:col-span-1">
+      <dt class="text-sm font-medium text-gray-500">Restock Level</dt>
+      <dd class="mt-1 text-sm text-gray-900">
+        <%= number_with_delimiter(product.info&.dig('restock_level') || 0) %>
+        <span class="text-xs text-gray-500">(low stock threshold)</span>
+      </dd>
+    </div>
+
     <!-- Name -->
     <div class="sm:col-span-2">
       <dt class="text-sm font-medium text-gray-500">Product Name</dt>

@@ -145,6 +145,9 @@ class ProductsController < ApplicationController
   def create
     @product = current_potlift_company.products.build(product_params)
 
+    # Handle restock_level in info JSONB column
+    handle_info_fields(@product)
+
     if @product.save
       respond_to do |format|
         format.html { redirect_to products_path, notice: "Product created successfully." }
@@ -167,6 +170,9 @@ class ProductsController < ApplicationController
   # Updates an existing product.
   #
   def update
+    # Handle restock_level in info JSONB column before update
+    handle_info_fields(@product)
+
     if @product.update(product_params)
       respond_to do |format|
         format.html { redirect_to products_path, notice: "Product updated successfully." }
@@ -547,6 +553,24 @@ class ProductsController < ApplicationController
       :active,
       label_ids: []
     )
+  end
+
+  # Handle JSONB info field updates
+  # Stores restock_level in product.info['restock_level']
+  #
+  # @param product [Product] The product to update
+  def handle_info_fields(product)
+    return unless params[:product] && params[:product][:restock_level]
+
+    # Initialize info hash if nil
+    product.info ||= {}
+
+    # Store restock_level as integer (or remove if blank)
+    if params[:product][:restock_level].present?
+      product.info['restock_level'] = params[:product][:restock_level].to_i
+    else
+      product.info['restock_level'] = 0
+    end
   end
 
   # Apply filters to products query
