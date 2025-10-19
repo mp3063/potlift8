@@ -132,7 +132,9 @@ export default class extends Controller {
   //
   // @param {Event} event - Click event on dismiss button
   dismiss(event) {
-    const message = event.target.closest("[data-flash-target='message']")
+    // Use currentTarget to always start from the button element, not the clicked SVG/path
+    const button = event.currentTarget
+    const message = button.closest("[data-flash-target='message']")
     if (message) {
       this.fadeOut(message)
     }

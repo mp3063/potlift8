@@ -29,7 +29,7 @@
 
 <%# Show success message %>
 <%= turbo_stream.prepend "flash" do %>
-  <div data-controller="flash" data-flash-auto-dismiss-value="true" class="rounded-md bg-green-50 p-4 shadow-sm">
+  <div data-controller="flash" data-flash-target="message" data-flash-auto-dismiss-value="true" class="rounded-md bg-green-50 p-4 shadow-sm">
     <div class="flex">
       <div class="flex-shrink-0">
         <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
