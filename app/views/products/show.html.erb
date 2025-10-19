@@ -83,12 +83,16 @@
     <div class="lg:col-span-2 space-y-6">
       <%= render Products::ImagesComponent.new(product: @product) %>
       <%= render Products::BasicInfoComponent.new(product: @product) %>
-      <%= render Products::CatalogTabsComponent.new(
-        product: @product,
-        catalog_items: @product.catalog_items,
-        attribute_values: @attribute_values,
-        available_catalogs: @available_catalogs
-      ) %>
+
+      <%= turbo_frame_tag "catalog-tabs-#{@product.id}" do %>
+        <%= render Products::CatalogTabsComponent.new(
+          product: @product,
+          catalog_items: @product.catalog_items,
+          attribute_values: @attribute_values,
+          available_catalogs: @available_catalogs
+        ) %>
+      <% end %>
+
       <%= render Products::LabelsComponent.new(product: @product) %>
     </div>
 

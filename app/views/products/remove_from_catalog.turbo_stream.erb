@@ -1,5 +1,17 @@
 <%# Turbo Stream response for removing product from catalog %>
-<%# Uses Turbo refresh to reload the page and show updated catalog list %>
+<%# Replaces only the catalog tabs section with updated data %>
 
-<turbo-stream action="refresh" request-id="<%= request.uuid %>"></turbo-stream>
+<turbo-stream action="replace" target="catalog-tabs-<%= @product.id %>">
+  <template>
+    <% self.formats = [:html] %>
+    <%= turbo_frame_tag "catalog-tabs-#{@product.id}" do %>
+      <%= render Products::CatalogTabsComponent.new(
+        product: @product,
+        catalog_items: @product.catalog_items.reload,
+        attribute_values: @product.product_attribute_values.each_with_object({}) { |pav, hash| hash[pav.product_attribute] = pav },
+        available_catalogs: @product.company.catalogs.where.not(id: @product.catalog_items.map(&:catalog_id)).order(:name)
+      ) %>
+    <% end %>
+  </template>
+</turbo-stream>
 
