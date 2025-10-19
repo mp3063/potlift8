@@ -39,41 +39,124 @@
 
         <% if catalog_override.present? %>
           <!-- Catalog override (normal opacity) -->
-          <div class="flex items-start justify-between py-3 border-b border-gray-200">
-            <div class="flex-1">
-              <dt class="text-sm font-medium text-gray-500 flex items-center gap-2">
-                <%= product_attribute.name %>
-                <span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
-                  Override
-                </span>
-              </dt>
-              <dd class="mt-1 text-sm text-gray-900">
-                <%= catalog_override.value %>
-              </dd>
-              <% if product_value.present? && product_value.value.present? && catalog_override.value != product_value.value %>
-                <dd class="mt-1 text-xs text-gray-500">
-                  Product value: <%= product_value.value %>
-                </dd>
-              <% end %>
-            </div>
-            <div class="ml-4 flex gap-1">
-              <!-- Edit button -->
-              <button type="button" class="text-gray-400 hover:text-gray-600" aria-label="Edit override for <%= product_attribute.name %>">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                </svg>
-              </button>
-              <!-- Remove override button -->
-              <button
-                type="button"
-                class="text-red-400 hover:text-red-600"
-                aria-label="Remove override for <%= product_attribute.name %>"
-                title="Remove override (use product value)">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-              </button>
-            </div>
+          <div class="py-3 border-b border-gray-200">
+            <%= turbo_frame_tag dom_id(catalog_override, :value) do %>
+              <div class="group" data-controller="inline-editor" data-inline-editor-url-value="<%= catalog_item_attribute_value_path(catalog_override) %>">
+                <!-- Display Mode -->
+                <div class="flex items-start justify-between" data-inline-editor-target="display">
+                  <div class="flex-1">
+                    <dt class="text-sm font-medium text-gray-500 flex items-center gap-2">
+                      <%= product_attribute.name %>
+                      <span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
+                        Override
+                      </span>
+                    </dt>
+                    <dd class="mt-1 text-sm text-gray-900">
+                      <%= catalog_override.value %>
+                    </dd>
+                    <% if product_value.present? && product_value.value.present? && catalog_override.value != product_value.value %>
+                      <dd class="mt-1 text-xs text-gray-500">
+                        Product value: <%= product_value.value %>
+                      </dd>
+                    <% end %>
+                  </div>
+                  <div class="ml-4 flex gap-1">
+                    <!-- Edit button -->
+                    <%= button_tag type: "button",
+                        class: "p-1 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-gray-600 rounded hover:bg-gray-100",
+                        data: { action: "click->inline-editor#edit" },
+                        aria: { label: "Edit #{product_attribute.name}" } do %>
+                      <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                      </svg>
+                    <% end %>
+                    <!-- Remove override button -->
+                    <%= button_to catalog_item_attribute_value_path(catalog_override),
+                          method: :delete,
+                          form: { data: { turbo_confirm: "Remove override for #{product_attribute.name}? This will use the product value instead." } },
+                          class: "text-red-400 hover:text-red-600 p-1 border-0 bg-transparent rounded hover:bg-gray-100",
+                          aria_label: "Remove override for #{product_attribute.name}",
+                          title: "Remove override (use product value)",
+                          data: { turbo_frame: "_top" } do %>
+                      <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                      </svg>
+                    <% end %>
+                  </div>
+                </div>
+
+                <!-- Edit Mode -->
+                <div class="hidden" data-inline-editor-target="editor">
+                  <%= form_with url: catalog_item_attribute_value_path(catalog_override),
+                      method: :patch,
+                      data: {
+                        inline_editor_target: "form",
+                        action: "turbo:submit-end->inline-editor#handleSubmit"
+                      } do |form| %>
+                    <div class="space-y-3">
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700">
+                          <%= product_attribute.name %>
+                          <span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 ml-2">
+                            Override
+                          </span>
+                        </label>
+                        <% if product_attribute.patype_select? %>
+                          <%= form.select :value,
+                              options_for_select(product_attribute.options, catalog_override.value),
+                              { prompt: "Select an option" },
+                              class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" %>
+                        <% elsif product_attribute.patype_multiselect? %>
+                          <%= form.select :value,
+                              options_for_select(product_attribute.options, catalog_override.value),
+                              { prompt: "Select options" },
+                              multiple: true,
+                              class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" %>
+                        <% elsif product_attribute.patype_boolean? %>
+                          <%= form.check_box :value,
+                              { checked: catalog_override.value == 'true' },
+                              class: "h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" %>
+                        <% elsif product_attribute.patype_number? %>
+                          <%= form.number_field :value,
+                              value: catalog_override.value,
+                              class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+                              placeholder: "Enter #{product_attribute.name.downcase}" %>
+                        <% elsif product_attribute.patype_date? %>
+                          <%= form.date_field :value,
+                              value: catalog_override.value,
+                              class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" %>
+                        <% elsif product_attribute.patype_rich_text? %>
+                          <%= form.text_area :value,
+                              value: catalog_override.value,
+                              rows: 4,
+                              class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+                              placeholder: "Enter #{product_attribute.name.downcase}" %>
+                        <% else %>
+                          <%= form.text_field :value,
+                              value: catalog_override.value,
+                              class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+                              placeholder: "Enter #{product_attribute.name.downcase}" %>
+                        <% end %>
+                        <% if product_value.present? && product_value.value.present? && catalog_override.value != product_value.value %>
+                          <p class="mt-1 text-xs text-gray-500">
+                            Product value: <%= product_value.value %>
+                          </p>
+                        <% end %>
+                      </div>
+
+                      <div class="flex gap-x-2">
+                        <%= form.submit "Save",
+                            class: "rounded-md bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" %>
+                        <%= button_tag "Cancel",
+                            type: "button",
+                            class: "rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
+                            data: { action: "click->inline-editor#cancel" } %>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
           </div>
         <% elsif product_value.present? && product_value.value.present? %>
           <!-- Product fallback (grayed out) -->
@@ -87,34 +170,144 @@
                 Inherited from product
               </dd>
             </div>
-            <div class="ml-4">
-              <!-- Add override button -->
-              <button
-                type="button"
-                class="text-gray-400 hover:text-gray-600"
-                aria-label="Add override for <%= product_attribute.name %>"
-                title="Override for this catalog">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                </svg>
-              </button>
-            </div>
           </div>
         <% end %>
       <% end %>
     </div>
 
     <!-- Add Override CTA -->
-    <% if catalog_item.catalog_item_attribute_values.count < all_attributes.count %>
-      <div class="pt-4 border-t border-gray-200">
-        <%= render Ui::ButtonComponent.new(variant: :secondary, size: :sm) do %>
-          <svg class="-ml-0.5 mr-1.5 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-          </svg>
-          Add Attribute Override
-        <% end %>
+    <div class="mt-6">
+      <div class="border-t border-gray-200 pt-4">
+        <% available_attrs = all_attributes
+             .select { |attr| attr.catalog_scope? || attr.product_and_catalog_scope? }
+             .reject { |attr| catalog_item.catalog_item_attribute_values.any? { |ciav| ciav.product_attribute_id == attr.id } } %>
+
+        <div data-controller="modal" data-modal-closable-value="true">
+          <!-- Trigger button -->
+          <div data-action="click->modal#open">
+            <%= render Ui::ButtonComponent.new(variant: :secondary, size: :sm) do %>
+              <svg class="-ml-0.5 mr-1.5 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+              </svg>
+              Add Attribute Override
+            <% end %>
+          </div>
+
+          <!-- Modal backdrop and content -->
+          <div class="fixed inset-0 z-50 overflow-y-auto hidden"
+               data-modal-target="backdrop"
+               aria-labelledby="add-override-modal-<%= catalog_item.catalog.code %>-title"
+               role="dialog"
+               aria-modal="true">
+            <!-- Backdrop overlay -->
+            <div class="fixed inset-0 bg-gray-900 bg-opacity-50 transition-opacity"
+                 data-action="click->modal#close"></div>
+
+            <!-- Modal container -->
+            <div class="flex min-h-full items-center justify-center p-4">
+              <div class="relative bg-white rounded-lg shadow-xl transform transition-all w-full max-w-lg"
+                   data-modal-target="container"
+                   data-action="click->modal#preventClose">
+
+                <!-- Close button -->
+                <button type="button"
+                        class="absolute top-4 right-4 text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg p-1"
+                        data-action="click->modal#close"
+                        aria-label="Close">
+                  <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </button>
+
+                <!-- Modal header -->
+                <div class="px-6 py-4 border-b border-gray-200">
+                  <h3 class="text-lg font-semibold text-gray-900" id="add-override-modal-<%= catalog_item.catalog.code %>-title">
+                    Add Attribute Override
+                  </h3>
+                </div>
+
+                <!-- Modal body -->
+                <div class="px-6 py-4">
+                  <% if available_attrs.any? %>
+            <div data-controller="attribute-override" data-attribute-override-product-id-value="<%= product.id %>">
+              <%= form_with url: catalog_item_attribute_values_path, method: :post, id: "add-override-form-#{catalog_item.catalog.code}", data: { turbo_frame: "_top" } do |f| %>
+                <%= f.hidden_field :catalog_item_id, value: catalog_item.id %>
+
+                <div class="space-y-4">
+                  <!-- Attribute Selection -->
+                  <div>
+                    <label for="attribute-select-<%= catalog_item.catalog.code %>" class="block text-sm font-medium text-gray-700">
+                      Attribute
+                    </label>
+                    <%= f.select :product_attribute_id,
+                          options_for_select(available_attrs.map { |attr| [attr.name, attr.id, { 'data-code': attr.code }] }),
+                          { prompt: 'Select an attribute...' },
+                          {
+                            id: "attribute-select-#{catalog_item.catalog.code}",
+                            class: "mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+                            data: {
+                              action: "change->attribute-override#loadProductValue",
+                              attribute_override_target: "attributeSelect"
+                            }
+                          } %>
+                  </div>
+
+                  <!-- Value Input -->
+                  <div>
+                    <label for="value-input-<%= catalog_item.catalog.code %>" class="block text-sm font-medium text-gray-700">
+                      Override Value
+                    </label>
+                    <%= f.text_field :value,
+                          id: "value-input-#{catalog_item.catalog.code}",
+                          class: "mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+                          placeholder: "Enter override value",
+                          data: {
+                            attribute_override_target: "valueInput"
+                          } %>
+                    <p class="mt-1 text-xs text-gray-500" data-attribute-override-target="productValueHint">
+                      <!-- Product value hint will appear here -->
+                    </p>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+                  <% else %>
+                    <div class="text-center py-8">
+                      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                      </svg>
+                      <p class="mt-2 text-sm text-gray-900">All attributes have overrides</p>
+                      <p class="mt-1 text-xs text-gray-500">You've already overridden all available attributes for this catalog.</p>
+                    </div>
+                  <% end %>
+                </div>
+
+                <!-- Modal footer -->
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-2">
+                  <%= render Ui::ButtonComponent.new(
+                        variant: :secondary,
+                        data: { action: "click->modal#close" }
+                      ) do %>
+                    Cancel
+                  <% end %>
+                  <% if available_attrs.any? %>
+                    <%= render Ui::ButtonComponent.new(
+                          variant: :primary,
+                          type: "submit",
+                          form: "add-override-form-#{catalog_item.catalog.code}"
+                        ) do %>
+                      Add Override
+                    <% end %>
+                  <% end %>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    <% end %>
+    </div>
+
   <% else %>
     <div class="text-center py-12">
       <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
