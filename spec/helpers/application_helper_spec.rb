@@ -42,4 +42,48 @@ RSpec.describe ApplicationHelper, type: :helper do
       end
     end
   end
+
+  describe "#js_escape_string" do
+    it "returns empty string for nil input" do
+      expect(helper.js_escape_string(nil)).to eq('')
+    end
+
+    it "escapes single quotes" do
+      expect(helper.js_escape_string("It's working")).to eq("It\\'s working")
+    end
+
+    it "escapes double quotes" do
+      expect(helper.js_escape_string('He said "hello"')).to eq('He said \\"hello\\"')
+    end
+
+    it "escapes backslashes" do
+      expect(helper.js_escape_string('C:\Users\test')).to eq('C:\\Users\\test')
+    end
+
+    it "escapes newlines" do
+      expect(helper.js_escape_string("line1\nline2")).to eq('line1\\nline2')
+    end
+
+    it "escapes carriage returns" do
+      expect(helper.js_escape_string("line1\rline2")).to eq('line1\\rline2')
+    end
+
+    it "escapes tabs" do
+      expect(helper.js_escape_string("col1\tcol2")).to eq('col1\\tcol2')
+    end
+
+    it "escapes multiple special characters" do
+      input = %q{Product "ABC-123" with 'quotes' and\nnewlines}
+      expected = %q{Product \\"ABC-123\\" with \\'quotes\\' and\\nnewlines}
+      expect(helper.js_escape_string(input)).to eq(expected)
+    end
+
+    it "handles strings with backslashes and quotes" do
+      expect(helper.js_escape_string('foo\"bar')).to eq('foo\\\\"bar')
+    end
+
+    it "returns unchanged string when no special characters present" do
+      expect(helper.js_escape_string("simple text")).to eq("simple text")
+    end
+  end
 end
