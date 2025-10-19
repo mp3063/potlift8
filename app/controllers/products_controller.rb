@@ -15,7 +15,7 @@
 # - Turbo Stream support for dynamic updates
 #
 class ProductsController < ApplicationController
-  before_action :set_product, only: [ :show, :edit, :update, :destroy, :duplicate, :add_label, :remove_label, :toggle_active, :add_to_catalog, :remove_from_catalog ]
+  before_action :set_product, only: [ :show, :edit, :update, :destroy, :duplicate, :add_label, :remove_label, :toggle_active, :add_to_catalog, :remove_from_catalog, :attribute_value ]
 
   # GET /products
   # GET /products.turbo_stream
@@ -564,6 +564,28 @@ class ProductsController < ApplicationController
         end
       end
     end
+  end
+
+  # GET /products/:id/attribute_value
+  # Returns the value of a product attribute by code (for AJAX requests)
+  #
+  # Query Parameters:
+  # - code: Attribute code (required)
+  #
+  # Response:
+  # - JSON: { value: "attribute_value" } or { value: nil }
+  #
+  def attribute_value
+    code = params[:code]
+
+    if code.blank?
+      render json: { error: "Attribute code is required" }, status: :bad_request
+      return
+    end
+
+    value = @product.read_attribute_value(code)
+
+    render json: { value: value }
   end
 
   private
