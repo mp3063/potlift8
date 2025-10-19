@@ -1,0 +1,54 @@
+<%# Turbo Stream response for deleting a catalog attribute override %>
+
+<%# Update the entire catalog tab panel with refreshed content %>
+<%= turbo_stream.replace "panel-#{@catalog_item.catalog.code}" do %>
+  <div
+    data-catalog-tabs-target="panel"
+    data-panel-id="<%= @catalog_item.catalog.code %>"
+    id="panel-<%= @catalog_item.catalog.code %>"
+    role="tabpanel"
+    aria-labelledby="tab-<%= @catalog_item.catalog.code %>">
+    <%= render partial: 'products/catalog_tabs/catalog_attributes',
+               locals: {
+                 catalog_item: @catalog_item,
+                 product: @product,
+                 attribute_values: @product.product_attribute_values.index_by(&:product_attribute),
+                 all_attributes: @product.company.product_attributes
+               } %>
+  </div>
+<% end %>
+
+<%# Update the tab badge counter %>
+<%= turbo_stream.update "tab-#{@catalog_item.catalog.code}-badge" do %>
+  <% if @catalog_item.catalog_item_attribute_values.any? %>
+    <span id="tab-<%= @catalog_item.catalog.code %>-badge" class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
+      <%= @catalog_item.catalog_item_attribute_values.count %>
+    </span>
+  <% end %>
+<% end %>
+
+<%# Show success message %>
+<%= turbo_stream.prepend "flash" do %>
+  <div data-controller="flash" data-flash-auto-dismiss-value="true" class="rounded-md bg-green-50 p-4 shadow-sm">
+    <div class="flex">
+      <div class="flex-shrink-0">
+        <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
+        </svg>
+      </div>
+      <div class="ml-3 flex-1">
+        <p class="text-sm font-medium text-green-800">
+          <%= flash.now[:notice] || "Attribute override removed. Using product value." %>
+        </p>
+      </div>
+      <div class="ml-auto pl-3">
+        <button type="button" data-action="click->flash#dismiss" class="inline-flex rounded-md bg-green-50 p-1.5 text-green-500 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2 focus:ring-offset-green-50">
+          <span class="sr-only">Dismiss</span>
+          <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+<% end %>

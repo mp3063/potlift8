@@ -70,6 +70,7 @@ Rails.application.routes.draw do
       patch :toggle_active
       post :add_to_catalog
       delete :remove_from_catalog
+      get :attribute_value
     end
     collection do
       post :bulk_destroy
@@ -164,4 +165,10 @@ Rails.application.routes.draw do
       get :export
     end
   end
+
+  # Catalog Item Attribute Values (catalog-specific attribute overrides)
+  # POST /catalog_item_attribute_values - Create override
+  # PATCH/PUT /catalog_item_attribute_values/:id - Update override
+  # DELETE /catalog_item_attribute_values/:id - Delete override
+  resources :catalog_item_attribute_values, only: [:create, :update, :destroy]
 end
