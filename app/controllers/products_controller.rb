@@ -234,9 +234,27 @@ class ProductsController < ApplicationController
 
     # Eager load associations to prevent N+1 queries during destroy callbacks
     products = current_potlift_company.products.where(id: product_ids).includes(:product_attribute_values, :labels, :inventories, :product_assets, :catalog_items, :product_configurations_as_super, :product_configurations_as_sub, images_attachments: :blob)
-    count = products.destroy_all.size
 
-    redirect_to products_path, notice: "#{count} #{'product'.pluralize(count)} deleted successfully."
+    # Track success and failure individually
+    successful_count = 0
+    failed_products = []
+
+    products.each do |product|
+      if product.destroy
+        successful_count += 1
+      else
+        failed_products << "#{product.sku} (#{product.errors.full_messages.join(', ')})"
+      end
+    end
+
+    # Provide detailed feedback
+    if failed_products.any?
+      redirect_to products_path,
+                  alert: "#{successful_count} #{'product'.pluralize(successful_count)} deleted. Failed to delete: #{failed_products.join('; ')}"
+    else
+      redirect_to products_path,
+                  notice: "#{successful_count} #{'product'.pluralize(successful_count)} deleted successfully."
+    end
   end
 
   # POST /products/bulk_update_labels
@@ -256,13 +274,34 @@ class ProductsController < ApplicationController
       return
     end
 
-    count = 0
-    current_potlift_company.products.where(id: product_ids).includes(:labels).find_each do |product|
-      product.label_ids = label_ids
-      count += 1
+    successful_count = 0
+    failed_products = []
+
+    # Wrap in transaction to ensure atomicity
+    ActiveRecord::Base.transaction do
+      current_potlift_company.products.where(id: product_ids).includes(:labels).find_each do |product|
+        product.label_ids = label_ids
+        if product.save
+          successful_count += 1
+        else
+          failed_products << "#{product.sku} (#{product.errors.full_messages.join(', ')})"
+        end
+      end
+
+      # Rollback if any failures occurred
+      raise ActiveRecord::Rollback if failed_products.any?
     end
 
-    redirect_to products_path, notice: "Labels updated for #{count} #{'product'.pluralize(count)}."
+    # Provide detailed feedback
+    if failed_products.any?
+      redirect_to products_path,
+                  alert: "Failed to update labels. Errors: #{failed_products.join('; ')}"
+    else
+      redirect_to products_path,
+                  notice: "Labels updated for #{successful_count} #{'product'.pluralize(successful_count)}."
+    end
+  rescue StandardError => e
+    redirect_to products_path, alert: "Failed to update labels: #{e.message}"
   end
 
   # GET /products/validate_sku?sku=ABC123
@@ -409,6 +448,8 @@ class ProductsController < ApplicationController
         end
       end
     end
+  rescue ActiveRecord::RecordInvalid => e
+    redirect_to products_path, alert: "Failed to toggle product status: #{e.message}"
   end
 
   # POST /products/:id/add_to_catalog
@@ -464,10 +505,7 @@ class ProductsController < ApplicationController
     if catalog_item.save
       respond_to do |format|
         format.html { redirect_to @product, notice: "Product added to #{catalog.name} successfully." }
-        format.turbo_stream do
-          flash.now[:notice] = "Product added to #{catalog.name} successfully."
-          redirect_to @product
-        end
+        format.turbo_stream { flash.now[:notice] = "Product added to #{catalog.name} successfully." }
       end
     else
       respond_to do |format|
@@ -515,10 +553,7 @@ class ProductsController < ApplicationController
     if catalog_item.destroy
       respond_to do |format|
         format.html { redirect_to @product, notice: "Product removed from #{catalog_name} successfully." }
-        format.turbo_stream do
-          flash.now[:notice] = "Product removed from #{catalog_name} successfully."
-          redirect_to @product
-        end
+        format.turbo_stream { flash.now[:notice] = "Product removed from #{catalog_name} successfully." }
       end
     else
       respond_to do |format|
@@ -556,7 +591,7 @@ class ProductsController < ApplicationController
   end
 
   # Handle JSONB info field updates
-  # Stores restock_level in product.info['restock_level']
+  # Stores restock_level in product.info["restock_level"]
   #
   # @param product [Product] The product to update
   def handle_info_fields(product)
@@ -567,9 +602,9 @@ class ProductsController < ApplicationController
 
     # Store restock_level as integer (or remove if blank)
     if params[:product][:restock_level].present?
-      product.info['restock_level'] = params[:product][:restock_level].to_i
+      product.info["restock_level"] = params[:product][:restock_level].to_i
     else
-      product.info['restock_level'] = 0
+      product.info["restock_level"] = 0
     end
   end
 
@@ -655,28 +690,83 @@ class ProductsController < ApplicationController
                                                .includes(sublabels: { sublabels: :sublabels })
                                                .order(:label_positions, :name)
 
-    # Calculate product counts for each label (including sublabels)
-    @label_product_counts = {}
-    @available_labels.each do |label|
-      # Count products with this label or any sublabel
-      label_ids = [ label.id ] + label.descendants.pluck(:id)
-      count = current_potlift_company.products
-                                     .joins(:labels)
-                                     .where(labels: { id: label_ids })
-                                     .distinct
-                                     .count
-      @label_product_counts[label.id] = count
+    # Optimized: Calculate product counts for all labels in a single query
+    # This eliminates N+1 queries by using GROUP BY instead of per-label queries
+    @label_product_counts = calculate_label_product_counts
+  end
 
-      # Also calculate counts for sublabels
-      label.sublabels.each do |sublabel|
-        sublabel_ids = [ sublabel.id ] + sublabel.descendants.pluck(:id)
-        sublabel_count = current_potlift_company.products
-                                                .joins(:labels)
-                                                .where(labels: { id: sublabel_ids })
-                                                .distinct
-                                                .count
-        @label_product_counts[sublabel.id] = sublabel_count
-      end
+  # Calculate product counts for all labels efficiently (single GROUP BY query)
+  # Returns a hash of label_id => product_count (including descendant labels)
+  def calculate_label_product_counts
+    # Early return if no company context
+    return {} unless current_potlift_company
+
+    # Step 1: Load all labels and build hierarchical structure
+    all_labels = current_potlift_company.labels.to_a
+    descendant_map = build_descendant_map(all_labels)
+
+    # Step 2: Build a mapping of product_id => [label_ids] to track all label associations
+    # This allows us to efficiently check which products belong to which label hierarchies
+    product_label_map = {}
+    product_label_pairs = ProductLabel.where(product_id: current_potlift_company.products.select(:id))
+                                       .pluck(:product_id, :label_id)
+
+    product_label_pairs.each do |product_id, label_id|
+      product_label_map[product_id] ||= []
+      product_label_map[product_id] << label_id
     end
+
+    # Step 3: Calculate cumulative counts for each label (including descendants)
+    # This is done in memory to avoid N database queries
+    label_counts = {}
+
+    all_labels.each do |label|
+      # Build set of label IDs to check (this label + all descendants)
+      label_ids_to_check = Set.new([ label.id ] + (descendant_map[label.id] || []))
+
+      # Count distinct products that are tagged with this label or any descendant
+      count = product_label_map.count do |_product_id, label_ids|
+        # Check if product has at least one label in our set
+        (label_ids.to_a & label_ids_to_check.to_a).any?
+      end
+
+      label_counts[label.id] = count
+    end
+
+    label_counts
+  end
+
+  # Build a map of label_id => [descendant_label_ids] for all labels
+  # This is more efficient than calling label.descendants N times
+  # @param labels [Array<Label>] All labels to process
+  # @return [Hash<Integer, Array<Integer>>] Map of label_id to descendant IDs
+  def build_descendant_map(labels)
+    # Create parent_id => children_ids mapping
+    children_map = labels.group_by(&:parent_label_id)
+                        .transform_values { |children| children.map(&:id) }
+
+    # Recursively collect all descendants for each label
+    descendant_map = {}
+
+    labels.each do |label|
+      descendant_map[label.id] = collect_descendants(label.id, children_map)
+    end
+
+    descendant_map
+  end
+
+  # Recursively collect all descendant IDs for a given label
+  # @param label_id [Integer] The label ID to find descendants for
+  # @param children_map [Hash] Map of parent_id => child_ids
+  # @return [Array<Integer>] All descendant label IDs
+  def collect_descendants(label_id, children_map)
+    children = children_map[label_id] || []
+    descendants = children.dup
+
+    children.each do |child_id|
+      descendants.concat(collect_descendants(child_id, children_map))
+    end
+
+    descendants
   end
 end

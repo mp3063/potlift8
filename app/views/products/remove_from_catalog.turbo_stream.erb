@@ -1,0 +1,5 @@
+<%# Turbo Stream response for removing product from catalog %>
+<%# Uses Turbo refresh to reload the page and show updated catalog list %>
+
+<turbo-stream action="refresh" request-id="<%= request.uuid %>"></turbo-stream>
+
