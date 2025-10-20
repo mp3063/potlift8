@@ -182,53 +182,21 @@
              .select { |attr| attr.catalog_scope? || attr.product_and_catalog_scope? }
              .reject { |attr| catalog_item.catalog_item_attribute_values.any? { |ciav| ciav.product_attribute_id == attr.id } } %>
 
-        <div data-controller="modal" data-modal-closable-value="true">
-          <!-- Trigger button -->
-          <div data-action="click->modal#open">
+        <%= render Ui::ModalComponent.new(size: :md, modal_id: "add-override-modal-#{catalog_item.catalog.code}") do |modal| %>
+          <% modal.with_trigger do %>
             <%= render Ui::ButtonComponent.new(variant: :secondary, size: :sm) do %>
               <svg class="-ml-0.5 mr-1.5 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
               </svg>
               Add Attribute Override
             <% end %>
-          </div>
+          <% end %>
 
-          <!-- Modal backdrop and content -->
-          <div class="fixed inset-0 z-50 overflow-y-auto hidden"
-               data-modal-target="backdrop"
-               aria-labelledby="add-override-modal-<%= catalog_item.catalog.code %>-title"
-               role="dialog"
-               aria-modal="true">
-            <!-- Backdrop overlay -->
-            <div class="fixed inset-0 bg-gray-900 bg-opacity-50 transition-opacity"
-                 data-action="click->modal#close"></div>
+          <% modal.with_header do %>
+            Add Attribute Override
+          <% end %>
 
-            <!-- Modal container -->
-            <div class="flex min-h-full items-center justify-center p-4">
-              <div class="relative bg-white rounded-lg shadow-xl transform transition-all w-full max-w-lg"
-                   data-modal-target="container"
-                   data-action="click->modal#preventClose">
-
-                <!-- Close button -->
-                <button type="button"
-                        class="absolute top-4 right-4 text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg p-1"
-                        data-action="click->modal#close"
-                        aria-label="Close">
-                  <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                  </svg>
-                </button>
-
-                <!-- Modal header -->
-                <div class="px-6 py-4 border-b border-gray-200">
-                  <h3 class="text-lg font-semibold text-gray-900" id="add-override-modal-<%= catalog_item.catalog.code %>-title">
-                    Add Attribute Override
-                  </h3>
-                </div>
-
-                <!-- Modal body -->
-                <div class="px-6 py-4">
-                  <% if available_attrs.any? %>
+          <% if available_attrs.any? %>
             <div data-controller="attribute-override" data-attribute-override-product-id-value="<%= product.id %>">
               <%= form_with url: catalog_item_attribute_values_path, method: :post, id: "add-override-form-#{catalog_item.catalog.code}", data: { turbo_frame: "_top" } do |f| %>
                 <%= f.hidden_field :catalog_item_id, value: catalog_item.id %>
@@ -271,40 +239,34 @@
                 </div>
               <% end %>
             </div>
-                  <% else %>
-                    <div class="text-center py-8">
-                      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                      </svg>
-                      <p class="mt-2 text-sm text-gray-900">All attributes have overrides</p>
-                      <p class="mt-1 text-xs text-gray-500">You've already overridden all available attributes for this catalog.</p>
-                    </div>
-                  <% end %>
-                </div>
-
-                <!-- Modal footer -->
-                <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-2">
-                  <%= render Ui::ButtonComponent.new(
-                        variant: :secondary,
-                        data: { action: "click->modal#close" }
-                      ) do %>
-                    Cancel
-                  <% end %>
-                  <% if available_attrs.any? %>
-                    <%= render Ui::ButtonComponent.new(
-                          variant: :primary,
-                          type: "submit",
-                          form: "add-override-form-#{catalog_item.catalog.code}"
-                        ) do %>
-                      Add Override
-                    <% end %>
-                  <% end %>
-                </div>
-
-              </div>
+          <% else %>
+            <div class="text-center py-8">
+              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              <p class="mt-2 text-sm text-gray-900">All attributes have overrides</p>
+              <p class="mt-1 text-xs text-gray-500">You've already overridden all available attributes for this catalog.</p>
             </div>
-          </div>
-        </div>
+          <% end %>
+
+          <% modal.with_footer do %>
+            <%= render Ui::ButtonComponent.new(
+                  variant: :secondary,
+                  data: { action: "click->modal#close" }
+                ) do %>
+              Cancel
+            <% end %>
+            <% if available_attrs.any? %>
+              <%= render Ui::ButtonComponent.new(
+                    variant: :primary,
+                    type: "submit",
+                    form: "add-override-form-#{catalog_item.catalog.code}"
+                  ) do %>
+                Add Override
+              <% end %>
+            <% end %>
+          <% end %>
+        <% end %>
       </div>
     </div>
 
