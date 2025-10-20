@@ -167,9 +167,7 @@ module Ui
     #
     # @return [String] HTML div with modal open action
     def render_trigger
-      content_tag(:div, data: { action: "click->modal#open" }) do
-        trigger
-      end
+      content_tag(:div, trigger, data: { action: "click->modal#open" })
     end
 
     # Renders the modal backdrop and container
@@ -194,8 +192,8 @@ module Ui
     #
     # @return [String] HTML div for backdrop overlay
     def render_overlay
-      content_tag(:div,
-        class: "fixed inset-0 bg-gray-900 bg-opacity-50 transition-opacity",
+      content_tag(:div, nil,
+        class: "fixed inset-0 bg-gray-900 opacity-50 transition-opacity",
         data: { action: "click->modal#close" }
       )
     end
@@ -207,7 +205,7 @@ module Ui
     #
     # @return [String] HTML structure for modal container
     def render_modal_container
-      content_tag(:div, class: "flex min-h-full items-center justify-center p-4") do
+      content_tag(:div, class: "relative z-10 flex min-h-full items-center justify-center p-4") do
         content_tag(:div, class: modal_classes, data: { modal_target: "container", action: "click->modal#preventClose" }) do
           concat(render_close_button) if @closable
           concat(render_header) if header?
