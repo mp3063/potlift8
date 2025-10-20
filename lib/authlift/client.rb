@@ -230,6 +230,48 @@ module Authlift
       Time.now >= (expiry_time - buffer_seconds)
     end
 
+    # Revoke access token at Authlift8
+    #
+    # Security:
+    # - Invalidates access token at authorization server
+    # - Prevents token reuse after logout
+    # - Required for secure logout flow
+    #
+    # @param access_token [String] Access token to revoke
+    # @return [Boolean] true if revocation succeeded
+    # @raise [AuthenticationError] if revocation fails
+    #
+    # @example
+    #   client.revoke_token(session[:access_token])
+    def revoke_token(access_token)
+      raise ArgumentError, 'access_token cannot be blank' if access_token.blank?
+
+      response = Faraday.post("#{site}/oauth/revoke") do |req|
+        req.headers['Content-Type'] = 'application/x-www-form-urlencoded'
+        req.body = URI.encode_www_form({
+          token: access_token,
+          client_id: client_id,
+          client_secret: client_secret
+        })
+        req.options.timeout = 10
+        req.options.open_timeout = 5
+      end
+
+      unless response.success?
+        Rails.logger.warn("Token revocation failed: HTTP #{response.status}")
+        # Don't raise error - revocation is best-effort
+        # Token will expire naturally
+        return false
+      end
+
+      Rails.logger.info('Access token revoked successfully')
+      true
+    rescue Faraday::Error => e
+      Rails.logger.error("Token revocation network error: #{e.message}")
+      # Don't raise error - revocation is best-effort
+      false
+    end
+
     # Clear public key cache (useful for testing or forcing refresh)
     def clear_public_key_cache!
       Rails.cache.delete(public_key_cache_key)

@@ -70,7 +70,7 @@
           <%= link_to "Profile", "#", class: "block px-3 py-1 text-sm leading-6 text-gray-900 hover:bg-gray-50", role: "menuitem" %>
           <%= link_to "Settings", "#", class: "block px-3 py-1 text-sm leading-6 text-gray-900 hover:bg-gray-50", role: "menuitem" %>
           <hr class="my-1 border-gray-200">
-          <%= link_to "Sign out", auth_logout_path, data: { turbo_method: :delete }, class: "block px-3 py-1 text-sm leading-6 text-gray-900 hover:bg-gray-50", role: "menuitem" %>
+          <%= link_to "Sign out", auth_logout_path, data: { turbo_method: :post }, class: "block px-3 py-1 text-sm leading-6 text-gray-900 hover:bg-gray-50", role: "menuitem" %>
         </div>
       </div>
     </div>

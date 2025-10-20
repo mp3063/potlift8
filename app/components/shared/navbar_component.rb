@@ -256,7 +256,7 @@ module Shared
           # concat(dropdown_item("Profile", helpers.profile_path, icon: "user"))
           # concat(dropdown_item("Settings", helpers.settings_path, icon: "cog"))
           concat(content_tag(:div, nil, class: "border-t border-gray-200 my-1"))
-          concat(dropdown_item("Sign out", helpers.logout_path, icon: "logout", method: :delete, class: "text-red-700"))
+          concat(dropdown_item("Sign out", helpers.auth_logout_path, icon: "logout", method: :post, class: "text-red-700"))
         end
       end
     end
@@ -274,10 +274,23 @@ module Shared
         options[:class] || "text-gray-700"
       ].join(" ")
 
-      helpers.link_to path, class: item_classes, data: { turbo_method: method }, role: "menuitem" do
-        content_tag(:div, class: "flex items-center gap-2") do
-          concat(dropdown_icon(icon)) if icon
-          concat(content_tag(:span, text))
+      if method == :post
+        # Use button_to for POST requests (logout)
+        # Note: button_to creates a form wrapper, so we style both form and button
+        # IMPORTANT: Turbo disabled because logout redirects to external Authlift8 (CORS)
+        helpers.button_to path, method: :post, class: "#{item_classes} w-full text-left", role: "menuitem", form: { class: "w-full", data: { turbo: false } } do
+          content_tag(:div, class: "flex items-center gap-2") do
+            concat(dropdown_icon(icon)) if icon
+            concat(content_tag(:span, text))
+          end
+        end
+      else
+        # Use link_to for GET requests
+        helpers.link_to path, class: item_classes, role: "menuitem" do
+          content_tag(:div, class: "flex items-center gap-2") do
+            concat(dropdown_icon(icon)) if icon
+            concat(content_tag(:span, text))
+          end
         end
       end
     end
