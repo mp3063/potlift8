@@ -38,6 +38,13 @@ class ApplicationController < ActionController::Base
 
   # Check if user is authenticated
   #
+  # Security:
+  # - Validates session data presence
+  # - Enforces 24-hour session timeout
+  # - Validates JWT token expiration
+  # - Attempts token refresh if expired
+  # - Validates token with Authlift8 on refresh
+  #
   # @return [Boolean] true if user has valid session
   def authenticated?
     # Check if session has required authentication data
@@ -51,12 +58,32 @@ class ApplicationController < ActionController::Base
       return false
     end
 
-    # Check if access token is expired and refresh if needed
+    # Validate JWT token is still valid (decode will fail if revoked/invalid)
+    begin
+      authlift_client.decode_jwt(session[:access_token])
+    rescue Authlift::Client::TokenValidationError => e
+      Rails.logger.warn("JWT validation failed: #{e.message}")
+      # Token may be expired, try refresh
+      if session[:refresh_token].present?
+        begin
+          refresh_access_token
+        rescue StandardError => refresh_error
+          Rails.logger.error("Token refresh failed: #{refresh_error.message}")
+          reset_session
+          return false
+        end
+      else
+        reset_session
+        return false
+      end
+    end
+
+    # Additional check: if token is about to expire, refresh proactively
     if token_expired?
       begin
         refresh_access_token
       rescue StandardError => e
-        Rails.logger.error("Token refresh failed: #{e.message}")
+        Rails.logger.error("Proactive token refresh failed: #{e.message}")
         reset_session
         return false
       end

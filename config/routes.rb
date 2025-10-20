@@ -25,8 +25,10 @@ Rails.application.routes.draw do
     delete 'logout', to: 'sessions#destroy'
   end
 
-  # Convenience route for logout (common user expectation)
-  get 'logout', to: 'sessions#destroy'
+  # SECURITY: GET logout removed - use POST/DELETE only to prevent CSRF
+  # GET requests can be prefetched by browsers, cached, or triggered via image tags
+  # This prevents authentication bypass attacks
+  # get 'logout', to: 'sessions#destroy'  # REMOVED - SECURITY VULNERABILITY
 
   # API v1 Routes
   # RESTful API endpoints for external systems (M23, Shopify3, Bizcart)
