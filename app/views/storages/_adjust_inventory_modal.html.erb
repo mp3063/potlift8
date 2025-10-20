@@ -1,149 +1,129 @@
-<div data-controller="modal" data-modal-closable-value="true" id="adjust-inventory-modal-wrapper">
-  <!-- Modal Backdrop -->
-  <div class="fixed inset-0 z-50 overflow-y-auto hidden" data-modal-target="backdrop" aria-labelledby="adjust-inventory-modal-title" role="dialog" aria-modal="true">
-    <!-- Semi-Transparent Overlay -->
-    <div class="fixed inset-0 transition-opacity" style="background-color: rgba(0, 0, 0, 0.3);" data-action="click->modal#close"></div>
+<div id="adjust-inventory-modal-wrapper">
+  <%= render Ui::ModalComponent.new(size: :md, closable: true, modal_id: "adjust-inventory-modal") do |modal| %>
+    <% modal.with_header do %>
+      <span id="modal-product-name">Adjust Inventory</span>
+    <% end %>
 
-    <!-- Modal Container -->
-    <div class="relative z-10 flex min-h-full items-center justify-center p-4">
-      <div class="relative bg-white rounded-lg shadow-xl transform transition-all w-full max-w-lg" data-modal-target="container" data-action="click->modal#preventClose" data-controller="inventory-form">
-        <!-- Close Button -->
-        <button type="button" class="absolute top-4 right-4 text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg p-1" data-action="click->modal#close" aria-label="Close">
-          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
-
-        <!-- Header -->
-        <div class="px-6 py-4 border-b border-gray-200">
-          <h3 class="text-lg font-semibold text-gray-900" id="adjust-inventory-modal-title">
-            <span id="modal-product-name">Adjust Inventory</span>
-          </h3>
+    <div data-controller="inventory-form">
+      <%= form_with(
+        url: "#",
+        scope: :inventory,
+        method: :patch,
+        id: "adjust-inventory-form",
+        data: {
+          action: "turbo:submit-end->inventory-form#handleSubmit"
+        },
+        class: "space-y-5"
+      ) do |f| %>
+        <!-- Product Info -->
+        <div class="bg-gray-50 rounded-lg p-4">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-sm font-medium text-gray-500">Product</p>
+              <p class="mt-1 text-sm font-semibold text-gray-900" id="modal-product-sku">-</p>
+              <p class="text-sm text-gray-600" id="modal-product-description">-</p>
+            </div>
+            <div class="text-right">
+              <p class="text-sm font-medium text-gray-500">Storage</p>
+              <p class="mt-1 text-sm font-semibold text-gray-900"><%= @storage.name %></p>
+              <p class="text-sm text-gray-600"><%= @storage.code %></p>
+            </div>
+          </div>
         </div>
 
-        <!-- Body -->
-        <div class="px-6 py-4">
+        <!-- Inventory Fields -->
+        <div class="space-y-4">
+          <!-- On Hand -->
+          <div>
+            <label for="inventory-value" class="block text-sm font-medium text-gray-700 mb-1.5">
+              On Hand
+              <span class="text-red-600" aria-hidden="true">*</span>
+            </label>
+            <%= f.number_field :value,
+              id: "inventory-value",
+              required: true,
+              data: { inventory_form_target: "valueInput" },
+              placeholder: "Current: 0",
+              class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            %>
+            <p class="mt-1 text-xs text-gray-500">Current inventory on hand</p>
+          </div>
 
-  <%= form_with(
-    url: "#",
-    scope: :inventory,
-    method: :patch,
-    id: "adjust-inventory-form",
-    data: {
-      action: "turbo:submit-end->inventory-form#handleSubmit"
-    },
-    class: "space-y-5"
-  ) do |f| %>
-    <!-- Product Info -->
-    <div class="bg-gray-50 rounded-lg p-4">
-      <div class="flex justify-between items-start">
+          <!-- ETA Quantity -->
+          <div>
+            <label for="eta-quantity" class="block text-sm font-medium text-gray-700 mb-1.5">
+              ETA Quantity
+            </label>
+            <%= f.number_field :eta_quantity,
+              id: "eta-quantity",
+              min: 0,
+              data: { inventory_form_target: "etaQuantityInput" },
+              placeholder: "Current: 0",
+              class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            %>
+            <p class="mt-1 text-xs text-gray-500">Expected incoming stock quantity</p>
+          </div>
+
+          <!-- ETA Date -->
+          <div>
+            <label for="eta-date" class="block text-sm font-medium text-gray-700 mb-1.5">
+              ETA Date
+            </label>
+            <%= f.date_field :eta_date,
+              id: "eta-date",
+              data: { inventory_form_target: "etaDateInput" },
+              class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            %>
+            <p class="mt-1 text-xs text-gray-500">Expected arrival date for incoming stock</p>
+          </div>
+        </div>
+
+        <!-- Available Preview -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-blue-900">Total Available</p>
+              <p class="text-xs text-blue-700 mt-0.5">On Hand + ETA Quantity</p>
+            </div>
+            <div class="text-right">
+              <p class="text-2xl font-bold text-blue-600" data-inventory-form-target="totalAvailable">0</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reason (Optional) -->
         <div>
-          <p class="text-sm font-medium text-gray-500">Product</p>
-          <p class="mt-1 text-sm font-semibold text-gray-900" id="modal-product-sku">-</p>
-          <p class="text-sm text-gray-600" id="modal-product-description">-</p>
+          <label for="adjustment-reason" class="block text-sm font-medium text-gray-700 mb-1.5">
+            Reason (Optional)
+          </label>
+          <%= f.text_area :reason,
+            id: "adjustment-reason",
+            rows: 3,
+            placeholder: "Enter reason for this adjustment (e.g., stock count, damaged goods, new shipment, etc.)",
+            class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          %>
         </div>
-        <div class="text-right">
-          <p class="text-sm font-medium text-gray-500">Storage</p>
-          <p class="mt-1 text-sm font-semibold text-gray-900"><%= @storage.name %></p>
-          <p class="text-sm text-gray-600"><%= @storage.code %></p>
-        </div>
-      </div>
+      <% end %>
     </div>
 
-    <!-- Inventory Fields -->
-    <div class="space-y-4">
-      <!-- On Hand -->
-      <div>
-        <label for="inventory-value" class="block text-sm font-medium text-gray-700 mb-1.5">
-          On Hand
-          <span class="text-red-600" aria-hidden="true">*</span>
-        </label>
-        <%= f.number_field :value,
-          id: "inventory-value",
-          required: true,
-          data: { inventory_form_target: "valueInput" },
-          placeholder: "Current: 0",
-          class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-        %>
-        <p class="mt-1 text-xs text-gray-500">Current inventory on hand</p>
-      </div>
-
-      <!-- ETA Quantity -->
-      <div>
-        <label for="eta-quantity" class="block text-sm font-medium text-gray-700 mb-1.5">
-          ETA Quantity
-        </label>
-        <%= f.number_field :eta_quantity,
-          id: "eta-quantity",
-          min: 0,
-          data: { inventory_form_target: "etaQuantityInput" },
-          placeholder: "Current: 0",
-          class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-        %>
-        <p class="mt-1 text-xs text-gray-500">Expected incoming stock quantity</p>
-      </div>
-
-      <!-- ETA Date -->
-      <div>
-        <label for="eta-date" class="block text-sm font-medium text-gray-700 mb-1.5">
-          ETA Date
-        </label>
-        <%= f.date_field :eta_date,
-          id: "eta-date",
-          data: { inventory_form_target: "etaDateInput" },
-          class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-        %>
-        <p class="mt-1 text-xs text-gray-500">Expected arrival date for incoming stock</p>
-      </div>
-    </div>
-
-    <!-- Available Preview -->
-    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm font-medium text-blue-900">Total Available</p>
-          <p class="text-xs text-blue-700 mt-0.5">On Hand + ETA Quantity</p>
-        </div>
-        <div class="text-right">
-          <p class="text-2xl font-bold text-blue-600" data-inventory-form-target="totalAvailable">0</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Reason (Optional) -->
-    <div>
-      <label for="adjustment-reason" class="block text-sm font-medium text-gray-700 mb-1.5">
-        Reason (Optional)
-      </label>
-      <%= f.text_area :reason,
-        id: "adjustment-reason",
-        rows: 3,
-        placeholder: "Enter reason for this adjustment (e.g., stock count, damaged goods, new shipment, etc.)",
-        class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-      %>
-    </div>
+    <% modal.with_footer do %>
+      <%= render Ui::ButtonComponent.new(
+        variant: :secondary,
+        data: { action: "click->modal#close" }
+      ) do %>
+        Cancel
+      <% end %>
+      <%= render Ui::ButtonComponent.new(
+        variant: :primary,
+        data: {
+          action: "click->inventory-form#submit"
+        }
+      ) do %>
+        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        Save Changes
+      <% end %>
+    <% end %>
   <% end %>
-        </div>
-
-        <!-- Footer -->
-        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
-          <%= render Ui::ButtonComponent.new(
-            variant: :secondary,
-            data: { action: "click->modal#close" }
-          ) do %>
-            Cancel
-          <% end %>
-          <%= render Ui::ButtonComponent.new(
-            variant: :primary,
-            data: {
-              action: "click->inventory-form#submit"
-            }
-          ) do %>
-            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
-            Save Changes
-          <% end %>
-        </div>
-      </div>
-    </div>
-  </div>
 </div>
