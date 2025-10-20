@@ -328,7 +328,8 @@ class LabelsController < ApplicationController
       :description,
       :label_type,
       :parent_label_id,
-      :product_default_restriction
+      :product_default_restriction,
+      info: [:color]
     )
   end
 end

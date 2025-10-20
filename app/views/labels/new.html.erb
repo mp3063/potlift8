@@ -1,3 +1,5 @@
 <%= turbo_frame_tag "label_modal" do %>
-  <%= render "form", label: @label, parent_label: @parent_label %>
+  <div data-controller="modal" data-action="turbo:frame-load->modal#open">
+    <%= render "form", label: @label, parent_label: @parent_label %>
+  </div>
 <% end %>
