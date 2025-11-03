@@ -82,4 +82,63 @@ RSpec.describe Products::ImagesComponent, type: :component do
 
     expect(page).to have_css(".focus-within\\:ring-blue-500")
   end
+
+  describe "thumbnail interactions" do
+    # Note: These tests verify the HTML template structure even without images
+    # The actual functionality requires ActiveStorage configuration in test env
+
+    it "template includes group-hover classes for overlay" do
+      # Read the template file directly to verify classes exist
+      template_path = Rails.root.join("app/components/products/images_component.html.erb")
+      template_content = File.read(template_path)
+
+      expect(template_content).to include("group-hover:opacity-100")
+      expect(template_content).to include("group transition-all")
+    end
+
+    it "template has z-index for delete button visibility" do
+      template_path = Rails.root.join("app/components/products/images_component.html.erb")
+      template_content = File.read(template_path)
+
+      expect(template_content).to include("z-10")
+    end
+
+    it "template has red hover color for delete button" do
+      template_path = Rails.root.join("app/components/products/images_component.html.erb")
+      template_content = File.read(template_path)
+
+      expect(template_content).to include("hover:bg-red-600")
+      expect(template_content).not_to include("hover:bg-black/50")
+    end
+
+    it "template selectImage action does not have :stop modifier" do
+      template_path = Rails.root.join("app/components/products/images_component.html.erb")
+      template_content = File.read(template_path)
+
+      expect(template_content).to include("click->product-images#selectImage")
+      expect(template_content).not_to include("click->product-images#selectImage:stop")
+    end
+
+    it "template deleteImage action does not have :stop modifier" do
+      template_path = Rails.root.join("app/components/products/images_component.html.erb")
+      template_content = File.read(template_path)
+
+      expect(template_content).to include("click->product-images#deleteImage")
+      expect(template_content).not_to include("click->product-images#deleteImage:stop")
+    end
+
+    it "template has focus ring styles for accessibility" do
+      template_path = Rails.root.join("app/components/products/images_component.html.erb")
+      template_content = File.read(template_path)
+
+      expect(template_content).to include("focus:ring-red-500")
+    end
+
+    it "template has matching transition duration for smooth effects" do
+      template_path = Rails.root.join("app/components/products/images_component.html.erb")
+      template_content = File.read(template_path)
+
+      expect(template_content).to include("transition-opacity duration-200")
+    end
+  end
 end

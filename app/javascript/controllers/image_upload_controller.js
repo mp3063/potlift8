@@ -150,9 +150,9 @@ export default class extends Controller {
    */
   uploadFile(file) {
     const progressBar = this.createProgressBar(file.name)
-    const url = this.element.action
+    const directUploadUrl = "/rails/active_storage/direct_uploads"
 
-    const upload = new DirectUpload(file, url, {
+    const upload = new DirectUpload(file, directUploadUrl, {
       directUploadWillStoreFileWithXHR: (xhr) => {
         xhr.upload.addEventListener("progress", (event) => {
           const progress = (event.loaded / event.total) * 100
@@ -165,7 +165,7 @@ export default class extends Controller {
       if (error) {
         this.handleUploadError(progressBar, error, file.name)
       } else {
-        this.handleUploadSuccess(progressBar, blob)
+        this.attachBlobToProduct(progressBar, blob)
       }
     })
   }
@@ -211,6 +211,43 @@ export default class extends Controller {
 
     // Update aria-label for screen readers
     container.setAttribute("aria-label", `Upload progress: ${percentage}%`)
+  }
+
+  /**
+   * Attach uploaded blob to product
+   * POSTs signed blob ID to product images controller
+   *
+   * @param {HTMLElement} container - Progress bar container
+   * @param {Object} blob - ActiveStorage blob object with signed_id
+   */
+  attachBlobToProduct(container, blob) {
+    const formAction = this.element.action
+    const csrfToken = document.querySelector("[name='csrf-token']").content
+
+    fetch(formAction, {
+      method: "POST",
+      headers: {
+        "X-CSRF-Token": csrfToken,
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify({
+        signed_blob_id: blob.signed_id
+      })
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      return response.json()
+    })
+    .then(() => {
+      this.handleUploadSuccess(container, blob)
+    })
+    .catch(error => {
+      console.error("Error attaching blob:", error)
+      this.handleUploadError(container, error, "Unknown file")
+    })
   }
 
   /**

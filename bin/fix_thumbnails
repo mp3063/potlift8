@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -e
+
+echo "🔍 Thumbnail Image Fix Script"
+echo "=============================="
+echo ""
+
+# Kill stale processes
+echo "1. Stopping any running servers..."
+pkill -f "rails server" 2>/dev/null || echo "   No Rails server running"
+pkill -f "bin/dev" 2>/dev/null || echo "   No bin/dev process running"
+pkill -f "tailwindcss" 2>/dev/null || echo "   No Tailwind watcher running"
+echo "   ✓ Processes stopped"
+echo ""
+
+# Clear caches
+echo "2. Clearing caches..."
+rm -rf tmp/cache/assets tmp/tailwind public/assets 2>/dev/null || true
+echo "   ✓ Caches cleared"
+echo ""
+
+# Start dev server
+echo "3. Starting development server..."
+echo "   Starting bin/dev (Rails + Tailwind)..."
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "   Dev server is starting..."
+echo "   Once you see 'Listening on http://...', the server is ready"
+echo ""
+echo "   NEXT STEPS:"
+echo "   1. Open http://localhost:3246 in your browser"
+echo "   2. Hard reload: Cmd+Shift+R (Mac) or Ctrl+Shift+R (Windows)"
+echo "   3. Go to a product page with images"
+echo "   4. Test thumbnail functionality"
+echo ""
+echo "   To verify JavaScript is loaded:"
+echo "   - Open DevTools (F12) → Console"
+echo "   - Type: Stimulus.controllers"
+echo "   - Should see 'product-images' in the list"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+exec bin/dev

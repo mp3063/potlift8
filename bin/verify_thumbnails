@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+
+echo "🔍 Thumbnail Verification Script"
+echo "================================="
+echo ""
+
+# Check JavaScript controller
+echo "1. Checking JavaScript controller..."
+JS_FILE="app/javascript/controllers/product_images_controller.js"
+if [ -f "$JS_FILE" ]; then
+  if grep -q 'if (event.target.closest("button"))' "$JS_FILE"; then
+    echo "   ✓ Guard clause present in selectImage()"
+  else
+    echo "   ✗ Guard clause MISSING in selectImage()"
+  fi
+
+  JS_MODIFIED=$(stat -f "%Sm" -t "%Y-%m-%d %H:%M:%S" "$JS_FILE" 2>/dev/null || stat -c "%y" "$JS_FILE" 2>/dev/null)
+  echo "   Last modified: $JS_MODIFIED"
+else
+  echo "   ✗ JavaScript controller not found!"
+fi
+echo ""
+
+# Check HTML template
+echo "2. Checking HTML template..."
+HTML_FILE="app/components/products/images_component.html.erb"
+if [ -f "$HTML_FILE" ]; then
+  if grep -q 'z-10' "$HTML_FILE"; then
+    echo "   ✓ Delete button has z-10 class"
+  else
+    echo "   ✗ Delete button missing z-10 class"
+  fi
+
+  if grep -q 'hover:bg-red-600' "$HTML_FILE"; then
+    echo "   ✓ Delete button has hover:bg-red-600 class"
+  else
+    echo "   ✗ Delete button missing hover:bg-red-600 class"
+  fi
+
+  if grep -q 'click->product-images#deleteImage' "$HTML_FILE"; then
+    echo "   ✓ Delete button action is correct"
+  else
+    echo "   ✗ Delete button action is incorrect"
+  fi
+else
+  echo "   ✗ HTML template not found!"
+fi
+echo ""
+
+# Check compiled assets
+echo "3. Checking compiled assets..."
+if ls public/assets/application-*.js >/dev/null 2>&1; then
+  LATEST_JS=$(ls -t public/assets/application-*.js | head -1)
+  JS_TIME=$(stat -f "%Sm" -t "%H:%M:%S" "$LATEST_JS" 2>/dev/null || stat -c "%y" "$LATEST_JS" 2>/dev/null)
+  echo "   Latest compiled: $LATEST_JS"
+  echo "   Compiled at: $JS_TIME"
+
+  if grep -q 'event.target.closest("button")' "$LATEST_JS" 2>/dev/null; then
+    echo "   ✓ Compiled JS contains guard clause"
+  else
+    echo "   ✗ Compiled JS MISSING guard clause (NEEDS RECOMPILE!)"
+  fi
+else
+  echo "   ⚠ No compiled assets found (dev mode may be using live compilation)"
+fi
+echo ""
+
+# Check if dev server is running
+echo "4. Checking development server..."
+if lsof -ti:3246 >/dev/null 2>&1; then
+  echo "   ✓ Server running on port 3246"
+else
+  echo "   ✗ Server NOT running on port 3246"
+  echo "   Run: bin/fix_thumbnails"
+fi
+echo ""
+
+# Check cache directories
+echo "5. Checking cache status..."
+if [ -d "tmp/cache/assets" ]; then
+  CACHE_COUNT=$(find tmp/cache/assets -type f 2>/dev/null | wc -l | tr -d ' ')
+  echo "   Asset cache files: $CACHE_COUNT"
+else
+  echo "   ✓ No asset cache (clean state)"
+fi
+echo ""
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Summary:"
+echo ""
+
+# Overall status
+ALL_GOOD=true
+
+if ! grep -q 'if (event.target.closest("button"))' "$JS_FILE" 2>/dev/null; then
+  echo "❌ JavaScript controller needs fixes"
+  ALL_GOOD=false
+fi
+
+if ! grep -q 'z-10' "$HTML_FILE" 2>/dev/null; then
+  echo "❌ HTML template needs fixes"
+  ALL_GOOD=false
+fi
+
+if [ -f "public/assets/application-*.js" ] && ! grep -q 'event.target.closest("button")' public/assets/application-*.js 2>/dev/null; then
+  echo "⚠️  Compiled assets are outdated - restart server!"
+  ALL_GOOD=false
+fi
+
+if ! lsof -ti:3246 >/dev/null 2>&1; then
+  echo "⚠️  Development server not running"
+  ALL_GOOD=false
+fi
+
+if [ "$ALL_GOOD" = true ]; then
+  echo "✅ All checks passed!"
+  echo ""
+  echo "If thumbnails still don't work:"
+  echo "1. Hard reload browser: Cmd+Shift+R (Mac) or Ctrl+Shift+R (Windows)"
+  echo "2. Check DevTools Console for errors"
+  echo "3. Verify JavaScript loaded: Type 'Stimulus.controllers' in Console"
+else
+  echo ""
+  echo "To fix issues, run:"
+  echo "  bin/fix_thumbnails"
+fi
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
