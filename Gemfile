@@ -27,7 +27,7 @@ gem "view_component"
 # OAuth2 client for Authlift8 integration
 gem "oauth2", "~> 2.0"
 # JWT token validation with RS256 signature verification
-gem "jwt", "~> 2.7"
+gem "jwt", "~> 3.1"
 # HTTP client for API requests
 gem "faraday", "~> 2.7"
 # Environment variable management
