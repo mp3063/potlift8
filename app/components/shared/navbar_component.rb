@@ -138,6 +138,7 @@ module Shared
       content_tag(:div, class: "hidden md:flex md:items-center md:gap-6") do
         concat(nav_link("Dashboard", helpers.root_path))
         concat(nav_link("Products", helpers.products_path))
+        concat(nav_link("Labels", helpers.labels_path))
         concat(nav_link("Storages", helpers.storages_path))
         concat(nav_link("Catalogs", helpers.catalogs_path))
         concat(nav_link("Attributes", helpers.product_attributes_path))
@@ -269,8 +270,11 @@ module Shared
     end
 
     def dropdown_item(text, path, icon: nil, method: :get, **options)
+      # Dropdown item styling with subtle focus state
       item_classes = [
-        "block px-4 py-2 text-sm hover:bg-gray-100 transition-colors",
+        "block px-4 py-2 text-sm hover:bg-gray-100 transition-colors rounded-md",
+        "focus:outline-none focus:bg-gray-100",
+        "cursor-pointer",
         options[:class] || "text-gray-700"
       ].join(" ")
 
@@ -278,7 +282,17 @@ module Shared
         # Use button_to for POST requests (logout)
         # Note: button_to creates a form wrapper, so we style both form and button
         # IMPORTANT: Turbo disabled because logout redirects to external Authlift8 (CORS)
-        helpers.button_to path, method: :post, class: "#{item_classes} w-full text-left", role: "menuitem", form: { class: "w-full", data: { turbo: false } } do
+        # Using inline styles with !important to override all browser default focus styles
+        helpers.button_to path,
+          method: :post,
+          class: "#{item_classes} w-full text-left",
+          role: "menuitem",
+          style: "outline: none !important; box-shadow: none !important; border: none !important;",
+          form: {
+            class: "w-full",
+            style: "outline: none !important; box-shadow: none !important; border: none !important;",
+            data: { turbo: false }
+          } do
           content_tag(:div, class: "flex items-center gap-2") do
             concat(dropdown_icon(icon)) if icon
             concat(content_tag(:span, text))
