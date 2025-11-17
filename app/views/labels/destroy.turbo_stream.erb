@@ -1,0 +1,23 @@
+<%
+  # Turbo Stream for destroy action
+  # Removes label from tree and optionally updates parent
+  label_id = @label_id
+  parent_id = @parent_label_id
+  parent_should_update = @parent_should_update
+  label_name = @label_name
+%>
+
+<%# Remove the label from the DOM %>
+<%= turbo_stream.remove "label-#{label_id}" %>
+
+<%# If parent needs to be updated (last child removed, need to remove expand button) %>
+<% if parent_should_update && @parent_label.present? %>
+  <%= turbo_stream.replace "label-#{parent_id}" do %>
+    <%= render "tree_node", label: @parent_label, level: (@parent_label.ancestors.size) %>
+  <% end %>
+<% end %>
+
+<%# Show success flash message %>
+<%= turbo_stream.update "flash" do %>
+  <%= render FlashComponent.new(flash: { notice: "Label '#{label_name}' deleted successfully." }) %>
+<% end %>

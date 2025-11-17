@@ -125,12 +125,28 @@ class LabelsController < ApplicationController
     # Save label and handle potential database constraint violations
     begin
       if @label.save
+        # Reload label and parent with associations for turbo stream rendering
+        @label = current_potlift_company.labels
+                                        .includes(:products, :parent_label, sublabels: [:products, :sublabels])
+                                        .find(@label.id)
+
+        # Reload parent with full associations if this is a sublabel
+        if @label.parent_label_id.present?
+          @label.parent_label.reload
+          @label.parent_label = current_potlift_company.labels
+                                                       .includes(:products, sublabels: [:products, :sublabels])
+                                                       .find(@label.parent_label_id)
+        end
+
         respond_to do |format|
           format.html do
             redirect_to labels_path(parent_id: @label.parent_label_id),
                         notice: "Label '#{@label.name}' created successfully."
           end
-          format.turbo_stream { flash.now[:notice] = "Label '#{@label.name}' created successfully." }
+          format.turbo_stream do
+            # Render create.turbo_stream.erb for real-time tree update
+            render :create
+          end
         end
       else
         @parent_label = @label.parent_label if @label.parent_label_id.present?
@@ -166,7 +182,10 @@ class LabelsController < ApplicationController
           redirect_to labels_path(parent_id: @label.parent_label_id),
                       notice: "Label '#{@label.name}' updated successfully."
         end
-        format.turbo_stream { flash.now[:notice] = "Label '#{@label.name}' updated successfully." }
+        format.turbo_stream do
+          flash[:notice] = "Label '#{@label.name}' updated successfully."
+          render turbo_stream: turbo_stream.action(:redirect, labels_path(parent_id: @label.parent_label_id))
+        end
       end
     else
       @parent_label = @label.parent_label if @label.parent_label_id.present?
@@ -189,13 +208,15 @@ class LabelsController < ApplicationController
   def destroy
     # Check for sublabels
     if @label.sublabels.any?
+      @error_message = "Cannot delete label '#{@label.name}' because it has #{@label.sublabels.count} sublabel(s). Please delete sublabels first."
+
       respond_to do |format|
         format.html do
           redirect_to labels_path(parent_id: @label.parent_label_id),
-                      alert: "Cannot delete label '#{@label.name}' because it has #{@label.sublabels.count} sublabel(s). Please delete sublabels first."
+                      alert: @error_message
         end
         format.turbo_stream do
-          flash.now[:alert] = "Cannot delete label '#{@label.name}' because it has #{@label.sublabels.count} sublabel(s). Please delete sublabels first."
+          render :destroy_error_sublabels
         end
       end
       return
@@ -203,29 +224,51 @@ class LabelsController < ApplicationController
 
     # Check for associated products
     if @label.products.any?
+      @error_message = "Cannot delete label '#{@label.name}' because it is assigned to #{@label.products.count} product(s). Please remove products first."
+
       respond_to do |format|
         format.html do
           redirect_to labels_path(parent_id: @label.parent_label_id),
-                      alert: "Cannot delete label '#{@label.name}' because it is assigned to #{@label.products.count} product(s). Please remove products first."
+                      alert: @error_message
         end
         format.turbo_stream do
-          flash.now[:alert] = "Cannot delete label '#{@label.name}' because it is assigned to #{@label.products.count} product(s). Please remove products first."
+          render :destroy_error_products
         end
       end
       return
     end
 
-    # Safe to delete
-    parent_id = @label.parent_label_id
-    label_name = @label.name
+    # Store necessary data before destroying the label
+    @label_id = @label.id
+    @parent_label_id = @label.parent_label_id
+    @label_name = @label.name
+
+    # Check if we need to update parent (if this is the last child)
+    @parent_should_update = false
+    if @parent_label_id.present?
+      parent_label = current_potlift_company.labels.find(@parent_label_id)
+      # If parent has exactly 1 sublabel (this one), it will have 0 after deletion
+      @parent_should_update = parent_label.sublabels.count == 1
+    end
+
+    # Destroy the label
     @label.destroy
+
+    # Reload parent with associations if needed for turbo stream update
+    if @parent_should_update
+      @parent_label = current_potlift_company.labels
+                                             .includes(:products, sublabels: [:products, :sublabels])
+                                             .find(@parent_label_id)
+    end
 
     respond_to do |format|
       format.html do
-        redirect_to labels_path(parent_id: parent_id),
-                    notice: "Label '#{label_name}' deleted successfully."
+        redirect_to labels_path(parent_id: @parent_label_id),
+                    notice: "Label '#{@label_name}' deleted successfully."
       end
-      format.turbo_stream { flash.now[:notice] = "Label '#{label_name}' deleted successfully." }
+      format.turbo_stream do
+        render :destroy
+      end
     end
   end
 

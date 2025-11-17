@@ -1,0 +1,9 @@
+<%
+  # Turbo Stream for destroy error when label has sublabels
+  # Shows error message without removing the label
+%>
+
+<%# Show error flash message %>
+<%= turbo_stream.update "flash" do %>
+  <%= render FlashComponent.new(flash: { alert: @error_message }) %>
+<% end %>

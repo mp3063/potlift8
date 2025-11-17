@@ -1,0 +1,82 @@
+<%
+  # Turbo Stream for create action
+  # Inserts new label into tree and shows flash message
+  parent_id = @label.parent_label_id
+  is_root_label = parent_id.nil?
+%>
+
+<%# Close the modal by clearing its content %>
+<%= turbo_stream.update "label_modal", "" %>
+
+<%# Insert the new label into the appropriate location in the tree %>
+<% if is_root_label %>
+  <%# Root label: append to root labels list %>
+  <%= turbo_stream.append "root-labels-list" do %>
+    <%= render "tree_node", label: @label, level: 0 %>
+  <% end %>
+<% else %>
+  <%# For sublabels, we need to reload the parent to show the expand button if this is the first child %>
+  <% parent_label = @label.parent_label %>
+  <% was_first_child = parent_label.sublabels.count == 1 %>
+
+  <% if was_first_child %>
+    <%# First sublabel: replace entire parent node to add expand button %>
+    <%= turbo_stream.replace "label-#{parent_id}" do %>
+      <%= render "tree_node", label: parent_label, level: (parent_label.ancestors.size) %>
+    <% end %>
+  <% else %>
+    <%# Not first sublabel: just append to existing container %>
+    <%= turbo_stream.append "sublabels-#{parent_id}" do %>
+      <%= render "tree_node", label: @label, level: (@label.ancestors.size) %>
+    <% end %>
+  <% end %>
+<% end %>
+
+<%# Show success flash message %>
+<%= turbo_stream.update "flash" do %>
+  <%= render FlashComponent.new(flash: { notice: "Label '#{@label.name}' created successfully." }) %>
+<% end %>
+
+<%# Trigger auto-expand via JavaScript for sublabels %>
+<% unless is_root_label %>
+  <%= turbo_stream.append "body" do %>
+    <script>
+      (function() {
+        // Auto-expand parent label to show newly created sublabel
+        const parentContainer = document.querySelector('[data-label-id="<%= parent_id %>"]');
+        if (parentContainer) {
+          const childList = parentContainer.querySelector('#sublabels-<%= parent_id %>');
+          const button = parentContainer.querySelector('button[data-action*="label-tree#toggle"]');
+          const icon = button?.querySelector('[data-label-tree-target="icon"]');
+
+          if (childList && childList.classList.contains('hidden')) {
+            // Expand the parent
+            childList.classList.remove('hidden');
+            icon?.classList.remove('rotate-0');
+            icon?.classList.add('rotate-90');
+            button?.setAttribute('aria-expanded', 'true');
+
+            // Save expanded state to localStorage
+            try {
+              const key = 'label_tree_expanded';
+              const stored = localStorage.getItem(key);
+              let expandedIds = stored ? JSON.parse(stored) : [];
+              if (!expandedIds.includes('<%= parent_id %>')) {
+                expandedIds.push('<%= parent_id %>');
+              }
+              localStorage.setItem(key, JSON.stringify(expandedIds));
+            } catch (e) {
+              console.warn('Could not save expanded state:', e);
+            }
+          }
+        }
+
+        // Remove this script tag after execution
+        const scripts = document.querySelectorAll('script');
+        if (scripts.length > 0) {
+          scripts[scripts.length - 1].remove();
+        }
+      })();
+    </script>
+  <% end %>
+<% end %>

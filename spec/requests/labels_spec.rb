@@ -460,6 +460,103 @@ RSpec.describe '/labels', type: :request do
         }.to raise_error(ActiveRecord::RecordNotFound)
       end
     end
+
+    context 'turbo_stream format' do
+      context 'successful deletion' do
+        it 'returns turbo_stream response' do
+          delete label_path(label.full_code), headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+          expect(response.content_type).to include('turbo-stream')
+          expect(response).to have_http_status(:ok)
+        end
+
+        it 'includes remove turbo stream for the label' do
+          delete label_path(label.full_code), headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+          expect(response.body).to include('turbo-stream action="remove"')
+          expect(response.body).to include("label-#{label.id}")
+        end
+
+        it 'includes flash message' do
+          delete label_path(label.full_code), headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+          expect(response.body).to include('turbo-stream action="update" target="flash"')
+          expect(response.body).to include('deleted successfully')
+        end
+      end
+
+      context 'deleting last sublabel' do
+        let!(:parent) { create(:label, company: company, code: 'parent') }
+        let!(:only_child) { create(:label, company: company, code: 'child', parent_label: parent) }
+
+        it 'includes parent label update to remove expand button' do
+          delete label_path(only_child.full_code), headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+          expect(response.body).to include('turbo-stream action="remove"')
+          expect(response.body).to include("label-#{only_child.id}")
+          expect(response.body).to include('turbo-stream action="replace"')
+          expect(response.body).to include("label-#{parent.id}")
+        end
+      end
+
+      context 'deleting sublabel with siblings' do
+        let!(:parent) { create(:label, company: company, code: 'parent') }
+        let!(:child1) { create(:label, company: company, code: 'child1', parent_label: parent) }
+        let!(:child2) { create(:label, company: company, code: 'child2', parent_label: parent) }
+
+        it 'only removes the sublabel without updating parent' do
+          delete label_path(child1.full_code), headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+          expect(response.body).to include('turbo-stream action="remove"')
+          expect(response.body).to include("label-#{child1.id}")
+          # Should not include parent replacement since there are still siblings
+          expect(response.body.scan(/turbo-stream action="replace".*label-#{parent.id}/).count).to eq(0)
+        end
+      end
+
+      context 'with sublabels' do
+        let!(:child) { create(:label, company: company, parent_label: label) }
+
+        it 'returns error turbo stream' do
+          delete label_path(label.full_code), headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+          expect(response).to have_http_status(:ok)
+          expect(response.content_type).to include('turbo-stream')
+        end
+
+        it 'includes error flash message' do
+          delete label_path(label.full_code), headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+          expect(response.body).to include('turbo-stream action="update" target="flash"')
+          expect(response.body).to include('Cannot delete')
+          expect(response.body).to include('sublabel')
+        end
+
+        it 'does not include remove action' do
+          delete label_path(label.full_code), headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+          expect(response.body).not_to include('turbo-stream action="remove"')
+        end
+      end
+
+      context 'with products' do
+        let!(:product) { create(:product, company: company) }
+
+        before do
+          create(:product_label, label: label, product: product)
+        end
+
+        it 'returns error turbo stream' do
+          delete label_path(label.full_code), headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+          expect(response).to have_http_status(:ok)
+          expect(response.content_type).to include('turbo-stream')
+        end
+
+        it 'includes error flash message' do
+          delete label_path(label.full_code), headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+          expect(response.body).to include('turbo-stream action="update" target="flash"')
+          expect(response.body).to include('Cannot delete')
+          expect(response.body).to include('product')
+        end
+
+        it 'does not include remove action' do
+          delete label_path(label.full_code), headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+          expect(response.body).not_to include('turbo-stream action="remove"')
+        end
+      end
+    end
   end
 
   describe 'PATCH /reorder' do
