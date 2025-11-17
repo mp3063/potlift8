@@ -42,6 +42,7 @@ class Label < ApplicationRecord
   validates :name, presence: true
   validates :label_type, presence: true
   validates :full_code, uniqueness: { scope: :company_id }
+  validate :validate_color_format
 
   # Callbacks
   before_validation :inherit_company_from_parent, on: :create
@@ -158,6 +159,17 @@ class Label < ApplicationRecord
   end
 
   private
+
+  # Validate color format to prevent CSS injection
+  # Only allows valid hex colors (#RGB or #RRGGBB)
+  def validate_color_format
+    return if info.blank? || info['color'].blank?
+
+    color = info['color'].to_s.strip
+    unless color.match?(/\A#(?:[0-9a-fA-F]{3}){1,2}\z/)
+      errors.add(:base, "Color must be a valid hex color (e.g., #fff or #ffffff)")
+    end
+  end
 
   # Inherit company from parent label if parent is present
   def inherit_company_from_parent
