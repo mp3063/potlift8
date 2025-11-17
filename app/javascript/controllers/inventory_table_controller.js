@@ -65,13 +65,25 @@ export default class extends Controller {
     }
 
     // Trigger modal open event
-    const modalWrapper = document.getElementById('adjust-inventory-modal-wrapper')
-    if (modalWrapper) {
-      const modalController = this.application.getControllerForElementAndIdentifier(modalWrapper, "modal")
-      if (modalController) {
-        modalController.open()
+    // Use setTimeout to ensure modal controller is fully initialized
+    setTimeout(() => {
+      const modalElement = document.querySelector('[data-controller="modal"][data-modal-closable-value="true"]')
+      console.log('Modal element found:', modalElement)
+
+      if (modalElement) {
+        const modalController = this.application.getControllerForElementAndIdentifier(modalElement, "modal")
+        console.log('Modal controller:', modalController)
+
+        if (modalController) {
+          console.log('Opening modal...')
+          modalController.open()
+        } else {
+          console.error("Modal controller not found on element:", modalElement)
+        }
+      } else {
+        console.error("Modal element not found")
       }
-    }
+    }, 50)
   }
 
   // Future: Add inline editing functionality for ETA quantity and date

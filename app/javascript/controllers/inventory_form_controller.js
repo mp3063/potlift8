@@ -41,8 +41,10 @@ export default class extends Controller {
       return
     }
 
+    console.log("Form element:", form)
     console.log("Form action:", form.action)
     console.log("Form method:", form.method)
+    console.log("Form has Turbo:", form.hasAttribute('data-turbo'))
 
     // Log form data
     const formData = new FormData(form)
@@ -53,6 +55,11 @@ export default class extends Controller {
 
     // Submit the form and let Turbo handle it
     console.log("Submitting form via Turbo...")
-    form.requestSubmit()
+    try {
+      form.requestSubmit()
+      console.log("Form submitted successfully")
+    } catch (error) {
+      console.error("Error submitting form:", error)
+    }
   }
 }
