@@ -46,6 +46,7 @@ class Label < ApplicationRecord
 
   # Callbacks
   before_validation :inherit_company_from_parent, on: :create
+  before_validation :generate_code_from_name, if: -> { code.blank? && name.present? }
   before_save :generate_full_code_and_name
 
   # Scopes
@@ -208,5 +209,14 @@ class Label < ApplicationRecord
         self.info['localized_full_value'] = info['localized_value'].dup
       end
     end
+  end
+
+  # Auto-generate code from name if code is blank
+  # Converts name to lowercase, replaces spaces/special chars with hyphens
+  def generate_code_from_name
+    return if name.blank?
+
+    # Convert to lowercase and parameterize (Rails helper that creates URL-friendly strings)
+    self.code = name.parameterize
   end
 end
