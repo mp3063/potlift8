@@ -45,7 +45,7 @@ export default class extends Controller {
    * - Load expanded state from localStorage
    */
   connect() {
-    this.initSortable()
+    // this.initSortable()  // Disable sortable for now
     this.loadExpandedState()
   }
 
@@ -112,12 +112,20 @@ export default class extends Controller {
     }
 
     const button = event.currentTarget
-    const listItem = button.closest('li[data-label-id]')
-    const labelId = listItem.dataset.labelId
-    const childList = listItem.querySelector(':scope > ul')
+    const container = button.closest('[data-label-id]')
+    const labelId = container?.dataset.labelId
+
+    // Try to find sublabels div - it could be a child or a sibling
+    let childList = container?.querySelector(`#sublabels-${labelId}`)
+    if (!childList) {
+      // Look for it as the next sibling instead
+      childList = document.querySelector(`#sublabels-${labelId}`)
+    }
     const icon = button.querySelector('[data-label-tree-target="icon"]')
 
-    if (!childList) return // No children to toggle
+    if (!childList) {
+      return // No children to toggle
+    }
 
     // Toggle visibility
     const isExpanded = !childList.classList.contains('hidden')
@@ -256,11 +264,11 @@ export default class extends Controller {
       const expandedIds = stored ? JSON.parse(stored) : []
 
       expandedIds.forEach(labelId => {
-        const listItem = this.element.querySelector(`li[data-label-id="${labelId}"]`)
-        if (!listItem) return
+        const container = this.element.querySelector(`[data-label-id="${labelId}"]`)
+        if (!container) return
 
-        const childList = listItem.querySelector(':scope > ul')
-        const button = listItem.querySelector('button[data-action*="label-tree#toggle"]')
+        const childList = container.querySelector(`#sublabels-${labelId}`)
+        const button = container.querySelector('button[data-action*="label-tree#toggle"]')
         const icon = button?.querySelector('[data-label-tree-target="icon"]')
 
         if (childList) {
