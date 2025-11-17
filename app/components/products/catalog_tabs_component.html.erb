@@ -28,9 +28,9 @@
           aria-controls="panel-<%= catalog_item.catalog.code %>">
           <%= catalog_item.catalog.name %>
           <span id="tab-<%= catalog_item.catalog.code %>-badge">
-            <% if catalog_item.catalog_item_attribute_values.any? %>
+            <% if catalog_item.catalog_item_attribute_values_count > 0 %>
               <span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
-                <%= catalog_item.catalog_item_attribute_values.count %>
+                <%= catalog_item.catalog_item_attribute_values_count %>
               </span>
             <% end %>
           </span>

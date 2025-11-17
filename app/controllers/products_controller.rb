@@ -79,12 +79,29 @@ class ProductsController < ApplicationController
   # - Cache invalidation: Automatic on product/association updates
   #
   def show
-    # Reload product with necessary associations to prevent N+1 queries
-    # Uses optimized eager loading scope
+    # Load product with eager loading to prevent N+1 queries
+    # Associations loaded based on actual view access patterns:
+    #
+    # 1. product_attribute_values + product_attributes (via .with_attributes scope)
+    #    - Accessed throughout show view for attribute display
+    #
+    # 2. labels
+    #    - Line 75 of labels_component.html.erb: product.labels.each
+    #    - Line 40 of labels_component.rb: product.labels.any?
+    #    - Line 32 of labels_component.rb: product.label_ids (for exclusion)
+    #    - NOTE: Bullet may incorrectly flag this as unused due to ViewComponent rendering
+    #
+    # 3. catalog_items => [:catalog, :catalog_item_attribute_values]
+    #    - Lines 23, 29, etc. of catalog_tabs_component.html.erb: catalog_item.catalog.*
+    #    - Line 31: catalog_item.catalog_item_attribute_values_count (uses counter cache)
+    #    - Line 36 of _catalog_attributes.html.erb: catalog_item.catalog_item_attribute_values.find
+    #    - Line 183 of _catalog_attributes.html.erb: catalog_item.catalog_item_attribute_values.any?
+    #    - Counter cache optimizes badge count display, but full collection still needed for overrides
+    #
     @product = current_potlift_company.products
                                       .with_attributes
-                                      .with_labels
-                                      .includes(catalog_items: [ :catalog, catalog_item_attribute_values: :product_attribute ])
+                                      .includes(:labels)
+                                      .includes(catalog_items: [:catalog, :catalog_item_attribute_values])
                                       # TODO: Add .with_inventory when inventory is displayed in show view
                                       # TODO: Add .with_subproducts when variants/bundles are displayed in show view
                                       .find(params[:id])
@@ -716,7 +733,7 @@ class ProductsController < ApplicationController
   def load_filter_labels
     @available_labels = current_potlift_company.labels
                                                .root_labels
-                                               .includes(sublabels: { sublabels: :sublabels })
+                                               .includes(:sublabels)
                                                .order(:label_positions, :name)
 
     # Optimized: Calculate product counts for all labels in a single query

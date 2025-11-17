@@ -32,8 +32,8 @@ if defined?(Bullet)
 
   # Development Environment Configuration
   if Rails.env.development?
-    # Browser notification in footer of pages
-    Bullet.alert = true
+    # Browser notification in footer of pages (disabled - use logs instead)
+    Bullet.alert = false
 
     # Log to Rails logger
     Bullet.bullet_logger = true

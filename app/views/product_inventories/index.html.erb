@@ -76,7 +76,7 @@
     <% end %>
 
     <% if @inventories.any? %>
-      <div class="overflow-hidden">
+      <div class="overflow-hidden" data-controller="inventory-table">
         <table class="min-w-full divide-y divide-gray-200">
           <thead>
             <tr>
@@ -125,7 +125,16 @@
                   <%= link_to "Edit", "#",
                     class: "text-blue-600 hover:text-blue-900 font-medium",
                     data: {
-                      action: "click->modal#open"
+                      action: "click->inventory-table#openAdjustModal",
+                      product_id: @product.id,
+                      product_sku: @product.sku,
+                      product_name: @product.name,
+                      inventory_id: inventory.id,
+                      storage_name: inventory.storage.name,
+                      storage_code: inventory.storage.code,
+                      current_value: inventory.value || 0,
+                      eta_quantity: inventory.info&.dig('eta_quantity') || 0,
+                      eta_date: inventory.info&.dig('eta_date') || ''
                     } %>
                 </td>
               </tr>
@@ -144,3 +153,6 @@
     <% end %>
   <% end %>
 </div>
+
+<!-- Inventory Adjustment Modal -->
+<%= render 'adjust_inventory_modal' %>

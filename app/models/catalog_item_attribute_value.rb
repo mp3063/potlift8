@@ -20,7 +20,7 @@
 #
 class CatalogItemAttributeValue < ApplicationRecord
   # Associations
-  belongs_to :catalog_item
+  belongs_to :catalog_item, counter_cache: true
   belongs_to :product_attribute
 
   # Validations

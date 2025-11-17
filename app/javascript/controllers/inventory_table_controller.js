@@ -13,19 +13,31 @@ export default class extends Controller {
     const productSku = button.dataset.productSku
     const productName = button.dataset.productName
     const inventoryId = button.dataset.inventoryId
+    const storageName = button.dataset.storageName
+    const storageCode = button.dataset.storageCode
     const currentValue = parseInt(button.dataset.currentValue) || 0
     const etaQuantity = parseInt(button.dataset.etaQuantity) || 0
     const etaDate = button.dataset.etaDate || ''
 
     console.log('Opening modal with data:', {
       productId, productSku, productName, inventoryId,
-      currentValue, etaQuantity, etaDate
+      storageName, storageCode, currentValue, etaQuantity, etaDate
     })
 
     // Update modal content with product info
     document.getElementById('modal-product-name').textContent = `Adjust Inventory - ${productSku}`
     document.getElementById('modal-product-sku').textContent = productSku
     document.getElementById('modal-product-description').textContent = productName
+
+    // Update storage info (if elements exist - for product inventories view)
+    const storageNameEl = document.getElementById('modal-storage-name')
+    const storageCodeEl = document.getElementById('modal-storage-code')
+    if (storageNameEl && storageName) {
+      storageNameEl.textContent = storageName
+    }
+    if (storageCodeEl && storageCode) {
+      storageCodeEl.textContent = storageCode
+    }
 
     // Update form action URL
     const form = document.getElementById('adjust-inventory-form')
