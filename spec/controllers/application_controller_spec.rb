@@ -56,8 +56,12 @@ RSpec.describe ApplicationController, type: :controller do
     context 'when user is authenticated' do
       let(:company) { create(:company) }
       let(:user) { create(:user, company: company) }
+      let(:authlift_client) { instance_double(Authlift::Client) }
 
       before do
+        allow_any_instance_of(ApplicationController).to receive(:authlift_client).and_return(authlift_client)
+        allow(authlift_client).to receive(:decode_jwt).and_return({})
+
         session[:user_id] = user.id
         session[:access_token] = 'valid_token'
         session[:authenticated_at] = Time.now.to_i
@@ -89,6 +93,13 @@ RSpec.describe ApplicationController, type: :controller do
   end
 
   describe '#authenticated?' do
+    let(:authlift_client) { instance_double(Authlift::Client) }
+
+    before do
+      allow(controller).to receive(:authlift_client).and_return(authlift_client)
+      allow(authlift_client).to receive(:decode_jwt).and_return({})
+    end
+
     context 'with valid session' do
       let(:user) { create(:user) }
 
@@ -155,6 +166,37 @@ RSpec.describe ApplicationController, type: :controller do
 
       it 'returns false' do
         expect(controller.send(:authenticated?)).to be false
+      end
+    end
+
+    context 'when user has been deleted from database' do
+      let(:user) { create(:user) }
+
+      before do
+        session[:user_id] = user.id
+        session[:access_token] = 'valid_token'
+        session[:authenticated_at] = Time.now.to_i
+        session[:expires_at] = 1.hour.from_now.to_i
+
+        # Delete user from database after session is established
+        user.destroy
+      end
+
+      it 'returns false' do
+        expect(controller.send(:authenticated?)).to be false
+      end
+
+      it 'clears the session' do
+        controller.send(:authenticated?)
+
+        expect(session[:user_id]).to be_nil
+        expect(session[:access_token]).to be_nil
+      end
+
+      it 'logs warning about missing user' do
+        expect(Rails.logger).to receive(:warn).with(/User .* not found in database/)
+
+        controller.send(:authenticated?)
       end
     end
   end

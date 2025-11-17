@@ -44,11 +44,21 @@ class ApplicationController < ActionController::Base
   # - Validates JWT token expiration
   # - Attempts token refresh if expired
   # - Validates token with Authlift8 on refresh
+  # - Validates user exists in database (prevents deleted user access)
   #
   # @return [Boolean] true if user has valid session
   def authenticated?
     # Check if session has required authentication data
     return false unless session[:user_id].present? && session[:access_token].present?
+
+    # SECURITY FIX: Validate user exists in database BEFORE allowing access
+    # This prevents authentication bypass when user is deleted from database
+    # but still has valid session cookie
+    unless User.exists?(id: session[:user_id])
+      Rails.logger.warn("User #{session[:user_id]} not found in database, clearing session")
+      reset_session
+      return false
+    end
 
     # Check if session has not timed out (24 hours)
     authenticated_at = session[:authenticated_at]
@@ -94,6 +104,11 @@ class ApplicationController < ActionController::Base
 
   # Get current authenticated user
   #
+  # Security:
+  # - Validates user exists in database
+  # - Clears session if user record is missing (prevents broken auth state)
+  # - Forces re-authentication when user is deleted
+  #
   # @return [User, nil] User model instance or nil if not authenticated
   #
   # @example In controller
@@ -107,6 +122,16 @@ class ApplicationController < ActionController::Base
     return nil unless authenticated?
 
     @current_user ||= User.find_by(id: session[:user_id])
+
+    # SECURITY FIX: If user doesn't exist, clear session and force re-authentication
+    # This prevents broken authentication state when user is deleted from database
+    if @current_user.nil? && session[:user_id].present?
+      Rails.logger.warn("User #{session[:user_id]} not found in database, clearing session")
+      reset_session
+      return nil
+    end
+
+    @current_user
   end
 
   # Get current user's name
@@ -143,6 +168,11 @@ class ApplicationController < ActionController::Base
   # Synchronizes company from Authlift8 OAuth provider and returns
   # the local Company model instance for multi-tenancy.
   #
+  # Security:
+  # - Validates company exists in database
+  # - Clears session if company record is missing (prevents broken auth state)
+  # - Forces re-authentication when company is deleted
+  #
   # This method:
   # 1. Gets company data from OAuth session (current_company)
   # 2. Syncs with local database using Company.from_authlift8
@@ -169,6 +199,16 @@ class ApplicationController < ActionController::Base
       }
       Company.from_authlift8(company_data)
     end
+
+    # SECURITY FIX: If company doesn't exist, clear session and force re-authentication
+    # This prevents broken authentication state when company is deleted from database
+    if @current_potlift_company.nil? && current_company.present?
+      Rails.logger.warn("Company #{current_company['id']} not found in database, clearing session")
+      reset_session
+      return nil
+    end
+
+    @current_potlift_company
   end
 
   # Check if access token is expired or about to expire

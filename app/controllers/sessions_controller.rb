@@ -127,6 +127,14 @@ class SessionsController < ApplicationController
         return
       end
 
+      # CRITICAL SECURITY FIX: Regenerate session ID after authentication
+      # Prevents session fixation attacks where attacker sets victim's session ID
+      # then hijacks it after victim authenticates
+      # OWASP recommendation: Always regenerate session ID on privilege level change
+      old_session_data = session.to_hash
+      reset_session
+      old_session_data.each { |k, v| session[k] = v unless k.start_with?('oauth_') }
+
       # Store authentication data in session
       # Note: In production, consider using encrypted session store
       store_authentication_session(user, tokens, user_payload)
