@@ -24,10 +24,13 @@ module Products
     private
 
     # Returns available labels (not already assigned)
+    # Scoped to product's company for multi-tenancy security
     #
     # @return [ActiveRecord::Relation] Collection of available labels
     def available_labels
-      Label.where.not(id: product.label_ids).order(:name)
+      @available_labels ||= product.company.labels
+                                   .where.not(id: product.label_ids)
+                                   .order(:name)
     end
 
     # Checks if product has any labels

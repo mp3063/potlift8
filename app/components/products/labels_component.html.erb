@@ -3,56 +3,98 @@
     <h3 class="text-base font-semibold leading-6 text-gray-900">Labels</h3>
   <% end %>
 
-  <div data-controller="product-labels" data-product-labels-product-id-value="<%= product.id %>">
-    <!-- Current Labels -->
-    <% if has_labels? %>
-      <div class="flex flex-wrap gap-2 mb-4" data-product-labels-target="container">
-        <% product.labels.each do |label| %>
-          <span class="inline-flex items-center gap-x-1 rounded-md bg-blue-50 px-2 py-1 text-sm font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
-            <%= label.name %>
-            <%= button_to remove_label_product_path(product, label_id: label.id),
-                method: :delete,
-                form_class: "inline",
-                class: "group relative -mr-1 h-3.5 w-3.5 rounded-sm hover:bg-blue-600/20",
-                data: { turbo_frame: "_top" } do %>
-              <span class="sr-only">Remove <%= label.name %></span>
-              <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
-              </svg>
-            <% end %>
-          </span>
-        <% end %>
+  <div data-controller="product-label-manager" data-product-label-manager-product-id-value="<%= product.id %>">
+    <div class="space-y-4">
+      <!-- Label Selection Section -->
+      <div>
+        <label class="block text-sm font-medium text-gray-900 mb-2">
+          Select Labels
+        </label>
+        <p class="text-xs text-gray-600 mb-3">
+          Choose labels to categorize this product. Click on a label to add it.
+        </p>
+
+        <!-- Search input -->
+        <div class="relative mb-3">
+          <input
+            type="text"
+            id="label-search-<%= product.id %>"
+            placeholder="Search labels..."
+            class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            data-product-label-manager-target="searchInput"
+            data-action="input->product-label-manager#filterLabels"
+            aria-label="Search for labels"
+          >
+          <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+            <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
+            </svg>
+          </div>
+        </div>
+
+        <!-- Available labels (clickable) -->
+        <div class="max-h-48 overflow-y-auto border border-gray-200 rounded-lg bg-gray-50 p-3" data-product-label-manager-target="labelList">
+          <% if available_labels.any? %>
+            <div class="space-y-1">
+              <% available_labels.each do |label| %>
+                <button
+                  type="button"
+                  class="w-full text-left px-3 py-2 rounded-md text-sm hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-blue-50 transition-colors"
+                  data-label-id="<%= label.id %>"
+                  data-label-name="<%= label.full_name %>"
+                  data-label-color="<%= label.info&.dig('color') || '#6b7280' %>"
+                  data-action="click->product-label-manager#addLabel"
+                  data-product-label-manager-target="labelOption"
+                  aria-label="Add label <%= label.full_name %>"
+                >
+                  <div class="flex items-center gap-2">
+                    <span class="h-2 w-2 rounded-full flex-shrink-0" style="background-color: <%= label.info&.dig('color') || '#6b7280' %>" aria-hidden="true"></span>
+                    <span class="text-gray-900"><%= label.full_name %></span>
+                  </div>
+                </button>
+              <% end %>
+            </div>
+          <% else %>
+            <p class="text-sm text-gray-500 text-center py-4">No labels available. Create labels first to categorize products.</p>
+          <% end %>
+        </div>
+
+        <!-- Empty state for no results -->
+        <div class="hidden max-h-48 border border-gray-200 rounded-lg bg-gray-50 p-3" data-product-label-manager-target="emptyState">
+          <p class="text-sm text-gray-500 text-center py-4">No labels found matching your search.</p>
+        </div>
       </div>
-    <% else %>
-      <p class="text-sm text-gray-500 mb-4">No labels assigned</p>
-    <% end %>
 
-    <!-- Add Label Form -->
-    <% if available_labels.any? %>
-      <%= form_with url: add_label_product_path(product),
-                    method: :post,
-                    data: {
-                      controller: "label-selector",
-                      action: "turbo:submit-end->label-selector#handleSubmit"
-                    },
-                    class: "flex gap-x-2" do |form| %>
-        <%= form.select :label_id,
-            options_from_collection_for_select(available_labels, :id, :name),
-            { prompt: "Select a label..." },
-            class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
-            data: { label_selector_target: "select" },
-            aria: { label: "Select label to add" } %>
-
-        <%= render Ui::ButtonComponent.new(
-          type: "submit",
-          variant: :primary,
-          size: :md
-        ) do %>
-          Add
-        <% end %>
-      <% end %>
-    <% else %>
-      <p class="text-sm text-gray-500">All available labels are assigned</p>
-    <% end %>
+      <!-- Selected labels (tags) -->
+      <div>
+        <label class="block text-sm font-medium text-gray-900 mb-2">
+          Selected Labels
+        </label>
+        <div class="flex flex-wrap gap-2 min-h-[2.5rem] p-3 border border-gray-200 rounded-lg bg-white" data-product-label-manager-target="selectedContainer" role="list" aria-label="Selected labels">
+          <% if has_labels? %>
+            <% product.labels.each do |label| %>
+              <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm bg-blue-100 text-blue-800 border border-blue-200" data-label-id="<%= label.id %>" data-label-name="<%= label.full_name %>" data-label-color="<%= label.info&.dig('color') || '#2563eb' %>" role="listitem">
+                <span class="h-2 w-2 rounded-full flex-shrink-0" style="background-color: <%= label.info&.dig('color') || '#2563eb' %>" aria-hidden="true"></span>
+                <span class="font-medium"><%= label.full_name %></span>
+                <button
+                  type="button"
+                  class="ml-1 inline-flex items-center justify-center h-4 w-4 rounded-full hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-colors"
+                  data-action="click->product-label-manager#removeLabel"
+                  data-label-id="<%= label.id %>"
+                  aria-label="Remove label <%= label.full_name %>"
+                >
+                  <span class="sr-only">Remove label <%= label.full_name %></span>
+                  <svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                  </svg>
+                </button>
+              </span>
+            <% end %>
+          <% else %>
+            <p class="text-sm text-gray-500 py-1" data-product-label-manager-target="emptyMessage">No labels selected. Click on labels above to add them.</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
   </div>
 <% end %>
