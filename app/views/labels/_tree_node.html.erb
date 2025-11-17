@@ -5,23 +5,23 @@
   has_sublabels = label.sublabels.any?
   direct_products_count = label.products.size
   total_products_count = label.all_products_including_sublabels.size
-  indent_class = "pl-#{level * 8}"
+  # Use inline style for dynamic indentation since Tailwind can't generate dynamic classes
+  indent_style = level > 0 ? "padding-left: #{level * 2}rem;" : ""
 %>
 
-<div class="group hover:bg-gray-50 transition-colors" data-label-tree-target="node" data-label-id="<%= label.id %>">
-  <div class="flex items-center gap-3 py-3 px-4 <%= indent_class %>">
+<div id="label-<%= label.id %>" class="group hover:bg-gray-50 transition-colors" data-label-id="<%= label.id %>">
+  <div class="flex items-center gap-3 py-3 px-4" style="<%= indent_style %>">
     <!-- Expand/Collapse Button -->
     <% if has_sublabels %>
       <button
         type="button"
         class="flex-shrink-0 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
         data-action="click->label-tree#toggle"
-        data-label-tree-target="toggleButton"
         data-label-id="<%= label.id %>"
         aria-expanded="false"
         aria-controls="sublabels-<%= label.id %>"
         aria-label="<%= has_sublabels ? 'Expand sublabels' : 'No sublabels' %>">
-        <svg class="w-5 h-5 transform transition-transform" data-label-tree-target="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <svg class="w-5 h-5 transform transition-transform rotate-0" data-label-tree-target="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
         </svg>
       </button>
@@ -91,6 +91,7 @@
     <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
       <!-- Add Sublabel -->
       <%= link_to new_label_path(parent_id: label.id),
+        data: { turbo_frame: "label_modal" },
         class: "text-gray-600 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-1 transition-colors",
         title: "Add sublabel to #{label.name}",
         aria_label: "Add sublabel to #{label.name}" do %>
@@ -101,6 +102,7 @@
 
       <!-- Edit -->
       <%= link_to edit_label_path(label),
+        data: { turbo_frame: "label_modal" },
         class: "text-gray-600 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-1 transition-colors",
         title: "Edit #{label.name}",
         aria_label: "Edit #{label.name}" do %>
@@ -125,16 +127,16 @@
     </div>
   </div>
 
-  <!-- Sublabels (recursive) -->
-  <% if has_sublabels %>
-    <div
-      id="sublabels-<%= label.id %>"
-      class="hidden"
-      data-label-tree-target="children"
-      data-parent-id="<%= label.id %>">
+  <!-- Sublabels (recursive) - always render container for turbo stream updates -->
+  <div
+    id="sublabels-<%= label.id %>"
+    class="<%= 'hidden' unless has_sublabels %>"
+    data-label-tree-target="children"
+    data-parent-id="<%= label.id %>">
+    <% if has_sublabels %>
       <% label.sublabels.each do |sublabel| %>
         <%= render "tree_node", label: sublabel, level: level + 1 %>
       <% end %>
-    </div>
-  <% end %>
+    <% end %>
+  </div>
 </div>

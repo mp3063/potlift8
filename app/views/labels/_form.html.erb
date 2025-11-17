@@ -7,29 +7,29 @@
   submit_text = is_new ? "Create Label" : "Update Label"
 %>
 
-<%= render Ui::ModalComponent.new(size: :lg, closable: true) do |modal| %>
-  <% modal.with_header do %>
-    <div>
-      <%= form_title %>
-      <!-- Parent Label Breadcrumb -->
-      <% if parent_label.present? %>
-        <div class="mt-2 flex items-center text-sm text-gray-600 font-normal">
-          <svg class="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-          </svg>
-          <span>Parent: </span>
-          <% parent_label.ancestors.each do |ancestor| %>
+<%= form_with(model: label, url: is_new ? labels_path : label_path(label), method: is_new ? :post : :patch, data: { turbo_frame: "label_modal" }, class: "contents") do |form| %>
+  <%= render Ui::ModalComponent.new(size: :lg, closable: true) do |modal| %>
+    <% modal.with_header do %>
+      <div>
+        <%= form_title %>
+        <!-- Parent Label Breadcrumb -->
+        <% if parent_label.present? %>
+          <div class="mt-2 flex items-center text-sm text-gray-600 font-normal">
+            <svg class="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            </svg>
+            <span>Parent: </span>
+            <% parent_label.ancestors.each do |ancestor| %>
+              <span class="mx-1 text-gray-400">/</span>
+              <span><%= ancestor.name %></span>
+            <% end %>
             <span class="mx-1 text-gray-400">/</span>
-            <span><%= ancestor.name %></span>
-          <% end %>
-          <span class="mx-1 text-gray-400">/</span>
-          <span class="font-medium"><%= parent_label.name %></span>
-        </div>
-      <% end %>
-    </div>
-  <% end %>
+            <span class="font-medium"><%= parent_label.name %></span>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
 
-  <%= form_with(model: label, url: is_new ? labels_path : label_path(label), method: is_new ? :post : :patch, data: { turbo_frame: "label_modal" }, class: "contents") do |form| %>
     <!-- Error Messages -->
     <% if label.errors.any? %>
       <div class="rounded-lg bg-red-50 p-4 border border-red-200 mb-6" role="alert">
@@ -83,18 +83,16 @@
       <!-- Code Field -->
       <div>
         <%= form.label :code, class: "block text-sm font-medium text-gray-700" do %>
-          Code <span class="text-red-600" aria-hidden="true">*</span>
-          <span class="sr-only">(required)</span>
+          Code
+          <span class="text-gray-500 font-normal">(optional)</span>
         <% end %>
         <p class="mt-1 text-xs text-gray-500">
-          Short identifier (lowercase, no spaces). Will be used in URLs and hierarchical codes.
+          Short identifier (lowercase, no spaces). If left blank, will be auto-generated from the name.
         </p>
         <%= form.text_field :code,
-          required: true,
           class: "mt-2 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm font-mono #{'border-red-300' if label.errors[:code].any?}",
-          placeholder: "e.g., electronics",
+          placeholder: "e.g., electronics (leave blank to auto-generate)",
           pattern: "[a-z0-9-]+",
-          aria_required: "true",
           aria_invalid: label.errors[:code].any? ? "true" : "false",
           aria_describedby: label.errors[:code].any? ? "code-error" : "code-help" %>
         <% if label.errors[:code].any? %>
@@ -157,19 +155,19 @@
       <div data-controller="color-picker">
         <%= form.label :color, "Color (optional)", class: "block text-sm font-medium text-gray-700" %>
         <p class="mt-1 text-xs text-gray-500">
-          Choose a color to visually identify this label
+          Choose a color to visually identify this label (leave as default for no color)
         </p>
         <div class="mt-2 flex items-center gap-3">
           <input
             type="color"
             name="label[info][color]"
-            value="<%= label.info&.dig('color') || '#3b82f6' %>"
+            value="<%= label.info&.dig('color') || '#e5e7eb' %>"
             class="h-10 w-20 rounded border border-gray-300 cursor-pointer focus:ring-2 focus:ring-blue-500 focus:outline-none"
             data-color-picker-target="input"
             data-action="input->color-picker#updateHex"
             id="label_color">
           <div class="text-sm text-gray-600">
-            <span class="font-mono" data-color-picker-target="display"><%= label.info&.dig('color') || '#3b82f6' %></span>
+            <span class="font-mono" data-color-picker-target="display"><%= label.info&.dig('color') || '#e5e7eb' %></span>
           </div>
         </div>
       </div>

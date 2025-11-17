@@ -1,5 +1,21 @@
 <%= turbo_frame_tag "label_modal" do %>
-  <div data-controller="modal" data-action="turbo:frame-load->modal#open">
-    <%= render "form", label: @label, parent_label: @parent_label %>
-  </div>
+  <%= render "form", label: @label, parent_label: @parent_label %>
+  <script>
+    // Auto-open the modal when this frame loads
+    requestAnimationFrame(() => {
+      const modal = document.querySelector('[data-controller="modal"]')
+      if (modal) {
+        const backdrop = modal.querySelector('[data-modal-target="backdrop"]')
+        if (backdrop) {
+          backdrop.classList.remove('hidden')
+          document.body.style.overflow = 'hidden'
+          // Focus first input
+          setTimeout(() => {
+            const firstInput = modal.querySelector('input, textarea, select')
+            if (firstInput) firstInput.focus()
+          }, 100)
+        }
+      }
+    })
+  </script>
 <% end %>

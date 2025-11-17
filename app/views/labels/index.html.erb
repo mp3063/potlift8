@@ -7,10 +7,7 @@
       </p>
     </div>
     <div class="flex gap-3">
-      <%= render Ui::ButtonComponent.new(
-        variant: :primary,
-        onclick: "window.location.href='#{new_label_path}'"
-      ) do %>
+      <%= link_to new_label_path, data: { turbo_frame: "label_modal" }, class: "inline-flex items-center justify-center font-medium rounded-lg transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 focus:ring-blue-500 text-white" do %>
         <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
@@ -50,7 +47,7 @@
     <% if @labels.any? %>
       <!-- Labels Tree View -->
       <%= render Ui::CardComponent.new(padding: :none) do %>
-        <div class="divide-y divide-gray-200" data-controller="label-tree">
+        <div class="divide-y divide-gray-200" data-controller="label-tree" id="root-labels-list">
           <% @labels.each do |label| %>
             <%= render "tree_node", label: label, level: 0 %>
           <% end %>
@@ -85,10 +82,7 @@
         </p>
         <% unless params[:q].present? %>
           <div class="mt-6">
-            <%= render Ui::ButtonComponent.new(
-              variant: :primary,
-              onclick: "window.location.href='#{new_label_path}'"
-            ) do %>
+            <%= link_to new_label_path, data: { turbo_frame: "label_modal" }, class: "inline-flex items-center justify-center font-medium rounded-lg transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 focus:ring-blue-500 text-white" do %>
               <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
               </svg>
