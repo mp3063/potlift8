@@ -64,7 +64,7 @@
         </svg>
       </button>
 
-      <div data-dropdown-target="menu" class="hidden absolute right-0 z-10 mt-2 w-48 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5" role="menu" aria-orientation="vertical">
+      <div data-dropdown-target="menu" class="hidden absolute right-0 z-10 mt-2 w-48 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 transition-all duration-200 starting:opacity-0 starting:scale-95" role="menu" aria-orientation="vertical">
         <div class="py-1">
           <%= link_to export_catalog_path(@catalog.code, format: :csv), class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150", role: "menuitem" do %>
             <div class="flex items-center">
@@ -91,26 +91,18 @@
 <% if @catalog_items.any? %>
   <!-- Search Bar -->
   <div class="mb-6">
-    <%= form_with url: catalog_items_path(@catalog), method: :get, class: "relative" do |form| %>
-      <div class="relative rounded-lg shadow-sm">
-        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </div>
-        <%= form.text_field :q,
-          value: params[:q],
-          placeholder: "Search by product name or SKU...",
-          class: "block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm",
-          aria_label: "Search products" %>
-        <% if params[:q].present? %>
-          <%= link_to catalog_items_path(@catalog), class: "absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600", title: "Clear search" do %>
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          <% end %>
+    <%= form_with url: catalog_items_path(@catalog), method: :get, class: "flex gap-3" do |form| %>
+      <%= render Ui::SearchInputComponent.new(
+        name: :q,
+        value: params[:q],
+        placeholder: "Search by product name or SKU...",
+        label: "Search products in catalog"
+      ) %>
+      <% if params[:q].present? %>
+        <%= link_to catalog_items_path(@catalog), class: "inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" do %>
+          Clear
         <% end %>
-      </div>
+      <% end %>
     <% end %>
   </div>
 
