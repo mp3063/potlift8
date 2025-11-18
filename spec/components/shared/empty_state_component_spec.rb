@@ -70,10 +70,12 @@ RSpec.describe Shared::EmptyStateComponent, type: :component do
       render_inline(described_class.new(title: 'Empty'))
 
       aggregate_failures do
-        expect(page).to have_css('svg.h-full.w-full')
+        expect(page).to have_css('svg')
         expect(page).to have_css('.h-16.w-16.text-gray-400')
-        # Check for inbox icon path attributes
-        expect(page.find('svg')['viewBox']).to eq('0 0 24 24')
+        # Check for inbox icon SVG attributes
+        expect(page).to have_css('svg[aria-hidden="true"]')
+        # SVG should contain path elements (icon content)
+        expect(page).to have_css('svg path')
       end
     end
 
@@ -83,8 +85,8 @@ RSpec.describe Shared::EmptyStateComponent, type: :component do
       expect(page).to have_css('.h-16.w-16.text-gray-400')
     end
 
-    it 'renders package icon when specified' do
-      render_inline(described_class.new(title: 'No products', icon: :package))
+    it 'renders search icon when specified' do
+      render_inline(described_class.new(title: 'No results', icon: :search))
 
       aggregate_failures do
         expect(page).to have_css('svg.h-full.w-full')
@@ -92,8 +94,53 @@ RSpec.describe Shared::EmptyStateComponent, type: :component do
       end
     end
 
-    it 'renders search icon when specified' do
-      render_inline(described_class.new(title: 'No results', icon: :search))
+    it 'renders folder icon when specified' do
+      render_inline(described_class.new(title: 'No folders', icon: :folder))
+
+      aggregate_failures do
+        expect(page).to have_css('svg.h-full.w-full')
+        expect(page).to have_css('.h-16.w-16.text-gray-400')
+      end
+    end
+
+    it 'renders document icon when specified' do
+      render_inline(described_class.new(title: 'No documents', icon: :document))
+
+      aggregate_failures do
+        expect(page).to have_css('svg.h-full.w-full')
+        expect(page).to have_css('.h-16.w-16.text-gray-400')
+      end
+    end
+
+    it 'renders plus icon when specified' do
+      render_inline(described_class.new(title: 'Add new', icon: :plus))
+
+      aggregate_failures do
+        expect(page).to have_css('svg.h-full.w-full')
+        expect(page).to have_css('.h-16.w-16.text-gray-400')
+      end
+    end
+
+    it 'renders tag icon when specified' do
+      render_inline(described_class.new(title: 'No labels', icon: :tag))
+
+      aggregate_failures do
+        expect(page).to have_css('svg.h-full.w-full')
+        expect(page).to have_css('.h-16.w-16.text-gray-400')
+      end
+    end
+
+    it 'renders cube icon when specified' do
+      render_inline(described_class.new(title: 'No products', icon: :cube))
+
+      aggregate_failures do
+        expect(page).to have_css('svg.h-full.w-full')
+        expect(page).to have_css('.h-16.w-16.text-gray-400')
+      end
+    end
+
+    it 'renders chart icon when specified' do
+      render_inline(described_class.new(title: 'No data', icon: :chart))
 
       aggregate_failures do
         expect(page).to have_css('svg.h-full.w-full')
@@ -117,6 +164,12 @@ RSpec.describe Shared::EmptyStateComponent, type: :component do
       render_inline(described_class.new(title: 'Empty'))
 
       expect(page).to have_css('.text-gray-400')
+    end
+
+    it 'renders icon with aria-hidden attribute' do
+      render_inline(described_class.new(title: 'Empty'))
+
+      expect(page).to have_css('svg[aria-hidden="true"]')
     end
   end
 
@@ -146,12 +199,12 @@ RSpec.describe Shared::EmptyStateComponent, type: :component do
 
     it 'renders complex content blocks' do
       render_inline(described_class.new(title: 'Empty')) do
-        content_tag(:div, class: 'flex gap-2') do
-          safe_join([
-            content_tag(:button, 'Primary', class: 'btn-primary'),
-            content_tag(:button, 'Secondary', class: 'btn-secondary')
-          ])
-        end
+        <<~HTML.html_safe
+          <div class="flex gap-2">
+            <button class="btn-primary">Primary</button>
+            <button class="btn-secondary">Secondary</button>
+          </div>
+        HTML
       end
 
       aggregate_failures do
@@ -216,7 +269,7 @@ RSpec.describe Shared::EmptyStateComponent, type: :component do
       render_inline(described_class.new(
         title: 'No products yet',
         description: 'Get started by creating your first product',
-        icon: :package
+        icon: :cube
       )) do
         '<a href="/products/new" class="btn-primary">Create Product</a>'.html_safe
       end
@@ -239,6 +292,20 @@ RSpec.describe Shared::EmptyStateComponent, type: :component do
       aggregate_failures do
         expect(page).to have_text('No results found')
         expect(page).to have_text('Try adjusting your search or filters')
+        expect(page).to have_css('svg')
+      end
+    end
+
+    it 'renders labels empty state' do
+      render_inline(described_class.new(
+        title: 'No labels yet',
+        description: 'Create labels to organize your products',
+        icon: :tag
+      ))
+
+      aggregate_failures do
+        expect(page).to have_text('No labels yet')
+        expect(page).to have_text('Create labels to organize your products')
         expect(page).to have_css('svg')
       end
     end

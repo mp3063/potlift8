@@ -161,7 +161,7 @@
     <%= render Shared::EmptyStateComponent.new(
       title: "No variants",
       description: @configurations.empty? ? "First create configuration dimensions, then add variants." : "Get started by creating a variant or generating all combinations.",
-      icon: :package
+      icon: :cube
     ) do %>
       <% if @configurations.empty? %>
         <%= link_to product_configurations_path(@product), class: "inline-flex items-center justify-center font-medium rounded-lg transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 focus:ring-blue-500 text-white" do %>
