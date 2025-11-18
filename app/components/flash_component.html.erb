@@ -2,7 +2,7 @@
   <div class="space-y-4 mb-6" data-controller="flash">
     <% flash.each do |type, message| %>
       <% config = flash_config(type) %>
-      <div class="rounded-lg border <%= config[:container] %> p-4" data-flash-target="message" role="alert">
+      <div class="rounded-lg border <%= config[:container] %> p-4 transition-all duration-300 starting:opacity-0 starting:translate-y-2" data-flash-target="message" role="alert">
         <div class="flex">
           <div class="flex-shrink-0">
             <svg class="h-5 w-5 <%= config[:icon] %>" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">

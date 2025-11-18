@@ -177,7 +177,7 @@ module Ui
     # @return [String] HTML structure for modal backdrop
     def render_modal_backdrop
       content_tag(:div,
-        class: "fixed inset-0 z-50 overflow-y-auto hidden",
+        class: "fixed inset-0 z-50 overflow-y-auto hidden transition-opacity duration-300 starting:opacity-0",
         data: { modal_target: "backdrop" },
         aria: { labelledby: "#{@modal_id}-title", role: "dialog", modal: "true" }
       ) do
@@ -257,6 +257,7 @@ module Ui
     def modal_classes
       [
         "relative bg-white rounded-lg shadow-xl transform transition-all w-full",
+        "starting:opacity-0 starting:scale-95",
         SIZE_CLASSES[@size]
       ].join(" ")
     end
