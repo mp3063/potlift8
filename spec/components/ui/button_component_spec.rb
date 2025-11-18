@@ -5,7 +5,7 @@ RSpec.describe Ui::ButtonComponent, type: :component do
     it "renders primary variant with correct classes" do
       render_inline(described_class.new(variant: :primary)) { "Click me" }
 
-      expect(page).to have_css("button.bg-blue-600.text-white.hover\\:bg-blue-700")
+      expect(page).to have_css("button.bg-primary-600.text-white.hover\\:bg-primary-700")
       expect(page).to have_text("Click me")
     end
 
@@ -19,7 +19,7 @@ RSpec.describe Ui::ButtonComponent, type: :component do
     it "renders danger variant with correct classes" do
       render_inline(described_class.new(variant: :danger)) { "Delete" }
 
-      expect(page).to have_css("button.bg-red-600.text-white.hover\\:bg-red-700")
+      expect(page).to have_css("button.bg-danger-600.text-white.hover\\:bg-danger-700")
       expect(page).to have_text("Delete")
     end
 
@@ -33,14 +33,14 @@ RSpec.describe Ui::ButtonComponent, type: :component do
     it "renders link variant with correct classes" do
       render_inline(described_class.new(variant: :link)) { "Learn more" }
 
-      expect(page).to have_css("button.bg-transparent.text-blue-600.hover\\:underline")
+      expect(page).to have_css("button.bg-transparent.text-primary-600.hover\\:underline")
       expect(page).to have_text("Learn more")
     end
 
     it "defaults to primary variant when variant not specified" do
       render_inline(described_class.new) { "Default" }
 
-      expect(page).to have_css("button.bg-blue-600.text-white")
+      expect(page).to have_css("button.bg-primary-600.text-white")
     end
   end
 
@@ -256,19 +256,19 @@ RSpec.describe Ui::ButtonComponent, type: :component do
     it "includes focus ring color for primary variant" do
       render_inline(described_class.new(variant: :primary)) { "Primary" }
 
-      expect(page).to have_css("button.focus\\:ring-blue-500")
+      expect(page).to have_css("button.focus\\:ring-primary-500")
     end
 
     it "includes focus ring color for secondary variant" do
       render_inline(described_class.new(variant: :secondary)) { "Secondary" }
 
-      expect(page).to have_css("button.focus\\:ring-blue-500")
+      expect(page).to have_css("button.focus\\:ring-primary-500")
     end
 
     it "includes focus ring color for danger variant" do
       render_inline(described_class.new(variant: :danger)) { "Danger" }
 
-      expect(page).to have_css("button.focus\\:ring-red-500")
+      expect(page).to have_css("button.focus\\:ring-danger-500")
     end
 
     it "includes focus ring color for ghost variant" do
@@ -289,7 +289,7 @@ RSpec.describe Ui::ButtonComponent, type: :component do
       svg_icon = '<svg class="icon-save"><path d="M5 13l4 4L19 7"/></svg>'
       render_inline(described_class.new(variant: :primary, size: :sm, icon: svg_icon, loading: true)) { "Save" }
 
-      expect(page).to have_css("button.bg-blue-600.px-3.py-1\\.5.text-sm")
+      expect(page).to have_css("button.bg-primary-600.px-3.py-1\\.5.text-sm")
       expect(page).to have_css("svg.animate-spin")
       expect(page).to have_css("button[disabled]")
       expect(page).to have_text("Save")
@@ -300,7 +300,7 @@ RSpec.describe Ui::ButtonComponent, type: :component do
       svg_icon = '<svg class="icon-trash"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>'
       render_inline(described_class.new(variant: :danger, size: :lg, icon: svg_icon, icon_position: :right, disabled: true)) { "Delete" }
 
-      expect(page).to have_css("button.bg-red-600.px-6.py-3.text-base")
+      expect(page).to have_css("button.bg-danger-600.px-6.py-3.text-base")
       expect(page).to have_css("button[disabled].disabled\\:opacity-50")
       expect(page).to have_css("svg.icon-trash")
       expect(page).to have_text("Delete")
