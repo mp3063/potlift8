@@ -114,12 +114,17 @@
             </div>
 
             <div class="flex gap-x-2">
-              <%= form.submit "Save",
-                  class: "rounded-md bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" %>
-              <%= button_tag "Cancel",
-                  type: "button",
-                  class: "rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
-                  data: { action: "click->inline-editor#cancel" } %>
+              <%= render Ui::ButtonComponent.new(variant: :primary, type: "submit", size: :sm) do %>
+                Save
+              <% end %>
+              <%= render Ui::ButtonComponent.new(
+                variant: :secondary,
+                type: "button",
+                size: :sm,
+                data: { action: "click->inline-editor#cancel" }
+              ) do %>
+                Cancel
+              <% end %>
             </div>
           </div>
         <% end %>
