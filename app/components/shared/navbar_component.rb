@@ -177,10 +177,10 @@ module Shared
         type: "button",
         class: "p-2 text-gray-700 hover:bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors",
         data: { action: "click->global-search#open" },
-        aria: { label: "Open search (Cmd+K)" }
+        aria: { label: "Open global search (Cmd+K)" }
       ) do
         concat(search_icon_svg)
-        concat(content_tag(:span, class: "sr-only") { "Search (⌘K)" })
+        concat(content_tag(:span, class: "sr-only") { "Search products, catalogs, and storages (⌘K)" })
       end
     end
 
@@ -229,7 +229,8 @@ module Shared
     end
 
     def user_avatar
-      initials = @current_user&.name&.split&.map(&:first)&.join&.upcase || "U"
+      user_name = @current_user.is_a?(Hash) ? @current_user[:name] : @current_user&.name
+      initials = user_name&.split&.map(&:first)&.join&.upcase || "U"
       content_tag(:div, class: "h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center") do
         content_tag(:span, initials, class: "text-sm font-medium text-white")
       end
@@ -263,17 +264,19 @@ module Shared
     end
 
     def dropdown_header
+      user_name = @current_user.is_a?(Hash) ? @current_user[:name] : @current_user&.name
+      user_email = @current_user.is_a?(Hash) ? @current_user[:email] : @current_user&.email
+
       content_tag(:div, class: "px-4 py-2") do
-        concat(content_tag(:p, @current_user&.name, class: "text-sm font-medium text-gray-900 truncate"))
-        concat(content_tag(:p, @current_user&.email, class: "text-xs text-gray-500 truncate"))
+        concat(content_tag(:p, user_name, class: "text-sm font-medium text-gray-900 truncate"))
+        concat(content_tag(:p, user_email, class: "text-xs text-gray-500 truncate"))
       end
     end
 
     def dropdown_item(text, path, icon: nil, method: :get, **options)
-      # Dropdown item styling with subtle focus state
+      # Dropdown item styling with accessible focus state
       item_classes = [
-        "block px-4 py-2 text-sm hover:bg-gray-100 transition-colors rounded-md",
-        "focus:outline-none focus:bg-gray-100",
+        "block px-4 py-2 text-sm hover:bg-gray-100 transition-colors",
         "cursor-pointer",
         options[:class] || "text-gray-700"
       ].join(" ")
@@ -282,15 +285,12 @@ module Shared
         # Use button_to for POST requests (logout)
         # Note: button_to creates a form wrapper, so we style both form and button
         # IMPORTANT: Turbo disabled because logout redirects to external Authlift8 (CORS)
-        # Using inline styles with !important to override all browser default focus styles
         helpers.button_to path,
           method: :post,
-          class: "#{item_classes} w-full text-left",
+          class: "#{item_classes} w-full text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-100 rounded-md",
           role: "menuitem",
-          style: "outline: none !important; box-shadow: none !important; border: none !important;",
           form: {
             class: "w-full",
-            style: "outline: none !important; box-shadow: none !important; border: none !important;",
             data: { turbo: false }
           } do
           content_tag(:div, class: "flex items-center gap-2") do
@@ -300,7 +300,7 @@ module Shared
         end
       else
         # Use link_to for GET requests
-        helpers.link_to path, class: item_classes, role: "menuitem" do
+        helpers.link_to path, class: "#{item_classes} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-100", role: "menuitem" do
           content_tag(:div, class: "flex items-center gap-2") do
             concat(dropdown_icon(icon)) if icon
             concat(content_tag(:span, text))
