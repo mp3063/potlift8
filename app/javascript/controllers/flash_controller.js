@@ -4,7 +4,8 @@ import { Controller } from "@hotwired/stimulus"
 //
 // Handles flash message auto-dismiss and manual dismissal
 // Features:
-//   - Auto-dismiss after 5 seconds
+//   - Dynamic auto-dismiss timing based on message length (WCAG 2.2.1 compliance)
+//   - Formula: minimum 5s, +1s per 10 words (average reading speed ~200 words/min)
 //   - Smooth fade-out animation
 //   - Manual dismiss button
 //   - Dynamic flash message creation via custom events
@@ -32,14 +33,35 @@ export default class extends Controller {
   static targets = ["message", "container"]
 
   connect() {
-    // Auto-dismiss all messages after 5 seconds
-    this.timeout = setTimeout(() => {
-      this.dismissAll()
-    }, 5000)
+    // Initialize timeout storage
+    this.timeouts = []
+
+    // Calculate timeout based on message length for each message
+    // Formula: minimum 5s, +1s per 10 words (average reading speed ~200 words/min)
+    this.messageTargets.forEach((message, index) => {
+      const timeout = this.calculateTimeout(message)
+
+      // Store timeout ID for cleanup
+      this.timeouts[index] = setTimeout(() => {
+        this.fadeOut(message)
+      }, timeout)
+    })
 
     // Listen for custom flash events
     this.handleFlashEvent = this.handleFlashEvent.bind(this)
     window.addEventListener('flash:show', this.handleFlashEvent)
+  }
+
+  /**
+   * Calculate dynamic timeout based on message length
+   * Formula: minimum 5s, +1s per 10 words
+   * @param {HTMLElement} message - Flash message element
+   * @returns {number} Timeout in milliseconds
+   */
+  calculateTimeout(message) {
+    const text = message.textContent || ''
+    const wordCount = text.trim().split(/\s+/).length
+    return Math.max(5000, 5000 + (wordCount / 10) * 1000)
   }
 
   /**
@@ -66,10 +88,11 @@ export default class extends Controller {
     const flash = this.createFlashElement(type, message)
     this.containerTarget.appendChild(flash)
 
-    // Auto-dismiss after 5 seconds
+    // Auto-dismiss with dynamic timeout based on message length
+    const timeout = this.calculateTimeout(flash)
     setTimeout(() => {
       this.fadeOut(flash)
-    }, 5000)
+    }, timeout)
   }
 
   /**
@@ -128,14 +151,22 @@ export default class extends Controller {
     return div.innerHTML
   }
 
-  // Manually dismiss a specific flash message
-  //
-  // @param {Event} event - Click event on dismiss button
+  /**
+   * Manually dismiss a specific flash message
+   * Clears associated timeout to prevent memory leaks
+   * @param {Event} event - Click event on dismiss button
+   */
   dismiss(event) {
     // Use currentTarget to always start from the button element, not the clicked SVG/path
     const button = event.currentTarget
     const message = button.closest("[data-flash-target='message']")
     if (message) {
+      // Clear timeout if it exists
+      const index = this.messageTargets.indexOf(message)
+      if (index !== -1 && this.timeouts && this.timeouts[index]) {
+        clearTimeout(this.timeouts[index])
+        this.timeouts[index] = null
+      }
       this.fadeOut(message)
     }
   }
@@ -161,10 +192,19 @@ export default class extends Controller {
     }, 300)
   }
 
-  // Clean up timeout when controller disconnects
+  /**
+   * Clean up all timeouts when controller disconnects
+   * Prevents memory leaks from pending timeouts
+   */
   disconnect() {
-    if (this.timeout) {
-      clearTimeout(this.timeout)
+    // Clear all pending timeouts
+    if (this.timeouts) {
+      this.timeouts.forEach(timeout => {
+        if (timeout) {
+          clearTimeout(timeout)
+        }
+      })
+      this.timeouts = []
     }
     window.removeEventListener('flash:show', this.handleFlashEvent)
   }
