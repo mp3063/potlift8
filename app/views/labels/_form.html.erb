@@ -60,25 +60,14 @@
       <% end %>
 
       <!-- Name Field -->
-      <div>
-        <%= form.label :name, class: "block text-sm font-medium text-gray-700" do %>
-          Name <span class="text-red-600" aria-hidden="true">*</span>
-          <span class="sr-only">(required)</span>
-        <% end %>
-        <%= form.text_field :name,
-          required: true,
-          autofocus: true,
-          class: "mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm #{'border-red-300' if label.errors[:name].any?}",
-          placeholder: "e.g., Electronics",
-          aria_required: "true",
-          aria_invalid: label.errors[:name].any? ? "true" : "false",
-          aria_describedby: label.errors[:name].any? ? "name-error" : nil %>
-        <% if label.errors[:name].any? %>
-          <p class="mt-1 text-sm text-red-600" id="name-error">
-            <%= label.errors[:name].first %>
-          </p>
-        <% end %>
-      </div>
+      <%= render Ui::FormFieldComponent.new(
+        form: form,
+        attribute: :name,
+        label: "Name",
+        required: true,
+        autofocus: true,
+        placeholder: "e.g., Electronics"
+      ) %>
 
       <!-- Code Field -->
       <div>
@@ -111,16 +100,14 @@
       </div>
 
       <!-- Description Field -->
-      <div>
-        <%= form.label :description, class: "block text-sm font-medium text-gray-700" do %>
-          Description
-          <span class="text-gray-500 font-normal">(optional)</span>
-        <% end %>
-        <%= form.text_area :description,
-          rows: 3,
-          class: "mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
-          placeholder: "Add a description for this label..." %>
-      </div>
+      <%= render Ui::FormFieldComponent.new(
+        form: form,
+        attribute: :description,
+        label: "Description (optional)",
+        type: :text_area,
+        rows: 3,
+        placeholder: "Add a description for this label..."
+      ) %>
 
       <!-- Label Type Field -->
       <div>
