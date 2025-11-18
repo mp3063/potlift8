@@ -186,7 +186,7 @@ export default class extends Controller {
     // Storage Locations
     if (results.storage && results.storage.length > 0) {
       html += this.renderSection("Storage Locations", results.storage, (storage) => `
-        <a href="/storages/${storage.id}" class="block px-4 py-3 hover:bg-gray-50 transition-colors focus:outline-none focus:bg-gray-100">
+        <a href="/storages/${storage.code}" class="block px-4 py-3 hover:bg-gray-50 transition-colors focus:outline-none focus:bg-gray-100">
           <div class="flex items-center">
             <div class="flex-1 min-w-0">
               <p class="text-sm font-medium text-gray-900 truncate">${this.escapeHtml(storage.name)}</p>
