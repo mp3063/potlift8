@@ -39,14 +39,14 @@
   </div>
 
   <div class="flex flex-col sm:flex-row gap-3">
-    <%= link_to "#", class: "inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200" do %>
+    <%= link_to catalog_new_product_path(@catalog.code), data: { turbo_frame: "modal" }, class: "inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200" do %>
       <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
       </svg>
       Add Products
     <% end %>
 
-    <%= link_to "#", class: "inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200" do %>
+    <%= link_to catalog_new_import_path(@catalog.code), data: { turbo_frame: "modal" }, class: "inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200" do %>
       <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
       </svg>
@@ -142,7 +142,7 @@
         </thead>
         <tbody class="bg-white divide-y divide-gray-200" data-catalog-items-target="items">
           <% @catalog_items.each do |catalog_item| %>
-            <tr class="hover:bg-gray-50 transition-colors duration-150 group" data-catalog-items-target="item" data-id="<%= catalog_item.id %>">
+            <tr id="catalog_item_<%= catalog_item.id %>" class="hover:bg-gray-50 transition-colors duration-150 group" data-catalog-items-target="item" data-id="<%= catalog_item.id %>">
               <td class="px-3 py-4 whitespace-nowrap">
                 <button type="button" class="cursor-move text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity duration-150 focus:opacity-100" aria-label="Drag to reorder" data-catalog-items-target="handle">
                   <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -204,7 +204,7 @@
                   <%= link_to edit_product_path(catalog_item.product), class: "text-blue-600 hover:text-blue-900 transition-colors duration-150", title: "Edit product" do %>
                     Edit
                   <% end %>
-                  <%= button_to "#", method: :delete, data: { turbo_confirm: "Remove this product from the catalog?" }, class: "text-red-600 hover:text-red-900 transition-colors duration-150", title: "Remove from catalog" do %>
+                  <%= button_to catalog_item_path(@catalog.code, catalog_item.product.id), method: :delete, data: { turbo_confirm: "Remove this product from the catalog?" }, class: "text-red-600 hover:text-red-900 transition-colors duration-150", title: "Remove from catalog" do %>
                     Remove
                   <% end %>
                 </div>
@@ -229,7 +229,7 @@
     <h3 class="mt-4 text-sm font-medium text-gray-900">No products in catalog</h3>
     <p class="mt-2 text-sm text-gray-500">Get started by adding products to this catalog.</p>
     <div class="mt-6">
-      <%= link_to "#", class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200" do %>
+      <%= link_to catalog_new_product_path(@catalog.code), data: { turbo_frame: "modal" }, class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200" do %>
         <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
