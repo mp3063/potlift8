@@ -263,13 +263,33 @@ export default class extends Controller {
    * Finds the modal controller and opens it
    */
   openAddModal() {
-    const modal = this.element.querySelector('[data-controller="modal"]')
+    // Find the specific "Add to Catalog" modal by its aria-labelledby attribute
+    // We use aria-labelledby because there are multiple modals in the catalog tabs component
+    // (one "Add to Catalog" modal and multiple "Add Attribute Override" modals per catalog)
+    const modalBackdrop = this.element.querySelector('[aria-labelledby="add_to_catalog_modal-title"]')
 
-    if (modal) {
-      const modalController = this.application.getControllerForElementAndIdentifier(modal, "modal")
-      if (modalController) {
-        modalController.open()
-      }
+    if (!modalBackdrop) {
+      console.error('Add to Catalog modal backdrop not found')
+      return
     }
+
+    // Get the parent modal controller element
+    const modal = modalBackdrop.closest('[data-controller="modal"]')
+
+    if (!modal) {
+      console.error('Modal controller element not found')
+      return
+    }
+
+    // Get the modal controller instance
+    const modalController = this.application.getControllerForElementAndIdentifier(modal, "modal")
+
+    if (!modalController) {
+      console.error('Modal controller not found for element:', modal)
+      return
+    }
+
+    // Open the modal
+    modalController.open()
   }
 }
