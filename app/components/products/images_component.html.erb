@@ -1,10 +1,50 @@
 <%= render Ui::CardComponent.new do |card| %>
   <% card.with_header do %>
-    <h3 class="text-base font-semibold leading-6 text-gray-900">Images</h3>
+    <div class="flex items-center justify-between">
+      <h3 class="text-base font-semibold leading-6 text-gray-900">Images</h3>
+      <% if has_images? %>
+        <%= render Ui::BadgeComponent.new(variant: :gray) do %>
+          <%= images.count %> <%= images.count == 1 ? 'image' : 'images' %>
+        <% end %>
+      <% end %>
+    </div>
   <% end %>
 
   <% if has_images? %>
-    <div data-controller="product-images" data-product-id="<%= product.id %>">
+    <div data-controller="product-images bulk-images image-reorder"
+         data-product-id="<%= product.id %>"
+         data-bulk-images-delete-url-value="<%= bulk_destroy_product_images_path(product) %>"
+         data-image-reorder-reorder-url-value="<%= reorder_product_images_path(product) %>">
+
+      <!-- Bulk Operations Toolbar -->
+      <div data-bulk-images-target="toolbar"
+           class="hidden fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white shadow-lg rounded-lg p-4 border border-gray-200 z-50">
+        <div class="flex items-center gap-4">
+          <p class="text-sm text-gray-600">
+            <span data-bulk-images-target="selectedCount">0</span> selected
+          </p>
+          <div class="flex gap-2">
+            <%= render Ui::ButtonComponent.new(
+              variant: :secondary,
+              size: :sm,
+              data: { action: "click->bulk-images#deselectAll" }
+            ) do %>
+              Deselect All
+            <% end %>
+            <%= render Ui::ButtonComponent.new(
+              variant: :danger,
+              size: :sm,
+              data: { action: "click->bulk-images#deleteSelected" }
+            ) do %>
+              <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Delete Selected
+            <% end %>
+          </div>
+        </div>
+      </div>
+
       <!-- Main Image -->
       <div class="w-full h-96 rounded-lg bg-gray-100 overflow-hidden mb-4 flex items-center justify-center">
         <% if main_image %>
@@ -12,15 +52,41 @@
         <% end %>
       </div>
 
-      <!-- Thumbnails -->
-      <div class="grid grid-cols-4 gap-4 mb-4">
+      <!-- Select All Checkbox -->
+      <div class="flex items-center mb-3">
+        <input type="checkbox"
+               data-bulk-images-target="selectAllCheckbox"
+               data-action="change->bulk-images#toggleAll"
+               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+               id="select-all-images">
+        <label for="select-all-images" class="ml-2 text-sm text-gray-700">
+          Select all images
+        </label>
+        <span class="ml-3 text-xs text-gray-500">
+          (Drag images to reorder)
+        </span>
+      </div>
+
+      <!-- Thumbnails (Sortable & Selectable) -->
+      <div data-image-reorder-target="container"
+           class="grid grid-cols-4 gap-4 mb-4">
         <% images.each_with_index do |image, index| %>
-          <div class="relative h-24 rounded-lg overflow-hidden cursor-pointer group transition-all"
+          <div class="relative h-24 rounded-lg overflow-hidden cursor-move group transition-all border-2 border-transparent hover:border-blue-300"
                data-product-images-target="thumbnail"
                data-image-id="<%= image.id %>"
                data-full-size-url="<%= url_for(image) %>"
                data-action="click->product-images#selectImage">
-            <%= image_tag image.variant(resize_to_fill: [200, 200]), class: "w-full h-full object-cover", alt: "#{product.name} - Image #{index + 1}" %>
+
+            <%= image_tag image.variant(resize_to_fill: [200, 200]), class: "w-full h-full object-cover", alt: image.blob.metadata[:alt_text] || "#{product.name} - Image #{index + 1}" %>
+
+            <!-- Selection checkbox -->
+            <div class="absolute top-2 right-2 z-20">
+              <%= check_box_tag "image_ids[]",
+                  image.id,
+                  false,
+                  data: { bulk_images_target: "checkbox", action: "change->bulk-images#toggle click->event#stopPropagation" },
+                  class: "h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded shadow-sm" %>
+            </div>
 
             <!-- Hover overlay -->
             <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"></div>
@@ -36,8 +102,15 @@
             <% end %>
 
             <!-- Position indicator -->
-            <div class="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded pointer-events-none" aria-label="Image position">
+            <div class="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded pointer-events-none position-indicator" aria-label="Image position">
               <%= index + 1 %>
+            </div>
+
+            <!-- Drag handle indicator -->
+            <div class="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded pointer-events-none">
+              <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+              </svg>
             </div>
           </div>
         <% end %>

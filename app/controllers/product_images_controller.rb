@@ -16,7 +16,7 @@
 #
 class ProductImagesController < ApplicationController
   before_action :set_product
-  before_action :set_image, only: [:destroy]
+  before_action :set_image, only: [:update, :destroy]
 
   # Maximum file size: 10MB
   MAX_FILE_SIZE = 10.megabytes
@@ -102,6 +102,76 @@ class ProductImagesController < ApplicationController
     end
   end
 
+  # PATCH /products/:product_id/images/reorder
+  # PATCH /products/:product_id/images/reorder.json
+  #
+  # Reorders product images based on drag-and-drop.
+  # Updates the attachment order in ActiveStorage.
+  #
+  # Parameters:
+  # - image_ids: Array of image attachment IDs in new order
+  #
+  def reorder
+    unless params[:image_ids].is_a?(Array)
+      respond_to do |format|
+        format.json { render json: { error: 'Invalid image_ids parameter' }, status: :unprocessable_entity }
+      end
+      return
+    end
+
+    # Reorder images by detaching and reattaching in the new order
+    # ActiveStorage doesn't have a position field, so we use attachment order
+    image_ids = params[:image_ids].map(&:to_i)
+
+    # Verify all image IDs belong to this product
+    current_image_ids = @product.images.map(&:id)
+    unless (image_ids - current_image_ids).empty?
+      respond_to do |format|
+        format.json { render json: { error: 'Invalid image IDs' }, status: :unprocessable_entity }
+      end
+      return
+    end
+
+    # Fetch images in new order
+    ordered_images = image_ids.map { |id| @product.images.find(id) }
+
+    # Detach all images and reattach in new order
+    @product.images.detach
+    ordered_images.each { |img| @product.images.attach(img.blob) }
+
+    respond_to do |format|
+      format.json { render json: { success: true, message: 'Images reordered successfully' }, status: :ok }
+    end
+  end
+
+  # PATCH /products/:product_id/images/:id
+  # PATCH /products/:product_id/images/:id.turbo_stream
+  #
+  # Updates image metadata (alt text, caption, description).
+  #
+  def update
+    # ActiveStorage attachments don't have direct metadata fields
+    # We'll store metadata in the blob's metadata hash
+    metadata = {}
+    metadata[:alt_text] = params[:alt_text] if params[:alt_text].present?
+    metadata[:caption] = params[:caption] if params[:caption].present?
+    metadata[:description] = params[:description] if params[:description].present?
+
+    @image.blob.update(metadata: @image.blob.metadata.merge(metadata))
+
+    respond_to do |format|
+      format.html { redirect_to @product, notice: 'Image metadata updated successfully.' }
+      format.turbo_stream do
+        flash.now[:notice] = 'Image metadata updated successfully.'
+        render turbo_stream: [
+          turbo_stream.replace('product_images', partial: 'products/images', locals: { product: @product }),
+          turbo_stream.update('flash', partial: 'shared/flash', locals: { flash: flash })
+        ]
+      end
+      format.json { render json: { success: true, metadata: metadata }, status: :ok }
+    end
+  end
+
   # DELETE /products/:product_id/images/:id
   # DELETE /products/:product_id/images/:id.turbo_stream
   #
@@ -121,6 +191,51 @@ class ProductImagesController < ApplicationController
         ]
       end
       format.json { head :no_content }
+    end
+  end
+
+  # DELETE /products/:product_id/images/bulk_destroy
+  # DELETE /products/:product_id/images/bulk_destroy.json
+  #
+  # Deletes multiple images at once.
+  #
+  # Parameters:
+  # - image_ids: Array of image attachment IDs to delete
+  #
+  def bulk_destroy
+    unless params[:image_ids].is_a?(Array)
+      respond_to do |format|
+        format.json { render json: { error: 'Invalid image_ids parameter' }, status: :unprocessable_entity }
+      end
+      return
+    end
+
+    image_ids = params[:image_ids].map(&:to_i)
+    deleted_count = 0
+
+    image_ids.each do |image_id|
+      begin
+        image = @product.images.find(image_id)
+        image.purge
+        deleted_count += 1
+      rescue ActiveRecord::RecordNotFound
+        # Skip invalid IDs
+        next
+      end
+    end
+
+    message = "#{deleted_count} #{deleted_count == 1 ? 'image' : 'images'} deleted successfully."
+
+    respond_to do |format|
+      format.html { redirect_to @product, notice: message }
+      format.turbo_stream do
+        flash.now[:notice] = message
+        render turbo_stream: [
+          turbo_stream.replace('product_images', partial: 'products/images', locals: { product: @product }),
+          turbo_stream.update('flash', partial: 'shared/flash', locals: { flash: flash })
+        ]
+      end
+      format.json { render json: { success: true, deleted: deleted_count, message: message }, status: :ok }
     end
   end
 

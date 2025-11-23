@@ -260,6 +260,266 @@ RSpec.describe '/products/:product_id/images', type: :request do
     end
   end
 
+  describe 'PATCH /products/:product_id/images/reorder' do
+    let!(:image1) do
+      product.images.attach(
+        io: File.open(Rails.root.join('spec', 'fixtures', 'files', 'test_image.png')),
+        filename: 'image1.png',
+        content_type: 'image/png'
+      )
+      product.images.first
+    end
+
+    let!(:image2) do
+      product.images.attach(
+        io: File.open(Rails.root.join('spec', 'fixtures', 'files', 'test_image.png')),
+        filename: 'image2.png',
+        content_type: 'image/png'
+      )
+      product.images.last
+    end
+
+    let!(:image3) do
+      product.images.attach(
+        io: File.open(Rails.root.join('spec', 'fixtures', 'files', 'test_image.png')),
+        filename: 'image3.png',
+        content_type: 'image/png'
+      )
+      product.images.last
+    end
+
+    it 'reorders images successfully' do
+      original_order = product.images.map(&:id)
+      new_order = [image3.id, image1.id, image2.id]
+
+      patch reorder_product_images_path(product, format: :json),
+            params: { image_ids: new_order }
+
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body)['success']).to be true
+    end
+
+    it 'updates image order in database' do
+      # Store blob IDs (these remain stable across detach/reattach)
+      blob1_id = image1.blob_id
+      blob2_id = image2.blob_id
+      blob3_id = image3.blob_id
+
+      # Reorder: move last to first
+      new_order = [image3.id, image1.id, image2.id]
+
+      patch reorder_product_images_path(product, format: :json),
+            params: { image_ids: new_order }
+
+      product.reload
+
+      # Verify the order changed by blob IDs (attachment IDs change on detach/reattach)
+      reordered_blob_ids = product.images.map(&:blob_id)
+      expect(reordered_blob_ids).to eq([blob3_id, blob1_id, blob2_id])
+    end
+
+    it 'returns error for invalid image IDs' do
+      patch reorder_product_images_path(product, format: :json),
+            params: { image_ids: [99999, 88888] }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(JSON.parse(response.body)['error']).to be_present
+    end
+
+    it 'returns error for non-array parameter' do
+      patch reorder_product_images_path(product, format: :json),
+            params: { image_ids: "not-an-array" }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
+
+    it 'prevents reordering images from other products' do
+      other_product = create(:product, company: company)
+      other_image = other_product.images.attach(
+        io: File.open(Rails.root.join('spec', 'fixtures', 'files', 'test_image.png')),
+        filename: 'other.png',
+        content_type: 'image/png'
+      )
+
+      patch reorder_product_images_path(product, format: :json),
+            params: { image_ids: [other_product.images.first.id, image1.id] }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
+  end
+
+  describe 'PATCH /products/:product_id/images/:id' do
+    let!(:attached_image) do
+      product.images.attach(
+        io: File.open(Rails.root.join('spec', 'fixtures', 'files', 'test_image.png')),
+        filename: 'test.png',
+        content_type: 'image/png'
+      )
+      product.images.first
+    end
+
+    it 'updates image alt text' do
+      patch product_image_path(product, attached_image, format: :json),
+            params: { alt_text: 'Product main view' }
+
+      expect(response).to have_http_status(:ok)
+      attached_image.blob.reload
+      expect(attached_image.blob.metadata[:alt_text]).to eq('Product main view')
+    end
+
+    it 'updates image caption' do
+      patch product_image_path(product, attached_image, format: :json),
+            params: { caption: 'Front view of product' }
+
+      expect(response).to have_http_status(:ok)
+      attached_image.blob.reload
+      expect(attached_image.blob.metadata[:caption]).to eq('Front view of product')
+    end
+
+    it 'updates image description' do
+      patch product_image_path(product, attached_image, format: :json),
+            params: { description: 'Detailed product image showing features' }
+
+      expect(response).to have_http_status(:ok)
+      attached_image.blob.reload
+      expect(attached_image.blob.metadata[:description]).to eq('Detailed product image showing features')
+    end
+
+    it 'updates multiple metadata fields at once' do
+      patch product_image_path(product, attached_image, format: :json),
+            params: {
+              alt_text: 'Product view',
+              caption: 'Main product',
+              description: 'High quality image'
+            }
+
+      expect(response).to have_http_status(:ok)
+      attached_image.blob.reload
+      expect(attached_image.blob.metadata[:alt_text]).to eq('Product view')
+      expect(attached_image.blob.metadata[:caption]).to eq('Main product')
+      expect(attached_image.blob.metadata[:description]).to eq('High quality image')
+    end
+
+    it 'preserves existing metadata when updating' do
+      attached_image.blob.update(metadata: { alt_text: 'Original alt' })
+
+      patch product_image_path(product, attached_image, format: :json),
+            params: { caption: 'New caption' }
+
+      attached_image.blob.reload
+      expect(attached_image.blob.metadata[:alt_text]).to eq('Original alt')
+      expect(attached_image.blob.metadata[:caption]).to eq('New caption')
+    end
+
+    it 'returns JSON success response' do
+      patch product_image_path(product, attached_image, format: :json),
+            params: { alt_text: 'Product view' }
+
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body)['success']).to be true
+      expect(JSON.parse(response.body)['metadata']).to be_present
+    end
+  end
+
+  describe 'DELETE /products/:product_id/images/bulk_destroy' do
+    let!(:image1) do
+      product.images.attach(
+        io: File.open(Rails.root.join('spec', 'fixtures', 'files', 'test_image.png')),
+        filename: 'image1.png',
+        content_type: 'image/png'
+      )
+      product.images.first
+    end
+
+    let!(:image2) do
+      product.images.attach(
+        io: File.open(Rails.root.join('spec', 'fixtures', 'files', 'test_image.png')),
+        filename: 'image2.png',
+        content_type: 'image/png'
+      )
+      product.images.last
+    end
+
+    let!(:image3) do
+      product.images.attach(
+        io: File.open(Rails.root.join('spec', 'fixtures', 'files', 'test_image.png')),
+        filename: 'image3.png',
+        content_type: 'image/png'
+      )
+      product.images.last
+    end
+
+    it 'deletes multiple images successfully' do
+      expect {
+        delete bulk_destroy_product_images_path(product, format: :json),
+               params: { image_ids: [image1.id, image2.id] }
+      }.to change { product.images.count }.by(-2)
+    end
+
+    it 'returns success message with count' do
+      delete bulk_destroy_product_images_path(product, format: :json),
+             params: { image_ids: [image1.id, image2.id] }
+
+      expect(response).to have_http_status(:ok)
+      json = JSON.parse(response.body)
+      expect(json['success']).to be true
+      expect(json['deleted']).to eq(2)
+      expect(json['message']).to include('2 images deleted')
+    end
+
+    it 'deletes single image' do
+      expect {
+        delete bulk_destroy_product_images_path(product, format: :json),
+               params: { image_ids: [image1.id] }
+      }.to change { product.images.count }.by(-1)
+    end
+
+    it 'returns singular message for single image' do
+      delete bulk_destroy_product_images_path(product, format: :json),
+             params: { image_ids: [image1.id] }
+
+      json = JSON.parse(response.body)
+      expect(json['message']).to include('1 image deleted')
+    end
+
+    it 'skips invalid image IDs' do
+      expect {
+        delete bulk_destroy_product_images_path(product, format: :json),
+               params: { image_ids: [image1.id, 99999, image2.id] }
+      }.to change { product.images.count }.by(-2)
+    end
+
+    it 'returns error for non-array parameter' do
+      delete bulk_destroy_product_images_path(product, format: :json),
+             params: { image_ids: "not-an-array" }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
+
+    it 'deletes all images when all IDs provided' do
+      image_ids = [image1.id, image2.id, image3.id]
+
+      expect {
+        delete bulk_destroy_product_images_path(product, format: :json),
+               params: { image_ids: image_ids }
+      }.to change { product.images.count }.from(3).to(0)
+    end
+
+    it 'prevents deleting images from other products' do
+      other_product = create(:product, company: company)
+      other_image = other_product.images.attach(
+        io: File.open(Rails.root.join('spec', 'fixtures', 'files', 'test_image.png')),
+        filename: 'other.png',
+        content_type: 'image/png'
+      )
+
+      expect {
+        delete bulk_destroy_product_images_path(product, format: :json),
+               params: { image_ids: [other_product.images.first.id] }
+      }.not_to change { other_product.images.count }
+    end
+  end
+
   describe 'authentication requirements' do
     before do
       # Reset authentication mocks
@@ -282,6 +542,24 @@ RSpec.describe '/products/:product_id/images', type: :request do
       )
 
       delete product_image_path(product, product.images.first)
+      expect(response).to redirect_to(auth_login_path)
+    end
+
+    it 'requires authentication for reorder' do
+      patch reorder_product_images_path(product, format: :json),
+            params: { image_ids: [1, 2, 3] }
+      expect(response).to redirect_to(auth_login_path)
+    end
+
+    it 'requires authentication for update metadata' do
+      patch product_image_path(product, 1, format: :json),
+            params: { alt_text: 'Test' }
+      expect(response).to redirect_to(auth_login_path)
+    end
+
+    it 'requires authentication for bulk_destroy' do
+      delete bulk_destroy_product_images_path(product, format: :json),
+             params: { image_ids: [1, 2] }
       expect(response).to redirect_to(auth_login_path)
     end
   end
