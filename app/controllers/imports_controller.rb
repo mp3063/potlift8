@@ -60,6 +60,39 @@ class ImportsController < ApplicationController
                 notice: 'Import started. This may take a few minutes.'
   end
 
+  # List import history
+  #
+  # GET /imports
+  #
+  def index
+    # For now, we'll use Redis to track recent imports
+    # In production, you might want to create an Import model
+    @imports = fetch_recent_imports
+  end
+
+  # Download CSV template for import type
+  #
+  # GET /imports/template/:type
+  #
+  def download_template
+    type = params[:type] || 'products'
+
+    csv_data = case type
+               when 'products'
+                 generate_product_template
+               when 'catalog_items'
+                 generate_catalog_items_template
+               else
+                 redirect_to new_import_path, alert: "Unknown import type: #{type}"
+                 return
+               end
+
+    send_data csv_data,
+              filename: "#{type}_import_template_#{Date.today}.csv",
+              type: 'text/csv',
+              disposition: 'attachment'
+  end
+
   # Show import progress
   #
   # GET /imports/:id/progress
@@ -105,5 +138,113 @@ class ImportsController < ApplicationController
     # Accept CSV files
     file.content_type.in?(['text/csv', 'text/plain', 'application/csv']) ||
       file.original_filename.end_with?('.csv')
+  end
+
+  # Fetch recent imports from Redis
+  #
+  # @return [Array<Hash>] Array of import data hashes
+  #
+  def fetch_recent_imports
+    redis = Redis.new(url: ENV.fetch('REDIS_URL', 'redis://localhost:6379/1'))
+
+    # Get all import progress keys (last 50)
+    keys = redis.keys('import_progress:*').last(50)
+
+    keys.map do |key|
+      data = redis.get(key)
+      next unless data
+
+      parsed = JSON.parse(data)
+      parsed['id'] = key.sub('import_progress:', '')
+      parsed
+    end.compact.reverse # Most recent first
+  rescue Redis::BaseError => e
+    Rails.logger.error("Redis error fetching imports: #{e.message}")
+    []
+  end
+
+  # Generate product CSV template
+  #
+  # @return [String] CSV template with headers and example row
+  #
+  def generate_product_template
+    CSV.generate do |csv|
+      # Headers
+      csv << [
+        'sku',
+        'name',
+        'description',
+        'ean',
+        'product_type',
+        'product_status',
+        'restock_level',
+        'attr_price',
+        'attr_weight',
+        'attr_color'
+      ]
+
+      # Example row
+      csv << [
+        'EXAMPLE-001',
+        'Example Product',
+        'This is an example product for import',
+        '1234567890123',
+        'sellable',
+        'active',
+        '10',
+        '19.99',
+        '500',
+        'Blue'
+      ]
+
+      # Instructions row
+      csv << [
+        '# SKU is required and must be unique',
+        '# Name is required',
+        '# Description is optional',
+        '# EAN is optional (barcode)',
+        '# product_type: sellable, configurable, or bundle',
+        '# product_status: draft, active, discontinued',
+        '# restock_level: minimum inventory level',
+        '# attr_* columns are product attributes',
+        '',
+        ''
+      ]
+    end
+  end
+
+  # Generate catalog items CSV template
+  #
+  # @return [String] CSV template with headers and example row
+  #
+  def generate_catalog_items_template
+    CSV.generate do |csv|
+      # Headers
+      csv << [
+        'product_sku',
+        'catalog_code',
+        'status',
+        'attr_price',
+        'attr_special_price'
+      ]
+
+      # Example row
+      csv << [
+        'EXAMPLE-001',
+        'WEB-EUR',
+        'active',
+        '24.99',
+        '19.99'
+      ]
+
+      # Instructions row
+      csv << [
+        '# product_sku: SKU of existing product (required)',
+        '# catalog_code: Code of existing catalog (required)',
+        '# status: active or inactive',
+        '# attr_* columns are catalog-specific attribute overrides',
+        ''
+      ]
+    end
   end
 end

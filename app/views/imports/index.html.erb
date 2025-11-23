@@ -1,0 +1,167 @@
+<div class="px-4 sm:px-6 lg:px-8 py-8">
+  <!-- Page Header -->
+  <div class="sm:flex sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Import History</h1>
+      <p class="mt-2 text-sm text-gray-700">
+        View all past imports and their status
+      </p>
+    </div>
+    <div class="mt-4 sm:mt-0">
+      <%= render Ui::ButtonComponent.new(
+        variant: :primary,
+        href: new_import_path,
+        icon: '<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>',
+        icon_position: :left
+      ) do %>
+        New Import
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Import History Table -->
+  <div class="mt-8">
+    <%= render Ui::CardComponent.new do |card| %>
+      <% if @imports.empty? %>
+        <%= render Shared::EmptyStateComponent.new(
+          title: "No imports yet",
+          description: "Start by uploading a CSV file to import products or catalog items.",
+          action_text: "Import Products",
+          action_path: new_import_path
+        ) %>
+      <% else %>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Import ID
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Type
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Total Rows
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Success
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Failed
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Started
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <% @imports.each do |import| %>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <%= import['id']&.truncate(12, omission: '...') %>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <%= import['import_type']&.titleize || 'Products' %>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <% status = import['status'] || 'unknown' %>
+                    <% variant = case status
+                                 when 'completed' then :success
+                                 when 'processing' then :info
+                                 when 'failed', 'error' then :danger
+                                 else :warning
+                                 end %>
+                    <%= render Ui::BadgeComponent.new(variant: variant, dot: true) do %>
+                      <%= status.titleize %>
+                    <% end %>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <%= import['total_rows'] || 0 %>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
+                    <%= import['success_count'] || 0 %>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-medium">
+                    <%= import['failed_count'] || 0 %>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <% if import['started_at'] %>
+                      <%= Time.parse(import['started_at']).strftime('%Y-%m-%d %H:%M') rescue 'N/A' %>
+                    <% else %>
+                      N/A
+                    <% end %>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div class="flex items-center gap-2">
+                      <%= link_to import_progress_path(import['id']),
+                          class: "text-blue-600 hover:text-blue-900" do %>
+                        View Details
+                      <% end %>
+
+                      <% if import['failed_count']&.positive? %>
+                        <span class="text-gray-300">|</span>
+                        <%= link_to "#",
+                            class: "text-red-600 hover:text-red-900",
+                            title: "Download errors (coming soon)" do %>
+                          Errors
+                        <% end %>
+                      <% end %>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="px-6 py-4 border-t border-gray-200 bg-gray-50">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+            <div>
+              <span class="text-gray-500">Total Imports:</span>
+              <span class="ml-2 font-medium text-gray-900"><%= @imports.count %></span>
+            </div>
+            <div>
+              <span class="text-gray-500">Completed:</span>
+              <span class="ml-2 font-medium text-green-600">
+                <%= @imports.count { |i| i['status'] == 'completed' } %>
+              </span>
+            </div>
+            <div>
+              <span class="text-gray-500">Failed:</span>
+              <span class="ml-2 font-medium text-red-600">
+                <%= @imports.count { |i| i['status'] == 'failed' || i['status'] == 'error' } %>
+              </span>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+
+  <!-- Help Text -->
+  <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+    <div class="flex">
+      <div class="flex-shrink-0">
+        <svg class="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" />
+        </svg>
+      </div>
+      <div class="ml-3">
+        <h3 class="text-sm font-medium text-blue-800">About Import History</h3>
+        <div class="mt-2 text-sm text-blue-700">
+          <p>
+            Import history is stored temporarily in Redis. Recent imports (last 50) are shown here.
+            For long-term audit trails, consider exporting this data or enabling database-backed import tracking.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

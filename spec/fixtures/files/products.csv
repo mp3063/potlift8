@@ -1,0 +1,4 @@
+sku,name,description,ean,product_type,product_status,restock_level,attr_price,attr_weight
+TEST-001,Test Product 1,Test description 1,1234567890123,sellable,active,10,19.99,500
+TEST-002,Test Product 2,Test description 2,1234567890124,sellable,active,5,29.99,750
+TEST-003,Test Product 3,Test description 3,1234567890125,configurable,draft,0,39.99,1000
