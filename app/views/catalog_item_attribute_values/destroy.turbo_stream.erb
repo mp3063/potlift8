@@ -18,11 +18,11 @@
   </div>
 <% end %>
 
-<%# Update the tab badge counter %>
+<%# Update the tab badge counter (using counter cache for consistency) %>
 <%= turbo_stream.update "tab-#{@catalog_item.catalog.code}-badge" do %>
-  <% if @catalog_item.catalog_item_attribute_values.any? %>
+  <% if @catalog_item.catalog_item_attribute_values_count > 0 %>
     <span id="tab-<%= @catalog_item.catalog.code %>-badge" class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
-      <%= @catalog_item.catalog_item_attribute_values.count %>
+      <%= @catalog_item.catalog_item_attribute_values_count %>
     </span>
   <% end %>
 <% end %>
