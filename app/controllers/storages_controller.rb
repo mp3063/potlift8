@@ -106,10 +106,7 @@ class StoragesController < ApplicationController
         format.turbo_stream { flash.now[:notice] = 'Storage location created successfully.' }
       end
     else
-      respond_to do |format|
-        format.html { render :new, status: :unprocessable_entity }
-        format.turbo_stream { render :new, status: :unprocessable_entity }
-      end
+      render :new, status: :unprocessable_entity
     end
   end
 
@@ -126,10 +123,7 @@ class StoragesController < ApplicationController
         format.turbo_stream { flash.now[:notice] = 'Storage location updated successfully.' }
       end
     else
-      respond_to do |format|
-        format.html { render :edit, status: :unprocessable_entity }
-        format.turbo_stream { render :edit, status: :unprocessable_entity }
-      end
+      render :edit, status: :unprocessable_entity
     end
   end
 
@@ -167,11 +161,11 @@ class StoragesController < ApplicationController
   private
 
   # Set the storage for show, edit, update, destroy, inventory actions
-  # Uses code as parameter (via to_param)
+  # Uses code as parameter (via to_param and routes param: :code)
   # Ensures storage belongs to current company
   # Raises ActiveRecord::RecordNotFound if storage not found or doesn't belong to company
   def set_storage
-    @storage = current_potlift_company.storages.find_by!(code: params[:id])
+    @storage = current_potlift_company.storages.find_by!(code: params[:code] || params[:id])
   end
 
   # Strong parameters for storage creation/update
