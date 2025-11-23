@@ -38,7 +38,7 @@ class ProductsController < ApplicationController
     @products = current_potlift_company.products
                                        .with_labels_only
 
-    # Load labels for filter dropdown
+    # Load labels for filter dropdown and bulk label editor
     load_filter_labels
 
     # Apply filtering
@@ -280,14 +280,21 @@ class ProductsController < ApplicationController
   #
   # Parameters:
   # - product_ids: Array of product IDs to update
-  # - label_ids: Array of label IDs to assign
+  # - label_ids: Array of label IDs to add or remove
+  # - action_type: "add" or "remove" (default: "add")
   #
   def bulk_update_labels
     product_ids = params[:product_ids] || []
-    label_ids = params[:label_ids] || []
+    label_ids = (params[:label_ids] || []).compact.map(&:to_i)
+    action_type = params[:action_type] || "add"
 
     if product_ids.empty?
       redirect_to products_path, alert: "No products selected."
+      return
+    end
+
+    if label_ids.empty?
+      redirect_to products_path, alert: "No labels selected."
       return
     end
 
@@ -296,12 +303,23 @@ class ProductsController < ApplicationController
 
     # Wrap in transaction to ensure atomicity
     ActiveRecord::Base.transaction do
-      current_potlift_company.products.where(id: product_ids).includes(:labels).find_each do |product|
-        product.label_ids = label_ids
-        if product.save
-          successful_count += 1
-        else
-          failed_products << "#{product.sku} (#{product.errors.full_messages.join(', ')})"
+      current_potlift_company.products.where(id: product_ids).includes(:labels, :catalogs, :superproducts).find_each do |product|
+        begin
+          if action_type == "remove"
+            # Remove specified labels from product
+            product.label_ids = product.label_ids - label_ids
+          else
+            # Add specified labels to product (avoiding duplicates)
+            product.label_ids = (product.label_ids + label_ids).uniq
+          end
+
+          if product.save
+            successful_count += 1
+          else
+            failed_products << "#{product.sku} (#{product.errors.full_messages.join(', ')})"
+          end
+        rescue StandardError => e
+          failed_products << "#{product.sku} (#{e.message})"
         end
       end
 
@@ -310,12 +328,13 @@ class ProductsController < ApplicationController
     end
 
     # Provide detailed feedback
+    action_text = action_type == "remove" ? "removed from" : "added to"
     if failed_products.any?
       redirect_to products_path,
                   alert: "Failed to update labels. Errors: #{failed_products.join('; ')}"
     else
       redirect_to products_path,
-                  notice: "Labels updated for #{successful_count} #{'product'.pluralize(successful_count)}."
+                  notice: "Labels #{action_text} #{successful_count} #{'product'.pluralize(successful_count)} successfully."
     end
   rescue StandardError => e
     redirect_to products_path, alert: "Failed to update labels: #{e.message}"

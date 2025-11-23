@@ -7,21 +7,24 @@ import { Controller } from "@hotwired/stimulus"
  * - Checkbox selection (individual and select all)
  * - Bulk delete with confirmation
  * - Bulk CSV export
+ * - Bulk label editing
  * - Toolbar visibility based on selection
  *
  * Targets:
  * - checkbox: Individual product checkboxes
  * - toolbar: Bulk actions toolbar (shown when items selected)
  * - count: Display count of selected items
+ * - labelEditorTrigger: Trigger button for label editor modal
  *
  * Actions:
  * - toggleAll: Select/deselect all products
  * - toggleCheckbox: Toggle individual product selection
  * - bulkDelete: Delete selected products
  * - bulkExport: Export selected products to CSV
+ * - openLabelEditor: Open bulk label editor modal
  */
 export default class extends Controller {
-  static targets = ["checkbox", "toolbar", "count"]
+  static targets = ["checkbox", "toolbar", "count", "labelEditorTrigger"]
 
   /**
    * Initialize controller
@@ -184,6 +187,35 @@ export default class extends Controller {
 
     const ids = Array.from(this.selectedIds).join(",")
     window.location.href = `/products.csv?ids=${ids}`
+  }
+
+  /**
+   * Open bulk label editor modal
+   * Passes selected product IDs to the label editor controller
+   */
+  openLabelEditor() {
+    if (this.selectedIds.size === 0) {
+      alert("Please select at least one product")
+      return
+    }
+
+    // Find the bulk label editor controller
+    const labelEditorController = this.application.getControllerForElementAndIdentifier(
+      document.querySelector('[data-controller*="bulk-label-editor"]'),
+      "bulk-label-editor"
+    )
+
+    if (labelEditorController) {
+      // Pass selected product IDs to the label editor
+      labelEditorController.setProductIds(Array.from(this.selectedIds))
+
+      // Trigger the modal to open
+      if (this.hasLabelEditorTriggerTarget) {
+        this.labelEditorTriggerTarget.click()
+      }
+    } else {
+      console.error("Bulk label editor controller not found")
+    }
   }
 
   /**

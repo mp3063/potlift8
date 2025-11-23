@@ -1,0 +1,127 @@
+<div data-controller="bulk-label-editor">
+  <%= render Ui::ModalComponent.new(size: :lg, modal_id: "bulk_label_editor") do |modal| %>
+    <% modal.with_trigger do %>
+      <button
+        type="button"
+        id="bulk-label-editor-trigger"
+        class="hidden"
+        data-bulk-actions-target="labelEditorTrigger">
+        Edit Labels
+      </button>
+    <% end %>
+
+    <% modal.with_header do %>
+      <%= tag_icon %>
+      <span class="ml-2">Edit Labels for Selected Products</span>
+    <% end %>
+
+    <%= form_with url: bulk_update_labels_products_path, method: :post, data: { bulk_label_editor_target: "form" }, class: "space-y-6" do |f| %>
+      <!-- Hidden input for product IDs (populated by Stimulus controller) -->
+      <div data-bulk-label-editor-target="productIds"></div>
+
+      <div>
+        <p class="text-sm text-gray-600 mb-4">
+          Select labels to add or remove from <strong data-bulk-actions-target="count">0</strong> selected product(s).
+        </p>
+
+        <div class="space-y-4">
+          <!-- Action Type Selection -->
+          <div class="flex gap-4">
+            <label class="flex items-center cursor-pointer">
+              <%= radio_button_tag :label_action, "add", true,
+                  class: "h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-600",
+                  data: { bulk_label_editor_target: "actionType" } %>
+              <span class="ml-2 text-sm font-medium text-gray-900">Add labels to products</span>
+            </label>
+            <label class="flex items-center cursor-pointer">
+              <%= radio_button_tag :label_action, "remove", false,
+                  class: "h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-600",
+                  data: { bulk_label_editor_target: "actionType" } %>
+              <span class="ml-2 text-sm font-medium text-gray-900">Remove labels from products</span>
+            </label>
+          </div>
+
+          <!-- Label Selection -->
+          <div class="border border-gray-200 rounded-lg max-h-96 overflow-y-auto">
+            <% if labels.any? %>
+              <div class="divide-y divide-gray-200">
+                <% labels.each do |label| %>
+                  <!-- Root Label -->
+                  <label class="flex items-center px-4 py-3 hover:bg-gray-50 cursor-pointer">
+                    <%= check_box_tag "label_ids[]", label.id, false,
+                        class: "h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600",
+                        id: "label_#{label.id}",
+                        data: { bulk_label_editor_target: "labelCheckbox" } %>
+                    <span class="ml-3 flex-1">
+                      <span class="text-sm font-medium text-gray-900"><%= label.name %></span>
+                      <% if label.description.present? %>
+                        <span class="block text-xs text-gray-500"><%= label.description %></span>
+                      <% end %>
+                    </span>
+                    <% if label.info && label.info['color'] %>
+                      <span class="w-4 h-4 rounded-full ml-2" style="background-color: <%= label.info['color'] %>"></span>
+                    <% end %>
+                  </label>
+
+                  <!-- Sublabels (if any) -->
+                  <% if label.sublabels.any? %>
+                    <% label.sublabels.each do |sublabel| %>
+                      <label class="flex items-center px-4 py-3 pl-10 hover:bg-gray-50 cursor-pointer">
+                        <%= check_box_tag "label_ids[]", sublabel.id, false,
+                            class: "h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600",
+                            id: "label_#{sublabel.id}",
+                            data: { bulk_label_editor_target: "labelCheckbox" } %>
+                        <span class="ml-3 flex-1">
+                          <span class="text-sm text-gray-700"><%= sublabel.name %></span>
+                          <% if sublabel.description.present? %>
+                            <span class="block text-xs text-gray-500"><%= sublabel.description %></span>
+                          <% end %>
+                        </span>
+                        <% if sublabel.info && sublabel.info['color'] %>
+                          <span class="w-4 h-4 rounded-full ml-2" style="background-color: <%= sublabel.info['color'] %>"></span>
+                        <% end %>
+                      </label>
+                    <% end %>
+                  <% end %>
+                <% end %>
+              </div>
+            <% else %>
+              <div class="px-4 py-8 text-center">
+                <p class="text-sm text-gray-500">No labels available. Create labels first to categorize products.</p>
+                <%= link_to "Create Label", new_label_path, class: "mt-2 inline-block text-sm font-medium text-blue-600 hover:text-blue-700" %>
+              </div>
+            <% end %>
+          </div>
+
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-gray-600">
+              <strong data-bulk-label-editor-target="selectedLabelCount">0</strong> label(s) selected
+            </span>
+            <button
+              type="button"
+              data-action="click->bulk-label-editor#clearLabels"
+              class="text-blue-600 hover:text-blue-700 font-medium">
+              Clear selection
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <% modal.with_footer do %>
+        <%= render Ui::ButtonComponent.new(
+          variant: :secondary,
+          data: { action: "click->modal#close" }
+        ) do %>
+          Cancel
+        <% end %>
+        <%= render Ui::ButtonComponent.new(
+          variant: :primary,
+          type: "submit",
+          data: { bulk_label_editor_target: "submitButton" }
+        ) do %>
+          Apply Changes
+        <% end %>
+      <% end %>
+    <% end %>
+  <% end %>
+</div>
