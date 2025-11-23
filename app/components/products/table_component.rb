@@ -91,20 +91,21 @@ module Products
 
     attr_reader :products, :pagy, :current_sort, :current_direction, :search_query, :has_filters
 
-    # Generates a sortable column header link
+    # Generates a sortable column header link with integrated sort icon
     #
     # Creates a link that toggles sort direction when clicked. If the column
     # is already sorted, clicking again reverses the direction. Uses Turbo Frame
-    # to update the table without full page reload.
+    # to update the table without full page reload. The sort icon is integrated
+    # inside the link and always visible to indicate sortability.
     #
     # @param column [String] The column name to sort by (sku, name, created_at)
     # @param label [String] The display text for the column header
     #
-    # @return [String] HTML link element with sort functionality
+    # @return [String] HTML link element with sort functionality and icon
     #
     # @example
     #   sort_link('sku', 'Product SKU')
-    #   # => <a href="/products?sort=sku&direction=asc" data-turbo-frame="products_table">Product SKU</a>
+    #   # => <a href="/products?sort=sku&direction=asc">Product SKU <svg>...</svg></a>
     def sort_link(column, label)
       direction = if current_sort == column
                     current_direction == 'asc' ? 'desc' : 'asc'
@@ -113,23 +114,26 @@ module Products
                   end
 
       link_to(
-        label,
         products_path(sort: column, direction: direction),
         class: sort_link_classes(column),
         data: { turbo_frame: 'products_table' }
-      )
+      ) do
+        content_tag(:span, label, class: "flex-1") +
+        sort_icon(column)
+      end
     end
 
     # Builds CSS classes for sort link based on active state
     #
     # Applies different styling for the currently sorted column versus
-    # sortable but not active columns.
+    # sortable but not active columns. Link is flex container with
+    # space-between to position icon on the right.
     #
     # @param column [String] The column name
     #
     # @return [String] CSS class string with appropriate styling
     def sort_link_classes(column)
-      base = "group inline-flex items-center gap-x-1"
+      base = "group inline-flex items-center justify-between w-full gap-x-2"
 
       if current_sort == column
         "#{base} text-blue-600 font-semibold"
@@ -138,21 +142,31 @@ module Products
       end
     end
 
-    # Generates sort direction icon (chevron up/down)
+    # Generates sort direction icon (chevron up/down or neutral unsorted icon)
     #
-    # Returns appropriate icon based on current sort direction.
-    # Only shown for the currently sorted column.
+    # Returns appropriate icon based on current sort direction. Always shows
+    # an icon for sortable columns to indicate sortability:
+    # - Active column: Chevron down (asc A→Z) or up (desc Z→A) in blue
+    # - Inactive column: Neutral unsorted icon in gray
+    #
+    # Visual logic: Arrow points where the extreme values are positioned
+    # - DOWN arrow (↓) = A/0 at top (ascending)
+    # - UP arrow (↑) = Z/9 at top (descending)
     #
     # @param column [String] The column name
     #
-    # @return [String, nil] SVG icon HTML or nil if column not sorted
+    # @return [String] SVG icon HTML
     def sort_icon(column)
-      return unless current_sort == column
-
-      if current_direction == 'asc'
-        chevron_up_icon
+      if current_sort == column
+        # Active sort - show directional arrow
+        if current_direction == 'asc'
+          chevron_down_icon  # DOWN arrow for ascending (A at top)
+        else
+          chevron_up_icon    # UP arrow for descending (Z at top)
+        end
       else
-        chevron_down_icon
+        # Inactive - show neutral unsorted icon
+        unsorted_icon
       end
     end
 
@@ -187,10 +201,25 @@ module Products
       </svg>'.html_safe
     end
 
-    # Chevron down icon SVG
+    # Chevron down icon SVG (descending sort indicator)
+    #
+    # @return [String] HTML-safe SVG markup
     def chevron_down_icon
       '<svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
         <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+      </svg>'.html_safe
+    end
+
+    # Unsorted icon SVG (neutral sort indicator for inactive columns)
+    #
+    # Shows a dual-arrow icon to indicate column is sortable but not currently sorted.
+    # Uses opacity-40 to make it subtle and non-distracting.
+    #
+    # @return [String] HTML-safe SVG markup
+    def unsorted_icon
+      '<svg class="h-4 w-4 opacity-40 group-hover:opacity-100 transition-opacity" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.638l3.96-4.158a.75.75 0 111.08 1.04l-5.25 5.5a.75.75 0 01-1.08 0l-5.25-5.5a.75.75 0 111.08-1.04l3.96 4.158V3.75A.75.75 0 0110 3z" clip-rule="evenodd" />
+        <path fill-rule="evenodd" d="M10 17a.75.75 0 01-.75-.75V5.612L5.29 9.77a.75.75 0 01-1.08-1.04l5.25-5.5a.75.75 0 011.08 0l5.25 5.5a.75.75 0 11-1.08 1.04l-3.96-4.158v10.638A.75.75 0 0110 17z" clip-rule="evenodd" opacity="0.3" />
       </svg>'.html_safe
     end
 

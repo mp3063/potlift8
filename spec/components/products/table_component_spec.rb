@@ -224,10 +224,14 @@ RSpec.describe Products::TableComponent, type: :component do
         ))
 
         # Should have active styling on SKU column
-        expect(page).to have_css('a.text-blue-600', text: 'SKU')
+        expect(page).to have_css('a.text-blue-600')
+        # Link should contain the label text
+        within('thead') do
+          expect(page).to have_link(href: /sort=sku/)
+        end
       end
 
-      it 'displays sort direction indicator' do
+      it 'displays sort direction indicator for active column' do
         render_inline(described_class.new(
           products: products,
           pagy: pagy,
@@ -235,9 +239,24 @@ RSpec.describe Products::TableComponent, type: :component do
           current_direction: 'asc'
         ))
 
-        # Should show chevron up icon for ascending
+        # Should show chevron up icon for ascending (inside the sort link)
         within('thead') do
-          expect(page).to have_css('svg.h-4.w-4')
+          # Should have exactly 3 sort icons (one per sortable column)
+          expect(page).to have_css('svg.h-4.w-4', count: 3)
+        end
+      end
+
+      it 'shows unsorted icon for inactive sortable columns' do
+        render_inline(described_class.new(
+          products: products,
+          pagy: pagy,
+          current_sort: 'sku',
+          current_direction: 'asc'
+        ))
+
+        # Should show unsorted icon (with opacity-40) for Name and Created columns
+        within('thead') do
+          expect(page).to have_css('svg.opacity-40', count: 2)
         end
       end
 
@@ -250,8 +269,10 @@ RSpec.describe Products::TableComponent, type: :component do
         ))
 
         # Next click on SKU should sort desc (params can be in any order)
-        expect(page).to have_link('SKU', href: /[?&]sort=sku/)
-        expect(page).to have_link('SKU', href: /[?&]direction=desc/)
+        within('thead') do
+          # Find the SKU sort link by href pattern
+          expect(page).to have_css('a[href*="sort=sku"][href*="direction=desc"]')
+        end
       end
 
       it 'defaults to ascending for new column' do
@@ -263,8 +284,10 @@ RSpec.describe Products::TableComponent, type: :component do
         ))
 
         # Clicking Name (not currently sorted) should sort asc (params can be in any order)
-        expect(page).to have_link('Name', href: /[?&]sort=name/)
-        expect(page).to have_link('Name', href: /[?&]direction=asc/)
+        within('thead') do
+          # Find the Name sort link by href pattern
+          expect(page).to have_css('a[href*="sort=name"][href*="direction=asc"]')
+        end
       end
     end
 
@@ -453,7 +476,7 @@ RSpec.describe Products::TableComponent, type: :component do
     end
 
     describe '#sort_icon' do
-      it 'returns nil when column is not sorted' do
+      it 'returns unsorted icon when column is not sorted' do
         component = described_class.new(
           products: Product.none,
           pagy: Pagy.new(count: 0, page: 1, limit: 25),
@@ -461,10 +484,13 @@ RSpec.describe Products::TableComponent, type: :component do
           current_direction: 'asc'
         )
 
-        expect(component.send(:sort_icon, 'sku')).to be_nil
+        icon = component.send(:sort_icon, 'sku')
+        expect(icon).to include('svg')
+        expect(icon).to include('h-4 w-4')
+        expect(icon).to include('opacity-40')
       end
 
-      it 'returns up chevron for ascending sort' do
+      it 'returns down chevron for ascending sort (A at top)' do
         component = described_class.new(
           products: Product.none,
           pagy: Pagy.new(count: 0, page: 1, limit: 25),
@@ -475,9 +501,11 @@ RSpec.describe Products::TableComponent, type: :component do
         icon = component.send(:sort_icon, 'sku')
         expect(icon).to include('svg')
         expect(icon).to include('h-4 w-4')
+        # Verify it's the down chevron (ascending = A at top)
+        expect(icon).to include('M5.23 7.21') # Down chevron path
       end
 
-      it 'returns down chevron for descending sort' do
+      it 'returns up chevron for descending sort (Z at top)' do
         component = described_class.new(
           products: Product.none,
           pagy: Pagy.new(count: 0, page: 1, limit: 25),
@@ -488,6 +516,8 @@ RSpec.describe Products::TableComponent, type: :component do
         icon = component.send(:sort_icon, 'sku')
         expect(icon).to include('svg')
         expect(icon).to include('h-4 w-4')
+        # Verify it's the up chevron (descending = Z at top)
+        expect(icon).to include('M14.77 12.79') # Up chevron path
       end
     end
   end

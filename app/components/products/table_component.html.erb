@@ -6,13 +6,11 @@
           <th scope="col" class="px-6 py-3 text-left">
             <input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600" data-action="change->bulk-actions#toggleAll" aria-label="Select all products">
           </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
             <%= sort_link('sku', 'SKU') %>
-            <%= sort_icon('sku') %>
           </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
             <%= sort_link('name', 'Name') %>
-            <%= sort_icon('name') %>
           </th>
           <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
             Type
@@ -26,9 +24,8 @@
           <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
             Status
           </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
             <%= sort_link('created_at', 'Created') %>
-            <%= sort_icon('created_at') %>
           </th>
           <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
             Actions
