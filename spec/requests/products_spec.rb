@@ -863,7 +863,7 @@ RSpec.describe '/products', type: :request do
       patch toggle_active_product_path(product)
 
       product.reload
-      expect(product.product_status).to eq('draft')
+      expect(product.product_status).to eq('disabled')
     end
 
     it 'redirects to product show page with success message for activation' do
@@ -888,6 +888,106 @@ RSpec.describe '/products', type: :request do
       expect {
         patch toggle_active_product_path(other_company_product)
       }.to raise_error(ActiveRecord::RecordNotFound)
+    end
+  end
+
+  describe 'DELETE /products/:id/remove_from_catalog' do
+    let(:product) { create(:product, company: company) }
+    let(:catalog) { create(:catalog, company: company) }
+    let(:other_catalog) { create(:catalog, company: company) }
+    let(:other_company_product) { create(:product, company: other_company) }
+
+    before do
+      # Add product to catalog
+      create(:catalog_item, product: product, catalog: catalog)
+    end
+
+    it 'removes the catalog_item association' do
+      expect {
+        delete remove_from_catalog_product_path(product), params: { catalog_id: catalog.id }
+      }.to change { product.catalog_items.count }.by(-1)
+    end
+
+    it 'removes the correct catalog_item' do
+      delete remove_from_catalog_product_path(product), params: { catalog_id: catalog.id }
+
+      product.reload
+      expect(product.catalog_items.where(catalog_id: catalog.id)).not_to exist
+    end
+
+    it 'does NOT delete the product itself (CRITICAL BUG FIX)' do
+      product_id = product.id
+
+      expect {
+        delete remove_from_catalog_product_path(product), params: { catalog_id: catalog.id }
+      }.not_to change { Product.count }
+
+      # Verify product still exists
+      expect(Product.find_by(id: product_id)).to be_present
+      expect(Product.find_by(id: product_id).id).to eq(product_id)
+    end
+
+    it 'only removes the specified catalog, not all catalogs' do
+      # Add product to second catalog
+      create(:catalog_item, product: product, catalog: other_catalog)
+
+      expect {
+        delete remove_from_catalog_product_path(product), params: { catalog_id: catalog.id }
+      }.to change { product.catalog_items.count }.from(2).to(1)
+
+      # Verify the other catalog_item still exists
+      product.reload
+      expect(product.catalog_items.where(catalog_id: other_catalog.id)).to exist
+    end
+
+    it 'redirects to product show page with success message' do
+      delete remove_from_catalog_product_path(product), params: { catalog_id: catalog.id }
+
+      expect(response).to redirect_to(product)
+      follow_redirect!
+      expect(response.body).to include("Product removed from #{catalog.name} successfully")
+    end
+
+    it 'shows error when catalog_id is missing' do
+      delete remove_from_catalog_product_path(product)
+
+      expect(response).to redirect_to(product)
+      follow_redirect!
+      expect(response.body).to include('Catalog ID is required')
+    end
+
+    it 'shows error when product is not in the specified catalog' do
+      different_catalog = create(:catalog, company: company)
+
+      delete remove_from_catalog_product_path(product), params: { catalog_id: different_catalog.id }
+
+      expect(response).to redirect_to(product)
+      follow_redirect!
+      expect(response.body).to include('Product is not in this catalog')
+    end
+
+    it 'prevents removing from other company products' do
+      expect {
+        delete remove_from_catalog_product_path(other_company_product), params: { catalog_id: catalog.id }
+      }.to raise_error(ActiveRecord::RecordNotFound)
+    end
+
+    context 'with Turbo Stream request' do
+      it 'returns a turbo_stream response' do
+        delete remove_from_catalog_product_path(product),
+               params: { catalog_id: catalog.id },
+               headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+        expect(response.content_type).to include('turbo-stream')
+      end
+
+      it 'returns the correct turbo-frame target in response' do
+        delete remove_from_catalog_product_path(product),
+               params: { catalog_id: catalog.id },
+               headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+        expect(response.body).to include("catalog-tabs-#{product.id}")
+      end
     end
   end
 
