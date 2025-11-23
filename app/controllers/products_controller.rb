@@ -446,34 +446,50 @@ class ProductsController < ApplicationController
   # PATCH /products/:id/toggle_active
   # PATCH /products/:id/toggle_active.turbo_stream
   #
-  # Toggles the product's active status.
-  # If active, sets to draft. If not active, sets to active.
+  # Toggles the product's active status using state machine transitions.
+  # If active, disables the product. If not active, activates the product.
   #
   def toggle_active
-    if @product.active?
-      @product.product_status = :draft
-      status_text = "deactivated"
-    else
-      @product.product_status = :active
-      status_text = "activated"
-    end
+    begin
+      if @product.active?
+        # Deactivate by disabling the product
+        @product.disable!
+        status_text = "deactivated"
+      else
+        # Activate the product (may fail if validation guards fail)
+        @product.activate!
+        status_text = "activated"
+      end
 
-    if @product.save
       respond_to do |format|
         format.html { redirect_to @product, notice: "Product #{status_text} successfully." }
         format.turbo_stream { flash.now[:notice] = "Product #{status_text} successfully." }
       end
-    else
+    rescue AASM::InvalidTransition => e
+      # Handle state machine transition failures (e.g., missing required attributes)
+      error_message = if @product.active?
+                        "Cannot deactivate product: #{e.message}"
+                      else
+                        "Cannot activate product. Ensure all mandatory attributes are set and product structure is valid."
+                      end
+
       respond_to do |format|
-        format.html { redirect_to @product, alert: "Failed to update product: #{@product.errors.full_messages.join(', ')}" }
+        format.html { redirect_to @product, alert: error_message }
         format.turbo_stream do
-          flash.now[:alert] = "Failed to update product: #{@product.errors.full_messages.join(', ')}"
+          flash.now[:alert] = error_message
+          render :show, status: :unprocessable_entity
+        end
+      end
+    rescue ActiveRecord::RecordInvalid => e
+      # Handle validation failures
+      respond_to do |format|
+        format.html { redirect_to @product, alert: "Failed to update product: #{e.message}" }
+        format.turbo_stream do
+          flash.now[:alert] = "Failed to update product: #{e.message}"
           render :show, status: :unprocessable_entity
         end
       end
     end
-  rescue ActiveRecord::RecordInvalid => e
-    redirect_to products_path, alert: "Failed to toggle product status: #{e.message}"
   end
 
   # POST /products/:id/add_to_catalog

@@ -41,7 +41,7 @@ module Products
     #
     # @return [String] Status label
     def status_text
-      product.active? ? "Active" : "Inactive"
+      product.active? ? "Active" : product.product_status.humanize
     end
 
     # Returns status text color class

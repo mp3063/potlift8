@@ -38,10 +38,21 @@
 
   <!-- Toggle Button -->
   <div class="mt-6">
-    <%= button_to toggle_active_product_path(product),
-        method: :patch,
-        class: toggle_button_classes do %>
-      <%= toggle_button_text %>
+    <% if product.active? %>
+      <%= button_to toggle_active_product_path(product),
+          method: :patch,
+          class: toggle_button_classes,
+          data: {
+            turbo_confirm: "Are you sure you want to deactivate this product?"
+          } do %>
+        <%= toggle_button_text %>
+      <% end %>
+    <% else %>
+      <%= button_to toggle_active_product_path(product),
+          method: :patch,
+          class: toggle_button_classes do %>
+        <%= toggle_button_text %>
+      <% end %>
     <% end %>
   </div>
 <% end %>
