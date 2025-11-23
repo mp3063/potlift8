@@ -64,26 +64,32 @@ module Products
     # @param pagy [Pagy] Pagy pagination object
     # @param current_sort [String, nil] Currently sorted column (sku, name, created_at)
     # @param current_direction [String, nil] Current sort direction (asc, desc)
+    # @param search_query [String, nil] Current search query (for empty state messaging)
+    # @param has_filters [Boolean] Whether any filters are currently active
     #
     # @example
     #   TableComponent.new(
     #     products: Product.where(product_status: :active),
     #     pagy: pagy(Product.all),
     #     current_sort: 'sku',
-    #     current_direction: 'asc'
+    #     current_direction: 'asc',
+    #     search_query: 'gummies',
+    #     has_filters: true
     #   )
     #
     # @return [TableComponent]
-    def initialize(products:, pagy:, current_sort: nil, current_direction: nil)
+    def initialize(products:, pagy:, current_sort: nil, current_direction: nil, search_query: nil, has_filters: false)
       @products = products
       @pagy = pagy
       @current_sort = current_sort
       @current_direction = current_direction
+      @search_query = search_query
+      @has_filters = has_filters
     end
 
     private
 
-    attr_reader :products, :pagy, :current_sort, :current_direction
+    attr_reader :products, :pagy, :current_sort, :current_direction, :search_query, :has_filters
 
     # Generates a sortable column header link
     #
@@ -222,6 +228,47 @@ module Products
       '<svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
       </svg>'.html_safe
+    end
+
+    # Search icon SVG (for no results state)
+    def search_icon
+      '<svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>'.html_safe
+    end
+
+    # Empty state title based on context
+    def empty_state_title
+      if has_filters || search_query.present?
+        "No products found"
+      else
+        "No products"
+      end
+    end
+
+    # Empty state description based on context
+    def empty_state_description
+      if search_query.present?
+        "No products match your search for \"#{search_query}\". Try adjusting your search terms or filters."
+      elsif has_filters
+        "No products match the current filters. Try adjusting your filters or clearing them."
+      else
+        "Get started by creating a new product."
+      end
+    end
+
+    # Empty state icon based on context
+    def empty_state_icon
+      if has_filters || search_query.present?
+        search_icon
+      else
+        package_icon
+      end
+    end
+
+    # Whether to show "New Product" button in empty state
+    def show_new_product_button?
+      !has_filters && search_query.blank?
     end
   end
 end

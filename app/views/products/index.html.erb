@@ -168,6 +168,8 @@
     products: @products,
     pagy: @pagy,
     current_sort: params[:sort],
-    current_direction: params[:direction]
+    current_direction: params[:direction],
+    search_query: params[:q],
+    has_filters: params[:product_type].present? || params[:label_id].present?
   ) %>
 </div>

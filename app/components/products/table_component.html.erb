@@ -110,15 +110,17 @@
         <% else %>
           <tr>
             <td colspan="9" class="text-center py-12">
-              <%= package_icon %>
-              <h3 class="mt-2 text-sm font-semibold text-gray-900">No products</h3>
-              <p class="mt-1 text-sm text-gray-500">Get started by creating a new product.</p>
-              <div class="mt-6">
-                <%= helpers.link_to helpers.new_product_path, data: { turbo_frame: "_top" }, class: "inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" do %>
-                  <%= plus_icon %>
-                  <span class="ml-1.5">New Product</span>
-                <% end %>
-              </div>
+              <%= empty_state_icon %>
+              <h3 class="mt-2 text-sm font-semibold text-gray-900"><%= empty_state_title %></h3>
+              <p class="mt-1 text-sm text-gray-500"><%= empty_state_description %></p>
+              <% if show_new_product_button? %>
+                <div class="mt-6">
+                  <%= helpers.link_to helpers.new_product_path, data: { turbo_frame: "_top" }, class: "inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" do %>
+                    <%= plus_icon %>
+                    <span class="ml-1.5">New Product</span>
+                  <% end %>
+                </div>
+              <% end %>
             </td>
           </tr>
         <% end %>
