@@ -98,8 +98,9 @@ export default class extends Controller {
     let visibleCount = 0
 
     this.labelOptionTargets.forEach(option => {
-      const labelName = option.dataset.labelName.toLowerCase()
-      const matches = labelName.includes(searchTerm)
+      const labelName = option.dataset.labelName?.toLowerCase() || ''
+      const labelCode = option.dataset.labelCode?.toLowerCase() || ''
+      const matches = labelName.includes(searchTerm) || labelCode.includes(searchTerm)
 
       if (matches) {
         option.classList.remove("hidden")

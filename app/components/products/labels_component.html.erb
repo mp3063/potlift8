@@ -42,6 +42,7 @@
                   class="w-full text-left px-3 py-2 rounded-md text-sm hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-blue-50 transition-colors"
                   data-label-id="<%= label.id %>"
                   data-label-name="<%= label.full_name %>"
+                  data-label-code="<%= label.code %>"
                   data-label-color="<%= label.info&.dig('color') || '#6b7280' %>"
                   data-action="click->product-label-manager#addLabel"
                   data-product-label-manager-target="labelOption"
@@ -73,7 +74,7 @@
         <div class="flex flex-wrap gap-2 min-h-[2.5rem] p-3 border border-gray-200 rounded-lg bg-white" data-product-label-manager-target="selectedContainer" role="list" aria-label="Selected labels">
           <% if has_labels? %>
             <% product.labels.each do |label| %>
-              <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm bg-blue-100 text-blue-800 border border-blue-200" data-label-id="<%= label.id %>" data-label-name="<%= label.full_name %>" data-label-color="<%= label.info&.dig('color') || '#2563eb' %>" role="listitem">
+              <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm bg-blue-100 text-blue-800 border border-blue-200" data-label-id="<%= label.id %>" data-label-name="<%= label.full_name %>" data-label-code="<%= label.code %>" data-label-color="<%= label.info&.dig('color') || '#2563eb' %>" role="listitem">
                 <span class="h-2 w-2 rounded-full flex-shrink-0" style="background-color: <%= label.info&.dig('color') || '#2563eb' %>" aria-hidden="true"></span>
                 <span class="font-medium"><%= label.full_name %></span>
                 <button

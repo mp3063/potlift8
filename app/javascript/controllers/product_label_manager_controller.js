@@ -17,10 +17,11 @@ export default class extends Controller {
     const button = event.currentTarget
     const labelId = button.dataset.labelId
     const labelName = button.dataset.labelName
+    const labelCode = button.dataset.labelCode || ''
     const labelColor = button.dataset.labelColor
     const productId = this.productIdValue
 
-    console.log('Adding label:', { labelId, labelName, labelColor, productId })
+    console.log('Adding label:', { labelId, labelName, labelCode, labelColor, productId })
 
     if (!productId) {
       console.error('Product ID is missing!')
@@ -29,7 +30,7 @@ export default class extends Controller {
     }
 
     // Optimistically update UI
-    this.addLabelToSelected(labelId, labelName, labelColor)
+    this.addLabelToSelected(labelId, labelName, labelCode, labelColor)
     button.remove() // Remove from available list
 
     // Check if we should show empty message
@@ -72,10 +73,11 @@ export default class extends Controller {
     }
 
     const labelName = labelTag.dataset.labelName || 'Unknown'
+    const labelCode = labelTag.dataset.labelCode || ''
     const labelColor = labelTag.dataset.labelColor || '#6b7280'
     const productId = this.productIdValue
 
-    console.log('Removing label:', { labelId, labelName, labelColor, productId, hasProductId: !!productId })
+    console.log('Removing label:', { labelId, labelName, labelCode, labelColor, productId, hasProductId: !!productId })
 
     if (!productId) {
       console.error('Product ID is missing!')
@@ -85,7 +87,7 @@ export default class extends Controller {
 
     // Optimistically update UI
     labelTag.remove()
-    this.addLabelToAvailable(labelId, labelName, labelColor)
+    this.addLabelToAvailable(labelId, labelName, labelCode, labelColor)
 
     // Check if we should show empty message
     this.updateEmptyMessages()
@@ -115,7 +117,7 @@ export default class extends Controller {
     } catch (error) {
       console.error('Error removing label:', error)
       // Revert UI on error
-      this.addLabelToSelected(labelId, labelName, labelColor)
+      this.addLabelToSelected(labelId, labelName, labelCode, labelColor)
 
       // Find and remove the button we just added back to available
       const addedButton = this.labelListTarget.querySelector(`[data-label-id="${labelId}"]`)
@@ -134,8 +136,9 @@ export default class extends Controller {
     let hasVisibleLabels = false
 
     this.labelOptionTargets.forEach(option => {
-      const labelName = option.dataset.labelName.toLowerCase()
-      const matches = labelName.includes(query)
+      const labelName = option.dataset.labelName?.toLowerCase() || ''
+      const labelCode = option.dataset.labelCode?.toLowerCase() || ''
+      const matches = labelName.includes(query) || labelCode.includes(query)
 
       if (matches) {
         option.classList.remove('hidden')
@@ -156,7 +159,7 @@ export default class extends Controller {
   }
 
   // Helper: Add label to selected container
-  addLabelToSelected(labelId, labelName, labelColor) {
+  addLabelToSelected(labelId, labelName, labelCode, labelColor) {
     // Remove empty message if exists
     const emptyMessage = this.selectedContainerTarget.querySelector('[data-product-label-manager-target="emptyMessage"]')
     if (emptyMessage) {
@@ -171,6 +174,7 @@ export default class extends Controller {
     labelSpan.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm bg-blue-100 text-blue-800 border border-blue-200'
     labelSpan.setAttribute('data-label-id', labelId)
     labelSpan.setAttribute('data-label-name', labelName)
+    labelSpan.setAttribute('data-label-code', labelCode || '')
     labelSpan.setAttribute('data-label-color', safeColor)
     labelSpan.setAttribute('role', 'listitem')
 
@@ -215,7 +219,7 @@ export default class extends Controller {
   }
 
   // Helper: Add label back to available list
-  addLabelToAvailable(labelId, labelName, labelColor) {
+  addLabelToAvailable(labelId, labelName, labelCode, labelColor) {
     // Sanitize color to prevent CSS injection
     const safeColor = this.sanitizeColor(labelColor)
 
@@ -225,6 +229,7 @@ export default class extends Controller {
     button.className = 'w-full text-left px-3 py-2 rounded-md text-sm hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-blue-50 transition-colors'
     button.setAttribute('data-label-id', labelId)
     button.setAttribute('data-label-name', labelName)
+    button.setAttribute('data-label-code', labelCode || '')
     button.setAttribute('data-label-color', safeColor)
     button.setAttribute('data-action', 'click->product-label-manager#addLabel')
     button.setAttribute('data-product-label-manager-target', 'labelOption')
