@@ -42,6 +42,9 @@
       <!-- Global Search Modal -->
       <%= render Search::ModalComponent.new %>
 
+      <!-- Turbo Frame for Dynamic Modals -->
+      <%= turbo_frame_tag "modal" %>
+
       <!-- Flash Messages (below navbar, fixed positioning) -->
       <div id="flash" class="fixed top-16 right-4 z-50 w-full max-w-sm">
         <% if flash.any? %>

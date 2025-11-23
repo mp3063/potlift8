@@ -81,7 +81,12 @@ Rails.application.routes.draw do
     end
 
     # Nested resources for product detail page
-    resources :images, only: [:create, :destroy], controller: 'product_images'
+    resources :images, only: [:create, :update, :destroy], controller: 'product_images' do
+      collection do
+        patch :reorder         # Reorder images via drag-and-drop
+        delete :bulk_destroy   # Delete multiple images at once
+      end
+    end
     resources :attribute_values, only: [:update], controller: 'product_attribute_values', param: :attribute_id
     resources :inventories, only: [:index, :update], controller: 'product_inventories'
 
@@ -127,16 +132,22 @@ Rails.application.routes.draw do
   resources :customer_groups
 
   # Import/Export (Phase 17-19)
-  resources :imports, only: [:new, :create] do
+  resources :imports, only: [:index, :new, :create] do
     member do
       get :progress
     end
+    collection do
+      get 'template/:type', action: :download_template, as: :download_template
+    end
   end
 
-  resources :storages do
+  resources :storages, param: :code do
     member do
       get :inventory
     end
+
+    # Storage inventory management - add products to storage
+    resources :inventories, only: [:new, :create], controller: 'storage_inventories'
   end
 
   resources :product_attributes do
@@ -166,6 +177,22 @@ Rails.application.routes.draw do
       patch :reorder_items
       get :export
     end
+
+    # Catalog Items (add/remove products from catalog)
+    # GET /catalogs/:code/products/new - Show add products modal
+    # POST /catalogs/:code/products - Add products to catalog
+    # DELETE /catalogs/:code/items/:id - Remove product from catalog
+    get 'products/new', to: 'catalog_items#new', as: :new_product
+    post 'products', to: 'catalog_items#create', as: :products
+    delete 'items/:id', to: 'catalog_items#destroy', as: :item
+
+    # Catalog Imports (CSV import of products)
+    # GET /catalogs/:code/imports/new - Show import modal
+    # POST /catalogs/:code/imports - Process CSV import
+    # GET /catalogs/:code/imports/template - Download CSV template
+    get 'imports/new', to: 'catalog_imports#new', as: :new_import
+    post 'imports', to: 'catalog_imports#create', as: :imports
+    get 'imports/template', to: 'catalog_imports#template', as: :imports_template
   end
 
   # Catalog Item Attribute Values (catalog-specific attribute overrides)
