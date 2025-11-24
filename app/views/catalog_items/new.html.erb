@@ -1,9 +1,10 @@
-<%= render Ui::ModalComponent.new(size: :xl, id: "add-products-modal") do |modal| %>
+<%= turbo_frame_tag "modal" do %>
+  <%= render Ui::ModalComponent.new(size: :xl, id: "add-products-modal") do |modal| %>
   <% modal.with_header do %>
     <h3 class="text-lg font-semibold text-gray-900">Add Products to <%= @catalog.name %></h3>
   <% end %>
 
-  <%= form_with url: catalog_products_path(@catalog.code), method: :post, data: { controller: "product-selector", product_selector_target: "form" } do |f| %>
+  <%= form_with url: catalog_products_path(@catalog.code), method: :post, id: "add-products-form", data: { controller: "product-selector", product_selector_target: "form" } do |f| %>
     <!-- Search and Filters -->
     <div class="mb-6 space-y-4">
       <!-- Search Bar -->
@@ -174,6 +175,7 @@
           <%= render Ui::ButtonComponent.new(
             variant: :primary,
             type: :submit,
+            form: "add-products-form",
             data: { product_selector_target: "submitButton" }
           ) do %>
             Add Selected Products
@@ -181,5 +183,6 @@
         </div>
       </div>
     <% end %>
+  <% end %>
   <% end %>
 <% end %>

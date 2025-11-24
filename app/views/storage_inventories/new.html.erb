@@ -4,25 +4,6 @@
       Add Products to <%= @storage.name %>
     <% end %>
 
-    <script>
-      // Auto-open modal when frame loads
-      requestAnimationFrame(() => {
-        const modal = document.querySelector('[data-controller="modal"]');
-        if (modal) {
-          const backdrop = modal.querySelector('[data-modal-target="backdrop"]');
-          if (backdrop) {
-            backdrop.classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-            // Focus first input
-            setTimeout(() => {
-              const firstInput = modal.querySelector('input, textarea, select');
-              if (firstInput) firstInput.focus();
-            }, 100);
-          }
-        }
-      });
-    </script>
-
     <div data-controller="product-selector">
       <!-- Search and Filters -->
       <div class="mb-6 space-y-4">

@@ -1,4 +1,5 @@
-<%= render Ui::ModalComponent.new(size: :lg, id: "import-products-modal") do |modal| %>
+<%= turbo_frame_tag "modal" do %>
+  <%= render Ui::ModalComponent.new(size: :lg, id: "import-products-modal") do |modal| %>
   <% modal.with_header do %>
     <h3 class="text-lg font-semibold text-gray-900">Import Products to <%= @catalog.name %></h3>
   <% end %>
@@ -95,7 +96,7 @@
     </div>
 
     <!-- File Upload Form -->
-    <%= form_with url: catalog_imports_path(@catalog.code), method: :post, multipart: true, data: { controller: "file-upload" } do |f| %>
+    <%= form_with url: catalog_imports_path(@catalog.code), method: :post, multipart: true, id: "import-products-form", data: { controller: "file-upload" } do |f| %>
       <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-blue-400 transition-colors duration-200" data-file-upload-target="dropzone">
         <div class="text-center">
           <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -143,7 +144,8 @@
 
           <%= render Ui::ButtonComponent.new(
             variant: :primary,
-            type: :submit
+            type: :submit,
+            form: "import-products-form"
           ) do %>
             <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -154,4 +156,5 @@
       <% end %>
     <% end %>
   </div>
+  <% end %>
 <% end %>

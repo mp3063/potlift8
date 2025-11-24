@@ -29,6 +29,12 @@ export default class extends Controller {
   connect() {
     this.escHandler = this.handleEscape.bind(this)
     document.addEventListener("keydown", this.escHandler)
+
+    // Auto-open if this modal is inside a turbo frame (loaded dynamically)
+    // When a modal is loaded via turbo_frame_tag "modal", it should auto-open
+    if (this.element.closest('turbo-frame[id="modal"]')) {
+      this.open()
+    }
   }
 
   disconnect() {
@@ -70,6 +76,12 @@ export default class extends Controller {
 
     this.backdropTarget.classList.add("hidden")
     document.body.style.overflow = ""
+
+    // Clear the turbo frame content so modal can be re-opened
+    const turboFrame = this.element.closest('turbo-frame[id="modal"]')
+    if (turboFrame) {
+      turboFrame.innerHTML = ""
+    }
   }
 
   /**

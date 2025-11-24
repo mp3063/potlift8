@@ -67,10 +67,7 @@ class CatalogItemsController < ApplicationController
     product_ids = Array(params[:product_ids])
 
     if product_ids.blank?
-      respond_to do |format|
-        format.html { redirect_to catalog_items_path(@catalog), alert: 'No products selected.' }
-        format.turbo_stream { render turbo_stream: turbo_stream.replace('flash', partial: 'shared/flash', locals: { flash: { alert: 'No products selected.' } }) }
-      end
+      redirect_to catalog_items_path(@catalog), alert: 'No products selected.'
       return
     end
 
@@ -107,12 +104,8 @@ class CatalogItemsController < ApplicationController
 
     message += " Errors: #{errors.join('; ')}" if errors.any?
 
-    respond_to do |format|
-      format.html { redirect_to catalog_items_path(@catalog), notice: message }
-      format.turbo_stream do
-        redirect_to catalog_items_path(@catalog), notice: message
-      end
-    end
+    # Always redirect with HTML response - Turbo will follow the redirect
+    redirect_to catalog_items_path(@catalog), notice: message
   end
 
   # DELETE /catalogs/:code/items/:id
