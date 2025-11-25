@@ -335,11 +335,11 @@ RSpec.describe ProductExportService do
       end
 
       it 'eager loads associations to prevent N+1 queries' do
-        # Expect includes to be called with correct associations
-        relation = products.includes(:labels, :inventories).order(:id)
+        # Expect includes to be called with correct associations including product attributes
+        relation = products.includes(:labels, :inventories, product_attribute_values: :product_attribute).order(:id)
         allow(products).to receive(:includes).and_return(relation)
 
-        expect(products).to receive(:includes).with(:labels, :inventories)
+        expect(products).to receive(:includes).with(:labels, :inventories, product_attribute_values: :product_attribute)
 
         described_class.new(products).to_csv
       end
@@ -390,6 +390,245 @@ RSpec.describe ProductExportService do
       service = described_class.new(products)
 
       expect(service).to be_a(described_class)
+    end
+  end
+
+  describe 'EAV attribute export' do
+    let!(:price_attr) { create(:product_attribute, company: company, code: 'price', name: 'Price') }
+    let!(:color_attr) { create(:product_attribute, company: company, code: 'color', name: 'Color') }
+    let!(:weight_attr) { create(:product_attribute, company: company, code: 'weight', name: 'Weight') }
+
+    let!(:product1) do
+      product = create(:product, company: company, sku: 'ATTR001', name: 'Product with Attrs')
+      create(:product_attribute_value, product: product, product_attribute: price_attr, value: '1999')
+      create(:product_attribute_value, product: product, product_attribute: color_attr, value: 'blue')
+      product
+    end
+
+    let!(:product2) do
+      product = create(:product, company: company, sku: 'ATTR002', name: 'Another Product')
+      create(:product_attribute_value, product: product, product_attribute: price_attr, value: '2499')
+      create(:product_attribute_value, product: product, product_attribute: weight_attr, value: '500g')
+      product
+    end
+
+    let!(:product3) do
+      create(:product, company: company, sku: 'ATTR003', name: 'Product without Attrs')
+    end
+
+    let(:products) { Product.where(company: company) }
+    subject(:csv_export) { described_class.new(products).to_csv }
+
+    it 'includes attribute columns in headers with attr_ prefix' do
+      csv_data = CSV.parse(csv_export, headers: true)
+
+      # Should have base headers + sorted attribute codes
+      expect(csv_data.headers).to include('attr_color', 'attr_price', 'attr_weight')
+    end
+
+    it 'exports attribute values for products' do
+      csv_data = CSV.parse(csv_export, headers: true)
+
+      product1_row = csv_data.find { |row| row['SKU'] == 'ATTR001' }
+      expect(product1_row['attr_price']).to eq('1999')
+      expect(product1_row['attr_color']).to eq('blue')
+      expect(product1_row['attr_weight']).to eq('') # Not set for this product
+    end
+
+    it 'handles products with different attribute combinations' do
+      csv_data = CSV.parse(csv_export, headers: true)
+
+      product2_row = csv_data.find { |row| row['SKU'] == 'ATTR002' }
+      expect(product2_row['attr_price']).to eq('2499')
+      expect(product2_row['attr_weight']).to eq('500g')
+      expect(product2_row['attr_color']).to eq('') # Not set for this product
+    end
+
+    it 'handles products without any attributes' do
+      csv_data = CSV.parse(csv_export, headers: true)
+
+      product3_row = csv_data.find { |row| row['SKU'] == 'ATTR003' }
+      expect(product3_row['attr_price']).to eq('')
+      expect(product3_row['attr_color']).to eq('')
+      expect(product3_row['attr_weight']).to eq('')
+    end
+
+    it 'includes all unique attributes across all products' do
+      csv_data = CSV.parse(csv_export, headers: true)
+
+      # All three attributes should be present even though no single product has all three
+      expect(csv_data.headers).to include('attr_price', 'attr_color', 'attr_weight')
+    end
+
+    it 'sorts attribute columns alphabetically by code' do
+      csv_data = CSV.parse(csv_export, headers: true)
+
+      # Find positions of attribute columns
+      attr_headers = csv_data.headers.select { |h| h.start_with?('attr_') }
+
+      # Should be sorted: color, price, weight
+      expect(attr_headers).to eq(['attr_color', 'attr_price', 'attr_weight'])
+    end
+
+    context 'with special characters in attribute values' do
+      let!(:special_product) do
+        product = create(:product, company: company, sku: 'SPECIAL', name: 'Special Product')
+        create(:product_attribute_value, product: product, product_attribute: color_attr, value: 'Red, "Crimson"')
+        product
+      end
+
+      it 'properly escapes attribute values with special characters' do
+        csv_data = CSV.parse(csv_export, headers: true)
+
+        special_row = csv_data.find { |row| row['SKU'] == 'SPECIAL' }
+        expect(special_row['attr_color']).to eq('Red, "Crimson"')
+      end
+    end
+
+    context 'with no attributes in system' do
+      let(:company_no_attrs) { create(:company) }
+      let!(:simple_product) { create(:product, company: company_no_attrs, sku: 'SIMPLE') }
+      let(:products_no_attrs) { Product.where(company: company_no_attrs) }
+
+      it 'exports only base columns when no attributes exist' do
+        csv_data = CSV.parse(described_class.new(products_no_attrs).to_csv, headers: true)
+
+        # Should only have base headers, no attr_ columns
+        expect(csv_data.headers).to eq([
+          'SKU',
+          'Name',
+          'Product Type',
+          'Description',
+          'Active',
+          'Labels',
+          'Total Inventory',
+          'Created At',
+          'Updated At'
+        ])
+      end
+    end
+
+    context 'with large number of attributes' do
+      before do
+        # Create 20 attributes
+        20.times do |i|
+          attr = create(:product_attribute, company: company, code: "attr#{i.to_s.rjust(2, '0')}", name: "Attribute #{i}")
+          # Assign every other attribute to product1
+          create(:product_attribute_value, product: product1, product_attribute: attr, value: "value#{i}") if i.even?
+        end
+      end
+
+      it 'includes all attribute columns' do
+        csv_data = CSV.parse(csv_export, headers: true)
+
+        # Check that attribute columns are present
+        # The service only includes attributes that have values on at least one product
+        # product1 has 3 original + 10 new (even numbers: 0,2,4,6,8,10,12,14,16,18) = 13 total
+        attr_columns = csv_data.headers.select { |h| h.start_with?('attr_') }
+        expect(attr_columns.count).to eq(13)
+      end
+
+      it 'exports correct values for all attributes' do
+        csv_data = CSV.parse(csv_export, headers: true)
+
+        product1_row = csv_data.find { |row| row['SKU'] == 'ATTR001' }
+
+        # Even numbered attributes should have values
+        expect(product1_row['attr_attr00']).to eq('value0')
+        expect(product1_row['attr_attr02']).to eq('value2')
+
+        # Odd numbered attributes should be empty (CSV returns nil for empty cells, not empty string)
+        expect(product1_row['attr_attr01']).to be_nil.or eq('')
+        expect(product1_row['attr_attr03']).to be_nil.or eq('')
+      end
+    end
+  end
+
+  describe '#to_json' do
+    let!(:product) do
+      create(:product,
+             company: company,
+             sku: 'JSON001',
+             name: 'JSON Product',
+             product_type: :sellable,
+             product_status: :active)
+    end
+
+    let!(:label) { create(:label, company: company, name: 'Featured') }
+    let!(:price_attr) { create(:product_attribute, company: company, code: 'price', name: 'Price') }
+
+    before do
+      create(:product_label, product: product, label: label)
+      create(:product_attribute_value, product: product, product_attribute: price_attr, value: '1999')
+    end
+
+    let(:products) { Product.where(company: company) }
+    subject(:json_export) { described_class.new(products).to_json }
+
+    it 'returns valid JSON' do
+      expect { JSON.parse(json_export) }.not_to raise_error
+    end
+
+    it 'includes exported_at timestamp' do
+      data = JSON.parse(json_export)
+      expect(data['exported_at']).to be_present
+      expect(data['exported_at']).to match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
+    end
+
+    it 'includes product count' do
+      data = JSON.parse(json_export)
+      expect(data['count']).to eq(1)
+    end
+
+    it 'includes products array' do
+      data = JSON.parse(json_export)
+      expect(data['products']).to be_an(Array)
+      expect(data['products'].length).to eq(1)
+    end
+
+    it 'includes product attributes in correct format' do
+      data = JSON.parse(json_export)
+      product_data = data['products'].first
+
+      expect(product_data['sku']).to eq('JSON001')
+      expect(product_data['name']).to eq('JSON Product')
+      expect(product_data['product_type']).to eq('sellable')
+      expect(product_data['product_status']).to eq('active')
+      expect(product_data['active']).to eq(true)
+    end
+
+    it 'includes labels as array of names' do
+      data = JSON.parse(json_export)
+      product_data = data['products'].first
+
+      expect(product_data['labels']).to eq(['Featured'])
+    end
+
+    it 'includes attributes as hash' do
+      data = JSON.parse(json_export)
+      product_data = data['products'].first
+
+      expect(product_data['attributes']).to eq({ 'price' => '1999' })
+    end
+
+    it 'includes total_inventory' do
+      data = JSON.parse(json_export)
+      product_data = data['products'].first
+
+      expect(product_data['total_inventory']).to eq(0)
+    end
+
+    it 'includes ISO8601 timestamps' do
+      data = JSON.parse(json_export)
+      product_data = data['products'].first
+
+      expect(product_data['created_at']).to match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
+      expect(product_data['updated_at']).to match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
+    end
+
+    it 'formats JSON with pretty printing' do
+      expect(json_export).to include("\n")
+      expect(json_export).to include("  ")
     end
   end
 end

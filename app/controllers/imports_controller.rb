@@ -56,7 +56,7 @@ class ImportsController < ApplicationController
             return
           end
 
-    redirect_to import_progress_path(job.job_id),
+    redirect_to progress_import_path(job.job_id),
                 notice: 'Import started. This may take a few minutes.'
   end
 
@@ -123,6 +123,52 @@ class ImportsController < ApplicationController
       format.html
       format.json { render json: @progress, status: :service_unavailable }
     end
+  end
+
+  # Download import errors as CSV
+  #
+  # GET /imports/:id/errors
+  #
+  def download_errors
+    @job_id = params[:id]
+    progress_key = "import_progress:#{@job_id}"
+
+    redis = Redis.new(url: ENV.fetch('REDIS_URL', 'redis://localhost:6379/1'))
+    progress_data = redis.get(progress_key)
+
+    unless progress_data.present?
+      redirect_to imports_path, alert: 'Import data not found or has expired.'
+      return
+    end
+
+    @progress = JSON.parse(progress_data)
+    errors = @progress['errors'] || []
+
+    if errors.empty?
+      redirect_to imports_path, alert: 'No errors found for this import.'
+      return
+    end
+
+    # Generate CSV with error details
+    csv_data = CSV.generate do |csv|
+      csv << ['Row Number', 'Error Message', 'Timestamp']
+
+      errors.each do |error|
+        csv << [
+          error['row'] || 'N/A',
+          error['error'] || error['message'] || 'Unknown error',
+          error['timestamp'] || Time.current.iso8601
+        ]
+      end
+    end
+
+    send_data csv_data,
+              filename: "import_#{@job_id}_errors_#{Date.today}.csv",
+              type: 'text/csv',
+              disposition: 'attachment'
+  rescue Redis::BaseError => e
+    Rails.logger.error("Redis error downloading errors: #{e.message}")
+    redirect_to imports_path, alert: 'Could not retrieve error data. Please try again.'
   end
 
   private

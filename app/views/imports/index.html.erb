@@ -99,17 +99,17 @@
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div class="flex items-center gap-2">
-                      <%= link_to import_progress_path(import['id']),
+                      <%= link_to progress_import_path(import['id']),
                           class: "text-blue-600 hover:text-blue-900" do %>
                         View Details
                       <% end %>
 
                       <% if import['failed_count']&.positive? %>
                         <span class="text-gray-300">|</span>
-                        <%= link_to "#",
+                        <%= link_to errors_import_path(import['id']),
                             class: "text-red-600 hover:text-red-900",
-                            title: "Download errors (coming soon)" do %>
-                          Errors
+                            title: "Download errors CSV" do %>
+                          Download Errors
                         <% end %>
                       <% end %>
                     </div>
