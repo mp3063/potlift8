@@ -374,9 +374,20 @@ RSpec.describe Products::FormComponent, type: :component do
         options = component.send(:product_type_options)
 
         expect(options).to eq([
-          ['Sellable', 1],
-          ['Configurable', 2],
-          ['Bundle', 3]
+          ['Sellable', 'sellable'],
+          ['Configurable', 'configurable'],
+          ['Bundle', 'bundle']
+        ])
+      end
+    end
+
+    describe '#configuration_type_options' do
+      it 'returns array of label-value pairs for configuration types' do
+        options = component.send(:configuration_type_options)
+
+        expect(options).to eq([
+          ['Variant', 'variant'],
+          ['Option', 'option']
         ])
       end
     end

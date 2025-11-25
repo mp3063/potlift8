@@ -17,7 +17,7 @@ import { Controller } from "@hotwired/stimulus"
  * - handleTypeChange: Triggered on product type change
  */
 export default class extends Controller {
-  static targets = ["sku", "productType"]
+  static targets = ["sku", "productType", "configurationTypeContainer", "configurationType"]
 
   /**
    * Validate SKU uniqueness via async API call
@@ -62,18 +62,26 @@ export default class extends Controller {
   /**
    * Handle product type selection change
    *
-   * Future enhancement: Could show/hide type-specific fields
+   * Shows/hides the configuration type field based on product type.
+   * Configuration type is only required for "configurable" products.
    *
    * @param {Event} event - Change event from product type select
    */
   handleTypeChange(event) {
-    const typeId = event.target.value
+    const productType = event.target.value
 
-    // Log for debugging
-    console.log("Product type changed to:", typeId)
-
-    // Future: Show/hide configuration type selector for configurable products
-    // Future: Show/hide bundle composition UI for bundle products
+    // Show configuration type selector only for configurable products
+    if (this.hasConfigurationTypeContainerTarget) {
+      if (productType === "configurable") {
+        this.configurationTypeContainerTarget.classList.remove("hidden")
+      } else {
+        this.configurationTypeContainerTarget.classList.add("hidden")
+        // Clear configuration type when switching away from configurable
+        if (this.hasConfigurationTypeTarget) {
+          this.configurationTypeTarget.value = ""
+        }
+      }
+    }
   }
 
   /**

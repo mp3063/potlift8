@@ -66,6 +66,27 @@
           <p class="text-xs text-red-600 mt-1" id="product-type-error" role="alert"><%= product.errors[:product_type].first %></p>
         <% end %>
       </div>
+
+      <!-- Configuration Type select (shown only for configurable products) -->
+      <div data-product-form-target="configurationTypeContainer" class="<%= product.product_type_configurable? ? '' : 'hidden' %>">
+        <%= form.label :configuration_type, "Configuration Type", class: "block text-sm font-medium text-gray-900 mb-1" %>
+        <%= form.select :configuration_type,
+            configuration_type_options,
+            { prompt: "Select configuration type", include_blank: false },
+            class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm #{product.errors[:configuration_type].any? ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}",
+            data: {
+              product_form_target: "configurationType"
+            },
+            aria: {
+              describedby: product.errors[:configuration_type].any? ? "configuration-type-error" : "configuration-type-hint",
+              invalid: product.errors[:configuration_type].any?
+            } %>
+        <% if product.errors[:configuration_type].any? %>
+          <p class="text-xs text-red-600 mt-1" id="configuration-type-error" role="alert"><%= product.errors[:configuration_type].first %></p>
+        <% else %>
+          <p class="text-xs text-gray-600 mt-1" id="configuration-type-hint">Variant: products with variations (e.g., sizes). Option: products with selectable options.</p>
+        <% end %>
+      </div>
     </div>
   <% end %>
 

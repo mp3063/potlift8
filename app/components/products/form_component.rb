@@ -111,6 +111,20 @@ module Products
       Product.product_types.map { |key, _value| [key.humanize, key] }
     end
 
+    # Configuration type options for select dropdown
+    #
+    # Returns an array of [label, value] pairs for configurable products.
+    # Only relevant when product_type is 'configurable'.
+    #
+    # @return [Array<Array<String, String>>] Array of [label, value] pairs
+    #
+    # @example
+    #   configuration_type_options
+    #   # => [['Variant', 'variant'], ['Option', 'option']]
+    def configuration_type_options
+      Product.configuration_types.map { |key, _value| [key.humanize, key] }
+    end
+
     # Available labels for the current company
     #
     # Returns all labels ordered by hierarchy and position.
