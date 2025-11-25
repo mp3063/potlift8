@@ -104,9 +104,11 @@ class ProductImagesController < ApplicationController
 
   # PATCH /products/:product_id/images/reorder
   # PATCH /products/:product_id/images/reorder.json
+  # PATCH /products/:product_id/images/reorder.turbo_stream
   #
   # Reorders product images based on drag-and-drop.
-  # Updates the attachment order in ActiveStorage.
+  # ActiveStorage orders attachments by ID (primary key), so we must detach and
+  # reattach in the desired order to get sequential IDs.
   #
   # Parameters:
   # - image_ids: Array of image attachment IDs in new order
@@ -115,12 +117,11 @@ class ProductImagesController < ApplicationController
     unless params[:image_ids].is_a?(Array)
       respond_to do |format|
         format.json { render json: { error: 'Invalid image_ids parameter' }, status: :unprocessable_entity }
+        format.turbo_stream { head :unprocessable_entity }
       end
       return
     end
 
-    # Reorder images by detaching and reattaching in the new order
-    # ActiveStorage doesn't have a position field, so we use attachment order
     image_ids = params[:image_ids].map(&:to_i)
 
     # Verify all image IDs belong to this product
@@ -128,18 +129,45 @@ class ProductImagesController < ApplicationController
     unless (image_ids - current_image_ids).empty?
       respond_to do |format|
         format.json { render json: { error: 'Invalid image IDs' }, status: :unprocessable_entity }
+        format.turbo_stream { head :unprocessable_entity }
       end
       return
     end
 
-    # Fetch images in new order
-    ordered_images = image_ids.map { |id| @product.images.find(id) }
+    # Use a transaction to ensure atomicity
+    ActiveRecord::Base.transaction do
+      # Collect blobs with their metadata BEFORE detaching
+      # Map each attachment ID to its blob
+      blob_map = {}
+      image_ids.each do |attachment_id|
+        attachment = @product.images.find(attachment_id)
+        blob_map[attachment_id] = attachment.blob
+      end
 
-    # Detach all images and reattach in new order
-    @product.images.detach
-    ordered_images.each { |img| @product.images.attach(img.blob) }
+      # Detach all images (removes attachment records but keeps blobs)
+      @product.images.detach
+
+      # Reattach blobs in the new order
+      # New attachments will get sequential IDs in this order
+      image_ids.each do |attachment_id|
+        blob = blob_map[attachment_id]
+        @product.images.attach(blob)
+      end
+    end
+
+    # Force reload to get fresh attachment records (must be outside transaction)
+    # Reset the association to clear any caching
+    @product.images.reset
+    @product.reload
 
     respond_to do |format|
+      format.turbo_stream do
+        flash.now[:notice] = 'Images reordered successfully'
+        render turbo_stream: [
+          turbo_stream.replace('product_images_card', partial: 'products/images', locals: { product: @product }),
+          turbo_stream.update('flash', partial: 'shared/flash', locals: { flash: flash })
+        ]
+      end
       format.json { render json: { success: true, message: 'Images reordered successfully' }, status: :ok }
     end
   end

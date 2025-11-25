@@ -346,6 +346,49 @@ RSpec.describe '/products/:product_id/images', type: :request do
 
       expect(response).to have_http_status(:unprocessable_entity)
     end
+
+    context 'turbo_stream format' do
+      it 'returns turbo stream response' do
+        new_order = [image3.id, image1.id, image2.id]
+
+        patch reorder_product_images_path(product),
+              params: { image_ids: new_order },
+              headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+        expect(response).to have_http_status(:ok)
+        expect(response.content_type).to include('text/vnd.turbo-stream.html')
+      end
+
+      it 'updates the product_images_card element' do
+        new_order = [image3.id, image1.id, image2.id]
+
+        patch reorder_product_images_path(product),
+              params: { image_ids: new_order },
+              headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+        expect(response.body).to include('turbo-stream')
+        expect(response.body).to include('action="replace"')
+        expect(response.body).to include('target="product_images_card"')
+      end
+
+      it 'preserves metadata during reorder' do
+        # Add metadata to an image
+        image1.blob.update(metadata: { alt_text: 'First image', caption: 'Test caption' })
+
+        # Reorder images
+        new_order = [image3.id, image1.id, image2.id]
+
+        patch reorder_product_images_path(product),
+              params: { image_ids: new_order },
+              headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+        product.reload
+        # Find the blob that was originally image1 (now should be second)
+        reordered_image = product.images.find { |img| img.blob_id == image1.blob_id }
+        expect(reordered_image.blob.metadata[:alt_text]).to eq('First image')
+        expect(reordered_image.blob.metadata[:caption]).to eq('Test caption')
+      end
+    end
   end
 
   describe 'PATCH /products/:product_id/images/:id' do

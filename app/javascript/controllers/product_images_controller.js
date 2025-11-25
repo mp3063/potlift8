@@ -81,6 +81,7 @@ export default class extends Controller {
     fetch(`/products/${productId}/images/${imageId}`, {
       method: "DELETE",
       headers: {
+        "Content-Type": "application/json",
         "X-CSRF-Token": csrfToken,
         "Accept": "application/json"
       }

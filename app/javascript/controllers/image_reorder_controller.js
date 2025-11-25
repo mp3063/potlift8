@@ -57,6 +57,52 @@ export default class extends Controller {
   }
 
   /**
+   * Set an image as primary by moving it to position 1
+   * Called when clicking the "Set as Primary" button
+   *
+   * @param {Event} event - Click event
+   */
+  setPrimary(event) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const imageId = event.currentTarget.dataset.imageId
+
+    if (!imageId) {
+      console.error("Image ID not found")
+      return
+    }
+
+    // Get all image IDs in current order
+    const currentImageIds = Array.from(this.containerTarget.children)
+      .map(element => element.dataset.imageId)
+      .filter(id => id)
+
+    // Find index of clicked image
+    const imageIndex = currentImageIds.indexOf(imageId)
+
+    if (imageIndex === -1) {
+      console.error("Image not found in current order")
+      return
+    }
+
+    if (imageIndex === 0) {
+      // Already primary, do nothing
+      return
+    }
+
+    // Move the selected image to position 0 (first)
+    // Create new order: [selectedId, ...otherIds]
+    const newImageIds = [
+      imageId,
+      ...currentImageIds.filter(id => id !== imageId)
+    ]
+
+    // Send reorder request
+    this.sendReorderRequest(newImageIds, "Image set as primary successfully")
+  }
+
+  /**
    * Handle reorder event from Sortable.js
    * Sends new order to server via AJAX
    *
@@ -73,6 +119,17 @@ export default class extends Controller {
       return
     }
 
+    // Send reorder request
+    this.sendReorderRequest(imageIds, "Images reordered successfully")
+  }
+
+  /**
+   * Send reorder request to server
+   *
+   * @param {Array} imageIds - Array of image IDs in new order
+   * @param {String} successMessage - Message to display on success
+   */
+  sendReorderRequest(imageIds, successMessage) {
     // Show loading state
     this.showLoadingState()
 
@@ -85,13 +142,13 @@ export default class extends Controller {
       return
     }
 
-    // Send AJAX request to reorder
+    // Send AJAX request to reorder using Turbo Streams
     fetch(this.reorderUrlValue, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
         "X-CSRF-Token": csrfToken,
-        "Accept": "application/json"
+        "Accept": "text/vnd.turbo-stream.html"
       },
       body: JSON.stringify({ image_ids: imageIds })
     })
@@ -99,17 +156,17 @@ export default class extends Controller {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
-      return response.json()
+      return response.text()
     })
-    .then(data => {
-      this.showSuccessState(data.message || "Images reordered successfully")
-      this.updatePositionIndicators()
+    .then(html => {
+      // Turbo will automatically process the Turbo Stream response
+      // and update the DOM
+      Turbo.renderStreamMessage(html)
+      this.showSuccessState(successMessage || "Images reordered successfully")
     })
     .catch(error => {
       console.error("Error reordering images:", error)
       this.showErrorState("Failed to reorder images. Please try again.")
-      // Optionally reload page to reset order
-      // window.location.reload()
     })
   }
 
