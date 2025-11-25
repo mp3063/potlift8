@@ -36,4 +36,4 @@
   </div>
 <% end %>
 
-<%= render 'form', variant: @variant %>
+<%= render 'form', variant_product: @variant_product, variant_config: @variant&.info&.dig('variant_config') %>

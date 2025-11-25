@@ -125,22 +125,22 @@
                 </div>
               </td>
               <td class="whitespace-nowrap px-3 py-4 text-sm font-medium text-gray-900">
-                <%= link_to variant.variant_product.sku, product_path(variant.variant_product), class: "text-blue-600 hover:text-blue-900 hover:underline" %>
+                <%= link_to variant.subproduct.sku, product_path(variant.subproduct), class: "text-blue-600 hover:text-blue-900 hover:underline" %>
               </td>
               <td class="px-3 py-4 text-sm text-gray-900">
-                <%= variant.variant_product.name %>
+                <%= variant.subproduct.name %>
               </td>
               <% @configurations.each do |config| %>
                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                  <% config_value = variant.variant_configuration_values.find_by(configuration: config)&.configuration_value %>
-                  <%= config_value&.value || '—' %>
+                  <% config_value = variant.info&.dig('variant_config', config.code) %>
+                  <%= config_value || '—' %>
                 </td>
               <% end %>
               <td class="whitespace-nowrap px-3 py-4 text-sm text-right text-gray-900 font-medium">
-                <%= variant.variant_product.total_inventory %>
+                <%= variant.subproduct.total_inventory %>
               </td>
               <td class="whitespace-nowrap px-3 py-4 text-sm">
-                <% if variant.variant_product.active? %>
+                <% if variant.subproduct.active? %>
                   <%= render Ui::BadgeComponent.new(variant: :success, dot: true) { "Active" } %>
                 <% else %>
                   <%= render Ui::BadgeComponent.new(variant: :gray) { "Inactive" } %>

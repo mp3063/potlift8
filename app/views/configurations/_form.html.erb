@@ -1,6 +1,6 @@
 <%= form_with(model: configuration, url: configuration.persisted? ? product_configuration_path(@product, configuration) : product_configurations_path(@product), data: { controller: "configuration-form" }) do |form| %>
   <% if configuration.errors.any? %>
-    <%= render Shared::FormErrorsComponent.new(model: configuration) %>
+    <%= render Shared::FormErrorsComponent.new(errors: configuration.errors) %>
   <% end %>
 
   <%= render Ui::CardComponent.new do |card| %>
