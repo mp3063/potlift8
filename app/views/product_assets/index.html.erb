@@ -1,0 +1,201 @@
+<div class="px-4 sm:px-6 lg:px-8">
+  <!-- Page Header with Breadcrumbs -->
+  <div class="mb-8">
+    <nav class="flex mb-4" aria-label="Breadcrumb">
+      <ol role="list" class="flex items-center space-x-4">
+        <li>
+          <div>
+            <%= link_to products_path, class: "text-gray-600 hover:text-gray-700" do %>
+              <svg class="h-5 w-5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M9.293 2.293a1 1 0 011.414 0l7 7A1 1 0 0117 11h-1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-3a1 1 0 00-1-1H9a1 1 0 00-1 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-6H3a1 1 0 01-.707-1.707l7-7z" clip-rule="evenodd" />
+              </svg>
+              <span class="sr-only">Home</span>
+            <% end %>
+          </div>
+        </li>
+        <li>
+          <div class="flex items-center">
+            <svg class="h-5 w-5 flex-shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+            </svg>
+            <%= link_to "Products", products_path, class: "ml-4 text-sm font-medium text-gray-500 hover:text-gray-700" %>
+          </div>
+        </li>
+        <li>
+          <div class="flex items-center">
+            <svg class="h-5 w-5 flex-shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+            </svg>
+            <%= link_to @product.sku, product_path(@product), class: "ml-4 text-sm font-medium text-gray-500 hover:text-gray-700" %>
+          </div>
+        </li>
+        <li>
+          <div class="flex items-center">
+            <svg class="h-5 w-5 flex-shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+            </svg>
+            <span class="ml-4 text-sm font-medium text-gray-500" aria-current="page">Assets</span>
+          </div>
+        </li>
+      </ol>
+    </nav>
+
+    <div class="sm:flex sm:items-center sm:justify-between">
+      <div>
+        <h1 class="text-3xl font-semibold leading-6 text-gray-900">Product Assets</h1>
+        <p class="mt-2 text-sm text-gray-700">
+          Manage documents, videos, and links for <%= @product.name %>
+        </p>
+      </div>
+      <div class="mt-4 sm:mt-0">
+        <%= render Ui::ModalComponent.new(size: :lg, modal_id: "upload_asset_modal") do |modal| %>
+          <% modal.with_trigger do %>
+            <%= render Ui::ButtonComponent.new(
+              variant: :primary,
+              icon: '<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>',
+              icon_position: :left
+            ) do %>
+              Upload Asset
+            <% end %>
+          <% end %>
+
+          <% modal.with_header do %>
+            Upload New Asset
+          <% end %>
+
+          <%= render "form", product: @product, product_asset: @product_asset %>
+
+          <% modal.with_footer do %>
+            <%= render Ui::ButtonComponent.new(variant: :secondary, data: { action: "click->modal#close" }) do %>
+              Cancel
+            <% end %>
+            <%= render Ui::ButtonComponent.new(
+              variant: :primary,
+              type: "submit",
+              form: "asset_form"
+            ) do %>
+              Upload
+            <% end %>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs for Asset Types -->
+  <div data-controller="tabs">
+    <div class="mb-6">
+      <div class="border-b border-gray-200">
+        <nav class="-mb-px flex space-x-8" aria-label="Asset types">
+          <button
+            type="button"
+            data-tabs-target="tab"
+            data-action="click->tabs#switch"
+            data-tab-id="documents"
+            class="border-blue-600 text-blue-600 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium"
+            aria-current="page">
+            <svg class="inline-block h-5 w-5 mr-2 -mt-0.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M4.5 2A1.5 1.5 0 003 3.5v13A1.5 1.5 0 004.5 18h11a1.5 1.5 0 001.5-1.5V7.621a1.5 1.5 0 00-.44-1.06l-4.12-4.122A1.5 1.5 0 0011.378 2H4.5zm2.25 8.5a.75.75 0 000 1.5h6.5a.75.75 0 000-1.5h-6.5zm0 3a.75.75 0 000 1.5h6.5a.75.75 0 000-1.5h-6.5z" clip-rule="evenodd" />
+            </svg>
+            Documents
+            <span class="ml-2 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+              <%= @documents.count %>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            data-tabs-target="tab"
+            data-action="click->tabs#switch"
+            data-tab-id="videos"
+            class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium">
+            <svg class="inline-block h-5 w-5 mr-2 -mt-0.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path d="M3.25 4A2.25 2.25 0 001 6.25v7.5A2.25 2.25 0 003.25 16h7.5A2.25 2.25 0 0013 13.75v-7.5A2.25 2.25 0 0010.75 4h-7.5zM19 4.75a.75.75 0 00-1.28-.53l-3 3a.75.75 0 00-.22.53v4.5c0 .199.079.39.22.53l3 3a.75.75 0 001.28-.53V4.75z" />
+            </svg>
+            Videos
+            <span class="ml-2 rounded-full bg-gray-200 px-2.5 py-0.5 text-xs font-medium text-gray-700">
+              <%= @videos.count %>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            data-tabs-target="tab"
+            data-action="click->tabs#switch"
+            data-tab-id="links"
+            class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium">
+            <svg class="inline-block h-5 w-5 mr-2 -mt-0.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path d="M12.232 4.232a2.5 2.5 0 013.536 3.536l-1.225 1.224a.75.75 0 001.061 1.06l1.224-1.224a4 4 0 00-5.656-5.656l-3 3a4 4 0 00.225 5.865.75.75 0 00.977-1.138 2.5 2.5 0 01-.142-3.667l3-3z" />
+              <path d="M11.603 7.963a.75.75 0 00-.977 1.138 2.5 2.5 0 01.142 3.667l-3 3a2.5 2.5 0 01-3.536-3.536l1.225-1.224a.75.75 0 00-1.061-1.06l-1.224 1.224a4 4 0 105.656 5.656l3-3a4 4 0 00-.225-5.865z" />
+            </svg>
+            Links
+            <span class="ml-2 rounded-full bg-gray-200 px-2.5 py-0.5 text-xs font-medium text-gray-700">
+              <%= @links.count %>
+            </span>
+          </button>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Tab Panels -->
+  <div data-tabs-target="panel" data-panel-id="documents">
+    <%= render Ui::CardComponent.new(padding: :none) do %>
+      <% if @documents.any? %>
+        <ul role="list" class="divide-y divide-gray-200" data-controller="sortable" data-sortable-url-value="<%= reorder_product_product_assets_path(@product) %>">
+          <% @documents.each do |document| %>
+            <%= render "document_row", document: document, product: @product %>
+          <% end %>
+        </ul>
+      <% else %>
+        <div class="text-center py-12">
+          <svg class="mx-auto h-12 w-12 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">No documents</h3>
+          <p class="mt-1 text-sm text-gray-500">Get started by uploading a document.</p>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+
+  <div data-tabs-target="panel" data-panel-id="videos" class="hidden">
+    <%= render Ui::CardComponent.new(padding: :none) do %>
+      <% if @videos.any? %>
+        <ul role="list" class="divide-y divide-gray-200" data-controller="sortable" data-sortable-url-value="<%= reorder_product_product_assets_path(@product) %>">
+          <% @videos.each do |video| %>
+            <%= render "video_row", video: video, product: @product %>
+          <% end %>
+        </ul>
+      <% else %>
+        <div class="text-center py-12">
+          <svg class="mx-auto h-12 w-12 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">No videos</h3>
+          <p class="mt-1 text-sm text-gray-500">Get started by uploading a video or adding a video URL.</p>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+
+  <div data-tabs-target="panel" data-panel-id="links" class="hidden">
+    <%= render Ui::CardComponent.new(padding: :none) do %>
+      <% if @links.any? %>
+        <ul role="list" class="divide-y divide-gray-200" data-controller="sortable" data-sortable-url-value="<%= reorder_product_product_assets_path(@product) %>">
+          <% @links.each do |link| %>
+            <%= render "link_row", link: link, product: @product %>
+          <% end %>
+        </ul>
+      <% else %>
+        <div class="text-center py-12">
+          <svg class="mx-auto h-12 w-12 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">No links</h3>
+          <p class="mt-1 text-sm text-gray-500">Get started by adding an external link.</p>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+  </div>
+</div>

@@ -1,0 +1,98 @@
+<%# Image Metadata Editing Modal
+    Provides a form to edit image metadata (alt text, caption, description)
+    Uses Stimulus controller: image-metadata
+    Parameters:
+    - product: Product instance (for form routing)
+%>
+
+<%= render Ui::ModalComponent.new(size: :lg) do |modal| %>
+  <% modal.with_header do %>
+    Edit Image Metadata
+  <% end %>
+
+  <div data-image-metadata-target="modal">
+    <!-- Image Preview -->
+    <div class="mb-6">
+      <div class="w-full h-64 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center">
+        <%= image_tag "",
+          data: { image_metadata_target: "imagePreview" },
+          class: "max-w-full max-h-full object-contain",
+          alt: "Image preview" %>
+      </div>
+    </div>
+
+    <!-- Metadata Form -->
+    <%= form_with url: "",
+      method: :patch,
+      data: {
+        image_metadata_target: "form",
+        action: "submit->image-metadata#submitForm"
+      },
+      class: "space-y-6" do |form| %>
+
+      <!-- Alt Text Field -->
+      <div>
+        <%= form.label :alt_text, class: "block text-sm font-medium text-gray-700 mb-1" do %>
+          Alt Text
+          <span class="text-gray-500 font-normal">(for accessibility)</span>
+        <% end %>
+        <%= form.text_field :alt_text,
+          data: { image_metadata_target: "altText" },
+          class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+          placeholder: "Brief description of the image for screen readers",
+          aria: { describedby: "alt-text-help" } %>
+        <p id="alt-text-help" class="mt-1 text-xs text-gray-500">
+          Describe what's in the image. This helps visually impaired users understand the content.
+        </p>
+      </div>
+
+      <!-- Caption Field -->
+      <div>
+        <%= form.label :caption, class: "block text-sm font-medium text-gray-700 mb-1" do %>
+          Caption
+          <span class="text-gray-500 font-normal">(optional)</span>
+        <% end %>
+        <%= form.text_field :caption,
+          data: { image_metadata_target: "caption" },
+          class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+          placeholder: "Short caption to display with the image",
+          aria: { describedby: "caption-help" } %>
+        <p id="caption-help" class="mt-1 text-xs text-gray-500">
+          A brief title or caption that will be shown with the image.
+        </p>
+      </div>
+
+      <!-- Description Field -->
+      <div>
+        <%= form.label :description, class: "block text-sm font-medium text-gray-700 mb-1" do %>
+          Description
+          <span class="text-gray-500 font-normal">(optional)</span>
+        <% end %>
+        <%= form.text_area :description,
+          data: { image_metadata_target: "description" },
+          rows: 4,
+          class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+          placeholder: "Detailed description of the image",
+          aria: { describedby: "description-help" } %>
+        <p id="description-help" class="mt-1 text-xs text-gray-500">
+          Additional details about the image that might be useful for context.
+        </p>
+      </div>
+    <% end %>
+  </div>
+
+  <% modal.with_footer do %>
+    <%= render Ui::ButtonComponent.new(
+      variant: :secondary,
+      data: { action: "click->image-metadata#cancel" }
+    ) do %>
+      Cancel
+    <% end %>
+    <%= render Ui::ButtonComponent.new(
+      variant: :primary,
+      data: { action: "click->image-metadata#submitForm" }
+    ) do %>
+      Save Changes
+    <% end %>
+  <% end %>
+<% end %>

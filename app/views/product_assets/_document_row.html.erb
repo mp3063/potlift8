@@ -1,0 +1,110 @@
+<li class="px-6 py-4 hover:bg-gray-50 transition-colors duration-150" data-sortable-id="<%= document.id %>">
+  <div class="flex items-center gap-4">
+    <!-- Drag Handle -->
+    <div class="cursor-move text-gray-400 hover:text-gray-600" data-sortable-handle aria-label="Drag to reorder">
+      <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path d="M10 3a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM10 8.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM11.5 15.5a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z" />
+      </svg>
+    </div>
+
+    <!-- File Icon -->
+    <div class="flex-shrink-0">
+      <div class="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center">
+        <%= case document.file_extension&.downcase
+            when 'pdf'
+              raw('<svg class="h-6 w-6 text-red-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2h-1.528A6 6 0 004 9.528V4zm2 2v3.528a4 4 0 008 0V8h3l-3-3H6z" clip-rule="evenodd" /></svg>')
+            when 'doc', 'docx'
+              raw('<svg class="h-6 w-6 text-blue-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd" /></svg>')
+            when 'xls', 'xlsx'
+              raw('<svg class="h-6 w-6 text-green-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clip-rule="evenodd" /></svg>')
+            when 'ppt', 'pptx'
+              raw('<svg class="h-6 w-6 text-orange-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" /></svg>')
+            else
+              raw('<svg class="h-6 w-6 text-gray-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd" /></svg>')
+            end %>
+      </div>
+    </div>
+
+    <!-- Document Info -->
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-2">
+        <h4 class="text-sm font-medium text-gray-900 truncate"><%= document.name %></h4>
+        <%= render Ui::BadgeComponent.new(
+          variant: case document.asset_visibility
+                   when 'public_visibility' then :success
+                   when 'catalog_only_visibility' then :info
+                   else :gray
+                   end,
+          size: :sm
+        ) do %>
+          <%= document.asset_visibility&.humanize&.gsub(' visibility', '') || 'Private' %>
+        <% end %>
+      </div>
+      <div class="flex items-center gap-4 mt-1 text-sm text-gray-500">
+        <span class="flex items-center gap-1">
+          <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M15.621 4.379a3 3 0 00-4.242 0l-7 7a3 3 0 004.241 4.243h.001l.497-.5a.75.75 0 011.064 1.057l-.498.501-.002.002a4.5 4.5 0 01-6.364-6.364l7-7a4.5 4.5 0 016.368 6.36l-3.455 3.553A2.625 2.625 0 119.52 9.52l3.45-3.451a.75.75 0 111.061 1.06l-3.45 3.451a1.125 1.125 0 001.587 1.595l3.454-3.553a3 3 0 000-4.242z" clip-rule="evenodd" />
+          </svg>
+          <%= document.filename || 'No file' %>
+        </span>
+        <% if document.file_size.present? %>
+          <span><%= number_to_human_size(document.file_size) %></span>
+        <% end %>
+        <span class="flex items-center gap-1">
+          <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clip-rule="evenodd" />
+          </svg>
+          <%= time_ago_in_words(document.created_at) %> ago
+        </span>
+      </div>
+      <% if document.description.present? %>
+        <p class="mt-1 text-sm text-gray-600 line-clamp-1"><%= document.description %></p>
+      <% end %>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center gap-2 flex-shrink-0">
+      <%= render Ui::ButtonComponent.new(
+        variant: :secondary,
+        size: :sm,
+        href: document.file_url,
+        target: "_blank",
+        aria_label: "Download #{document.name}"
+      ) do %>
+        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z" />
+          <path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z" />
+        </svg>
+        <span class="sr-only">Download</span>
+      <% end %>
+
+      <%= render Ui::ButtonComponent.new(
+        variant: :ghost,
+        size: :sm,
+        href: edit_product_product_asset_path(product, document),
+        aria_label: "Edit #{document.name}"
+      ) do %>
+        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path d="M2.695 14.763l-1.262 3.154a.5.5 0 00.65.65l3.155-1.262a4 4 0 001.343-.885L17.5 5.5a2.121 2.121 0 00-3-3L3.58 13.42a4 4 0 00-.885 1.343z" />
+        </svg>
+        <span class="sr-only">Edit</span>
+      <% end %>
+
+      <%= render Ui::ButtonComponent.new(
+        variant: :ghost,
+        size: :sm,
+        href: product_product_asset_path(product, document),
+        data: {
+          turbo_method: :delete,
+          turbo_confirm: "Are you sure you want to delete #{document.name}?"
+        },
+        aria_label: "Delete #{document.name}"
+      ) do %>
+        <svg class="h-4 w-4 text-red-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clip-rule="evenodd" />
+        </svg>
+        <span class="sr-only">Delete</span>
+      <% end %>
+    </div>
+  </div>
+</li>

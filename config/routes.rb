@@ -89,6 +89,11 @@ Rails.application.routes.draw do
     end
     resources :attribute_values, only: [:update], controller: 'product_attribute_values', param: :attribute_id
     resources :inventories, only: [:index, :update], controller: 'product_inventories'
+    resources :product_assets, except: [:show] do
+      collection do
+        post :reorder  # Reorder assets via drag-and-drop
+      end
+    end
 
     # Advanced product features (Phase 14-16)
     # Configurations and Variants
@@ -135,6 +140,7 @@ Rails.application.routes.draw do
   resources :imports, only: [:index, :new, :create] do
     member do
       get :progress
+      get :errors, action: :download_errors
     end
     collection do
       get 'template/:type', action: :download_template, as: :download_template
