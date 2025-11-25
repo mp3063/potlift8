@@ -143,8 +143,7 @@ class VariantGeneratorService
           configuration_code: config.code,
           configuration_name: config.name,
           value_id: value.id,
-          value: value.value,
-          value_code: value.code
+          value: value.value
         }
       end
     end
@@ -220,7 +219,7 @@ class VariantGeneratorService
 
   def create_variant_product(combination, variant_config)
     # Generate unique SKU
-    base_suffix = combination.map { |c| sanitize_sku_part(c[:value_code] || c[:value]) }.join('-')
+    base_suffix = combination.map { |c| sanitize_sku_part(c[:value]) }.join('-')
     sku = generate_unique_sku("#{product.sku}-#{base_suffix}")
 
     # Generate descriptive name
@@ -250,7 +249,6 @@ class VariantGeneratorService
         configuration_code: item[:configuration_code],
         configuration_name: item[:configuration_name],
         value_id: item[:value_id],
-        value_code: item[:value_code],
         value: item[:value]
       }
     end
@@ -279,7 +277,7 @@ class VariantGeneratorService
   end
 
   def generate_preview_sku(combination)
-    base_suffix = combination.map { |c| sanitize_sku_part(c[:value_code] || c[:value]) }.join('-')
+    base_suffix = combination.map { |c| sanitize_sku_part(c[:value]) }.join('-')
     sanitize_sku("#{product.sku}-#{base_suffix}")
   end
 

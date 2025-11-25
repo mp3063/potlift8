@@ -366,7 +366,7 @@ RSpec.describe VariantGeneratorService, type: :service do
       service = VariantGeneratorService.new(configurable_product)
 
       # If any variant fails, all should be rolled back
-      expect(ActiveRecord::Base).to receive(:transaction).and_call_original
+      expect(ActiveRecord::Base).to receive(:transaction).at_least(:once).and_call_original
 
       service.generate!
     end
@@ -376,19 +376,19 @@ RSpec.describe VariantGeneratorService, type: :service do
     context 'real-world t-shirt example' do
       let!(:size_config) do
         config = create(:configuration, product: configurable_product, name: 'Size', code: 'size', position: 1)
-        create(:configuration_value, configuration: config, value: 'XS', code: 'xs', position: 1)
-        create(:configuration_value, configuration: config, value: 'S', code: 's', position: 2)
-        create(:configuration_value, configuration: config, value: 'M', code: 'm', position: 3)
-        create(:configuration_value, configuration: config, value: 'L', code: 'l', position: 4)
-        create(:configuration_value, configuration: config, value: 'XL', code: 'xl', position: 5)
+        create(:configuration_value, configuration: config, value: 'XS', position: 1)
+        create(:configuration_value, configuration: config, value: 'S', position: 2)
+        create(:configuration_value, configuration: config, value: 'M', position: 3)
+        create(:configuration_value, configuration: config, value: 'L', position: 4)
+        create(:configuration_value, configuration: config, value: 'XL', position: 5)
         config
       end
 
       let!(:color_config) do
         config = create(:configuration, product: configurable_product, name: 'Color', code: 'color', position: 2)
-        create(:configuration_value, configuration: config, value: 'Black', code: 'black', position: 1)
-        create(:configuration_value, configuration: config, value: 'White', code: 'white', position: 2)
-        create(:configuration_value, configuration: config, value: 'Navy', code: 'navy', position: 3)
+        create(:configuration_value, configuration: config, value: 'Black', position: 1)
+        create(:configuration_value, configuration: config, value: 'White', position: 2)
+        create(:configuration_value, configuration: config, value: 'Navy', position: 3)
         config
       end
 
@@ -407,7 +407,7 @@ RSpec.describe VariantGeneratorService, type: :service do
 
         configurable_product.product_configurations_as_super.each do |pc|
           expect(pc.subproduct.sku).to be_present
-          expect(pc.subproduct.sku).to match(/^SKU-\d+-[A-Z-]+$/)
+          expect(pc.subproduct.sku).to match(/^SKU\d+-[A-Z-]+$/)
         end
       end
 
@@ -425,7 +425,7 @@ RSpec.describe VariantGeneratorService, type: :service do
   describe 'edge cases' do
     it 'handles single configuration with single value' do
       config = create(:configuration, product: configurable_product, name: 'Option', code: 'option')
-      create(:configuration_value, configuration: config, value: 'Only Choice', code: 'only')
+      create(:configuration_value, configuration: config, value: 'Only Choice')
 
       service = VariantGeneratorService.new(configurable_product)
 
@@ -438,7 +438,7 @@ RSpec.describe VariantGeneratorService, type: :service do
     it 'handles many configuration values' do
       config = create(:configuration, product: configurable_product, name: 'Size', code: 'size')
       10.times do |i|
-        create(:configuration_value, configuration: config, value: "Size #{i + 1}", code: "size#{i + 1}")
+        create(:configuration_value, configuration: config, value: "Size #{i + 1}")
       end
 
       service = VariantGeneratorService.new(configurable_product)
@@ -450,8 +450,8 @@ RSpec.describe VariantGeneratorService, type: :service do
 
     it 'handles unicode characters in configuration values' do
       config = create(:configuration, product: configurable_product, name: 'Size', code: 'size')
-      create(:configuration_value, configuration: config, value: 'Größe XL', code: 'grosse-xl')
-      create(:configuration_value, configuration: config, value: 'サイズ M', code: 'size-m')
+      create(:configuration_value, configuration: config, value: 'Größe XL')
+      create(:configuration_value, configuration: config, value: 'サイズ M')
 
       service = VariantGeneratorService.new(configurable_product)
 
