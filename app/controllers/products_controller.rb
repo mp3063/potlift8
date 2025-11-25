@@ -98,12 +98,21 @@ class ProductsController < ApplicationController
     #    - Line 183 of _catalog_attributes.html.erb: catalog_item.catalog_item_attribute_values.any?
     #    - Counter cache optimizes badge count display, but full collection still needed for overrides
     #
+    # 4. configurations => :configuration_values
+    #    - configurable_card_component.rb: product.configurations.includes(:configuration_values).order(:position)
+    #    - Used to display configuration dimensions and values for configurable products
+    #
+    # 5. subproducts (via .with_subproducts scope)
+    #    - configurable_card_component.rb: product.subproducts.count
+    #    - Used to display variant count for configurable products
+    #
     @product = current_potlift_company.products
                                       .with_attributes
                                       .includes(:labels)
                                       .includes(catalog_items: [:catalog, :catalog_item_attribute_values])
+                                      .includes(configurations: :configuration_values)
+                                      .with_subproducts
                                       # TODO: Add .with_inventory when inventory is displayed in show view
-                                      # TODO: Add .with_subproducts when variants/bundles are displayed in show view
                                       .find(params[:id])
 
     # Build attribute => value hash for the component
@@ -126,13 +135,17 @@ class ProductsController < ApplicationController
         @product,
         @product.product_attribute_values.maximum(:updated_at),
         @product.labels.maximum(:updated_at),
-        @product.catalog_items.maximum(:updated_at)
+        @product.catalog_items.maximum(:updated_at),
+        @product.configurations.maximum(:updated_at),
+        @product.subproducts.maximum(:updated_at)
       ],
       last_modified: [
         @product.updated_at,
         @product.product_attribute_values.maximum(:updated_at),
         @product.labels.maximum(:updated_at),
-        @product.catalog_items.maximum(:updated_at)
+        @product.catalog_items.maximum(:updated_at),
+        @product.configurations.maximum(:updated_at),
+        @product.subproducts.maximum(:updated_at)
         # TODO: Add inventories.maximum(:updated_at) when inventory is displayed
       ].compact.max,
       public: false # Don't cache in public CDNs (multi-tenant data)
@@ -166,17 +179,11 @@ class ProductsController < ApplicationController
     handle_info_fields(@product)
 
     if @product.save
-      respond_to do |format|
-        format.html { redirect_to products_path, notice: "Product created successfully." }
-        format.turbo_stream do
-          redirect_to products_path, notice: "Product created successfully."
-        end
-      end
+      redirect_to products_path, notice: "Product created successfully."
     else
-      respond_to do |format|
-        format.html { render :new, status: :unprocessable_entity }
-        format.turbo_stream { render :new, status: :unprocessable_entity }
-      end
+      # Turbo will automatically handle re-rendering the form in place
+      # when we respond with status :unprocessable_entity
+      render :new, status: :unprocessable_entity
     end
   end
 
@@ -191,17 +198,11 @@ class ProductsController < ApplicationController
     handle_info_fields(@product)
 
     if @product.update(product_params)
-      respond_to do |format|
-        format.html { redirect_to products_path, notice: "Product updated successfully." }
-        format.turbo_stream do
-          redirect_to products_path, notice: "Product updated successfully."
-        end
-      end
+      redirect_to products_path, notice: "Product updated successfully."
     else
-      respond_to do |format|
-        format.html { render :edit, status: :unprocessable_entity }
-        format.turbo_stream { render :edit, status: :unprocessable_entity }
-      end
+      # Turbo will automatically handle re-rendering the form in place
+      # when we respond with status :unprocessable_entity
+      render :edit, status: :unprocessable_entity
     end
   end
 
@@ -212,13 +213,7 @@ class ProductsController < ApplicationController
   #
   def destroy
     @product.destroy
-
-    respond_to do |format|
-      format.html { redirect_to products_path, notice: "Product deleted successfully." }
-      format.turbo_stream do
-        redirect_to products_path, notice: "Product deleted successfully."
-      end
-    end
+    redirect_to products_path, notice: "Product deleted successfully."
   end
 
   # POST /products/:id/duplicate

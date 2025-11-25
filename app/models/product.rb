@@ -84,7 +84,7 @@ class Product < ApplicationRecord
 
   # ActiveStorage associations
   # Multiple images can be attached to a product for product detail pages
-  # Images are ordered by attachment order (first attached = primary image)
+  # Images are ordered by attachment ID (creation order) via config/initializers/active_storage_ordering.rb
   has_many_attached :images
 
   # Catalog associations
