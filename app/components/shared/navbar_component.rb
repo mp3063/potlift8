@@ -138,6 +138,7 @@ module Shared
       content_tag(:div, class: "hidden md:flex md:items-center md:gap-6") do
         concat(nav_link("Dashboard", helpers.root_path))
         concat(nav_link("Products", helpers.products_path))
+        concat(nav_link("Imports", helpers.imports_path))
         concat(nav_link("Labels", helpers.labels_path))
         concat(nav_link("Storages", helpers.storages_path))
         concat(nav_link("Catalogs", helpers.catalogs_path))

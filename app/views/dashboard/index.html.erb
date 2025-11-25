@@ -153,6 +153,33 @@
             <span class="text-sm font-medium text-gray-900">View Catalogs</span>
           </div>
         <% end %>
+
+        <%= link_to new_import_path, class: "relative block p-4 border border-gray-300 rounded-lg hover:border-gray-400" do %>
+          <div class="flex items-center">
+            <svg class="h-6 w-6 text-gray-400 mr-3" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+            </svg>
+            <span class="text-sm font-medium text-gray-900">Import Products</span>
+          </div>
+        <% end %>
+
+        <%= link_to products_path(format: :csv), class: "relative block p-4 border border-gray-300 rounded-lg hover:border-gray-400", data: { turbo: false } do %>
+          <div class="flex items-center">
+            <svg class="h-6 w-6 text-gray-400 mr-3" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+            </svg>
+            <span class="text-sm font-medium text-gray-900">Export Products</span>
+          </div>
+        <% end %>
+
+        <%= link_to imports_path, class: "relative block p-4 border border-gray-300 rounded-lg hover:border-gray-400" do %>
+          <div class="flex items-center">
+            <svg class="h-6 w-6 text-gray-400 mr-3" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="text-sm font-medium text-gray-900">Import History</span>
+          </div>
+        <% end %>
       </div>
     </div>
   </div>

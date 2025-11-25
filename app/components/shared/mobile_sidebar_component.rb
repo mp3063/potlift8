@@ -101,6 +101,7 @@ module Shared
       content_tag(:nav, class: "p-4 space-y-2") do
         concat(mobile_nav_link("Dashboard", helpers.root_path))
         concat(mobile_nav_link("Products", helpers.products_path))
+        concat(mobile_nav_link("Imports", helpers.imports_path))
         concat(mobile_nav_link("Labels", helpers.labels_path))
         concat(mobile_nav_link("Storages", helpers.storages_path))
         concat(mobile_nav_link("Catalogs", helpers.catalogs_path))
