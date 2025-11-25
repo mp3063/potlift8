@@ -1,0 +1,102 @@
+<%= render Ui::CardComponent.new do |card| %>
+  <% card.with_header do %>
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-gray-900">Configuration</h2>
+      <%= render Ui::BadgeComponent.new(variant: configuration_type_badge_variant) do %>
+        <%= configuration_type_label %>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div class="space-y-6">
+    <!-- Stats Summary -->
+    <div class="grid grid-cols-2 gap-4">
+      <div class="bg-gray-50 rounded-lg p-4 text-center">
+        <div class="text-2xl font-bold text-gray-900"><%= configurations_count %></div>
+        <div class="text-sm text-gray-500">Configuration<%= configurations_count == 1 ? "" : "s" %></div>
+      </div>
+      <div class="bg-gray-50 rounded-lg p-4 text-center">
+        <div class="text-2xl font-bold text-gray-900"><%= variants_count %></div>
+        <div class="text-sm text-gray-500">Variant<%= variants_count == 1 ? "" : "s" %></div>
+      </div>
+    </div>
+
+    <% if has_configurations? %>
+      <!-- Configurations List -->
+      <div class="space-y-3">
+        <h3 class="text-sm font-medium text-gray-700">Dimensions</h3>
+        <% configurations.each do |config| %>
+          <div class="border border-gray-200 rounded-lg p-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-medium text-gray-900"><%= config.name %></span>
+              <span class="text-xs text-gray-500"><%= config.code %></span>
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              <% config.configuration_values.order(:position).each do |value| %>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                  <%= value.value %>
+                </span>
+              <% end %>
+              <% if config.configuration_values.empty? %>
+                <span class="text-xs text-gray-400 italic">No values defined</span>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <% if can_generate_variants? && variants_count < possible_combinations %>
+        <!-- Generation Info -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div class="flex items-start">
+            <svg class="h-5 w-5 text-blue-400 mt-0.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" />
+            </svg>
+            <div class="ml-3">
+              <p class="text-sm text-blue-700">
+                You can generate up to <strong><%= possible_combinations %></strong> variant combinations.
+                <% if has_variants? %>
+                  Currently <%= variants_count %> variant<%= variants_count == 1 ? "" : "s" %> exist<%= variants_count == 1 ? "s" : "" %>.
+                <% end %>
+              </p>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    <% else %>
+      <!-- Empty State -->
+      <div class="text-center py-6">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">No configurations</h3>
+        <p class="mt-1 text-sm text-gray-500">
+          Start by adding configuration dimensions (e.g., Size, Color).
+        </p>
+      </div>
+    <% end %>
+
+    <!-- Action Buttons -->
+    <div class="flex flex-col gap-2">
+      <%= link_to product_configurations_path(product), class: "inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" do %>
+        <svg class="-ml-0.5 mr-2 h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" d="M8.34 1.804A1 1 0 019.32 1h1.36a1 1 0 01.98.804l.295 1.473c.497.144.971.342 1.416.587l1.25-.834a1 1 0 011.262.125l.962.962a1 1 0 01.125 1.262l-.834 1.25c.245.445.443.919.587 1.416l1.473.295a1 1 0 01.804.98v1.361a1 1 0 01-.804.98l-1.473.295a6.95 6.95 0 01-.587 1.416l.834 1.25a1 1 0 01-.125 1.262l-.962.962a1 1 0 01-1.262.125l-1.25-.834a6.953 6.953 0 01-1.416.587l-.295 1.473a1 1 0 01-.98.804H9.32a1 1 0 01-.98-.804l-.295-1.473a6.957 6.957 0 01-1.416-.587l-1.25.834a1 1 0 01-1.262-.125l-.962-.962a1 1 0 01-.125-1.262l.834-1.25a6.957 6.957 0 01-.587-1.416l-1.473-.295A1 1 0 011 10.68V9.32a1 1 0 01.804-.98l1.473-.295c.144-.497.342-.971.587-1.416l-.834-1.25a1 1 0 01.125-1.262l.962-.962A1 1 0 015.38 3.03l1.25.834a6.957 6.957 0 011.416-.587l.294-1.473zM13 10a3 3 0 11-6 0 3 3 0 016 0z" clip-rule="evenodd" />
+        </svg>
+        Manage Configurations
+      <% end %>
+
+      <%= link_to product_variants_path(product), class: "inline-flex items-center justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" do %>
+        <svg class="-ml-0.5 mr-2 h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path d="M7 3.5A1.5 1.5 0 018.5 2h3.879a1.5 1.5 0 011.06.44l3.122 3.12A1.5 1.5 0 0117 6.622V12.5a1.5 1.5 0 01-1.5 1.5h-1v-3.379a3 3 0 00-.879-2.121L10.5 5.379A3 3 0 008.379 4.5H7v-1z" />
+          <path d="M4.5 6A1.5 1.5 0 003 7.5v9A1.5 1.5 0 004.5 18h7a1.5 1.5 0 001.5-1.5v-5.879a1.5 1.5 0 00-.44-1.06L9.44 6.439A1.5 1.5 0 008.378 6H4.5z" />
+        </svg>
+        Manage Variants
+        <% if has_variants? %>
+          <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-500 text-white">
+            <%= variants_count %>
+          </span>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+<% end %>
