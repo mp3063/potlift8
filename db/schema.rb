@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_18_084909) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_30_190228) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -54,6 +54,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_18_084909) do
     t.datetime "updated_at", null: false
     t.index ["company_id", "code"], name: "index_attribute_groups_on_company_id_and_code", unique: true
     t.index ["company_id"], name: "index_attribute_groups_on_company_id"
+  end
+
+  create_table "bundle_templates", force: :cascade do |t|
+    t.bigint "product_id", null: false
+    t.bigint "company_id", null: false
+    t.jsonb "configuration", default: {}, null: false
+    t.integer "generated_variants_count", default: 0, null: false
+    t.datetime "last_generated_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id"], name: "index_bundle_templates_on_company_id"
+    t.index ["product_id"], name: "index_bundle_templates_on_product_id", unique: true
   end
 
   create_table "catalog_item_attribute_values", force: :cascade do |t|
@@ -337,13 +349,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_18_084909) do
     t.jsonb "cache", default: {}, null: false
     t.integer "product_status"
     t.integer "subproducts_count", default: 0, null: false
+    t.bigint "parent_bundle_id"
+    t.boolean "bundle_variant", default: false, null: false
+    t.datetime "deleted_at"
+    t.index ["bundle_variant"], name: "index_products_on_bundle_variant"
     t.index ["company_id", "created_at"], name: "index_products_on_company_created_at", comment: "Optimizes date filtering and sorting for products"
     t.index ["company_id", "product_status", "product_type"], name: "index_products_on_company_status_type", comment: "Optimizes product filtering by company, status, and type"
-    t.index ["company_id", "sku"], name: "products_company_sku_unique_index", unique: true
+    t.index ["company_id", "sku"], name: "products_company_sku_unique_index", unique: true, where: "(product_status <> 999)"
     t.index ["company_id", "subproducts_count"], name: "index_products_on_company_and_subproducts_count", comment: "Optimizes queries for products with variants/components"
     t.index ["company_id", "updated_at"], name: "index_products_on_company_updated_at", comment: "Optimizes product sorting by updated_at within company scope"
     t.index ["company_id"], name: "index_products_on_company_id"
+    t.index ["deleted_at"], name: "index_products_on_deleted_at"
     t.index ["name"], name: "index_products_on_name_trgm", opclass: :gin_trgm_ops, using: :gin, comment: "Trigram index for fast ILIKE searches on product names"
+    t.index ["parent_bundle_id"], name: "index_products_on_parent_bundle_id"
     t.index ["product_status"], name: "index_products_on_product_status"
     t.index ["product_type"], name: "index_products_on_product_type"
     t.index ["sku"], name: "index_products_on_sku_trgm", opclass: :gin_trgm_ops, using: :gin, comment: "Trigram index for fast ILIKE searches on product SKUs"
@@ -557,6 +575,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_18_084909) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "attribute_groups", "companies"
+  add_foreign_key "bundle_templates", "companies"
+  add_foreign_key "bundle_templates", "products"
   add_foreign_key "catalog_item_attribute_values", "catalog_items"
   add_foreign_key "catalog_item_attribute_values", "product_attributes"
   add_foreign_key "catalog_items", "catalogs"
@@ -586,6 +606,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_18_084909) do
   add_foreign_key "product_labels", "labels"
   add_foreign_key "product_labels", "products"
   add_foreign_key "products", "companies"
+  add_foreign_key "products", "products", column: "parent_bundle_id"
   add_foreign_key "products", "sync_locks"
   add_foreign_key "related_products", "products", column: "related_to_id", on_delete: :cascade
   add_foreign_key "related_products", "products", on_delete: :cascade
