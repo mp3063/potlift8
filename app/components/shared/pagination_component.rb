@@ -41,7 +41,8 @@ module Shared
     def prev_button_mobile
       if @pagy.prev
         link_to "Previous", pagy_url_for(@pagy, @pagy.prev),
-          class: "relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          class: "relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50",
+          data: { turbo_action: "advance" }
       else
         content_tag(:span, "Previous",
           class: "relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-500 cursor-not-allowed")
@@ -51,7 +52,8 @@ module Shared
     def next_button_mobile
       if @pagy.next
         link_to "Next", pagy_url_for(@pagy, @pagy.next),
-          class: "relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          class: "relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50",
+          data: { turbo_action: "advance" }
       else
         content_tag(:span, "Next",
           class: "relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-500 cursor-not-allowed")
@@ -89,7 +91,8 @@ module Shared
       if @pagy.prev
         link_to pagy_url_for(@pagy, @pagy.prev),
           class: "relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-600 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20",
-          aria: { label: "Previous page" } do
+          aria: { label: "Previous page" },
+          data: { turbo_action: "advance" } do
           raw('<svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>')
         end
       else
@@ -105,7 +108,8 @@ module Shared
       if @pagy.next
         link_to pagy_url_for(@pagy, @pagy.next),
           class: "relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-600 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20",
-          aria: { label: "Next page" } do
+          aria: { label: "Next page" },
+          data: { turbo_action: "advance" } do
           raw('<svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>')
         end
       else
@@ -126,7 +130,8 @@ module Shared
             aria: { current: "page" })
         else
           link_to item, pagy_url_for(@pagy, item),
-            class: "relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20"
+            class: "relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20",
+            data: { turbo_action: "advance" }
         end
       when :gap
         content_tag(:span, "…",
