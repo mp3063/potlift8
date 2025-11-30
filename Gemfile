@@ -114,6 +114,9 @@ group :test do
   # Visual regression testing
   gem "capybara-screenshot", "~> 1.0"
   gem "capybara-screenshot-diff", "~> 1.8"
+
+  # Controller testing helpers (assigns, assert_template, etc.)
+  gem "rails-controller-testing"
 end
 
 group :development do
