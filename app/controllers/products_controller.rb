@@ -35,8 +35,14 @@ class ProductsController < ApplicationController
   def index
     # Use optimized scope with eager loading to prevent N+1 queries
     # .with_labels_only is faster than .with_search_associations for listing pages
+    # .with_subproducts is needed for expandable row functionality (configurable products)
+    # .includes(:bundle_variants) is needed for bundle products
+    # .parent_products_only filters out variant products (displayed as expandable children)
     @products = current_potlift_company.products
+                                       .parent_products_only
                                        .with_labels_only
+                                       .with_subproducts
+                                       .includes(:bundle_variants)
 
     # Load labels for filter dropdown and bulk label editor
     load_filter_labels
@@ -172,14 +178,46 @@ class ProductsController < ApplicationController
   #
   # Creates a new product.
   #
+  # Bundle Variant Generation:
+  # If product is a bundle and bundle_configuration param is present,
+  # automatically generates bundle variants using BundleVariantGeneratorService.
+  #
   def create
     @product = current_potlift_company.products.build(product_params)
 
     # Handle restock_level in info JSONB column
     handle_info_fields(@product)
 
-    if @product.save
-      redirect_to products_path, notice: "Product created successfully."
+    success = false
+    @generated_count = 0
+
+    ActiveRecord::Base.transaction do
+      unless @product.save
+        raise ActiveRecord::Rollback
+      end
+
+      # Generate bundle variants if bundle configuration provided
+      if @product.product_type_bundle? && bundle_config_present?
+        result = BundleVariantGeneratorService.new(@product, bundle_configuration).call
+
+        unless result.success?
+          @product.errors.add(:base, result.errors.join(', '))
+          raise ActiveRecord::Rollback
+        end
+
+        @generated_count = result.variants.count
+      end
+
+      success = true
+    end
+
+    if success
+      notice_message = if @generated_count > 0
+                        "Product created successfully. Generated #{@generated_count} #{'variant'.pluralize(@generated_count)}."
+                      else
+                        "Product created successfully."
+                      end
+      redirect_to products_path, notice: notice_message
     else
       # Turbo will automatically handle re-rendering the form in place
       # when we respond with status :unprocessable_entity
@@ -193,12 +231,47 @@ class ProductsController < ApplicationController
   #
   # Updates an existing product.
   #
+  # Bundle Variant Regeneration:
+  # If product is a bundle and regenerate=true param is present,
+  # regenerates all bundle variants using BundleRegeneratorService.
+  # Old variants are soft-deleted and new ones are created.
+  #
   def update
     # Handle restock_level in info JSONB column before update
     handle_info_fields(@product)
 
-    if @product.update(product_params)
-      redirect_to products_path, notice: "Product updated successfully."
+    success = false
+    @deleted_count = 0
+    @created_count = 0
+
+    ActiveRecord::Base.transaction do
+      unless @product.update(product_params)
+        raise ActiveRecord::Rollback
+      end
+
+      # Regenerate bundle variants if requested
+      if @product.product_type_bundle? && should_regenerate?
+        result = BundleRegeneratorService.new(@product, bundle_configuration).call
+
+        unless result.success?
+          @product.errors.add(:base, result.errors.join(', '))
+          raise ActiveRecord::Rollback
+        end
+
+        @deleted_count = result.deleted_count
+        @created_count = result.created_count
+      end
+
+      success = true
+    end
+
+    if success
+      notice_message = if @created_count > 0
+                        "Product updated successfully. Regenerated #{@created_count} #{'variant'.pluralize(@created_count)}."
+                      else
+                        "Product updated successfully."
+                      end
+      redirect_to products_path, notice: notice_message
     else
       # Turbo will automatically handle re-rendering the form in place
       # when we respond with status :unprocessable_entity
@@ -844,5 +917,34 @@ class ProductsController < ApplicationController
     end
 
     descendants
+  end
+
+  # Parse bundle configuration from JSON parameter
+  # Returns parsed hash or empty hash if invalid/missing
+  #
+  # @return [Hash] The bundle configuration hash
+  #
+  def bundle_configuration
+    @bundle_configuration ||= JSON.parse(params[:bundle_configuration] || '{}')
+  rescue JSON::ParserError
+    {}
+  end
+
+  # Check if bundle configuration is present and valid
+  # Configuration must have 'components' array to be considered present
+  #
+  # @return [Boolean] True if configuration is present and has components
+  #
+  def bundle_config_present?
+    params[:bundle_configuration].present? && bundle_configuration['components'].present?
+  end
+
+  # Check if bundle variants should be regenerated
+  # Requires regenerate=true param and valid bundle configuration
+  #
+  # @return [Boolean] True if should regenerate variants
+  #
+  def should_regenerate?
+    params[:regenerate] == 'true' && bundle_config_present?
   end
 end

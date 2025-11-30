@@ -1,4 +1,4 @@
-<%= helpers.form_with model: product, url: url, method: method, data: { controller: "product-form", turbo: true }, class: "space-y-6" do |form| %>
+<%= helpers.form_with model: product, url: url, method: method, data: { controller: "product-form bundle-composer", turbo: true }, class: "space-y-6" do |form| %>
   <!-- Error Summary -->
   <%= render Shared::FormErrorsComponent.new(errors: product.errors) %>
 
@@ -56,7 +56,7 @@
             class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm #{product.errors[:product_type].any? ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}",
             data: {
               product_form_target: "productType",
-              action: "change->product-form#handleTypeChange"
+              action: "change->product-form#handleTypeChange change->bundle-composer#productTypeChanged"
             },
             aria: {
               describedby: product.errors[:product_type].any? ? "product-type-error" : nil,
@@ -66,6 +66,9 @@
           <p class="text-xs text-red-600 mt-1" id="product-type-error" role="alert"><%= product.errors[:product_type].first %></p>
         <% end %>
       </div>
+
+      <!-- Bundle Composer -->
+      <%= render 'bundle_composer/composer' %>
 
       <!-- Configuration Type select (shown only for configurable products) -->
       <div data-product-form-target="configurationTypeContainer" class="<%= product.product_type_configurable? ? '' : 'hidden' %>">

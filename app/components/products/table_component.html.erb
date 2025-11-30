@@ -1,33 +1,33 @@
 <%= helpers.turbo_frame_tag "products_table" do %>
-  <div class="overflow-hidden border border-gray-200 rounded-lg shadow-sm">
+  <div class="overflow-hidden border border-gray-200 rounded-lg shadow-sm overflow-x-auto">
     <table class="min-w-full divide-y divide-gray-200">
       <thead class="bg-gray-50">
         <tr>
-          <th scope="col" class="px-6 py-3 text-left">
+          <th scope="col" class="w-12 px-3 py-3 text-left">
             <input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600" data-action="change->bulk-actions#toggleAll" aria-label="Select all products">
           </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+          <th scope="col" class="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider whitespace-nowrap">
             <%= sort_link('sku', 'SKU') %>
           </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+          <th scope="col" class="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider">
             <%= sort_link('name', 'Name') %>
           </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+          <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider whitespace-nowrap">
             Type
           </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+          <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider whitespace-nowrap">
             Labels
           </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-            Inventory
+          <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider whitespace-nowrap">
+            Inv
           </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+          <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider whitespace-nowrap">
             Status
           </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+          <th scope="col" class="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider whitespace-nowrap">
             <%= sort_link('created_at', 'Created') %>
           </th>
-          <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+          <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider whitespace-nowrap">
             Actions
           </th>
         </tr>
@@ -35,52 +35,97 @@
       <tbody class="bg-white divide-y divide-gray-200">
         <% if products.any? %>
           <% products.each do |product| %>
-            <tr class="hover:bg-gray-50 transition-colors" data-product-id="<%= product.id %>">
-              <td class="px-6 py-4 whitespace-nowrap">
-                <input
-                  type="checkbox"
-                  class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
-                  data-bulk-actions-target="checkbox"
-                  data-action="change->bulk-actions#toggleCheckbox"
-                  value="<%= product.id %>"
-                  aria-label="Select <%= product.name %>"
-                >
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                <%= helpers.link_to product.sku, helpers.product_path(product), class: "text-blue-600 hover:text-blue-900", data: { turbo_frame: "_top" } %>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                <%= product.name %>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <%= type_badge(product) %>
-              </td>
-              <td class="px-6 py-4 text-sm text-gray-700">
-                <div class="flex flex-wrap gap-1">
-                  <% labels_to_show = product.labels.take(3) %>
-                  <% total_labels = product.labels.size %>
-                  <% labels_to_show.each do |label| %>
-                    <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">
-                      <%= label.name %>
-                    </span>
+            <% has_children = expandable_product?(product) %>
+            <% children_list = has_children ? expandable_children(product) : [] %>
+
+            <%# Parent row - with expand/collapse for configurable/bundle products %>
+            <tr
+              class="hover:bg-gray-50 transition-colors"
+              data-product-id="<%= product.id %>"
+              <% if has_children %>
+                data-controller="expandable-row"
+                data-expandable-row-expanded-value="false"
+              <% end %>
+            >
+              <td class="px-3 py-3 whitespace-nowrap">
+                <div class="flex items-center gap-1">
+                  <% if has_children %>
+                    <button
+                      type="button"
+                      class="p-0.5 rounded hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      data-action="click->expandable-row#toggle"
+                      data-expandable-row-target="trigger"
+                      aria-expanded="false"
+                      aria-label="Expand <%= product.name %> to show <%= children_list.size %> <%= children_label(product) %>"
+                    >
+                      <svg
+                        data-expandable-row-target="icon"
+                        class="h-4 w-4 text-gray-500 transform transition-transform duration-200"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  <% else %>
+                    <div class="w-5"></div>
                   <% end %>
-                  <% if total_labels > 3 %>
-                    <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">
-                      +<%= total_labels - 3 %>
+                  <input
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
+                    data-bulk-actions-target="checkbox"
+                    data-action="change->bulk-actions#toggleCheckbox"
+                    value="<%= product.id %>"
+                    <% if has_children %>data-parent-checkbox="true"<% end %>
+                    aria-label="Select <%= product.name %>"
+                  >
+                </div>
+              </td>
+              <td class="px-3 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                <div class="flex items-center gap-1">
+                  <%= helpers.link_to product.sku, helpers.product_path(product), class: "text-blue-600 hover:text-blue-900 text-xs", data: { turbo_frame: "_top" } %>
+                  <% if has_children %>
+                    <span class="inline-flex items-center rounded-full bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">
+                      <%= children_list.size %>
                     </span>
                   <% end %>
                 </div>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+              <td class="px-3 py-3 text-sm text-gray-700 whitespace-nowrap">
+                <span title="<%= product.name %>">
+                  <%= truncate(product.name, length: 30) %>
+                </span>
+              </td>
+              <td class="px-3 py-3 whitespace-nowrap">
+                <%= type_badge(product) %>
+              </td>
+              <td class="px-3 py-3 text-sm text-gray-700">
+                <div class="flex flex-wrap gap-1">
+                  <% labels_to_show = product.labels.take(2) %>
+                  <% total_labels = product.labels.size %>
+                  <% labels_to_show.each do |label| %>
+                    <span class="inline-flex items-center rounded-full bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-800 truncate max-w-16">
+                      <%= label.name %>
+                    </span>
+                  <% end %>
+                  <% if total_labels > 2 %>
+                    <span class="inline-flex items-center rounded-full bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-800">
+                      +<%= total_labels - 2 %>
+                    </span>
+                  <% end %>
+                </div>
+              </td>
+              <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700 text-right">
                 <%= product.total_inventory %>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap">
+              <td class="px-3 py-3 whitespace-nowrap">
                 <%= status_badge(product) %>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+              <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700">
                 <%= product.created_at.strftime('%Y-%m-%d') %>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              <td class="px-3 py-3 whitespace-nowrap text-right text-sm font-medium">
                 <div class="flex justify-end gap-2">
                   <%= helpers.link_to helpers.edit_product_path(product), class: "text-blue-600 hover:text-blue-900 inline-flex items-center", title: "Edit #{product.name}", data: { turbo_frame: "_top" } do %>
                     <%= edit_icon %>
@@ -103,6 +148,87 @@
                 </div>
               </td>
             </tr>
+
+            <%# Child rows for subproducts (configurable variants) or bundle_variants (bundle variants) %>
+            <% if has_children %>
+              <% children_list.each_with_index do |child, index| %>
+                <%# For configurable products, get config for variant info %>
+                <% config = product.product_type_configurable? ? product.product_configurations_as_super.find { |c| c.subproduct_id == child.id } : nil %>
+                <tr
+                  class="hidden bg-gray-50/50 hover:bg-gray-100 transition-colors border-l-4 border-blue-200"
+                  data-product-id="<%= child.id %>"
+                  data-parent-id="<%= product.id %>"
+                >
+                  <td class="px-3 py-2 whitespace-nowrap">
+                    <div class="flex items-center gap-1">
+                      <div class="w-5"></div>
+                      <input
+                        type="checkbox"
+                        class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
+                        data-bulk-actions-target="checkbox"
+                        data-action="change->bulk-actions#toggleCheckbox"
+                        value="<%= child.id %>"
+                        data-child-of="<%= product.id %>"
+                        aria-label="Select <%= child.name %>"
+                      >
+                    </div>
+                  </td>
+                  <td class="px-3 py-2 whitespace-nowrap text-sm">
+                    <div class="flex items-center gap-1">
+                      <span class="text-gray-400">└</span>
+                      <%= helpers.link_to child.sku, helpers.product_path(child), class: "text-blue-600 hover:text-blue-900 font-medium text-xs", data: { turbo_frame: "_top" } %>
+                      <% if product.product_type_bundle? && child.subproducts.any? %>
+                        <%# For bundle variants, show component count %>
+                        <span class="inline-flex items-center rounded bg-amber-100 px-1 py-0.5 text-xs font-medium text-amber-800">
+                          <%= child.subproducts.count %>
+                        </span>
+                      <% end %>
+                    </div>
+                  </td>
+                  <td class="px-3 py-2 text-sm text-gray-600 whitespace-nowrap">
+                    <span title="<%= child.name %>">
+                      <%= truncate(child.name, length: 30) %>
+                    </span>
+                    <% if product.product_type_configurable? && config&.info&.dig('variant_config').present? %>
+                      <%# For configurable products, show variant configuration values %>
+                      <% config.info['variant_config'].each do |key, value| %>
+                        <span class="inline-flex items-center rounded bg-blue-50 px-1 py-0.5 text-xs text-blue-700 ml-1">
+                          <%= value %>
+                        </span>
+                      <% end %>
+                    <% end %>
+                  </td>
+                  <td class="px-3 py-2 whitespace-nowrap">
+                    <%= type_badge(child) %>
+                  </td>
+                  <td class="px-3 py-2 text-sm text-gray-500">
+                    <span class="text-gray-400 text-xs">—</span>
+                  </td>
+                  <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-600 text-right">
+                    <%= child.total_inventory %>
+                  </td>
+                  <td class="px-3 py-2 whitespace-nowrap">
+                    <%= status_badge(child) %>
+                  </td>
+                  <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                    <%= child.created_at.strftime('%Y-%m-%d') %>
+                  </td>
+                  <td class="px-3 py-2 whitespace-nowrap text-right text-sm font-medium">
+                    <div class="flex justify-end gap-2">
+                      <%= helpers.link_to helpers.edit_product_path(child), class: "text-blue-600 hover:text-blue-900 inline-flex items-center", title: "Edit #{child.name}", data: { turbo_frame: "_top" } do %>
+                        <%= edit_icon %>
+                        <span class="sr-only">Edit</span>
+                      <% end %>
+
+                      <%= helpers.link_to helpers.product_path(child), class: "text-gray-600 hover:text-gray-900 inline-flex items-center", title: "View #{child.name}", data: { turbo_frame: "_top" } do %>
+                        <%= view_icon %>
+                        <span class="sr-only">View</span>
+                      <% end %>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
+            <% end %>
           <% end %>
         <% else %>
           <tr>

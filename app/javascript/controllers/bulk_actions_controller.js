@@ -58,19 +58,53 @@ export default class extends Controller {
   /**
    * Toggle individual checkbox
    *
+   * Handles parent-child relationships:
+   * - When a parent checkbox is checked, all its children are also checked
+   * - When a parent checkbox is unchecked, all its children are also unchecked
+   *
    * @param {Event} event - Change event from individual checkbox
    */
   toggleCheckbox(event) {
     const checkbox = event.target
+    const isParent = checkbox.dataset.parentCheckbox === "true"
+    const parentId = checkbox.value
 
     if (checkbox.checked) {
       this.selectedIds.add(checkbox.value)
+
+      // If this is a parent checkbox, also select all children
+      if (isParent) {
+        this.getChildCheckboxes(parentId).forEach(childCheckbox => {
+          childCheckbox.checked = true
+          this.selectedIds.add(childCheckbox.value)
+        })
+      }
     } else {
       this.selectedIds.delete(checkbox.value)
+
+      // If this is a parent checkbox, also deselect all children
+      if (isParent) {
+        this.getChildCheckboxes(parentId).forEach(childCheckbox => {
+          childCheckbox.checked = false
+          this.selectedIds.delete(childCheckbox.value)
+        })
+      }
     }
 
     this.updateToolbar()
     this.updateSelectAllCheckbox()
+  }
+
+  /**
+   * Get all child checkboxes for a parent
+   *
+   * @param {string} parentId - The parent product ID
+   * @returns {Array<HTMLInputElement>} Array of child checkbox elements
+   */
+  getChildCheckboxes(parentId) {
+    return this.checkboxTargets.filter(
+      checkbox => checkbox.dataset.childOf === parentId
+    )
   }
 
   /**

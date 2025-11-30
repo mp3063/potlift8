@@ -252,6 +252,62 @@ module Products
       </svg>'.html_safe
     end
 
+    # Check if product is expandable (has children to display)
+    #
+    # For configurable products: expands to show subproducts (variants)
+    # For bundle products: expands to show bundle_variants (generated bundle variants)
+    #
+    # @param product [Product] The product to check
+    # @return [Boolean] true if product has children to display
+    def expandable_product?(product)
+      if product.product_type_bundle?
+        product.bundle_variants.any?
+      elsif product.product_type_configurable?
+        product.subproducts.any?
+      else
+        false
+      end
+    end
+
+    # Get the children to display for an expandable product
+    #
+    # For configurable products: returns subproducts (variants)
+    # For bundle products: returns bundle_variants (generated bundle variants)
+    #
+    # @param product [Product] The product to get children for
+    # @return [Array<Product>] Array of child products
+    def expandable_children(product)
+      if product.product_type_bundle?
+        product.bundle_variants.to_a
+      elsif product.product_type_configurable?
+        product.subproducts.to_a
+      else
+        []
+      end
+    end
+
+    # Get the label for child count badge
+    #
+    # @param product [Product] The product to get label for
+    # @return [String] Label text (e.g., "variants" or "items")
+    def children_label(product)
+      if product.product_type_bundle?
+        'variants'
+      elsif product.product_type_configurable?
+        'variants'
+      else
+        'items'
+      end
+    end
+
+    # View icon SVG
+    def view_icon
+      '<svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path d="M10 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" />
+        <path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 010-1.186A10.004 10.004 0 0110 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0110 17c-4.257 0-7.893-2.66-9.336-6.41zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+      </svg>'.html_safe
+    end
+
     # Package icon SVG (for empty state)
     def package_icon
       '<svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
