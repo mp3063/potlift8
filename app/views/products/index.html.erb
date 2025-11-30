@@ -50,18 +50,18 @@
           label: "Search products by name or SKU"
         ) %>
 
-        <div class="mt-4 sm:mt-0">
-          <%= f.select :product_type,
+        <div class="mt-4 sm:mt-0" data-controller="auto-submit">
+          <%= f.select :type,
               options_for_select([
                 ['All Types', ''],
-                ['Sellable', 1],
-                ['Configurable', 2],
-                ['Bundle', 3]
-              ], params[:product_type]),
+                ['Sellable', 'sellable'],
+                ['Configurable', 'configurable'],
+                ['Bundle', 'bundle']
+              ], params[:type]),
               {},
               class: "block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-blue-600 sm:text-sm sm:leading-6",
               aria: { label: "Filter by product type" },
-              data: { action: "change->submit#submit" } %>
+              data: { action: "change->auto-submit#submit" } %>
         </div>
 
         <!-- Label filter dropdown -->
@@ -87,7 +87,7 @@
             <div class="py-1">
               <% if @available_labels.any? %>
                 <% @available_labels.each do |label| %>
-                  <%= link_to products_path(label_id: label.id, q: params[:q], product_type: params[:product_type]),
+                  <%= link_to products_path(label_id: label.id, q: params[:q], type: params[:type]),
                       class: "flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900",
                       role: "menuitem" do %>
                     <span class="font-medium"><%= label.name %></span>
@@ -96,7 +96,7 @@
 
                   <% if label.sublabels.any? %>
                     <% label.sublabels.each do |sublabel| %>
-                      <%= link_to products_path(label_id: sublabel.id, q: params[:q], product_type: params[:product_type]),
+                      <%= link_to products_path(label_id: sublabel.id, q: params[:q], type: params[:type]),
                           class: "flex items-center justify-between px-4 py-2 pl-8 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900",
                           role: "menuitem" do %>
                         <span><%= sublabel.name %></span>
@@ -114,7 +114,7 @@
 
         <div class="mt-4 sm:mt-0 flex gap-x-2">
           <%= f.submit "Search", class: "rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" %>
-          <% if params[:q].present? || params[:product_type].present? || params[:label_id].present? %>
+          <% if params[:q].present? || params[:type].present? || params[:label_id].present? %>
             <%= link_to "Clear", products_path, class: "rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" %>
           <% end %>
         </div>
@@ -129,7 +129,7 @@
               <circle cx="3" cy="3" r="3" />
             </svg>
             <%= @current_label.full_name %>
-            <%= link_to products_path(q: params[:q], product_type: params[:product_type]),
+            <%= link_to products_path(q: params[:q], type: params[:type]),
                 class: "ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 focus:ring-offset-blue-100",
                 aria: { label: "Remove label filter" } do %>
               <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
@@ -198,7 +198,7 @@
     current_sort: params[:sort],
     current_direction: params[:direction],
     search_query: params[:q],
-    has_filters: params[:product_type].present? || params[:label_id].present?
+    has_filters: params[:type].present? || params[:label_id].present?
   ) %>
 
   <!-- Bulk Label Editor Modal -->
