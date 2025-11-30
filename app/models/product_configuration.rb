@@ -111,12 +111,16 @@ class ProductConfiguration < ApplicationRecord
     end
   end
 
-  # Validate that the superproduct is configurable or bundle
+  # Validate that the superproduct is configurable, bundle, or bundle_variant
   def validate_superproduct_type
     return unless superproduct
 
-    unless superproduct.product_type_configurable? || superproduct.product_type_bundle?
-      errors.add(:superproduct, "must be a configurable or bundle product")
+    valid_type = superproduct.product_type_configurable? ||
+                 superproduct.product_type_bundle? ||
+                 superproduct.bundle_variant?
+
+    unless valid_type
+      errors.add(:superproduct, "must be a configurable, bundle, or bundle variant product")
     end
   end
 
@@ -132,6 +136,11 @@ class ProductConfiguration < ApplicationRecord
     # For bundles, subproducts cannot be bundles
     if superproduct.product_type_bundle? && subproduct.product_type_bundle?
       errors.add(:subproduct, "cannot be a bundle when superproduct is a bundle")
+    end
+
+    # For bundle variants, subproducts must be sellable or configurable
+    if superproduct.bundle_variant? && subproduct.product_type_bundle?
+      errors.add(:subproduct, "cannot be a bundle when superproduct is a bundle variant")
     end
   end
 end

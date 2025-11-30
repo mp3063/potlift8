@@ -240,6 +240,36 @@ RSpec.describe Product, type: :model do
       end
     end
 
+    describe '.parent_products_only' do
+      let!(:parent) { create(:product, :sellable, company: company) }
+      let!(:configurable) { create(:product, :configurable_variant, company: company) }
+      let!(:variant) { create(:product, :sellable, company: company) }
+      let!(:bundle_parent) { create(:product, :bundle, company: company) }
+      let!(:bundle_variant) { create(:product, :bundle, company: company, bundle_variant: true, parent_bundle: bundle_parent) }
+
+      before do
+        # Create a ProductConfiguration to make variant a subproduct
+        ProductConfiguration.create!(
+          superproduct: configurable,
+          subproduct: variant,
+          quantity: 1,
+          info: { 'variant_config' => { 'size' => 'small' } }
+        )
+      end
+
+      it 'excludes products that are subproducts' do
+        result = Product.parent_products_only
+        expect(result).to include(parent, configurable, bundle_parent)
+        expect(result).not_to include(variant)
+      end
+
+      it 'excludes bundle variants' do
+        result = Product.parent_products_only
+        expect(result).not_to include(bundle_variant)
+        expect(result).to include(bundle_parent)
+      end
+    end
+
     describe '.by_sku' do
       let!(:product) { create(:product, company: company, sku: 'FINDME') }
       let!(:other) { create(:product, company: company, sku: 'OTHER') }

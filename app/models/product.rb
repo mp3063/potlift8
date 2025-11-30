@@ -120,9 +120,23 @@ class Product < ApplicationRecord
   # Pricing associations (Phase 17-19)
   has_many :prices, dependent: :destroy
 
+  # Bundle template relationship
+  has_one :bundle_template, dependent: :destroy
+
+  # Generated variants relationship (this bundle is the parent)
+  has_many :bundle_variants,
+           class_name: 'Product',
+           foreign_key: 'parent_bundle_id',
+           dependent: :destroy
+
+  # Parent bundle relationship (this product is a generated variant)
+  belongs_to :parent_bundle,
+             class_name: 'Product',
+             optional: true
+
   # Validations
   validates :company, presence: true
-  validates :sku, presence: true, uniqueness: { scope: :company_id, case_sensitive: false }
+  validates :sku, presence: true, uniqueness: { scope: :company_id, case_sensitive: false, conditions: -> { where.not(product_status: :deleted) } }
   validates :name, presence: true
   validates :product_type, presence: true
 
@@ -137,6 +151,18 @@ class Product < ApplicationRecord
   scope :bundle_products, -> { where(product_type: :bundle) }
   scope :by_sku, ->(sku) { where(sku: sku) }
   scope :by_ean, ->(ean) { where(ean: ean) }
+  scope :bundle_variants, -> { where(bundle_variant: true) }
+  scope :not_bundle_variants, -> { where(bundle_variant: false) }
+
+  # Parent products only - excludes:
+  # 1. Products that are subproducts of configurable/bundle products (via ProductConfiguration)
+  # 2. Bundle variants (products generated from bundle templates with parent_bundle_id set)
+  # Use when: Displaying product listing with hierarchical view (parent products with expandable children)
+  # This filters out variant products that are managed as children of configurable/bundle products
+  scope :parent_products_only, -> {
+    where.not(id: ProductConfiguration.select(:subproduct_id))
+         .where(bundle_variant: false)
+  }
 
   # Performance-Optimized Scopes with Eager Loading
   #
