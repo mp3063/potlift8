@@ -1,0 +1,74 @@
+<div data-product-card
+     data-product-id="<%= product.id %>"
+     data-product-type="<%= product.product_type %>"
+     class="border rounded-lg p-4 bg-white">
+
+  <div class="flex justify-between items-start mb-3">
+    <div>
+      <h5 class="font-medium text-gray-900"><%= product.name %></h5>
+      <p class="text-sm text-gray-500">SKU: <%= product.sku %> • <%= product.product_type.titleize %></p>
+    </div>
+    <button type="button"
+            data-action="click->bundle-composer#removeProduct"
+            class="text-red-600 hover:text-red-800 text-sm">
+      Remove
+    </button>
+  </div>
+
+  <% if product.product_type_sellable? %>
+    <!-- Sellable: single quantity input -->
+    <div class="flex items-center gap-3">
+      <label class="text-sm text-gray-600">Quantity:</label>
+      <input type="number" min="1" max="99" value="1"
+             data-quantity-input
+             data-action="change->bundle-composer#quantityChanged"
+             class="w-20 rounded-md border-gray-300 text-sm">
+      <span class="text-sm text-gray-500">
+        (<%= product.total_inventory || 0 %> in stock)
+      </span>
+    </div>
+  <% else %>
+    <!-- Configurable: variant list -->
+    <div class="space-y-2">
+      <p class="text-sm text-gray-600 mb-2">Select variants to include:</p>
+      <% variants = defined?(variants) ? variants : product.subproducts %>
+      <% discontinued = defined?(discontinued_variants) ? discontinued_variants : [] %>
+
+      <% variants.each do |variant| %>
+        <% is_discontinued = discontinued.include?(variant) || variant.product_status_discontinued? %>
+        <% variant_code = variant.info&.dig('variant_config')&.values&.first || variant.sku %>
+
+        <div data-variant-row
+             data-variant-id="<%= variant.id %>"
+             data-variant-code="<%= variant_code %>"
+             class="flex items-center gap-3 p-2 rounded <%= is_discontinued ? 'bg-gray-100 opacity-60' : 'bg-gray-50' %>">
+
+          <input type="checkbox"
+                 data-variant-checkbox
+                 data-action="change->bundle-composer#toggleVariant"
+                 <%= 'disabled' if is_discontinued %>
+                 <%= 'checked' unless is_discontinued %>
+                 class="rounded border-gray-300 text-blue-600">
+
+          <span class="flex-1 text-sm">
+            <%= variant.name || variant.sku %>
+            <% if is_discontinued %>
+              <span class="text-red-500 text-xs ml-1">(discontinued)</span>
+            <% end %>
+          </span>
+
+          <% unless is_discontinued %>
+            <input type="number" min="1" max="99" value="1"
+                   data-variant-quantity
+                   data-action="change->bundle-composer#quantityChanged"
+                   class="w-16 rounded-md border-gray-300 text-sm">
+          <% end %>
+
+          <span class="text-xs text-gray-500 w-20 text-right">
+            <%= variant.total_inventory || 0 %> in stock
+          </span>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</div>

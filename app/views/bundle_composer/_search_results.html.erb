@@ -1,0 +1,25 @@
+<% if products.any? %>
+  <ul class="divide-y divide-gray-200">
+    <% products.each do |product| %>
+      <li class="p-3 hover:bg-gray-50 cursor-pointer flex justify-between items-center"
+          data-action="click->bundle-composer#addProduct"
+          data-product-id="<%= product.id %>"
+          data-product-type="<%= product.product_type %>"
+          data-product-name="<%= product.name %>">
+        <div>
+          <p class="font-medium text-gray-900"><%= product.name %></p>
+          <p class="text-sm text-gray-500">
+            SKU: <%= product.sku %> •
+            <%= product.product_type.titleize %>
+            <% if product.product_type_configurable? %>
+              (<%= product.subproducts.count %> variants)
+            <% end %>
+          </p>
+        </div>
+        <span class="text-blue-600 text-sm">+ Add</span>
+      </li>
+    <% end %>
+  </ul>
+<% else %>
+  <p class="p-3 text-gray-500 text-sm">No products found</p>
+<% end %>

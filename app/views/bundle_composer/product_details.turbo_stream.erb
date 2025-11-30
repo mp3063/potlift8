@@ -1,0 +1,93 @@
+<%# Turbo Stream response for product details %>
+<%# Updates the product details container with product information and variants %>
+
+<%= turbo_stream.update "bundle_composer_product_details_#{@product.id}" do %>
+  <div class="border border-gray-200 rounded-lg p-4 bg-white">
+    <div class="mb-4">
+      <h3 class="font-medium text-gray-900"><%= @product.name %></h3>
+      <p class="text-sm text-gray-500"><%= @product.sku %></p>
+    </div>
+
+    <% if @product.product_type_sellable? %>
+      <%# Sellable product - just show quantity input %>
+      <div class="space-y-2">
+        <label class="block text-sm font-medium text-gray-700">
+          Quantity
+        </label>
+        <input type="number"
+               name="quantity"
+               value="1"
+               min="1"
+               max="99"
+               class="w-20 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+               data-product-id="<%= @product.id %>">
+      </div>
+    <% elsif @product.product_type_configurable? %>
+      <%# Configurable product - show variant selection %>
+      <div class="space-y-3">
+        <label class="block text-sm font-medium text-gray-700">
+          Select Variants (<%= @variants.count %> available)
+        </label>
+
+        <% if @variants.any? %>
+          <div class="space-y-2 max-h-64 overflow-y-auto">
+            <% @variants.each do |variant| %>
+              <% discontinued = @discontinued_variant_ids.include?(variant.id) %>
+              <div class="flex items-center justify-between p-2 border border-gray-200 rounded <%= 'bg-gray-50' if discontinued %>">
+                <div class="flex items-center flex-1">
+                  <input type="checkbox"
+                         value="<%= variant.id %>"
+                         class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                         data-variant-id="<%= variant.id %>"
+                         data-product-id="<%= @product.id %>"
+                         <%= 'disabled' if discontinued %>>
+                  <label class="ml-3 text-sm">
+                    <span class="<%= 'text-gray-400' if discontinued %>"><%= variant.name %></span>
+                    <span class="text-gray-500"> - <%= variant.sku %></span>
+                    <% if discontinued %>
+                      <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                        Discontinued
+                      </span>
+                    <% end %>
+                  </label>
+                </div>
+                <div class="ml-4">
+                  <input type="number"
+                         name="variant_quantity_<%= variant.id %>"
+                         value="1"
+                         min="1"
+                         max="99"
+                         class="w-20 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                         data-variant-id="<%= variant.id %>"
+                         <%= 'disabled' if discontinued %>>
+                </div>
+              </div>
+            <% end %>
+          </div>
+
+          <% if @discontinued_variant_ids.any? %>
+            <p class="text-sm text-gray-500 italic">
+              Discontinued variants will be excluded from bundle generation
+            </p>
+          <% end %>
+        <% else %>
+          <p class="text-sm text-gray-500">No variants available</p>
+        <% end %>
+      </div>
+    <% end %>
+
+    <div class="mt-4 flex justify-end space-x-2">
+      <button type="button"
+              class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              data-action="cancel">
+        Cancel
+      </button>
+      <button type="button"
+              class="px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700"
+              data-action="confirm"
+              data-product-id="<%= @product.id %>">
+        Add to Bundle
+      </button>
+    </div>
+  </div>
+<% end %>

@@ -206,4 +206,14 @@ Rails.application.routes.draw do
   # PATCH/PUT /catalog_item_attribute_values/:id - Update override
   # DELETE /catalog_item_attribute_values/:id - Delete override
   resources :catalog_item_attribute_values, only: [:create, :update, :destroy]
+
+  # Bundle Composer (AJAX search and preview for bundle creation)
+  # GET /bundle_composer/search?q=shirt - Search products for bundle
+  # GET /bundle_composer/product/:id - Get product details with variants
+  # POST /bundle_composer/preview - Validate bundle configuration
+  namespace :bundle_composer do
+    get :search
+    get 'product/:id', action: :product_details, as: :product_details
+    post :preview
+  end
 end
