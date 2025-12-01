@@ -246,9 +246,54 @@ RSpec.describe 'ProductAssets', type: :request do
         expect(asset.file).to be_attached
       end
 
-      it 'validates file presence for video type' do
-        invalid_params = valid_params.deep_dup
-        invalid_params[:asset].delete(:file)
+      it 'creates video asset with URL only (no file)' do
+        url_params = {
+          product_asset: {
+            name: 'YouTube Demo',
+            product_asset_type: 'video',
+            asset_visibility: 'public_visibility',
+            asset_description: 'Product video on YouTube',
+            video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+          }
+        }
+
+        expect {
+          post product_product_assets_path(product), params: url_params
+        }.to change(product.product_assets.videos, :count).by(1)
+
+        asset = product.product_assets.videos.last
+        expect(asset.name).to eq('YouTube Demo')
+        expect(asset.info['url']).to eq('https://www.youtube.com/watch?v=dQw4w9WgXcQ')
+        expect(asset.file).not_to be_attached
+      end
+
+      it 'accepts Vimeo URLs for video assets' do
+        vimeo_params = {
+          product_asset: {
+            name: 'Vimeo Demo',
+            product_asset_type: 'video',
+            asset_visibility: 'public_visibility',
+            video_url: 'https://vimeo.com/123456789'
+          }
+        }
+
+        expect {
+          post product_product_assets_path(product), params: vimeo_params
+        }.to change(product.product_assets.videos, :count).by(1)
+
+        asset = product.product_assets.videos.last
+        expect(asset.info['url']).to eq('https://vimeo.com/123456789')
+        expect(asset.file).not_to be_attached
+      end
+
+      it 'validates that video has either file OR URL (not both empty)' do
+        invalid_params = {
+          product_asset: {
+            name: 'Product Demo',
+            product_asset_type: 'video',
+            asset_visibility: 'public_visibility'
+          }
+        }
 
         expect {
           post product_product_assets_path(product), params: invalid_params

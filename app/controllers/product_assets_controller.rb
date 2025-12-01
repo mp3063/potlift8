@@ -386,8 +386,19 @@ class ProductAssetsController < ApplicationController
     )
   end
 
-  # Get URL from params (can be in :asset or :product_asset namespace)
+  # Get URL from params based on asset type
+  # Video assets use video_url, Link assets use link_url
   def url_param
+    # Check for type-specific URL params first (new format)
+    video_url = params.dig(:product_asset, :video_url) || params.dig(:asset, :video_url)
+    link_url = params.dig(:product_asset, :link_url) || params.dig(:asset, :link_url)
+
+    # Return the appropriate URL based on which one has a value
+    # (only one should be filled based on asset type)
+    return video_url if video_url.present?
+    return link_url if link_url.present?
+
+    # Fallback to old format for backward compatibility
     params.dig(:asset, :url) || params.dig(:product_asset, :url)
   end
 

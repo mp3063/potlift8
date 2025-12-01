@@ -66,11 +66,11 @@
     <div class="space-y-4">
       <!-- Video URL -->
       <div>
-        <label for="asset_url" class="block text-sm font-medium text-gray-700">Video URL</label>
-        <input type="url" name="asset[url]" id="asset_url"
+        <label for="product_asset_video_url" class="block text-sm font-medium text-gray-700">Video URL</label>
+        <input type="url" name="product_asset[video_url]" id="product_asset_video_url"
             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
             placeholder="https://www.youtube.com/watch?v=..."
-            value="<%= product_asset.info&.dig('url') %>"
+            value="<%= product_asset.info&.dig('url') if product_asset.video? %>"
             data-asset-form-target="videoUrl">
         <p class="mt-1 text-xs text-gray-500">YouTube, Vimeo, or other video URL</p>
       </div>
@@ -104,15 +104,15 @@
     <div class="space-y-4">
       <!-- Link URL -->
       <div>
-        <label for="asset_link_url" class="block text-sm font-medium text-gray-700">
+        <label for="product_asset_link_url" class="block text-sm font-medium text-gray-700">
           URL
           <span class="text-red-600 ml-1" aria-hidden="true">*</span>
           <span class="sr-only">(required)</span>
         </label>
-        <input type="url" name="asset[url]" id="asset_link_url"
+        <input type="url" name="product_asset[link_url]" id="product_asset_link_url"
             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
             placeholder="https://example.com"
-            value="<%= product_asset.info&.dig('url') %>"
+            value="<%= product_asset.info&.dig('url') if product_asset.link? %>"
             data-asset-form-target="linkUrl">
       </div>
     </div>
