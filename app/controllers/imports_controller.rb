@@ -111,13 +111,33 @@ class ImportsController < ApplicationController
                   { 'status' => 'pending' }
                 end
 
+    # Set view variables from progress data
+    @status = @progress['status'] || 'pending'
+    @imported = @progress['imported_count'] || 0
+    @updated = @progress['updated_count'] || 0
+    @errors = @progress['errors']&.size || 0
+    @error_message = @progress['error']
+    @percentage = @progress['progress'] || 0
+
     respond_to do |format|
       format.html # renders progress.html.erb
-      format.json { render json: @progress }
+      format.json do
+        # Normalize response for JS controller
+        render json: {
+          status: @status,
+          progress: @percentage,
+          imported: @imported,
+          updated: @updated,
+          errors: @errors,
+          error: @error_message
+        }
+      end
     end
   rescue Redis::BaseError => e
     Rails.logger.error("Redis error in progress check: #{e.message}")
     @progress = { 'status' => 'error', 'error' => 'Could not retrieve progress' }
+    @status = 'error'
+    @error_message = 'Could not retrieve progress'
 
     respond_to do |format|
       format.html

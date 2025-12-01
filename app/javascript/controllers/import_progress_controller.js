@@ -43,8 +43,8 @@ export default class extends Controller {
       status: this.statusValue
     })
 
-    // Start polling if job is still processing
-    if (this.statusValue === "processing") {
+    // Start polling if job is still processing or pending
+    if (this.statusValue === "processing" || this.statusValue === "pending") {
       this.startPolling()
     }
   }
@@ -162,6 +162,7 @@ export default class extends Controller {
         break
 
       case "processing":
+      case "pending":
         if (this.hasProcessingTarget) {
           this.processingTarget.classList.remove("hidden")
         }

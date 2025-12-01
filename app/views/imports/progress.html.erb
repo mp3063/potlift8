@@ -13,8 +13,8 @@
      data-import-progress-status-value="<%= @status %>">
 
   <%= render Ui::CardComponent.new do %>
-    <!-- Processing State -->
-    <div data-import-progress-target="processing" class="<%= @status == 'processing' ? '' : 'hidden' %>">
+    <!-- Processing State (also shown for pending) -->
+    <div data-import-progress-target="processing" class="<%= @status.in?(['processing', 'pending']) ? '' : 'hidden' %>">
       <div class="text-center py-12">
         <!-- Spinner Icon -->
         <div class="mx-auto h-16 w-16 flex items-center justify-center">
