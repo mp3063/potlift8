@@ -136,6 +136,10 @@ class ProductsController < ApplicationController
     # HTTP caching with ETag and Last-Modified headers
     # ETag includes all related data that affects the view
     # Returns 304 Not Modified if client has current version
+    #
+    # IMPORTANT: Include CSRF token in ETag to prevent token mismatch errors
+    # When the session changes (e.g., token refresh), cached HTML with old CSRF
+    # tokens would cause InvalidAuthenticityToken errors on form submissions
     fresh_when(
       etag: [
         @product,
@@ -143,7 +147,8 @@ class ProductsController < ApplicationController
         @product.labels.maximum(:updated_at),
         @product.catalog_items.maximum(:updated_at),
         @product.configurations.maximum(:updated_at),
-        @product.subproducts.maximum(:updated_at)
+        @product.subproducts.maximum(:updated_at),
+        form_authenticity_token
       ],
       last_modified: [
         @product.updated_at,
