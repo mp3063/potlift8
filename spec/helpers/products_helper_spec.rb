@@ -3,78 +3,97 @@
 require 'rails_helper'
 
 RSpec.describe ProductsHelper, type: :helper do
-  include ViewComponent::TestHelpers
-
   let(:company) { create(:company) }
 
   describe '#product_status_badge' do
     context 'with active product' do
       let(:product) { create(:product, company: company, product_status: :active) }
 
-      it 'returns success variant badge component' do
-        component = helper.product_status_badge(product)
+      it 'renders success variant badge with status text' do
+        html = helper.product_status_badge(product)
 
-        expect(component).to be_a(Ui::BadgeComponent)
+        aggregate_failures do
+          expect(html).to include('bg-green-100')
+          expect(html).to include('Active')
+        end
       end
     end
 
     context 'with draft product' do
       let(:product) { create(:product, company: company, product_status: :draft) }
 
-      it 'returns warning variant badge component' do
-        component = helper.product_status_badge(product)
+      it 'renders warning variant badge with status text' do
+        html = helper.product_status_badge(product)
 
-        expect(component).to be_a(Ui::BadgeComponent)
+        aggregate_failures do
+          expect(html).to include('bg-yellow-100')
+          expect(html).to include('Draft')
+        end
       end
     end
 
     context 'with incoming product' do
       let(:product) { create(:product, company: company, product_status: :incoming) }
 
-      it 'returns warning variant badge component' do
-        component = helper.product_status_badge(product)
+      it 'renders warning variant badge with status text' do
+        html = helper.product_status_badge(product)
 
-        expect(component).to be_a(Ui::BadgeComponent)
+        aggregate_failures do
+          expect(html).to include('bg-yellow-100')
+          expect(html).to include('Incoming')
+        end
       end
     end
 
     context 'with discontinued product' do
       let(:product) { create(:product, company: company, product_status: :discontinued) }
 
-      it 'returns danger variant badge component' do
-        component = helper.product_status_badge(product)
+      it 'renders danger variant badge with status text' do
+        html = helper.product_status_badge(product)
 
-        expect(component).to be_a(Ui::BadgeComponent)
+        aggregate_failures do
+          expect(html).to include('bg-red-100')
+          expect(html).to include('Discontinued')
+        end
       end
     end
 
     context 'with deleted product' do
       let(:product) { create(:product, company: company, product_status: :deleted) }
 
-      it 'returns danger variant badge component' do
-        component = helper.product_status_badge(product)
+      it 'renders danger variant badge with status text' do
+        html = helper.product_status_badge(product)
 
-        expect(component).to be_a(Ui::BadgeComponent)
+        aggregate_failures do
+          expect(html).to include('bg-red-100')
+          expect(html).to include('Deleted')
+        end
       end
     end
 
     context 'with discontinuing product' do
       let(:product) { create(:product, company: company, product_status: :discontinuing) }
 
-      it 'returns gray variant badge for other statuses' do
-        component = helper.product_status_badge(product)
+      it 'renders gray variant badge with status text' do
+        html = helper.product_status_badge(product)
 
-        expect(component).to be_a(Ui::BadgeComponent)
+        aggregate_failures do
+          expect(html).to include('bg-gray-100')
+          expect(html).to include('Discontinuing')
+        end
       end
     end
 
     context 'with disabled product' do
       let(:product) { create(:product, company: company, product_status: :disabled) }
 
-      it 'returns gray variant badge for other statuses' do
-        component = helper.product_status_badge(product)
+      it 'renders gray variant badge with status text' do
+        html = helper.product_status_badge(product)
 
-        expect(component).to be_a(Ui::BadgeComponent)
+        aggregate_failures do
+          expect(html).to include('bg-gray-100')
+          expect(html).to include('Disabled')
+        end
       end
     end
   end
@@ -83,10 +102,13 @@ RSpec.describe ProductsHelper, type: :helper do
     context 'with sellable product' do
       let(:product) { create(:product, company: company, product_type: :sellable) }
 
-      it 'returns info variant badge component' do
-        component = helper.product_type_badge(product)
+      it 'renders info variant badge with type text' do
+        html = helper.product_type_badge(product)
 
-        expect(component).to be_a(Ui::BadgeComponent)
+        aggregate_failures do
+          expect(html).to include('bg-blue-100')
+          expect(html).to include('Sellable')
+        end
       end
     end
 
@@ -98,79 +120,59 @@ RSpec.describe ProductsHelper, type: :helper do
                configuration_type: :variant)
       end
 
-      it 'returns warning variant badge component' do
-        component = helper.product_type_badge(product)
+      it 'renders warning variant badge with type text' do
+        html = helper.product_type_badge(product)
 
-        expect(component).to be_a(Ui::BadgeComponent)
+        aggregate_failures do
+          expect(html).to include('bg-yellow-100')
+          expect(html).to include('Configurable')
+        end
       end
     end
 
     context 'with bundle product' do
       let(:product) { create(:product, company: company, product_type: :bundle) }
 
-      it 'returns gray variant badge component' do
-        component = helper.product_type_badge(product)
+      it 'renders gray variant badge with type text' do
+        html = helper.product_type_badge(product)
 
-        expect(component).to be_a(Ui::BadgeComponent)
+        aggregate_failures do
+          expect(html).to include('bg-gray-100')
+          expect(html).to include('Bundle')
+        end
       end
     end
   end
 
   describe '#sync_status_badge' do
-    it 'returns success variant for recent sync' do
+    it 'renders success variant badge for recent sync' do
       freeze_time do
-        synced_at = 30.minutes.ago
-        component = helper.sync_status_badge(synced_at)
-
-        expect(component).to be_a(Ui::BadgeComponent)
-      end
-    end
-
-    it 'returns warning variant for outdated sync' do
-      freeze_time do
-        synced_at = 2.hours.ago
-        component = helper.sync_status_badge(synced_at)
-
-        expect(component).to be_a(Ui::BadgeComponent)
-      end
-    end
-
-    it 'returns gray variant for never synced' do
-      component = helper.sync_status_badge(nil)
-
-      expect(component).to be_a(Ui::BadgeComponent)
-    end
-  end
-
-  describe 'integration tests' do
-    let(:product) { create(:product, company: company, product_status: :active, product_type: :sellable) }
-
-    it 'renders status badge with correct content' do
-      rendered = render_inline(helper.product_status_badge(product))
-
-      aggregate_failures do
-        expect(rendered.css('.bg-green-100')).to be_present
-        expect(rendered.text).to include('Active')
-      end
-    end
-
-    it 'renders type badge with correct content' do
-      rendered = render_inline(helper.product_type_badge(product))
-
-      aggregate_failures do
-        expect(rendered.css('.bg-blue-100')).to be_present
-        expect(rendered.text).to include('Sellable')
-      end
-    end
-
-    it 'renders sync badge with correct content for recent sync' do
-      freeze_time do
-        rendered = render_inline(helper.sync_status_badge(30.minutes.ago))
+        html = helper.sync_status_badge(30.minutes.ago)
 
         aggregate_failures do
-          expect(rendered.css('.bg-green-100')).to be_present
-          expect(rendered.text).to include('Synced')
+          expect(html).to include('bg-green-100')
+          expect(html).to include('Synced')
         end
+      end
+    end
+
+    it 'renders warning variant badge for outdated sync' do
+      freeze_time do
+        html = helper.sync_status_badge(2.hours.ago)
+
+        aggregate_failures do
+          expect(html).to include('bg-yellow-100')
+          expect(html).to include('Outdated')
+        end
+      end
+    end
+
+    it 'renders gray variant badge for never synced' do
+      html = helper.sync_status_badge(nil)
+
+      aggregate_failures do
+        expect(html).to include('bg-gray-100')
+        expect(html).to include('Never synced')
       end
     end
   end

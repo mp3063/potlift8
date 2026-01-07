@@ -38,11 +38,17 @@ module ProductsHelper
   # @return [String] HTML badge component
   def sync_status_badge(synced_at)
     if synced_at && synced_at > 1.hour.ago
-      render Ui::BadgeComponent.new(variant: :success, dot: true) { "Synced" }
+      render Ui::BadgeComponent.new(variant: :success, dot: true) do
+        "Synced"
+      end
     elsif synced_at
-      render Ui::BadgeComponent.new(variant: :warning) { "Outdated" }
+      render Ui::BadgeComponent.new(variant: :warning) do
+        "Outdated"
+      end
     else
-      render Ui::BadgeComponent.new(variant: :gray) { "Never synced" }
+      render Ui::BadgeComponent.new(variant: :gray) do
+        "Never synced"
+      end
     end
   end
 end

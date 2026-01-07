@@ -3,9 +3,9 @@ require 'rails_helper'
 RSpec.describe CatalogItemsController, type: :controller do
   let(:company) { create(:company) }
   let(:catalog) { create(:catalog, company: company) }
-  let(:product1) { create(:product, company: company, sku: 'PROD-001', name: 'Test Product 1') }
-  let(:product2) { create(:product, company: company, sku: 'PROD-002', name: 'Test Product 2') }
-  let(:product3) { create(:product, company: company, sku: 'PROD-003', name: 'Test Product 3') }
+  let!(:product1) { create(:product, company: company, sku: 'PROD-001', name: 'Test Product 1') }
+  let!(:product2) { create(:product, company: company, sku: 'PROD-002', name: 'Test Product 2') }
+  let!(:product3) { create(:product, company: company, sku: 'PROD-003', name: 'Test Product 3') }
 
   before do
     # Mock authentication

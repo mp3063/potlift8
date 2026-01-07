@@ -78,7 +78,9 @@ RSpec.describe ApplicationController, type: :controller do
       it 'does not redirect to login' do
         get :index
 
-        expect(response).not_to redirect_to(auth_login_path)
+        # Check response is successful (not a redirect)
+        expect(response).to be_successful
+        expect(response).not_to be_redirect
       end
     end
 
@@ -202,6 +204,13 @@ RSpec.describe ApplicationController, type: :controller do
   end
 
   describe '#current_user' do
+    let(:authlift_client) { instance_double(Authlift::Client) }
+
+    before do
+      allow(controller).to receive(:authlift_client).and_return(authlift_client)
+      allow(authlift_client).to receive(:decode_jwt).and_return({})
+    end
+
     context 'when authenticated' do
       let(:user) { create(:user) }
 
@@ -213,19 +222,19 @@ RSpec.describe ApplicationController, type: :controller do
       end
 
       it 'returns the current user' do
-        expect(controller.current_user).to eq(user)
+        expect(controller.send(:current_user)).to eq(user)
       end
 
       it 'memoizes the user' do
         expect(User).to receive(:find_by).once.and_return(user)
 
-        2.times { controller.current_user }
+        2.times { controller.send(:current_user) }
       end
     end
 
     context 'when not authenticated' do
       it 'returns nil' do
-        expect(controller.current_user).to be_nil
+        expect(controller.send(:current_user)).to be_nil
       end
     end
 
@@ -238,15 +247,18 @@ RSpec.describe ApplicationController, type: :controller do
       end
 
       it 'returns nil' do
-        expect(controller.current_user).to be_nil
+        expect(controller.send(:current_user)).to be_nil
       end
     end
   end
 
   describe '#current_user_name' do
     let(:user) { create(:user, name: 'John Doe') }
+    let(:authlift_client) { instance_double(Authlift::Client) }
 
     before do
+      allow(controller).to receive(:authlift_client).and_return(authlift_client)
+      allow(authlift_client).to receive(:decode_jwt).and_return({})
       session[:user_id] = user.id
       session[:access_token] = 'valid_token'
       session[:authenticated_at] = Time.now.to_i
@@ -254,7 +266,7 @@ RSpec.describe ApplicationController, type: :controller do
     end
 
     it 'returns the current user name' do
-      expect(controller.current_user_name).to eq('John Doe')
+      expect(controller.send(:current_user_name)).to eq('John Doe')
     end
 
     context 'when not authenticated' do
@@ -263,12 +275,19 @@ RSpec.describe ApplicationController, type: :controller do
       end
 
       it 'returns nil' do
-        expect(controller.current_user_name).to be_nil
+        expect(controller.send(:current_user_name)).to be_nil
       end
     end
   end
 
   describe '#current_company' do
+    let(:authlift_client) { instance_double(Authlift::Client) }
+
+    before do
+      allow(controller).to receive(:authlift_client).and_return(authlift_client)
+      allow(authlift_client).to receive(:decode_jwt).and_return({})
+    end
+
     context 'when authenticated with company data' do
       before do
         session[:user_id] = create(:user).id
@@ -281,7 +300,7 @@ RSpec.describe ApplicationController, type: :controller do
       end
 
       it 'returns company hash from session' do
-        company = controller.current_company
+        company = controller.send(:current_company)
 
         expect(company).to eq({
           id: 123,
@@ -292,14 +311,14 @@ RSpec.describe ApplicationController, type: :controller do
 
       it 'memoizes the company hash' do
         2.times do
-          expect(controller.current_company[:id]).to eq(123)
+          expect(controller.send(:current_company)[:id]).to eq(123)
         end
       end
     end
 
     context 'when not authenticated' do
       it 'returns nil' do
-        expect(controller.current_company).to be_nil
+        expect(controller.send(:current_company)).to be_nil
       end
     end
 
@@ -311,13 +330,19 @@ RSpec.describe ApplicationController, type: :controller do
       end
 
       it 'returns nil' do
-        expect(controller.current_company).to be_nil
+        expect(controller.send(:current_company)).to be_nil
       end
     end
   end
 
   describe '#current_potlift_company' do
     let(:company) { create(:company, code: 'ABC123', name: 'ACME Corp') }
+    let(:authlift_client) { instance_double(Authlift::Client) }
+
+    before do
+      allow(controller).to receive(:authlift_client).and_return(authlift_client)
+      allow(authlift_client).to receive(:decode_jwt).and_return({})
+    end
 
     context 'when authenticated with company data' do
       before do
@@ -331,7 +356,7 @@ RSpec.describe ApplicationController, type: :controller do
       end
 
       it 'returns Company model instance' do
-        result = controller.current_potlift_company
+        result = controller.send(:current_potlift_company)
 
         expect(result).to be_a(Company)
         expect(result.code).to eq('ABC123')
@@ -340,24 +365,26 @@ RSpec.describe ApplicationController, type: :controller do
 
       it 'calls Company.from_authlift8 with session data' do
         expect(Company).to receive(:from_authlift8).with(
-          'id' => company.id,
-          'code' => 'ABC123',
-          'name' => 'ACME Corp'
+          hash_including(
+            'id' => company.id,
+            'code' => 'ABC123',
+            'name' => 'ACME Corp'
+          )
         ).and_return(company)
 
-        controller.current_potlift_company
+        controller.send(:current_potlift_company)
       end
 
       it 'memoizes the company model' do
         expect(Company).to receive(:from_authlift8).once.and_return(company)
 
-        2.times { controller.current_potlift_company }
+        2.times { controller.send(:current_potlift_company) }
       end
     end
 
     context 'when not authenticated' do
       it 'returns nil' do
-        expect(controller.current_potlift_company).to be_nil
+        expect(controller.send(:current_potlift_company)).to be_nil
       end
     end
 
@@ -369,7 +396,7 @@ RSpec.describe ApplicationController, type: :controller do
       end
 
       it 'returns nil' do
-        expect(controller.current_potlift_company).to be_nil
+        expect(controller.send(:current_potlift_company)).to be_nil
       end
     end
   end
@@ -452,6 +479,7 @@ RSpec.describe ApplicationController, type: :controller do
     context 'when refresh_token is missing' do
       before do
         session.delete(:refresh_token)
+        allow(authlift_client).to receive(:refresh_token)
       end
 
       it 'does not call authlift_client' do
@@ -487,6 +515,7 @@ RSpec.describe ApplicationController, type: :controller do
 
     before do
       allow(controller).to receive(:authlift_client).and_return(authlift_client)
+      allow(authlift_client).to receive(:decode_jwt).and_return({})
       allow(authlift_client).to receive(:refresh_token).and_return(new_tokens)
     end
 

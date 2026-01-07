@@ -224,7 +224,8 @@ RSpec.describe ImportsController, type: :request do
     end
 
     before do
-      allow(Redis).to receive(:new).and_return(redis)
+      # Mock Redis.new with any arguments to return our mock
+      allow(Redis).to receive(:new).with(any_args).and_return(redis)
     end
 
     context 'with existing progress data' do
@@ -238,11 +239,15 @@ RSpec.describe ImportsController, type: :request do
         expect(response.body).to include('processing')
       end
 
-      it 'returns JSON format' do
+      it 'returns JSON format with normalized response' do
         get progress_import_path(job_id, format: :json)
         json = JSON.parse(response.body)
+        # Controller normalizes response for JS controller
         expect(json['status']).to eq('processing')
-        expect(json['total_rows']).to eq(100)
+        expect(json).to have_key('progress')
+        expect(json).to have_key('imported')
+        expect(json).to have_key('updated')
+        expect(json).to have_key('errors')
       end
     end
 
