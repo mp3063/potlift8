@@ -92,9 +92,12 @@ module Ui
 
     # Builds CSS classes for the badge
     #
-    # @return [String] Combined CSS classes
+    # @return [String] Combined CSS classes including any custom classes from options
     def badge_classes
-      [BASE_CLASSES, VARIANTS[@variant], SIZES[@size]].join(" ")
+      custom_class = @options.delete(:class)
+      classes = [BASE_CLASSES, VARIANTS[@variant], SIZES[@size]]
+      classes << custom_class if custom_class.present?
+      classes.join(" ")
     end
 
     # Renders a colored dot indicator

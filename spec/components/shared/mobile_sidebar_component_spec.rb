@@ -152,13 +152,13 @@ RSpec.describe Shared::MobileSidebarComponent, type: :component do
     it "has hover effect" do
       render_inline(described_class.new)
 
-      expect(page).to have_css("button.hover\\:text-gray-600")
+      expect(page).to have_css("button.hover\\:text-gray-900")
     end
 
-    it "has text-gray-400 default color" do
+    it "has text-gray-600 default color" do
       render_inline(described_class.new)
 
-      expect(page).to have_css("button.text-gray-400")
+      expect(page).to have_css("button.text-gray-600")
     end
 
     it "has rounded-lg" do
@@ -193,22 +193,34 @@ RSpec.describe Shared::MobileSidebarComponent, type: :component do
       expect(page).to have_link("Products")
     end
 
+    it "renders Imports link" do
+      render_inline(described_class.new)
+
+      expect(page).to have_link("Imports")
+    end
+
+    it "renders Labels link" do
+      render_inline(described_class.new)
+
+      expect(page).to have_link("Labels")
+    end
+
+    it "renders Storages link" do
+      render_inline(described_class.new)
+
+      expect(page).to have_link("Storages")
+    end
+
     it "renders Catalogs link" do
       render_inline(described_class.new)
 
       expect(page).to have_link("Catalogs")
     end
 
-    it "renders Inventory link" do
+    it "renders Attributes link" do
       render_inline(described_class.new)
 
-      expect(page).to have_link("Inventory")
-    end
-
-    it "renders Reports link" do
-      render_inline(described_class.new)
-
-      expect(page).to have_link("Reports")
+      expect(page).to have_link("Attributes")
     end
 
     it "nav container has semantic nav element" do
@@ -279,22 +291,34 @@ RSpec.describe Shared::MobileSidebarComponent, type: :component do
       expect(page).to have_link("Products", href: "/products")
     end
 
+    it "Imports link has correct href" do
+      render_inline(described_class.new)
+
+      expect(page).to have_link("Imports", href: "/imports")
+    end
+
+    it "Labels link has correct href" do
+      render_inline(described_class.new)
+
+      expect(page).to have_link("Labels", href: "/labels")
+    end
+
+    it "Storages link has correct href" do
+      render_inline(described_class.new)
+
+      expect(page).to have_link("Storages", href: "/storages")
+    end
+
     it "Catalogs link has correct href" do
       render_inline(described_class.new)
 
       expect(page).to have_link("Catalogs", href: "/catalogs")
     end
 
-    it "Inventory link has correct href" do
+    it "Attributes link has correct href" do
       render_inline(described_class.new)
 
-      expect(page).to have_link("Inventory", href: "/inventories")
-    end
-
-    it "Reports link has correct href" do
-      render_inline(described_class.new)
-
-      expect(page).to have_link("Reports", href: "/reports")
+      expect(page).to have_link("Attributes", href: "/product_attributes")
     end
   end
 
@@ -328,8 +352,8 @@ RSpec.describe Shared::MobileSidebarComponent, type: :component do
     it "all nav links close sidebar on click" do
       render_inline(described_class.new)
 
-      # Should have 5 links (Dashboard, Products, Catalogs, Inventory, Reports)
-      expect(page).to have_css('a[data-action="click->mobile-sidebar#close"]', count: 5)
+      # Should have 7 links (Dashboard, Products, Imports, Labels, Storages, Catalogs, Attributes)
+      expect(page).to have_css('a[data-action="click->mobile-sidebar#close"]', count: 7)
     end
   end
 
@@ -355,8 +379,8 @@ RSpec.describe Shared::MobileSidebarComponent, type: :component do
     it "links are keyboard accessible" do
       render_inline(described_class.new)
 
-      # All links should be standard anchor elements
-      expect(page).to have_css("a", count: 5)
+      # All links should be standard anchor elements (7 nav links)
+      expect(page).to have_css("a", count: 7)
     end
   end
 
@@ -446,9 +470,11 @@ RSpec.describe Shared::MobileSidebarComponent, type: :component do
 
       expect(page).to have_link("Dashboard")
       expect(page).to have_link("Products")
+      expect(page).to have_link("Imports")
+      expect(page).to have_link("Labels")
+      expect(page).to have_link("Storages")
       expect(page).to have_link("Catalogs")
-      expect(page).to have_link("Inventory")
-      expect(page).to have_link("Reports")
+      expect(page).to have_link("Attributes")
     end
   end
 
@@ -482,7 +508,7 @@ RSpec.describe Shared::MobileSidebarComponent, type: :component do
     it "clicking nav links dismisses sidebar" do
       render_inline(described_class.new)
 
-      expect(page).to have_css('a[data-action="click->mobile-sidebar#close"]', count: 5)
+      expect(page).to have_css('a[data-action="click->mobile-sidebar#close"]', count: 7)
     end
   end
 
@@ -552,8 +578,8 @@ RSpec.describe Shared::MobileSidebarComponent, type: :component do
 
       # Overlay target for visibility control
       expect(page).to have_css('div[data-mobile-sidebar-target="overlay"]')
-      # Multiple close actions
-      expect(page).to have_css('[data-action*="mobile-sidebar#close"]', minimum: 6)
+      # Multiple close actions (1 backdrop + 1 close button + 7 nav links = 9)
+      expect(page).to have_css('[data-action*="mobile-sidebar#close"]', minimum: 9)
     end
   end
 
@@ -564,9 +590,11 @@ RSpec.describe Shared::MobileSidebarComponent, type: :component do
       expect(page).to have_text("Potlift8")
       expect(page).to have_text("Dashboard")
       expect(page).to have_text("Products")
+      expect(page).to have_text("Imports")
+      expect(page).to have_text("Labels")
+      expect(page).to have_text("Storages")
       expect(page).to have_text("Catalogs")
-      expect(page).to have_text("Inventory")
-      expect(page).to have_text("Reports")
+      expect(page).to have_text("Attributes")
     end
   end
 

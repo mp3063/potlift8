@@ -5,10 +5,28 @@ require 'rails_helper'
 RSpec.describe Shared::FormErrorsComponent, type: :component do
   let(:company) { create(:company) }
 
+  # Helper to create a product with errors (bypasses before_validation callbacks)
+  def product_with_errors(*error_messages)
+    product = build(:product, company: company)
+    error_messages.each do |msg|
+      product.errors.add(:base, msg)
+    end
+    product
+  end
+
+  # Helper to create a product with attribute-specific errors
+  def product_with_attribute_errors(attribute_errors)
+    product = build(:product, company: company)
+    attribute_errors.each do |attr, msg|
+      product.errors.add(attr, msg)
+    end
+    product
+  end
+
   describe 'rendering' do
     context 'with errors' do
       let(:product) do
-        build(:product, company: company, sku: nil, name: nil).tap(&:valid?)
+        product_with_errors('First error', 'Second error')
       end
 
       it 'renders error container' do
@@ -31,7 +49,7 @@ RSpec.describe Shared::FormErrorsComponent, type: :component do
       end
 
       it 'renders error heading with singular form' do
-        product = build(:product, company: company, sku: nil).tap(&:valid?)
+        product = product_with_errors('Single error')
 
         render_inline(described_class.new(errors: product.errors))
 
@@ -39,7 +57,7 @@ RSpec.describe Shared::FormErrorsComponent, type: :component do
       end
 
       it 'renders error heading with plural form' do
-        product = build(:product, company: company, sku: nil, name: nil).tap(&:valid?)
+        product = product_with_errors('First error', 'Second error')
 
         render_inline(described_class.new(errors: product.errors))
 
@@ -47,7 +65,11 @@ RSpec.describe Shared::FormErrorsComponent, type: :component do
       end
 
       it 'displays all error messages' do
-        product = build(:product, company: company, sku: nil, name: nil, product_type: nil).tap(&:valid?)
+        product = product_with_attribute_errors(
+          sku: "can't be blank",
+          name: "can't be blank",
+          product_type: "can't be blank"
+        )
 
         render_inline(described_class.new(errors: product.errors))
 
@@ -60,7 +82,7 @@ RSpec.describe Shared::FormErrorsComponent, type: :component do
       end
 
       it 'displays error count correctly' do
-        product = build(:product, company: company, sku: nil, name: nil).tap(&:valid?)
+        product = product_with_errors('First error', 'Second error')
 
         render_inline(described_class.new(errors: product.errors))
 
@@ -68,7 +90,7 @@ RSpec.describe Shared::FormErrorsComponent, type: :component do
       end
 
       it 'renders error list with proper styling' do
-        product = build(:product, company: company, sku: nil).tap(&:valid?)
+        product = product_with_errors('Single error')
 
         render_inline(described_class.new(errors: product.errors))
 
@@ -101,7 +123,7 @@ RSpec.describe Shared::FormErrorsComponent, type: :component do
 
   describe '#render?' do
     it 'returns true when errors are present' do
-      product = build(:product, company: company, sku: nil).tap(&:valid?)
+      product = product_with_errors('Single error')
       component = described_class.new(errors: product.errors)
 
       expect(component.render?).to be true
@@ -117,7 +139,7 @@ RSpec.describe Shared::FormErrorsComponent, type: :component do
 
   describe 'error count display' do
     it 'shows "1 error" for single error' do
-      product = build(:product, company: company, sku: nil).tap(&:valid?)
+      product = product_with_errors('Single error')
 
       render_inline(described_class.new(errors: product.errors))
 
@@ -125,7 +147,7 @@ RSpec.describe Shared::FormErrorsComponent, type: :component do
     end
 
     it 'shows "2 errors" for two errors' do
-      product = build(:product, company: company, sku: nil, name: nil).tap(&:valid?)
+      product = product_with_errors('First error', 'Second error')
 
       render_inline(described_class.new(errors: product.errors))
 
@@ -133,7 +155,7 @@ RSpec.describe Shared::FormErrorsComponent, type: :component do
     end
 
     it 'shows correct count for multiple errors' do
-      product = build(:product, company: company, sku: nil, name: nil, product_type: nil).tap(&:valid?)
+      product = product_with_errors('First error', 'Second error', 'Third error')
 
       render_inline(described_class.new(errors: product.errors))
 
@@ -143,7 +165,7 @@ RSpec.describe Shared::FormErrorsComponent, type: :component do
 
   describe 'error message formatting' do
     it 'displays full error messages with attribute names' do
-      product = build(:product, company: company, sku: nil).tap(&:valid?)
+      product = product_with_attribute_errors(sku: "can't be blank")
 
       render_inline(described_class.new(errors: product.errors))
 
@@ -151,8 +173,7 @@ RSpec.describe Shared::FormErrorsComponent, type: :component do
     end
 
     it 'handles validation errors with custom messages' do
-      product = build(:product, company: company, sku: 'TEST')
-      product.errors.add(:sku, 'is already taken')
+      product = product_with_attribute_errors(sku: 'is already taken')
 
       render_inline(described_class.new(errors: product.errors))
 
@@ -160,8 +181,7 @@ RSpec.describe Shared::FormErrorsComponent, type: :component do
     end
 
     it 'handles base errors without attribute name' do
-      product = build(:product, company: company)
-      product.errors.add(:base, 'Something went wrong')
+      product = product_with_errors('Something went wrong')
 
       render_inline(described_class.new(errors: product.errors))
 
@@ -183,7 +203,7 @@ RSpec.describe Shared::FormErrorsComponent, type: :component do
   end
 
   describe 'accessibility' do
-    let(:product) { build(:product, company: company, sku: nil).tap(&:valid?) }
+    let(:product) { product_with_errors('Test error') }
 
     it 'has role="alert" for screen readers' do
       render_inline(described_class.new(errors: product.errors))
@@ -224,7 +244,7 @@ RSpec.describe Shared::FormErrorsComponent, type: :component do
   end
 
   describe 'layout and styling' do
-    let(:product) { build(:product, company: company, sku: nil).tap(&:valid?) }
+    let(:product) { product_with_errors('Test error') }
 
     it 'uses flexbox for icon and content layout' do
       render_inline(described_class.new(errors: product.errors))
@@ -257,7 +277,7 @@ RSpec.describe Shared::FormErrorsComponent, type: :component do
     end
 
     it 'error list items have vertical spacing' do
-      product = build(:product, company: company, sku: nil, name: nil).tap(&:valid?)
+      product = product_with_errors('First error', 'Second error')
 
       render_inline(described_class.new(errors: product.errors))
 
@@ -315,13 +335,13 @@ RSpec.describe Shared::FormErrorsComponent, type: :component do
 
   describe 'integration with ActiveModel::Errors' do
     it 'works with standard ActiveModel validations' do
-      product = build(:product, company: company)
-      product.sku = nil
+      # Test with name validation (no callback that auto-generates)
+      product = build(:product, company: company, name: nil)
       product.valid?
 
       render_inline(described_class.new(errors: product.errors))
 
-      expect(page).to have_text("Sku can't be blank")
+      expect(page).to have_text("Name can't be blank")
     end
 
     it 'works with custom validations' do
@@ -334,7 +354,7 @@ RSpec.describe Shared::FormErrorsComponent, type: :component do
     end
 
     it 'works with uniqueness validations' do
-      existing = create(:product, company: company, sku: 'TEST123')
+      create(:product, company: company, sku: 'TEST123')
       duplicate = build(:product, company: company, sku: 'TEST123')
       duplicate.valid?
 

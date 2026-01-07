@@ -49,7 +49,7 @@ class ImportsController < ApplicationController
             ProductImportJob.perform_later(
               current_potlift_company.id,
               file_content,
-              current_user.id
+              current_user[:id]
             )
           else
             redirect_to new_import_path, alert: "Unknown import type: #{import_type}"

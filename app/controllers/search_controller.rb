@@ -210,7 +210,7 @@ class SearchController < ApplicationController
   # @return [String] Cache key scoped to current user
   #
   def recent_searches_cache_key
-    "recent_searches:#{current_user.id}"
+    "recent_searches:#{current_user[:id]}"
   end
 
   # Sanitize query for SQL ILIKE to prevent SQL injection

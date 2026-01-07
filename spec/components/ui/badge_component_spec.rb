@@ -288,7 +288,7 @@ RSpec.describe Ui::BadgeComponent, type: :component do
         badge = page.find('span[data-id="123"]')
         expect(badge[:class]).to include('bg-red-100')
         expect(badge[:class]).to include('text-red-800')
-        expect(badge[:class]).to include('px-2')
+        expect(badge[:class]).to include('px-2.5')  # md size uses px-2.5
         expect(badge[:class]).to include('text-sm')
       end
     end

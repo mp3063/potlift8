@@ -64,7 +64,8 @@ RSpec.describe Products::FormComponent, type: :component do
     it 'sets Stimulus controller' do
       render_inline(described_class.new(product: product, url: url, method: method))
 
-      expect(page).to have_css('form[data-controller="product-form"]')
+      # Form uses multiple Stimulus controllers: "product-form bundle-composer"
+      expect(page).to have_css('form[data-controller*="product-form"]')
     end
 
     it 'sets Turbo data attribute' do
@@ -201,7 +202,8 @@ RSpec.describe Products::FormComponent, type: :component do
     it 'sets product type change action' do
       render_inline(described_class.new(product: product, url: url, method: method))
 
-      expect(page).to have_css('select[data-action="change->product-form#handleTypeChange"]')
+      # Select has multiple change actions: "change->product-form#handleTypeChange change->bundle-composer#productTypeChanged"
+      expect(page).to have_css('select[data-action*="change->product-form#handleTypeChange"]')
     end
   end
 
@@ -467,8 +469,10 @@ RSpec.describe Products::FormComponent, type: :component do
 
       render_inline(described_class.new(product: product, url: url, method: method))
 
-      expect(page).not_to have_css('.bg-red-50')
-      expect(page).not_to have_text('error')
+      # Check that the error summary div with role="alert" is not rendered
+      # (bundle_composer has hidden .bg-red-50 container, so we check for visible error summary)
+      expect(page).not_to have_css('div[role="alert"].bg-red-50')
+      expect(page).not_to have_text('error with your submission')
     end
   end
 end

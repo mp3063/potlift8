@@ -39,7 +39,8 @@ RSpec.describe SidebarComponent, type: :component do
     it 'highlights active item with bg-gray-800 class' do
       render_inline(described_class.new(items: items, active_path: '/products', company: company))
 
-      products_link = page.find('a', text: 'Products')
+      # Scope to desktop sidebar to avoid ambiguous match (both desktop and mobile render same links)
+      products_link = page.find('.lg\\:fixed a', text: 'Products', match: :first)
       expect(products_link[:class]).to include('bg-gray-800')
       expect(products_link[:class]).to include('text-white')
     end
@@ -47,8 +48,10 @@ RSpec.describe SidebarComponent, type: :component do
     it 'does not highlight inactive items' do
       render_inline(described_class.new(items: items, active_path: '/products', company: company))
 
-      storages_link = page.find('a', text: 'Storages')
-      expect(storages_link[:class]).not_to include('bg-gray-800')
+      # Scope to desktop sidebar to avoid ambiguous match
+      storages_link = page.find('.lg\\:fixed a', text: 'Storages', match: :first)
+      # Inactive items have hover:bg-gray-800 but not bg-gray-800 as standalone class
+      expect(storages_link[:class]).not_to match(/(?<!\S)bg-gray-800(?!\S)/)
       expect(storages_link[:class]).to include('text-gray-400')
     end
 
@@ -56,7 +59,8 @@ RSpec.describe SidebarComponent, type: :component do
       it 'highlights parent item for nested path' do
         render_inline(described_class.new(items: items, active_path: '/products/123/edit', company: company))
 
-        products_link = page.find('a', text: 'Products')
+        # Scope to desktop sidebar to avoid ambiguous match
+        products_link = page.find('.lg\\:fixed a', text: 'Products', match: :first)
         expect(products_link[:class]).to include('bg-gray-800')
       end
     end
@@ -67,7 +71,8 @@ RSpec.describe SidebarComponent, type: :component do
       render_inline(described_class.new(items: items, active_path: '/products', company: company))
 
       # Check that SVGs are present (ViewComponent renders raw HTML)
-      expect(page).to have_css('svg', count: 6) # 3 items in desktop + 3 in mobile
+      # 3 items in desktop + 3 in mobile + 1 close button SVG = 7
+      expect(page).to have_css('svg', count: 7)
     end
 
     it 'applies icon color classes based on active state' do
@@ -134,7 +139,9 @@ RSpec.describe SidebarComponent, type: :component do
 
         expect(classes).to include('text-gray-400')
         expect(classes).to include('hover:text-white')
-        expect(classes).not_to include('bg-gray-800')
+        # Should have hover:bg-gray-800 but not bg-gray-800 as standalone class
+        expect(classes).to include('hover:bg-gray-800')
+        expect(classes).not_to match(/(?<!\S)bg-gray-800(?!\S)/)
       end
     end
 

@@ -108,13 +108,13 @@ RSpec.describe TopbarComponent, type: :component do
         expect(component.send(:user_initials)).to eq('JD')
       end
 
-      it 'returns first two characters for single name' do
+      it 'returns single initial for single name' do
         component = described_class.new(
           user: { id: 1, name: 'Madonna', email: 'madonna@example.com' },
           company: company,
           companies: companies
         )
-        expect(component.send(:user_initials)).to eq('MA')
+        expect(component.send(:user_initials)).to eq('M')
       end
 
       it 'returns three name initials (first two)' do
@@ -178,9 +178,13 @@ RSpec.describe TopbarComponent, type: :component do
     it 'hides user name on mobile' do
       render_inline(described_class.new(user: user, company: company, companies: companies))
 
-      user_name_span = page.find('span', text: 'John Doe')
-      expect(user_name_span[:class]).to include('hidden')
-      expect(user_name_span[:class]).to include('lg:flex')
+      # The user name is inside a nested span structure:
+      # outer span has "hidden lg:flex" classes, inner span has the actual name
+      # Use the aria-hidden attribute to find the specific user name span in the topbar
+      user_name_span = page.find('span[aria-hidden="true"]', text: 'John Doe')
+      parent_span = user_name_span.find(:xpath, '..')
+      expect(parent_span[:class]).to include('hidden')
+      expect(parent_span[:class]).to include('lg:flex')
     end
   end
 

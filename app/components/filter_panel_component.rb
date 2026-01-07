@@ -137,14 +137,30 @@ class FilterPanelComponent < ViewComponent::Base
   # @param key [Symbol, String] Filter key to remove
   # @return [String] URL with filter removed
   def remove_filter_url(key)
-    new_params = helpers.request.params.except(key.to_s, :action, :controller)
-    helpers.url_for(new_params)
+    params = helpers.request.params
+    params_hash = params.respond_to?(:to_unsafe_h) ? params.to_unsafe_h : params.to_h
+    new_params = params_hash.except(key.to_s, 'action', 'controller')
+    build_url_with_params(new_params)
   end
 
   # Get URL for clearing all filters
   #
   # @return [String] URL with all filters removed
   def clear_filters_url
-    helpers.url_for(controller: helpers.controller_name, action: helpers.action_name)
+    helpers.request.path
+  end
+
+  private
+
+  # Build URL with query parameters
+  #
+  # @param params [Hash] Query parameters
+  # @return [String] URL with query string
+  def build_url_with_params(params)
+    path = helpers.request.path
+    return path if params.blank?
+
+    query_string = params.to_query
+    query_string.present? ? "#{path}?#{query_string}" : path
   end
 end

@@ -124,17 +124,16 @@ module Shared
     def page_item(item)
       case item
       when Integer
-        if item == @pagy.page
-          content_tag(:span, item,
-            class: "relative z-10 inline-flex items-center bg-blue-600 px-4 py-2 text-sm font-semibold text-white focus:z-20",
-            aria: { current: "page" })
-        else
-          link_to item, pagy_url_for(@pagy, item),
-            class: "relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20",
-            data: { turbo_action: "advance" }
-        end
+        link_to item, pagy_url_for(@pagy, item),
+          class: "relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20",
+          data: { turbo_action: "advance" }
+      when String
+        # Pagy returns the current page as a string
+        content_tag(:span, item,
+          class: "relative z-10 inline-flex items-center bg-blue-600 px-4 py-2 text-sm font-semibold text-white focus:z-20",
+          aria: { current: "page" })
       when :gap
-        content_tag(:span, "…",
+        content_tag(:span, "...",
           class: "relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300")
       end
     end
