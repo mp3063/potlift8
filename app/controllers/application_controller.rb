@@ -6,13 +6,61 @@ class ApplicationController < ActionController::Base
   include Pagy::Backend
 
   # Make authentication helpers available in views
-  helper_method :current_user, :current_company, :authenticated?, :current_user_name, :current_potlift_company
+  helper_method :current_user, :current_company, :authenticated?, :current_user_name, :current_potlift_company, :current_customer_groups
 
   # Enforce authentication for all controllers by default
   # Controllers can skip with: skip_before_action :require_authentication
   before_action :require_authentication
 
+  # Check if session data needs refresh from Authlift8
+  # Called after authentication is verified
+  before_action :check_session_version
+
   private
+
+  # Check if session data needs to be refreshed from Authlift8
+  #
+  # This is called on every authenticated request but is very fast (< 1ms)
+  # because it only does a Redis lookup. API call only happens when
+  # data has actually changed in Authlift8.
+  def check_session_version
+    return unless authenticated?
+
+    checker = SessionVersionChecker.new(session)
+
+    if checker.needs_refresh?
+      Rails.logger.info(
+        "[SessionVersion] Session stale for user #{session[:user_id]}, refreshing"
+      )
+
+      unless checker.refresh_session!
+        # If refresh fails, invalidate session and force re-login
+        Rails.logger.warn(
+          "[SessionVersion] Refresh failed for user #{session[:user_id]}, forcing re-login"
+        )
+        reset_session
+        redirect_to auth_login_path, alert: 'Your session has expired. Please sign in again.'
+      end
+    end
+  end
+
+  # Get current customer groups from session
+  #
+  # @return [Array<Hash>] Array of customer group hashes with id, name, group_type, pricing_rules
+  #
+  # @example In controller
+  #   def index
+  #     @customer_groups = current_customer_groups
+  #   end
+  #
+  # @example In view
+  #   <% current_customer_groups.each do |group| %>
+  #     <p><%= group['name'] %></p>
+  #   <% end %>
+  def current_customer_groups
+    return [] unless authenticated?
+    session[:customer_groups] || []
+  end
 
   # Require user to be authenticated
   #

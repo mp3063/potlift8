@@ -15,6 +15,7 @@
 class SessionsController < ApplicationController
   # Skip authentication for OAuth flow
   skip_before_action :require_authentication, only: [:new, :create], raise: false
+  skip_before_action :check_session_version, only: [:new, :create], raise: false
 
   # Protect against CSRF for state-changing actions
   protect_from_forgery except: :create # OAuth callback uses GET with state validation
@@ -255,6 +256,12 @@ class SessionsController < ApplicationController
     session[:refresh_token] = tokens[:refresh_token]
     session[:expires_at] = tokens[:expires_at]
     session[:authenticated_at] = Time.now.to_i
+
+    # Store customer groups from payload (if available)
+    session[:customer_groups] = user_payload['customer_groups'] || []
+
+    # Store initial session versions for invalidation checking
+    SessionVersionChecker.new(session).store_current_versions!
   end
 
   # Handle OAuth errors from authorization server
