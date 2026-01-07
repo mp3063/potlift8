@@ -36,26 +36,6 @@ RSpec.describe ApplicationJob, type: :job do
     end
   end
 
-  describe "example jobs" do
-    it "can enqueue high priority job" do
-      expect {
-        ExampleHighPriorityJob.perform_later("test")
-      }.to have_enqueued_job(ExampleHighPriorityJob).on_queue("test__high_priority")
-    end
-
-    it "can enqueue default priority job" do
-      expect {
-        ExampleDefaultPriorityJob.perform_later("test")
-      }.to have_enqueued_job(ExampleDefaultPriorityJob).on_queue("test__default")
-    end
-
-    it "can enqueue low priority job" do
-      expect {
-        ExampleLowPriorityJob.perform_later("test")
-      }.to have_enqueued_job(ExampleLowPriorityJob).on_queue("test__low_priority")
-    end
-  end
-
   describe "job execution" do
     it "successfully performs a simple job" do
       job_class = Class.new(ApplicationJob) do

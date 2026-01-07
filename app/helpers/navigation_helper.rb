@@ -53,13 +53,4 @@ module NavigationHelper
       }
     ]
   end
-
-  # Check if navigation path is currently active
-  #
-  # @param path [String] Path to check
-  # @param current_path [String] Current request path
-  # @return [Boolean] true if path is active
-  def nav_active?(path, current_path = request.path)
-    current_path.start_with?(path)
-  end
 end
