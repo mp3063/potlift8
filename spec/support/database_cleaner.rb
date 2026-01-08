@@ -45,10 +45,4 @@ RSpec.configure do |config|
     # Clean up the database
     DatabaseCleaner.clean
   end
-
-  # Append after teardown (runs after all other after hooks)
-  config.append_after(:each) do
-    # Ensure any lingering database connections are closed
-    DatabaseCleaner.clean
-  end
 end

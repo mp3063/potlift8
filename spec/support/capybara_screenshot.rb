@@ -77,8 +77,6 @@ RSpec.configure do |config|
   end
 
   # For system tests, ensure consistent window size
-  config.before(:each, type: :system) do
-    # Default to desktop size for system tests
-    page.driver.browser.manage.window.resize_to(1440, 900) if respond_to?(:page)
-  end
+  # Note: Window resize is handled by driven_by in rails_helper.rb, which sets screen_size: [1400, 1400]
+  # Only attempt resize for selenium-based drivers that support window management
 end

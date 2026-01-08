@@ -72,13 +72,22 @@ RSpec.configure do |config|
   config.include Rails.application.routes.url_helpers
 
   # Capybara configuration for system tests
+  # Use rack_test driver by default (fast, same process)
+  # Use selenium for tests marked with js: true
   config.before(:each, type: :system) do
+    driven_by :rack_test
+  end
+
+  config.before(:each, type: :system, js: true) do
     driven_by :selenium, using: :headless_chrome, screen_size: [1400, 1400]
   end
 
   # Reset sessions and cookies between tests
   config.after(:each, type: :system) do
-    page.driver.browser.manage.delete_all_cookies if defined?(page)
+    # Only delete cookies for drivers that support it (selenium-based drivers)
+    if defined?(page) && page.driver.respond_to?(:browser) && page.driver.browser.respond_to?(:manage)
+      page.driver.browser.manage.delete_all_cookies
+    end
   end
 
   # Configure default behavior for controller specs

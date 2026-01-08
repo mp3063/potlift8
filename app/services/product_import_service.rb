@@ -103,7 +103,8 @@ class ProductImportService
 
     product.assign_attributes(
       name: row[:name],
-      description: row[:description]
+      description: row[:description],
+      product_type: product.product_type || :sellable
     )
 
     # Handle active status
@@ -164,6 +165,7 @@ class ProductImportService
     labels = label_names.map do |name|
       @company.labels.find_or_create_by!(name: name) do |label|
         label.code = name.parameterize.underscore
+        label.label_type = 'import'
       end
     end
 

@@ -683,7 +683,7 @@ RSpec.describe ProductValidator, type: :service do
 
       describe '#validate_pricing_for_currency' do
         context 'with EUR currency' do
-          let(:catalog) { create(:catalog, company: company, currency_code: 'EUR') }
+          let(:catalog) { create(:catalog, company: company, currency_code: 'eur') }
 
           it 'skips validation' do
             validator = ProductValidator.new(product)

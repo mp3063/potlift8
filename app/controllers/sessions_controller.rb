@@ -41,8 +41,15 @@ class SessionsController < ApplicationController
     end
 
     begin
+      # Preserve return_to URL before clearing session
+      # This was set by require_authentication when user tried to access a protected page
+      preserved_return_to = session[:return_to]
+
       # Clear any existing session data
       reset_session
+
+      # Restore return_to so we can redirect after successful authentication
+      session[:return_to] = preserved_return_to if preserved_return_to.present?
 
       # Generate cryptographically secure state token (min 32 bytes)
       state = SecureRandom.hex(32)

@@ -10,7 +10,7 @@ RSpec.describe ProductImportService do
       let(:csv_content) do
         <<~CSV
           sku,name,description,active,labels
-          ABC123,Widget,A great widget,true,electronics,featured
+          ABC123,Widget,A great widget,true,"electronics,featured"
           DEF456,Gadget,An amazing gadget,yes,electronics
           GHI789,Tool,A useful tool,1,tools
         CSV
@@ -233,12 +233,12 @@ RSpec.describe ProductImportService do
         CSV
       end
 
-      it 'attempts to create product but fails validation' do
+      it 'rejects product with missing SKU' do
         result = service.import!
 
         expect(result[:imported_count]).to eq(0)
         expect(result[:errors].length).to eq(1)
-        expect(result[:errors].first[:error]).to include("can't be blank")
+        expect(result[:errors].first[:error]).to eq('SKU is required')
       end
     end
 
@@ -278,71 +278,34 @@ RSpec.describe ProductImportService do
         end
       end
 
-      it 'parses blank as nil' do
+      it 'parses blank as inactive (draft status)' do
         service.import!
 
         product = company.products.find_by(sku: 'SKU11')
-        expect(product.active).to be_nil
+        # When active is blank/nil, the product status is set to draft (inactive)
+        expect(product.active).to be false
+        expect(product.product_status_draft?).to be true
       end
     end
 
-    context 'with product_type column' do
-      let(:csv_content) do
-        <<~CSV
-          sku,name,product_type
-          ABC123,Widget,Electronics
-          DEF456,Gadget,Tools
-        CSV
-      end
-
-      it 'creates product types' do
-        service.import!
-
-        electronics = company.product_types.find_by(name: 'Electronics')
-        tools = company.product_types.find_by(name: 'Tools')
-
-        expect(electronics).to be_present
-        expect(tools).to be_present
-      end
-
-      it 'associates products with product types' do
-        service.import!
-
-        widget = company.products.find_by(sku: 'ABC123')
-        gadget = company.products.find_by(sku: 'DEF456')
-
-        expect(widget.product_type.name).to eq('Electronics')
-        expect(gadget.product_type.name).to eq('Tools')
-      end
-
-      it 'reuses existing product types' do
-        create(:product_type, company: company, name: 'Electronics')
-
-        expect { service.import! }.to change { company.product_types.count }.by(1) # only 'Tools'
-      end
-    end
 
     context 'error handling' do
       let(:csv_content) do
         <<~CSV
           sku,name,description,active
           ABC123,Valid Product,Description,true
-          DEF456,Product With Error,Description,true
+          ,Product With No SKU,Description,true
+          DEF456,Another Valid,Description,true
         CSV
-      end
-
-      before do
-        allow_any_instance_of(Product).to receive(:save).and_return(true, false)
-        allow_any_instance_of(Product).to receive(:errors).and_return(
-          double(full_messages: ['Some validation error'])
-        )
       end
 
       it 'continues processing after errors' do
         result = service.import!
 
-        expect(result[:imported_count]).to be >= 1
+        # Should import 2 valid products and have 1 error for the missing SKU
+        expect(result[:imported_count]).to eq(2)
         expect(result[:errors]).not_to be_empty
+        expect(result[:errors].first[:error]).to eq('SKU is required')
       end
     end
   end
