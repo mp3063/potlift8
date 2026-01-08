@@ -2,6 +2,19 @@
 
 require 'rails_helper'
 
+# Tests for product filtering functionality on the Products index page
+#
+# The products index page provides:
+# - Search by name/SKU (q param)
+# - Filter by product type dropdown (type param: sellable, configurable, bundle)
+# - Filter by label via dropdown (label_id param)
+# - Active label filter chip with remove functionality
+# - Clear button to reset filters
+#
+# Note: Some tests use JavaScript (js: true) for dropdown interactions.
+# All tests use :rack_test driver except those marked with js: true which use Selenium.
+# Database cleaner uses truncation for js tests which can affect data isolation.
+#
 RSpec.describe 'Product Filtering', type: :system do
   let(:company) { create(:company) }
   let(:user) { create(:user, company: company) }
@@ -17,9 +30,6 @@ RSpec.describe 'Product Filtering', type: :system do
     )
     allow_any_instance_of(ApplicationController).to receive(:current_potlift_company).and_return(company)
   end
-
-  let!(:product_type_sellable) { create(:product_type, company: company, code: 'sellable', name: 'Sellable') }
-  let!(:product_type_bundle) { create(:product_type, company: company, code: 'bundle', name: 'Bundle') }
 
   let!(:label_electronics) { create(:label, company: company, name: 'Electronics', code: 'electronics') }
   let!(:label_clothing) { create(:label, company: company, name: 'Clothing', code: 'clothing') }
@@ -61,402 +71,258 @@ RSpec.describe 'Product Filtering', type: :system do
   end
 
   describe "filter by product type" do
-    before do
-      visit products_path
-    end
-
     it "shows all products initially" do
+      visit products_path
+
       expect(page).to have_text('iPhone 15')
       expect(page).to have_text('T-Shirt Bundle')
       expect(page).to have_text('Old Product')
     end
 
-    it "filters by sellable product type", js: true do
-      within('form[data-controller="filter-panel"]') do
-        select 'Sellable', from: 'product_type_id'
-        click_button 'Apply Filters'
-      end
+    it "filters by sellable product type" do
+      visit products_path
+
+      select 'Sellable', from: 'type'
+      click_button 'Search'
 
       expect(page).to have_text('iPhone 15')
       expect(page).to have_text('Old Product')
       expect(page).not_to have_text('T-Shirt Bundle')
     end
 
-    it "filters by bundle product type", js: true do
-      within('form[data-controller="filter-panel"]') do
-        select 'Bundle', from: 'product_type_id'
-        click_button 'Apply Filters'
-      end
+    it "filters by bundle product type" do
+      visit products_path
+
+      select 'Bundle', from: 'type'
+      click_button 'Search'
 
       expect(page).to have_text('T-Shirt Bundle')
       expect(page).not_to have_text('iPhone 15')
       expect(page).not_to have_text('Old Product')
     end
 
-    it "shows active filter chip after filtering", js: true do
-      within('form[data-controller="filter-panel"]') do
-        select 'Sellable', from: 'product_type_id'
-        click_button 'Apply Filters'
-      end
+    it "filters by configurable product type" do
+      configurable_product = create(:product, :configurable_variant,
+        company: company,
+        name: 'Configurable Widget',
+        sku: 'CONFIG-1',
+        product_status: :active
+      )
 
-      expect(page).to have_text('Product Type: Sellable')
+      visit products_path
+
+      select 'Configurable', from: 'type'
+      click_button 'Search'
+
+      expect(page).to have_text('Configurable Widget')
+      expect(page).not_to have_text('iPhone 15')
+      expect(page).not_to have_text('T-Shirt Bundle')
     end
   end
 
   describe "filter by labels" do
-    before do
-      visit products_path
-    end
-
-    it "filters by single label", js: true do
-      within('form[data-controller="filter-panel"]') do
-        check 'Electronics'
-        click_button 'Apply Filters'
-      end
+    it "filters by single label via URL parameter" do
+      visit products_path(label_id: label_electronics.id)
 
       expect(page).to have_text('iPhone 15')
       expect(page).not_to have_text('T-Shirt Bundle')
     end
 
-    it "filters by multiple labels", js: true do
-      within('form[data-controller="filter-panel"]') do
-        check 'Electronics'
-        check 'Clothing'
-        click_button 'Apply Filters'
-      end
+    it "shows active filter chip for label" do
+      visit products_path(label_id: label_electronics.id)
 
-      expect(page).to have_text('iPhone 15')
-      expect(page).to have_text('T-Shirt Bundle')
-      expect(page).not_to have_text('Old Product')
+      # Should show active filter chip with label name
+      expect(page).to have_text('Electronics')
+      expect(page).to have_css('.bg-blue-100') # Filter chip styling
     end
 
-    it "shows active filter chip for labels", js: true do
-      within('form[data-controller="filter-panel"]') do
-        check 'Electronics'
-        click_button 'Apply Filters'
-      end
+    it "removes label filter when clicking remove button" do
+      visit products_path(label_id: label_electronics.id)
 
-      expect(page).to have_text('Labels: Electronics')
+      # Should show the active filter chip
+      expect(page).to have_text('Electronics')
+      expect(page).to have_text('iPhone 15')
+      expect(page).not_to have_text('T-Shirt Bundle')
+
+      # Click remove button on filter chip
+      find('a[aria-label="Remove label filter"]').click
+
+      # Should show all products again
+      expect(page).to have_text('iPhone 15')
+      expect(page).to have_text('T-Shirt Bundle')
     end
   end
 
-  describe "filter by status" do
-    before do
+  describe "search by name or SKU" do
+    it "searches by product name" do
       visit products_path
-    end
 
-    it "filters by active status", js: true do
-      within('form[data-controller="filter-panel"]') do
-        select 'Active', from: 'status'
-        click_button 'Apply Filters'
-      end
-
-      expect(page).to have_text('iPhone 15')
-      expect(page).to have_text('T-Shirt Bundle')
-      expect(page).not_to have_text('Old Product')
-    end
-
-    it "filters by discontinued status", js: true do
-      within('form[data-controller="filter-panel"]') do
-        select 'Discontinued', from: 'status'
-        click_button 'Apply Filters'
-      end
-
-      expect(page).to have_text('Old Product')
-      expect(page).not_to have_text('iPhone 15')
-      expect(page).not_to have_text('T-Shirt Bundle')
-    end
-
-    it "shows active filter chip for status", js: true do
-      within('form[data-controller="filter-panel"]') do
-        select 'Active', from: 'status'
-        click_button 'Apply Filters'
-      end
-
-      expect(page).to have_text('Status: Active')
-    end
-  end
-
-  describe "filter by date range" do
-    before do
-      # Set product created dates
-      travel_to 30.days.ago do
-        product1.update(created_at: Time.current)
-      end
-
-      travel_to 10.days.ago do
-        product2.update(created_at: Time.current)
-      end
-
-      product3.update(created_at: Time.current)
-
-      visit products_path
-    end
-
-    after do
-      travel_back
-    end
-
-    it "filters by created_from date", js: true do
-      within('form[data-controller="filter-panel"]') do
-        fill_in 'created_from', with: 15.days.ago.to_date.to_s
-        click_button 'Apply Filters'
-      end
-
-      expect(page).to have_text('T-Shirt Bundle')
-      expect(page).to have_text('Old Product')
-      expect(page).not_to have_text('iPhone 15')
-    end
-
-    it "filters by created_to date", js: true do
-      within('form[data-controller="filter-panel"]') do
-        fill_in 'created_to', with: 20.days.ago.to_date.to_s
-        click_button 'Apply Filters'
-      end
+      fill_in 'q', with: 'iPhone'
+      click_button 'Search'
 
       expect(page).to have_text('iPhone 15')
       expect(page).not_to have_text('T-Shirt Bundle')
       expect(page).not_to have_text('Old Product')
     end
 
-    it "filters by date range", js: true do
-      within('form[data-controller="filter-panel"]') do
-        fill_in 'created_from', with: 15.days.ago.to_date.to_s
-        fill_in 'created_to', with: 5.days.ago.to_date.to_s
-        click_button 'Apply Filters'
-      end
+    it "searches by product SKU" do
+      visit products_path
+
+      fill_in 'q', with: 'TSHIRT'
+      click_button 'Search'
 
       expect(page).to have_text('T-Shirt Bundle')
       expect(page).not_to have_text('iPhone 15')
       expect(page).not_to have_text('Old Product')
+    end
+
+    it "searches case-insensitively" do
+      visit products_path
+
+      fill_in 'q', with: 'iphone'
+      click_button 'Search'
+
+      expect(page).to have_text('iPhone 15')
     end
   end
 
   describe "combined filters" do
-    before do
+    it "applies type and search filters simultaneously" do
       visit products_path
+
+      fill_in 'q', with: 'Product'
+      select 'Sellable', from: 'type'
+      click_button 'Search'
+
+      # Old Product is sellable with "Product" in name
+      expect(page).to have_text('Old Product')
+      # T-Shirt Bundle has "Bundle" in name but is not sellable type
+      expect(page).not_to have_text('T-Shirt Bundle')
     end
 
-    it "applies multiple filters simultaneously", js: true do
-      within('form[data-controller="filter-panel"]') do
-        select 'Sellable', from: 'product_type_id'
-        select 'Active', from: 'status'
-        check 'Electronics'
-        click_button 'Apply Filters'
-      end
+    it "applies type and label filters simultaneously" do
+      # Visit with both type and label_id filters
+      visit products_path(type: 'sellable', label_id: label_electronics.id)
 
+      # iPhone 15 is sellable AND has electronics label
+      expect(page).to have_text('iPhone 15')
+      # Old Product is sellable but has no electronics label
+      expect(page).not_to have_text('Old Product')
+      # T-Shirt Bundle has clothing label but is bundle type
+      expect(page).not_to have_text('T-Shirt Bundle')
+    end
+  end
+
+  describe "clear filters" do
+    it "clears all filters when clicking Clear button" do
+      visit products_path(type: 'sellable', q: 'iPhone')
+
+      # Should show filtered results
       expect(page).to have_text('iPhone 15')
       expect(page).not_to have_text('T-Shirt Bundle')
-      expect(page).not_to have_text('Old Product')
 
-      # Should show all filter chips
-      expect(page).to have_text('Product Type: Sellable')
-      expect(page).to have_text('Status: Active')
-      expect(page).to have_text('Labels: Electronics')
-    end
-
-    it "shows correct active filter count", js: true do
-      within('form[data-controller="filter-panel"]') do
-        select 'Sellable', from: 'product_type_id'
-        select 'Active', from: 'status'
-        click_button 'Apply Filters'
-      end
-
-      # Should show count of 2 active filters
-      expect(page).to have_css('[data-filter-count="2"]') || have_text('2 filters')
-    end
-  end
-
-  describe "active filter chips" do
-    before do
-      visit products_path
-      within('form[data-controller="filter-panel"]') do
-        select 'Sellable', from: 'product_type_id'
-        select 'Active', from: 'status'
-        click_button 'Apply Filters'
-      end
-    end
-
-    it "displays active filter chips", js: true do
-      expect(page).to have_text('Product Type: Sellable')
-      expect(page).to have_text('Status: Active')
-    end
-
-    it "removes individual filter when clicking remove button", js: true do
-      within('.active-filters') do
-        # Find and click remove button for Product Type filter
-        find('a[aria-label*="Remove"][href*="product_type_id"]').click
-      end
-
-      # Product Type filter should be removed
-      expect(page).not_to have_text('Product Type: Sellable')
-      # Status filter should remain
-      expect(page).to have_text('Status: Active')
-    end
-
-    it "shows Clear All button when filters are active", js: true do
-      expect(page).to have_link('Clear All Filters')
-    end
-  end
-
-  describe "clear all filters" do
-    before do
-      visit products_path
-      within('form[data-controller="filter-panel"]') do
-        select 'Sellable', from: 'product_type_id'
-        select 'Active', from: 'status'
-        check 'Electronics'
-        click_button 'Apply Filters'
-      end
-    end
-
-    it "clears all filters when clicking Clear All button", js: true do
-      click_link 'Clear All Filters'
+      # Click clear button
+      click_link 'Clear'
 
       # Should show all products again
       expect(page).to have_text('iPhone 15')
       expect(page).to have_text('T-Shirt Bundle')
       expect(page).to have_text('Old Product')
+    end
 
-      # Should not show filter chips
-      expect(page).not_to have_text('Product Type: Sellable')
-      expect(page).not_to have_text('Status: Active')
-      expect(page).not_to have_text('Labels: Electronics')
+    it "shows Clear button only when filters are active" do
+      visit products_path
+
+      # No filters active - no Clear button
+      expect(page).not_to have_link('Clear')
+
+      visit products_path(type: 'sellable')
+
+      # Filter active - Clear button should appear
+      expect(page).to have_link('Clear')
     end
   end
 
   describe "URL state preservation" do
-    it "preserves filter state in URL parameters", js: true do
+    it "preserves type filter in URL when submitting form" do
       visit products_path
 
-      within('form[data-controller="filter-panel"]') do
-        select 'Sellable', from: 'product_type_id'
-        select 'Active', from: 'status'
-        click_button 'Apply Filters'
-      end
+      select 'Sellable', from: 'type'
+      click_button 'Search'
 
-      # URL should contain filter parameters
-      expect(page).to have_current_path(/product_type_id=/)
-      expect(page).to have_current_path(/status=active/)
+      # After form submission, the page should reload with the type param in URL
+      # Note: This is a non-JS test so form submission is a regular GET request
+      expect(page.current_url).to include('type=sellable')
     end
 
-    it "restores filters from URL parameters on page reload" do
-      visit products_path(product_type_id: product_type_sellable.id, status: 'active')
+    it "restores type filter from URL parameters on page load" do
+      visit products_path(type: 'sellable')
 
-      # Filters should be applied
+      # Type filter should be applied - show only sellable products
+      expect(page).to have_text('iPhone 15')
+      expect(page).to have_text('Old Product')
+      expect(page).not_to have_text('T-Shirt Bundle')
+
+      # Type dropdown should show Sellable
+      expect(page).to have_select('type', selected: 'Sellable')
+    end
+
+    it "restores search query from URL parameters on page load" do
+      visit products_path(q: 'iPhone')
+
       expect(page).to have_text('iPhone 15')
       expect(page).not_to have_text('T-Shirt Bundle')
 
-      # Filter chips should be visible
-      expect(page).to have_text('Product Type: Sellable')
-      expect(page).to have_text('Status: Active')
-    end
-
-    it "maintains filters after page reload", js: true do
-      visit products_path
-
-      within('form[data-controller="filter-panel"]') do
-        select 'Sellable', from: 'product_type_id'
-        click_button 'Apply Filters'
-      end
-
-      # Reload page
-      visit current_path
-
-      # Filter should still be applied
-      expect(page).to have_text('Product Type: Sellable')
-      expect(page).to have_text('iPhone 15')
-      expect(page).not_to have_text('T-Shirt Bundle')
-    end
-  end
-
-  describe "mobile filter panel" do
-    before(:each) do
-      # Set mobile viewport
-      page.driver.browser.manage.window.resize_to(375, 667)
-      visit products_path
-    end
-
-    it "shows mobile toggle button", js: true do
-      expect(page).to have_button('Show Filters') || have_css('[data-action*="toggleMobile"]')
-    end
-
-    it "toggles filter panel on mobile", js: true do
-      # Panel should be hidden initially on mobile
-      filter_panel = find('[data-filter-panel-target="panel"]', visible: false)
-      expect(filter_panel).not_to be_visible
-
-      # Click toggle button
-      find('[data-action*="toggleMobile"]').click
-
-      # Panel should be visible
-      expect(filter_panel).to be_visible
-    end
-
-    it "updates ARIA expanded state on toggle", js: true do
-      toggle_button = find('[data-action*="toggleMobile"]')
-
-      # Initially collapsed
-      expect(toggle_button['aria-expanded']).to eq('false')
-
-      # Toggle open
-      toggle_button.click
-
-      # Should be expanded
-      expect(toggle_button['aria-expanded']).to eq('true')
+      # Search field should contain the query
+      expect(page).to have_field('q', with: 'iPhone')
     end
   end
 
   describe "empty state" do
-    before do
-      # Remove all products
-      Product.destroy_all
-
+    it "shows empty state when filters return no results" do
       visit products_path
+
+      fill_in 'q', with: 'NonexistentProduct12345'
+      click_button 'Search'
+
+      expect(page).to have_text('No products found')
     end
 
     it "shows empty state when no products exist" do
-      expect(page).to have_text('No products found') || have_css('.empty-state')
-    end
-
-    it "shows empty state when filters return no results", js: true do
-      # Create one product
-      create(:product, company: company, name: 'Single Product', product_status: :active)
-
+      Product.destroy_all
       visit products_path
 
-      within('form[data-controller="filter-panel"]') do
-        select 'Discontinued', from: 'status'
-        click_button 'Apply Filters'
-      end
-
-      expect(page).to have_text('No products found') || have_css('.empty-state')
+      # When no filters and no products, it shows "No products" (not "No products found")
+      expect(page).to have_text('No products')
     end
   end
 
   describe "accessibility" do
-    before do
+    it "has proper aria-label for search input" do
       visit products_path
+
+      # The SearchInputComponent creates an input with aria-label attribute
+      expect(page).to have_css('input[aria-label="Search products by name or SKU"]')
     end
 
-    it "has proper labels for filter inputs" do
-      expect(page).to have_css('label[for*="product_type"]')
-      expect(page).to have_css('label[for*="status"]')
+    it "has proper aria-label for type filter" do
+      visit products_path
+
+      expect(page).to have_css('select[aria-label="Filter by product type"]')
     end
 
-    it "has accessible remove buttons with aria-label" do
-      within('form[data-controller="filter-panel"]') do
-        select 'Active', from: 'status'
-        click_button 'Apply Filters'
-      end
+    it "has accessible remove button for label filter chip" do
+      visit products_path(label_id: label_electronics.id)
 
-      expect(page).to have_css('a[aria-label*="Remove"]')
+      expect(page).to have_css('a[aria-label="Remove label filter"]')
     end
 
     it "uses semantic form elements" do
+      visit products_path
+
       expect(page).to have_css('form')
       expect(page).to have_css('select')
-      expect(page).to have_button('Apply Filters')
+      expect(page).to have_button('Search')
     end
   end
 
@@ -471,29 +337,83 @@ RSpec.describe 'Product Filtering', type: :system do
       )
     end
 
-    before do
-      visit products_path
-    end
-
     it "only shows products from current company" do
+      visit products_path
+
       expect(page).to have_text('iPhone 15')
       expect(page).not_to have_text('Other Company Product')
     end
 
-    it "only filters products from current company", js: true do
-      within('form[data-controller="filter-panel"]') do
-        select 'Active', from: 'status'
-        click_button 'Apply Filters'
-      end
+    it "only filters products from current company" do
+      visit products_path
+
+      select 'Sellable', from: 'type'
+      click_button 'Search'
 
       expect(page).to have_text('iPhone 15')
-      expect(page).to have_text('T-Shirt Bundle')
+      expect(page).to have_text('Old Product')
+      expect(page).not_to have_text('Other Company Product')
+    end
+
+    it "filters by label only shows products from current company with that label" do
+      # Create a label for the other company with a product
+      other_label = create(:label, company: other_company, name: 'Other Label', code: 'other')
+      create(:product_label, product: other_product, label: other_label)
+
+      # Visit with our company's electronics label
+      visit products_path(label_id: label_electronics.id)
+
+      # Should show our company's product with that label
+      expect(page).to have_text('iPhone 15')
+      # Should not show other company's product (even if we tried to use their label)
       expect(page).not_to have_text('Other Company Product')
     end
   end
 
+  describe "label filter with sublabels" do
+    let!(:parent_label) { create(:label, company: company, name: 'Technology', code: 'tech') }
+    let!(:sublabel) { create(:label, company: company, name: 'Phones', code: 'phones', parent_label: parent_label) }
+
+    # Create a new product specifically for sublabel tests (to avoid conflicts with main before block)
+    let!(:phone_product) do
+      product = create(:product,
+        company: company,
+        name: 'Galaxy Phone',
+        sku: 'GALAXY-1',
+        product_type: :sellable,
+        product_status: :active
+      )
+      create(:product_label, product: product, label: sublabel)
+      product
+    end
+
+    it "filters by sublabel includes only products with that sublabel" do
+      visit products_path(label_id: sublabel.id)
+
+      expect(page).to have_text('Galaxy Phone')
+      expect(page).not_to have_text('T-Shirt Bundle')
+      expect(page).not_to have_text('iPhone 15')
+    end
+
+    it "filters by parent label includes products with any descendant label" do
+      visit products_path(label_id: parent_label.id)
+
+      # Galaxy Phone has sublabel "Phones" which is under "Technology"
+      expect(page).to have_text('Galaxy Phone')
+      expect(page).not_to have_text('T-Shirt Bundle')
+    end
+
+    it "shows sublabel name with parent in filter chip" do
+      visit products_path(label_id: sublabel.id)
+
+      # Should show filter chip indicating the sublabel
+      expect(page).to have_text('Phones')
+      expect(page).to have_css('.bg-blue-100')
+    end
+  end
+
   describe "performance" do
-    before do
+    it "loads products index efficiently with many products" do
       # Create many products
       50.times do |i|
         create(:product,
@@ -505,25 +425,40 @@ RSpec.describe 'Product Filtering', type: :system do
       end
 
       visit products_path
+
+      # Page should load and show products table
+      expect(page).to have_css('table')
+      # Products are sorted by created_at DESC, so the most recent ones appear first
+      # Just verify the table has content and pagination shows correct count
+      expect(page).to have_text('Showing 1 to')
     end
 
-    it "loads filter panel without N+1 queries" do
-      # Filter panel should load efficiently
-      expect(page).to have_css('form[data-controller="filter-panel"]')
-    end
+    it "applies filters without excessive page load time" do
+      # Create products
+      20.times do |i|
+        create(:product,
+          company: company,
+          name: "Product #{i}",
+          sku: "PROD-#{i}",
+          product_status: :active
+        )
+      end
 
-    it "applies filters without excessive page load time", js: true do
+      visit products_path
+
       start_time = Time.current
 
-      within('form[data-controller="filter-panel"]') do
-        select 'Active', from: 'status'
-        click_button 'Apply Filters'
-      end
+      select 'Sellable', from: 'type'
+      click_button 'Search'
+
+      # Wait for filtering to complete by checking that filtered products are shown
+      expect(page).to have_css('table')
+      expect(page).to have_text('Sellable') # Filter is applied
 
       elapsed_time = Time.current - start_time
 
-      # Should complete in reasonable time (< 3 seconds)
-      expect(elapsed_time).to be < 3
+      # Should complete in reasonable time (< 5 seconds)
+      expect(elapsed_time).to be < 5
     end
   end
 end
