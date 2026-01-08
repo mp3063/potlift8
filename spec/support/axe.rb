@@ -9,10 +9,8 @@ require 'axe-rspec'
 
 RSpec.configure do |config|
   # Configure axe-core for system tests
-  config.before(:each, type: :system) do
-    # Configure axe-core to run in the browser context
-    Capybara.current_driver = :selenium_headless_chrome if Capybara.current_driver == :rack_test
-  end
+  # Note: System tests use driven_by in rails_helper.rb which sets up the selenium driver
+  # No need to manually switch drivers here as the driven_by configuration handles it
 
   # Global axe-core configuration
   # Test against WCAG 2.1 Level AA standards
@@ -66,20 +64,28 @@ module AccessibilityHelpers
   # Custom assertion for keyboard navigation
   def expect_keyboard_navigable(selector, expected_elements: nil)
     # Find all focusable elements within the container
+    # Using ES5-compatible syntax for broader browser support
     focusable_elements = page.evaluate_script(<<~JS)
-      const container = document.querySelector('#{selector.gsub("'", "\\'")}');
-      if (!container) return [];
+      (function() {
+        var container = document.querySelector('#{selector.gsub("'", "\\'")}');
+        if (!container) return [];
 
-      const focusable = container.querySelectorAll(
-        'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
+        var focusable = container.querySelectorAll(
+          'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
 
-      return Array.from(focusable).map(el => ({
-        tag: el.tagName.toLowerCase(),
-        text: el.textContent.trim().substring(0, 50),
-        tabindex: el.getAttribute('tabindex'),
-        ariaLabel: el.getAttribute('aria-label')
-      }));
+        var result = [];
+        for (var i = 0; i < focusable.length; i++) {
+          var el = focusable[i];
+          result.push({
+            tag: el.tagName.toLowerCase(),
+            text: (el.textContent || '').trim().substring(0, 50),
+            tabindex: el.getAttribute('tabindex'),
+            ariaLabel: el.getAttribute('aria-label')
+          });
+        }
+        return result;
+      })();
     JS
 
     if expected_elements

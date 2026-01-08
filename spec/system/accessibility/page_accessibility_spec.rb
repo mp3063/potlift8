@@ -3,25 +3,23 @@
 require 'rails_helper'
 
 RSpec.describe 'Page Accessibility', type: :system, js: true do
-  let(:company) { create(:company) }
-  let(:current_user) { { id: 1, email: 'test@example.com', name: 'Test User' } }
+  # Use regular let! at the outer level - these get created before any test runs
+  let!(:company) { create(:company) }
+  let!(:user) { create(:user, company: company) }
 
-  # Helper to set up authenticated session
-  def sign_in_user
-    # Mock the authentication helper methods
-    allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(current_user)
-    allow_any_instance_of(ApplicationController).to receive(:current_company).and_return({ id: company.id, code: company.code, name: company.name })
-    allow_any_instance_of(ApplicationController).to receive(:current_potlift_company).and_return(company)
-    allow_any_instance_of(ApplicationController).to receive(:authenticated?).and_return(true)
-  end
-
-  before do
-    sign_in_user
+  # Helper to ensure user exists and login
+  def ensure_login
+    # Verify user exists in database before attempting login
+    # This helps debug issues with database state
+    unless User.exists?(user.id)
+      raise "User #{user.id} not found in database before login attempt"
+    end
+    system_login(user)
   end
 
   describe 'Dashboard Page', :accessibility do
     before do
-      visit root_path
+      ensure_login
     end
 
     it_behaves_like 'accessible page'
@@ -76,6 +74,7 @@ RSpec.describe 'Page Accessibility', type: :system, js: true do
     end
 
     before do
+      ensure_login
       visit products_path
     end
 
@@ -170,6 +169,7 @@ RSpec.describe 'Page Accessibility', type: :system, js: true do
   describe 'Product Form Pages', :accessibility do
     context 'New Product Page' do
       before do
+        ensure_login
         visit new_product_path
       end
 
@@ -247,6 +247,7 @@ RSpec.describe 'Page Accessibility', type: :system, js: true do
       let(:product) { create(:product, company: company, sku: 'EDIT-001', name: 'Edit Test Product') }
 
       before do
+        ensure_login
         visit edit_product_path(product)
       end
 
@@ -276,6 +277,7 @@ RSpec.describe 'Page Accessibility', type: :system, js: true do
     let(:product) { create(:product, company: company, sku: 'SHOW-001', name: 'Show Test Product') }
 
     before do
+      ensure_login
       visit product_path(product)
     end
 
@@ -330,6 +332,7 @@ RSpec.describe 'Page Accessibility', type: :system, js: true do
     end
 
     before do
+      ensure_login
       visit search_path
     end
 
@@ -388,7 +391,7 @@ RSpec.describe 'Page Accessibility', type: :system, js: true do
     context 'Mobile viewport' do
       before do
         page.driver.browser.manage.window.resize_to(375, 667) # iPhone size
-        visit root_path
+        ensure_login
       end
 
       it 'mobile layout passes WCAG 2.1 AA compliance' do
@@ -426,7 +429,7 @@ RSpec.describe 'Page Accessibility', type: :system, js: true do
     context 'Tablet viewport' do
       before do
         page.driver.browser.manage.window.resize_to(768, 1024) # iPad size
-        visit root_path
+        ensure_login
       end
 
       it 'tablet layout passes WCAG 2.1 AA compliance' do
@@ -442,6 +445,7 @@ RSpec.describe 'Page Accessibility', type: :system, js: true do
 
   describe 'Form Input Types', :accessibility do
     before do
+      ensure_login
       visit new_product_path
     end
 
@@ -500,6 +504,10 @@ RSpec.describe 'Page Accessibility', type: :system, js: true do
   end
 
   describe 'Dynamic Content Accessibility', :accessibility do
+    before do
+      ensure_login
+    end
+
     it 'loading states are announced to screen readers' do
       visit products_path
 
@@ -541,7 +549,7 @@ RSpec.describe 'Page Accessibility', type: :system, js: true do
 
   describe 'Skip Links', :accessibility do
     before do
-      visit root_path
+      ensure_login
     end
 
     it 'has a skip to main content link' do
@@ -577,7 +585,7 @@ RSpec.describe 'Page Accessibility', type: :system, js: true do
 
   describe 'Heading Hierarchy', :accessibility do
     before do
-      visit root_path
+      ensure_login
     end
 
     it 'has proper heading hierarchy with no skipped levels' do
