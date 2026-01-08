@@ -179,7 +179,8 @@ module Ui
       content_tag(:div,
         class: "fixed inset-0 z-50 overflow-y-auto hidden transition-opacity duration-300 starting:opacity-0",
         data: { modal_target: "backdrop" },
-        aria: { labelledby: "#{@modal_id}-title", role: "dialog", modal: "true" }
+        role: "dialog",
+        aria: { labelledby: "#{@modal_id}-title", modal: "true" }
       ) do
         concat(render_overlay)
         concat(render_modal_container)

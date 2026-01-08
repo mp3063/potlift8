@@ -66,11 +66,15 @@ export default class extends Controller {
    * - Focuses input
    * - Loads recent searches
    * - Adds outside click listener
+   * - Locks body scroll
    */
   open() {
     if (this.hasModalTarget) {
       this.modalTarget.classList.remove("hidden")
       this.inputTarget.focus()
+
+      // Lock body scroll to prevent background scrolling
+      document.body.style.overflow = 'hidden'
 
       // Load recent searches if input is empty
       if (!this.inputTarget.value.trim()) {
@@ -89,6 +93,7 @@ export default class extends Controller {
    * - Hides dropdown
    * - Clears input and results
    * - Removes outside click listener
+   * - Restores body scroll
    */
   close(event) {
     if (event) event.preventDefault()
@@ -96,8 +101,11 @@ export default class extends Controller {
     if (this.hasModalTarget) {
       this.modalTarget.classList.add("hidden")
       this.inputTarget.value = ""
-      this.resultsTarget.innerHTML = ""
+      this.clearResults()
       document.removeEventListener("click", this.outsideClickHandler)
+
+      // Restore body scroll
+      document.body.style.overflow = ''
     }
   }
 

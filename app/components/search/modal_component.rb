@@ -60,8 +60,9 @@ module Search
         data: {
           global_search_target: "modal"
         },
+        role: "dialog",
         aria: {
-          role: "dialog",
+          modal: "true",
           labelledby: "search-modal-title"
         }
       ) do
