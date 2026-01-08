@@ -42,7 +42,7 @@ class ProductsController < ApplicationController
                                        .parent_products_only
                                        .with_labels_only
                                        .with_subproducts
-                                       .includes(:bundle_variants)
+                                       .includes(bundle_variants: [:subproducts, { product_configurations_as_super: :subproduct }])
 
     # Load labels for filter dropdown and bulk label editor
     load_filter_labels

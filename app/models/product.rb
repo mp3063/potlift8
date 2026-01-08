@@ -204,8 +204,10 @@ class Product < ApplicationRecord
   # Eager load subproducts (variants/bundle components)
   # Use when: Displaying configurable products or bundles with their variants
   # Prevents: N+1 queries on product_configurations and subproducts
+  # Note: Includes both the through association (:subproducts) and the intermediate
+  # association (product_configurations_as_super: :subproduct) for Bullet compatibility
   scope :with_subproducts, -> {
-    includes(product_configurations_as_super: :subproduct)
+    includes(:subproducts, product_configurations_as_super: :subproduct)
   }
 
   # Eager load superproducts (parent products)
@@ -366,8 +368,18 @@ class Product < ApplicationRecord
   # @example
   #   product.attribute_values_hash # => { 'price' => '1999', 'color' => 'blue' }
   #
+  # Note: For optimal performance, use Product.with_attributes scope when
+  # calling this method on multiple products to avoid N+1 queries.
+  #
   def attribute_values_hash
-    product_attribute_values.includes(:product_attribute).each_with_object({}) do |pav, hash|
+    # Use the already-loaded association if available, otherwise load with includes
+    pavs = if product_attribute_values.loaded?
+             product_attribute_values
+           else
+             product_attribute_values.includes(:product_attribute)
+           end
+
+    pavs.each_with_object({}) do |pav, hash|
       code = pav.product_attribute.code
       hash[code] = pav.value.presence || pav.info['value']
     end

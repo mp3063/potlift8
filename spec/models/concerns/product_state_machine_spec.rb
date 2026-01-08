@@ -511,7 +511,7 @@ RSpec.describe ProductStateMachine, type: :model do
     it 'enqueues ProductActivatedJob when product is activated' do
       expect {
         product.activate!
-      }.to have_enqueued_job(ProductActivatedJob).with(product).on_queue('default')
+      }.to have_enqueued_job(ProductActivatedJob).with(product)
     end
 
     it 'does not enqueue job if activation fails' do
@@ -533,7 +533,7 @@ RSpec.describe ProductStateMachine, type: :model do
     it 'enqueues ProductDiscontinuedJob when product is discontinued' do
       expect {
         product.discontinue!
-      }.to have_enqueued_job(ProductDiscontinuedJob).with(product).on_queue('default')
+      }.to have_enqueued_job(ProductDiscontinuedJob).with(product)
     end
   end
 

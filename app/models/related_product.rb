@@ -44,13 +44,15 @@ class RelatedProduct < ApplicationRecord
   belongs_to :related_to, class_name: 'Product'
 
   # Relation type enum
+  # Creates scopes: .cross_sell, .upsell, .alternative, .accessory, .similar
+  # Creates predicates: .cross_sell?, .upsell?, .alternative?, .accessory?, .similar?
   enum :relation_type, {
     cross_sell: 0,
     upsell: 1,
     alternative: 2,
     accessory: 3,
     similar: 4
-  }, prefix: true
+  }
 
   # Validations
   validates :relation_type, presence: true
@@ -70,6 +72,8 @@ class RelatedProduct < ApplicationRecord
 
   # Prevent a product from being related to itself
   def prevent_self_reference
+    return unless product_id.present? && related_to_id.present?
+
     if product_id == related_to_id
       errors.add(:base, "A product cannot be related to itself")
     end

@@ -52,7 +52,7 @@ RSpec.describe ProductConfiguration, type: :model, context: 'variants' do
       it 'rejects non-configurable superproducts' do
         config = build(:product_configuration, superproduct: sellable, subproduct: variant_product)
         expect(config).not_to be_valid
-        expect(config.errors[:superproduct]).to include('must be a configurable or bundle product')
+        expect(config.errors[:superproduct]).to include('must be a configurable, bundle, or bundle variant product')
       end
     end
 

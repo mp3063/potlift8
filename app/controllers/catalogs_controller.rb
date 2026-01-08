@@ -311,7 +311,7 @@ class CatalogsController < ApplicationController
           product.labels.map(&:name).join(', '),
           item.effective_attribute_value('price'),
           item.effective_attribute_value('weight'),
-          product.inventories.sum(:quantity)
+          product.inventories.sum(:value)
         ]
       end
     end

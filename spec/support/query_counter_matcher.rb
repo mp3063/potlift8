@@ -40,7 +40,9 @@ RSpec::Matchers.define :make_database_queries do |count: nil|
     when Integer
       "expected #{count} database #{pluralize_query(count)}, but #{@query_count} #{pluralize_query(@query_count)} were made"
     when Range
-      "expected between #{count.min || 0} and #{count.max || 'unlimited'} database queries, but #{@query_count} #{pluralize_query(@query_count)} were made"
+      min_val = count.begin || 0
+      max_val = count.end || 'unlimited'
+      "expected between #{min_val} and #{max_val} database queries, but #{@query_count} #{pluralize_query(@query_count)} were made"
     end
   end
 
@@ -49,7 +51,9 @@ RSpec::Matchers.define :make_database_queries do |count: nil|
     when Integer
       "expected not to make #{count} database #{pluralize_query(count)}, but exactly #{count} #{pluralize_query(count)} were made"
     when Range
-      "expected not to make between #{count.min || 0} and #{count.max || 'unlimited'} database queries"
+      min_val = count.begin || 0
+      max_val = count.end || 'unlimited'
+      "expected not to make between #{min_val} and #{max_val} database queries"
     end
   end
 
@@ -58,7 +62,9 @@ RSpec::Matchers.define :make_database_queries do |count: nil|
     when Integer
       "make exactly #{count} database #{pluralize_query(count)}"
     when Range
-      "make between #{count.min || 0} and #{count.max || 'unlimited'} database queries"
+      min_val = count.begin || 0
+      max_val = count.end || 'unlimited'
+      "make between #{min_val} and #{max_val} database queries"
     end
   end
 

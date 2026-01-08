@@ -115,10 +115,11 @@ RSpec.describe 'ProductAssets', type: :request do
       expect(response.body).not_to include('Photo.jpg')
     end
 
-    it 'raises error for other company product' do
-      expect {
-        get product_product_assets_path(other_product)
-      }.to raise_error(ActiveRecord::RecordNotFound)
+    it 'redirects with alert for other company product' do
+      get product_product_assets_path(other_product)
+      expect(response).to redirect_to(products_path)
+      follow_redirect!
+      expect(response.body).to include('Product not found')
     end
   end
 
@@ -142,10 +143,9 @@ RSpec.describe 'ProductAssets', type: :request do
       expect(asset.asset_priority).to eq(50)
     end
 
-    it 'raises error for other company product' do
-      expect {
-        get new_product_product_asset_path(other_product)
-      }.to raise_error(ActiveRecord::RecordNotFound)
+    it 'redirects with alert for other company product' do
+      get new_product_product_asset_path(other_product)
+      expect(response).to redirect_to(products_path)
     end
   end
 
@@ -452,7 +452,7 @@ RSpec.describe 'ProductAssets', type: :request do
       expect(asset.product).to eq(product)
     end
 
-    it 'raises error for other company product' do
+    it 'redirects with alert for other company product' do
       file = fixture_file_upload(Rails.root.join('spec/fixtures/files/sample.pdf'), 'application/pdf')
       params = {
         asset: {
@@ -462,9 +462,8 @@ RSpec.describe 'ProductAssets', type: :request do
         }
       }
 
-      expect {
-        post product_product_assets_path(other_product), params: params
-      }.to raise_error(ActiveRecord::RecordNotFound)
+      post product_product_assets_path(other_product), params: params
+      expect(response).to redirect_to(products_path)
     end
   end
 
@@ -489,18 +488,16 @@ RSpec.describe 'ProductAssets', type: :request do
       expect(assigns(:asset_url)).to eq(link_asset.info['url'])
     end
 
-    it 'returns 404 for other company asset' do
+    it 'redirects for other company product' do
       other_asset = create(:product_asset, :document, product: other_product)
 
-      expect {
-        get edit_product_product_asset_path(other_product, other_asset)
-      }.to raise_error(ActiveRecord::RecordNotFound)
+      get edit_product_product_asset_path(other_product, other_asset)
+      expect(response).to redirect_to(products_path)
     end
 
-    it 'returns 404 for non-existent asset' do
-      expect {
-        get edit_product_product_asset_path(product, 999999)
-      }.to raise_error(ActiveRecord::RecordNotFound)
+    it 'redirects for non-existent asset' do
+      get edit_product_product_asset_path(product, 999999)
+      expect(response).to redirect_to(product_path(product, anchor: 'assets'))
     end
   end
 
@@ -618,13 +615,12 @@ RSpec.describe 'ProductAssets', type: :request do
       end
     end
 
-    it 'cannot update other company asset' do
+    it 'redirects for other company product' do
       other_asset = create(:product_asset, :document, product: other_product)
       params = { asset: { name: 'Hacked' } }
 
-      expect {
-        patch product_product_asset_path(other_product, other_asset), params: params
-      }.to raise_error(ActiveRecord::RecordNotFound)
+      patch product_product_asset_path(other_product, other_asset), params: params
+      expect(response).to redirect_to(products_path)
     end
   end
 
@@ -655,20 +651,17 @@ RSpec.describe 'ProductAssets', type: :request do
       expect(ActiveStorage::Blob.exists?(asset_with_file.file.blob.id)).to be false
     end
 
-    it 'cannot delete other company asset' do
+    it 'redirects for other company product' do
       other_asset = create(:product_asset, :document, product: other_product)
 
-      expect {
-        delete product_product_asset_path(other_product, other_asset)
-      }.to raise_error(ActiveRecord::RecordNotFound)
-
+      delete product_product_asset_path(other_product, other_asset)
+      expect(response).to redirect_to(products_path)
       expect(ProductAsset.exists?(other_asset.id)).to be true
     end
 
-    it 'returns 404 for non-existent asset' do
-      expect {
-        delete product_product_asset_path(product, 999999)
-      }.to raise_error(ActiveRecord::RecordNotFound)
+    it 'redirects for non-existent asset' do
+      delete product_product_asset_path(product, 999999)
+      expect(response).to redirect_to(product_path(product, anchor: 'assets'))
     end
 
     context 'with turbo_stream format' do
@@ -762,12 +755,11 @@ RSpec.describe 'ProductAssets', type: :request do
       end
     end
 
-    it 'raises error for other company product' do
+    it 'returns 404 for other company product (JSON)' do
       params = { asset_ids: [asset1.id] }
 
-      expect {
-        post reorder_product_product_assets_path(other_product), params: params, as: :json
-      }.to raise_error(ActiveRecord::RecordNotFound)
+      post reorder_product_product_assets_path(other_product), params: params, as: :json
+      expect(response).to have_http_status(:not_found)
     end
   end
 
@@ -779,20 +771,17 @@ RSpec.describe 'ProductAssets', type: :request do
       get product_product_assets_path(product)
       expect(response.body).not_to include(other_asset.name)
 
-      # Edit - should get 404
-      expect {
-        get edit_product_product_asset_path(other_product, other_asset)
-      }.to raise_error(ActiveRecord::RecordNotFound)
+      # Edit - should redirect for other company
+      get edit_product_product_asset_path(other_product, other_asset)
+      expect(response).to redirect_to(products_path)
 
-      # Update - should get 404
-      expect {
-        patch product_product_asset_path(other_product, other_asset), params: { asset: { name: 'Hacked' } }
-      }.to raise_error(ActiveRecord::RecordNotFound)
+      # Update - should redirect for other company
+      patch product_product_asset_path(other_product, other_asset), params: { asset: { name: 'Hacked' } }
+      expect(response).to redirect_to(products_path)
 
-      # Delete - should get 404
-      expect {
-        delete product_product_asset_path(other_product, other_asset)
-      }.to raise_error(ActiveRecord::RecordNotFound)
+      # Delete - should redirect for other company
+      delete product_product_asset_path(other_product, other_asset)
+      expect(response).to redirect_to(products_path)
     end
 
     it 'scopes new assets to current company via product' do

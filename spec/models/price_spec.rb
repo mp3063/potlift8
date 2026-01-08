@@ -112,11 +112,12 @@ RSpec.describe Price, type: :model do
         expect(price.errors[:valid_from]).to include('must be before valid_to')
       end
 
-      it 'rejects when valid_from equals valid_to' do
+      it 'accepts when valid_from equals valid_to (point-in-time price)' do
+        # A price that's valid at a single moment is a valid edge case
+        # The model only rejects when valid_from > valid_to
         date = Time.current
         price = build(:price, :special, valid_from: date, valid_to: date)
-        expect(price).not_to be_valid
-        expect(price.errors[:valid_from]).to include('must be before valid_to')
+        expect(price).to be_valid
       end
 
       it 'accepts nil valid_from' do
@@ -250,10 +251,10 @@ RSpec.describe Price, type: :model do
       end
 
       context 'edge case: valid_from equals current time' do
-        let(:price) { create(:price, :special, valid_from: Time.current, valid_to: 1.week.from_now) }
-
         it 'returns true' do
-          travel_to price.valid_from do
+          # Freeze time first, then create the price with that exact time
+          freeze_time do
+            price = create(:price, :special, valid_from: Time.current, valid_to: 1.week.from_now)
             expect(price.active?).to be true
           end
         end

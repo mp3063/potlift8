@@ -4,7 +4,7 @@ FactoryBot.define do
     product_asset_type { :image }
     asset_visibility { :public_visibility }
     asset_priority { 0 }
-    name { nil }
+    sequence(:name) { |n| "asset_#{n}.jpg" }
     asset_description { nil }
     info { {} }
 

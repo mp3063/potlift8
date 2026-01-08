@@ -159,8 +159,8 @@ RSpec.describe 'CatalogItems', type: :request do
         post catalog_products_path(catalog.code), params: { product_ids: [] }
 
         expect(response).to redirect_to(catalog_items_path(catalog))
-        follow_redirect!
-        expect(response.body).to include('No products selected.')
+        # Check flash alert is set (flash is rendered via component, not plain text)
+        expect(flash[:alert]).to eq('No products selected.')
       end
     end
 

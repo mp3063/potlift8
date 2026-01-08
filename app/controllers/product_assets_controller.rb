@@ -76,6 +76,7 @@ class ProductAssetsController < ApplicationController
   #
   def new
     @asset = @product.product_assets.build
+    @product_asset = @asset  # View uses @product_asset
     # Default to public visibility and medium priority
     @asset.asset_visibility = :public_visibility
     @asset.asset_priority = 50
@@ -100,6 +101,7 @@ class ProductAssetsController < ApplicationController
   #
   def create
     @asset = @product.product_assets.build(asset_params)
+    @product_asset = @asset  # View uses @product_asset
 
     # Handle link URL separately (stored in info JSONB)
     if @asset.link? && url_param.present?
@@ -193,6 +195,7 @@ class ProductAssetsController < ApplicationController
   # Allows updating metadata and replacing files.
   #
   def edit
+    @product_asset = @asset  # View uses @product_asset
     # Populate URL field for link and video assets
     @asset_url = @asset.info&.dig('url') if @asset.link? || @asset.video?
   end
@@ -211,6 +214,8 @@ class ProductAssetsController < ApplicationController
   # - asset[url]: Updated URL (for link type or video type)
   #
   def update
+    @product_asset = @asset  # View uses @product_asset
+
     # Handle link URL update
     if @asset.link? && url_param.present?
       @asset.info ||= {}

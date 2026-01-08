@@ -30,21 +30,21 @@ RSpec.describe Configuration, type: :model do
 
     context 'code uniqueness' do
       let(:company) { create(:company) }
-      let(:product) { create(:product, company: company) }
+      let(:product) { create(:product, :configurable_variant, company: company) }
 
       before do
-        create(:configuration, product: product, code: 'size')
+        create(:configuration, product: product, company: company, code: 'size')
       end
 
-      it 'validates uniqueness of code scoped to product' do
-        duplicate = build(:configuration, product: product, code: 'size')
+      it 'validates uniqueness of code scoped to product and company' do
+        duplicate = build(:configuration, product: product, company: company, code: 'size')
         expect(duplicate).not_to be_valid
         expect(duplicate.errors[:code]).to include('has already been taken')
       end
 
       it 'allows same code for different products' do
-        other_product = create(:product, company: company)
-        config = build(:configuration, product: other_product, code: 'size')
+        other_product = create(:product, :configurable_variant, company: company)
+        config = build(:configuration, product: other_product, company: company, code: 'size')
         expect(config).to be_valid
       end
     end
@@ -52,7 +52,7 @@ RSpec.describe Configuration, type: :model do
 
   # Test acts_as_list
   describe 'acts_as_list' do
-    let(:product) { create(:product) }
+    let(:product) { create(:product, :configurable_variant) }
 
     it 'sets position on create' do
       config1 = create(:configuration, product: product)
@@ -78,7 +78,7 @@ RSpec.describe Configuration, type: :model do
     end
 
     it 'scopes position to product' do
-      other_product = create(:product)
+      other_product = create(:product, :configurable_variant)
 
       config1 = create(:configuration, product: product)
       config2 = create(:configuration, product: other_product)
@@ -124,8 +124,8 @@ RSpec.describe Configuration, type: :model do
   describe 'multi-tenancy' do
     let(:company) { create(:company) }
     let(:other_company) { create(:company) }
-    let(:product) { create(:product, company: company) }
-    let(:other_product) { create(:product, company: other_company) }
+    let(:product) { create(:product, :configurable_variant, company: company) }
+    let(:other_product) { create(:product, :configurable_variant, company: other_company) }
 
     it 'configurations belong to company through product' do
       config = create(:configuration, product: product, company: company)

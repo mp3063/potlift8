@@ -80,7 +80,7 @@ RSpec.describe ProductConfiguration, type: :model do
         sellable_sub = create(:product, :sellable, company: company)
         config = build(:product_configuration, superproduct: sellable_super, subproduct: sellable_sub)
         expect(config).not_to be_valid
-        expect(config.errors[:superproduct]).to include('must be a configurable or bundle product')
+        expect(config.errors[:superproduct]).to include('must be a configurable, bundle, or bundle variant product')
       end
     end
 

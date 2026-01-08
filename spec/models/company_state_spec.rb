@@ -4,7 +4,8 @@ RSpec.describe CompanyState, type: :model do
   # Test factories
   describe 'factories' do
     it 'has a valid factory' do
-      expect(build(:company_state)).to be_valid
+      company = create(:company)
+      expect(build(:company_state, company: company)).to be_valid
     end
 
     it 'creates valid states with traits' do

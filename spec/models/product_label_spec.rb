@@ -126,13 +126,13 @@ RSpec.describe ProductLabel, type: :model do
     context 'cache invalidation' do
       let(:label) { create(:label, company: company) }
       let!(:product_label) { create(:product_label, product: product, label: label) }
-      let(:original_updated_at) { product.updated_at }
 
       before do
         product.update_column(:updated_at, 1.hour.ago)
       end
 
       it 'invalidates product cache when label association changes' do
+        original_updated_at = product.updated_at
         product_label.touch
         expect(product.reload.updated_at).to be > original_updated_at
       end

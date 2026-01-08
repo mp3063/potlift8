@@ -121,7 +121,7 @@ class ProductAttributesController < ApplicationController
   end
 
   def product_attribute_params
-    params.require(:product_attribute).permit(
+    permitted = params.require(:product_attribute).permit(
       :name,
       :code,
       :view_format,
@@ -132,21 +132,30 @@ class ProductAttributesController < ApplicationController
       :pa_type,
       :description,
       :product_attribute_scope,
-      :options
-    ).tap do |permitted|
-      # Handle options - parse JSON string and store in info jsonb field
-      if permitted[:options].present?
-        # Options come as a JSON string from the hidden field
-        options_array = begin
-          JSON.parse(permitted[:options])
-        rescue JSON::ParserError
-          # If it's already an array (shouldn't happen but be safe)
-          permitted[:options].is_a?(Array) ? permitted[:options] : []
-        end
+      :options,    # For JSON string from form
+      options: []  # For array from tests
+    )
 
-        permitted[:info] = { options: options_array.compact_blank }
-        permitted.delete(:options)
+    # Handle options - parse JSON string and store in info jsonb field
+    if permitted[:options].present?
+      # Options come as a JSON string from the hidden field, or as an array in tests
+      options_array = if permitted[:options].is_a?(Array)
+        permitted[:options]
+      else
+        begin
+          JSON.parse(permitted[:options])
+        rescue JSON::ParserError, TypeError
+          []
+        end
       end
+
+      # Convert to hash and add info field with options
+      result = permitted.to_h
+      result.delete('options')
+      result['info'] = { 'options' => options_array.compact_blank }
+      result
+    else
+      permitted
     end
   end
 end

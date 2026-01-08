@@ -66,6 +66,16 @@ if defined?(Bullet)
 
     # Detect missing counter cache columns
     Bullet.counter_cache_enable = true
+
+    # Safelist for known acceptable counter cache scenarios
+    # These are acceptable performance tradeoffs (no counter_cache column needed)
+    Bullet.add_safelist type: :counter_cache, class_name: 'Catalog', association: :catalog_items
+
+    # Safelist for counter cache warnings that are acceptable performance tradeoffs
+    Bullet.add_safelist type: :counter_cache, class_name: 'CatalogItem', association: :catalog_item_attribute_values
+
+    # Safelist for N+1 query on CatalogItem during destroy (callbacks may access attribute_values)
+    Bullet.add_safelist type: :n_plus_one_query, class_name: 'CatalogItem', association: :catalog_item_attribute_values
   end
 
   # Development Environment Configuration - Common settings

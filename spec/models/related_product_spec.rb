@@ -27,11 +27,17 @@ RSpec.describe RelatedProduct, type: :model do
     subject { build(:related_product) }
 
     it { is_expected.to validate_presence_of(:relation_type) }
-    it { is_expected.to validate_inclusion_of(:relation_type).in_array(['cross_sell', 'upsell', 'alternative', 'accessory', 'similar']) }
+
+    it 'defines valid relation_type enum values' do
+      expect(RelatedProduct.relation_types.keys).to contain_exactly(
+        'cross_sell', 'upsell', 'alternative', 'accessory', 'similar'
+      )
+    end
 
     context 'related_to_id uniqueness' do
-      let(:product) { create(:product) }
-      let(:related_product) { create(:product) }
+      let(:company) { create(:company) }
+      let(:product) { create(:product, company: company) }
+      let(:related_product) { create(:product, company: company) }
 
       before do
         create(:related_product, product: product, related_to: related_product, relation_type: 'cross_sell')
@@ -49,7 +55,7 @@ RSpec.describe RelatedProduct, type: :model do
       end
 
       it 'allows same related product for different main products' do
-        other_product = create(:product)
+        other_product = create(:product, company: company)
         rp = build(:related_product, product: other_product, related_to: related_product, relation_type: 'cross_sell')
         expect(rp).to be_valid
       end
@@ -243,7 +249,8 @@ RSpec.describe RelatedProduct, type: :model do
 
   # Edge cases
   describe 'edge cases' do
-    let(:product) { create(:product) }
+    let(:company) { create(:company) }
+    let(:product) { create(:product, company: company) }
 
     it 'product cannot be related to itself' do
       rp = build(:related_product, product: product, related_to: product, relation_type: 'similar')
@@ -251,23 +258,23 @@ RSpec.describe RelatedProduct, type: :model do
     end
 
     it 'same product can be related multiple times with different types' do
-      related = create(:product)
+      related = create(:product, company: company)
 
-      rp_cross = create(:related_product, product: product, related_to: related, relation_type: 'cross_sell')
-      rp_similar = create(:related_product, product: product, related_to: related, relation_type: 'similar')
+      create(:related_product, product: product, related_to: related, relation_type: 'cross_sell')
+      create(:related_product, product: product, related_to: related, relation_type: 'similar')
 
       expect(product.related_products.count).to eq(2)
     end
 
-    it 'handles invalid relation_type' do
-      rp = build(:related_product, relation_type: 'invalid_type')
-      expect(rp).not_to be_valid
-      expect(rp.errors[:relation_type]).to be_present
+    it 'raises ArgumentError for invalid relation_type' do
+      expect {
+        build(:related_product, relation_type: 'invalid_type')
+      }.to raise_error(ArgumentError, /'invalid_type' is not a valid relation_type/)
     end
 
     it 'allows large number of related products' do
-      20.times do |i|
-        related = create(:product)
+      20.times do |_i|
+        related = create(:product, company: company)
         create(:related_product, product: product, related_to: related, relation_type: 'cross_sell')
       end
 

@@ -722,7 +722,7 @@ RSpec.describe '/products', type: :request do
 
       expect(response).to redirect_to(products_path)
       follow_redirect!
-      expect(response.body).to include('Labels updated for 2 products')
+      expect(response.body).to include('Labels added to 2 products successfully.')
     end
   end
 

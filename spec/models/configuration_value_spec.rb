@@ -18,8 +18,10 @@ RSpec.describe ConfigurationValue, type: :model do
   # Test associations
   describe 'associations' do
     it { is_expected.to belong_to(:configuration) }
-    it { is_expected.to have_many(:variant_configuration_values) }
-    it { is_expected.to have_many(:variants).through(:variant_configuration_values) }
+
+    # Note: The old Variant/VariantConfigurationValue models have been replaced
+    # with ProductConfiguration which stores variant config in JSONB info field.
+    # ConfigurationValue no longer has direct associations to variants.
   end
 
   # Test validations
@@ -88,37 +90,26 @@ RSpec.describe ConfigurationValue, type: :model do
     end
   end
 
-  # Test association with variants
-  describe 'variant associations' do
-    let(:configuration) { create(:configuration, :size) }
+  # Test relationship with ProductConfiguration (variants)
+  # Note: The legacy Variant model has been replaced with ProductConfiguration.
+  # Variant configurations are now stored in the info JSONB field of ProductConfiguration.
+  describe 'integration with product configurations' do
+    let(:configurable_product) { create(:product, :configurable_variant) }
+    let(:configuration) { create(:configuration, :size, product: configurable_product) }
     let(:value_small) { configuration.configuration_values.find_by(value: 'Small') }
-    let(:variant) { create(:variant) }
 
-    it 'can be associated with variants' do
-      create(:variant_configuration_value,
-             variant: variant,
-             configuration: configuration,
-             configuration_value: value_small)
-
-      expect(value_small.variants).to include(variant)
-      expect(variant.configuration_values).to include(value_small)
+    it 'configuration values are linked through configuration to configurable product' do
+      expect(value_small.configuration.product).to eq(configurable_product)
     end
 
-    it 'tracks multiple variants using same value' do
-      variant1 = create(:variant)
-      variant2 = create(:variant)
+    it 'can access product via delegation' do
+      expect(value_small.product).to eq(configurable_product)
+    end
 
-      create(:variant_configuration_value,
-             variant: variant1,
-             configuration: configuration,
-             configuration_value: value_small)
-      create(:variant_configuration_value,
-             variant: variant2,
-             configuration: configuration,
-             configuration_value: value_small)
-
-      expect(value_small.variants.count).to eq(2)
-      expect(value_small.variants).to include(variant1, variant2)
+    it 'configuration values represent options for variant generation' do
+      # ConfigurationValues define the possible options for variants
+      # Actual variant selection is stored in ProductConfiguration.info['variant_config']
+      expect(configuration.configuration_values.pluck(:value)).to include('Small', 'Medium', 'Large')
     end
   end
 
@@ -142,22 +133,27 @@ RSpec.describe ConfigurationValue, type: :model do
       end
     end
 
-    context 'configuration value deletion with variants' do
+    context 'configuration value deletion' do
       let(:configuration) { create(:configuration, :size) }
       let(:value_small) { configuration.configuration_values.find_by(value: 'Small') }
-      let(:variant) { create(:variant) }
 
-      before do
-        create(:variant_configuration_value,
-               variant: variant,
-               configuration: configuration,
-               configuration_value: value_small)
+      it 'can be destroyed independently' do
+        # Ensure configuration is created first (which creates 3 values via :size trait)
+        configuration
+        initial_count = ConfigurationValue.count
+
+        value_small.destroy
+
+        expect(ConfigurationValue.count).to eq(initial_count - 1)
       end
 
-      it 'deleting value removes variant associations' do
-        expect {
-          value_small.destroy
-        }.to change { VariantConfigurationValue.count }.by(-1)
+      it 'does not affect other configuration values' do
+        value_medium = configuration.configuration_values.find_by(value: 'Medium')
+        value_large = configuration.configuration_values.find_by(value: 'Large')
+
+        value_small.destroy
+
+        expect(configuration.configuration_values.reload).to include(value_medium, value_large)
       end
     end
   end
@@ -180,12 +176,24 @@ RSpec.describe ConfigurationValue, type: :model do
       expect(config_value).to be_valid
     end
 
-    it 'allows duplicate values in same configuration' do
+    it 'does not allow duplicate values in same configuration' do
       configuration = create(:configuration)
-      value1 = create(:configuration_value, configuration: configuration, value: 'Medium')
+      create(:configuration_value, configuration: configuration, value: 'Medium')
       value2 = build(:configuration_value, configuration: configuration, value: 'Medium')
 
-      # Duplicate values ARE allowed within same configuration
+      # Duplicate values are NOT allowed within the same configuration
+      expect(value2).not_to be_valid
+      expect(value2.errors[:value]).to include('has already been taken')
+    end
+
+    it 'allows same value in different configurations' do
+      configuration1 = create(:configuration)
+      configuration2 = create(:configuration)
+
+      create(:configuration_value, configuration: configuration1, value: 'Medium')
+      value2 = build(:configuration_value, configuration: configuration2, value: 'Medium')
+
+      # Same value IS allowed in different configurations
       expect(value2).to be_valid
     end
 
@@ -203,12 +211,18 @@ RSpec.describe ConfigurationValue, type: :model do
   # Multi-tenancy
   describe 'multi-tenancy' do
     let(:company) { create(:company) }
-    let(:product) { create(:product, company: company) }
+    let(:product) { create(:product, :configurable_variant, company: company) }
     let(:configuration) { create(:configuration, product: product, company: company) }
 
     it 'configuration value inherits company context from configuration' do
       config_value = create(:configuration_value, configuration: configuration)
       expect(config_value.configuration.product.company).to eq(company)
+    end
+
+    it 'can access company through delegation chain' do
+      config_value = create(:configuration_value, configuration: configuration)
+      # ConfigurationValue -> Configuration -> Product -> Company
+      expect(config_value.product.company).to eq(company)
     end
   end
 end

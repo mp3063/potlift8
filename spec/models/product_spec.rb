@@ -46,7 +46,15 @@ RSpec.describe Product, type: :model do
     subject { build(:product) }
 
     it { is_expected.to validate_presence_of(:company) }
-    it { is_expected.to validate_presence_of(:sku) }
+    # Note: We can't use shoulda-matchers for :sku because the generate_sku_if_missing
+    # callback auto-generates a SKU when blank. Test the validation directly instead.
+    it 'validates presence of sku (but auto-generates if blank)' do
+      # The callback generates SKU if missing, so validation passes
+      # This is the expected behavior - SKU is auto-generated
+      product = build(:product, sku: nil)
+      expect(product).to be_valid
+      expect(product.sku).to be_present
+    end
     it { is_expected.to validate_presence_of(:name) }
     it { is_expected.to validate_presence_of(:product_type) }
 
@@ -373,6 +381,8 @@ RSpec.describe Product, type: :model do
 
     describe '#write_attribute_value' do
       it 'creates new attribute value' do
+        # price_attr must exist before we can write to it
+        price_attr # trigger lazy evaluation to create the attribute
         result = product.write_attribute_value('price', '2999')
         expect(result).to be true
 

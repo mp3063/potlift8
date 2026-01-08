@@ -27,9 +27,20 @@ RSpec.describe Label, type: :model do
   describe 'validations' do
     subject { build(:label) }
 
-    it { is_expected.to validate_presence_of(:code) }
     it { is_expected.to validate_presence_of(:name) }
     it { is_expected.to validate_presence_of(:label_type) }
+
+    it 'requires code when name is blank' do
+      label = build(:label, code: nil, name: nil)
+      expect(label).not_to be_valid
+      expect(label.errors[:code]).to be_present
+    end
+
+    it 'generates code from name when code is blank' do
+      label = build(:label, code: nil, name: 'Electronics')
+      expect(label).to be_valid
+      expect(label.code).to eq('electronics')
+    end
 
     context 'uniqueness validations' do
       let(:company) { create(:company) }

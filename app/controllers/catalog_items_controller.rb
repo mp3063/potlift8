@@ -30,6 +30,7 @@ class CatalogItemsController < ApplicationController
                                        .where.not(id: existing_product_ids)
                                        .with_attributes
                                        .with_labels
+                                       .includes(:labels)
                                        .order(:sku)
 
     # Apply filters
@@ -64,7 +65,7 @@ class CatalogItemsController < ApplicationController
   # - catalog_item_state: Initial state for added items (default: active)
   #
   def create
-    product_ids = Array(params[:product_ids])
+    product_ids = Array(params[:product_ids]).compact_blank
 
     if product_ids.blank?
       redirect_to catalog_items_path(@catalog), alert: 'No products selected.'

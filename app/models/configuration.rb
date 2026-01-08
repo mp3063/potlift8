@@ -42,6 +42,7 @@ class Configuration < ApplicationRecord
   validates :name, presence: true
   validates :code, presence: true, uniqueness: { scope: [:company_id, :product_id] }
   validate :product_must_be_configurable
+  validate :company_must_match_product
 
   # Position-based ordering within a product
   # Allows drag-and-drop reordering in admin interface
@@ -60,6 +61,16 @@ class Configuration < ApplicationRecord
   def product_must_be_configurable
     unless product&.product_type_configurable?
       errors.add(:product, "must be a configurable product")
+    end
+  end
+
+  # Validate that the configuration's company matches the product's company
+  # Ensures multi-tenant data isolation
+  def company_must_match_product
+    return unless product.present? && company.present?
+
+    if company_id != product.company_id
+      errors.add(:company, "must match the product's company")
     end
   end
 end

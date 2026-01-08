@@ -216,16 +216,18 @@ RSpec.describe CustomerGroup, type: :model do
     end
 
     context 'with negative discount_percent' do
-      it 'is valid (no validation on value)' do
+      it 'is invalid (must be >= 0)' do
         customer_group = build(:customer_group, company: company, discount_percent: -10)
-        expect(customer_group).to be_valid
+        expect(customer_group).not_to be_valid
+        expect(customer_group.errors[:discount_percent]).to include('must be greater than or equal to 0')
       end
     end
 
     context 'with very high discount_percent' do
-      it 'is valid (no validation on value)' do
+      it 'is invalid (must be <= 100)' do
         customer_group = build(:customer_group, company: company, discount_percent: 150)
-        expect(customer_group).to be_valid
+        expect(customer_group).not_to be_valid
+        expect(customer_group.errors[:discount_percent]).to include('must be less than or equal to 100')
       end
     end
   end

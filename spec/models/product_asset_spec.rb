@@ -176,8 +176,10 @@ RSpec.describe ProductAsset, type: :model do
         expect(asset.info['title']).to be_present
       end
 
-      it 'defaults to empty hash' do
-        asset = create(:product_asset, info: nil)
+      it 'uses database default empty hash when not specified' do
+        # Note: default: {} only applies when column is not specified
+        # Explicitly passing nil will persist as nil since null: true
+        asset = ProductAsset.create!(product: create(:product), name: 'test.jpg', product_asset_type: :image)
         asset.reload
         expect(asset.info).to eq({})
       end

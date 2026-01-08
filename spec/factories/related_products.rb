@@ -1,7 +1,11 @@
 FactoryBot.define do
   factory :related_product do
-    product
-    association :related_to, factory: :product
+    transient do
+      shared_company { nil }
+    end
+
+    product { association(:product, company: shared_company || association(:company)) }
+    related_to { association(:product, company: product.company) }
     relation_type { 'cross_sell' }
     position { 1 }
 
