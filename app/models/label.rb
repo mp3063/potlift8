@@ -50,7 +50,7 @@ class Label < ApplicationRecord
   before_save :generate_full_code_and_name
 
   # Scopes
-  default_scope { order("label_positions asc nulls last, id asc") }
+  default_scope { order("label_positions asc nulls last, labels.id asc") }
   scope :root_labels, -> { where(parent_label_id: nil) }
   scope :without_parents, -> { where(parent_label_id: nil) }
 

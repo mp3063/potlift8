@@ -356,11 +356,13 @@ class LabelsController < ApplicationController
   # Ensures label belongs to current company
   # Raises ActiveRecord::RecordNotFound if label not found or doesn't belong to company
   def set_label
-    @label = current_potlift_company.labels.find_by!(full_code: params[:id]) ||
-             current_potlift_company.labels.find(params[:id])
-  rescue ActiveRecord::RecordNotFound
-    # Try finding by ID if full_code lookup fails
-    @label = current_potlift_company.labels.find(params[:id])
+    # First try to find by full_code (used in URLs via to_param)
+    @label = current_potlift_company.labels.find_by(full_code: params[:id])
+
+    # Fall back to finding by ID if full_code lookup fails
+    unless @label
+      @label = current_potlift_company.labels.find(params[:id])
+    end
   end
 
   # Strong parameters for label creation/update
