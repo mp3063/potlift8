@@ -96,7 +96,7 @@ module Shared
     def render_logo_section
       content_tag(:div, class: "flex items-center gap-4") do
         concat(render_mobile_menu_button)
-        concat(helpers.link_to(helpers.root_path, class: "flex items-center gap-3") do
+        concat(helpers.link_to(helpers.root_path, class: "flex items-center gap-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2") do
           concat(logo_svg)
           concat(content_tag(:span, "Potlift8", class: "text-xl font-bold text-gray-900"))
         end)
@@ -112,8 +112,8 @@ module Shared
       button_tag(
         type: "button",
         class: "lg:hidden p-2 text-gray-700 hover:bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500",
-        data: { action: "click->mobile-sidebar#toggle" },
-        aria: { label: "Open menu" }
+        data: { action: "click->mobile-sidebar#toggle", mobile_sidebar_target: "menuButton" },
+        aria: { label: "Open menu", expanded: "false", controls: "mobile-sidebar" }
       ) do
         raw(<<~SVG)
           <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,11 +151,13 @@ module Shared
     def nav_link(text, path)
       active = helpers.current_page?(path)
       classes = [
-        "text-sm font-medium transition-colors",
-        active ? "text-blue-600 border-b-2 border-blue-600 pb-1" : "text-gray-700 hover:text-blue-600"
+        "text-sm font-medium transition-colors rounded-md px-2 py-1",
+        "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
+        active ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-700 hover:text-blue-600"
       ].join(" ")
 
-      helpers.link_to text, path, class: classes
+      aria_attrs = active ? { current: "page" } : {}
+      helpers.link_to text, path, class: classes, aria: aria_attrs
     end
 
     def render_user_section

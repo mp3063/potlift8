@@ -45,8 +45,11 @@ module Shared
     # @return [String] HTML structure with backdrop and sidebar panel
     def call
       content_tag(:div,
+        id: "mobile-sidebar",
         class: "lg:hidden fixed inset-0 z-50 hidden",
-        data: { mobile_sidebar_target: "overlay" }
+        data: { mobile_sidebar_target: "overlay" },
+        role: "dialog",
+        aria: { modal: "true", label: "Mobile navigation menu" }
       ) do
         concat(render_backdrop)
         concat(render_sidebar)
@@ -113,7 +116,7 @@ module Shared
 
     def mobile_nav_link(text, path)
       helpers.link_to text, path,
-        class: "block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 rounded-lg",
+        class: "block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
         data: { action: "click->mobile-sidebar#close" }
     end
   end
