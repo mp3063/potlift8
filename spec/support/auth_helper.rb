@@ -60,6 +60,30 @@ module AuthHelper
     token
   end
 
+  # Login a user for system tests via test backdoor
+  # This visits the test login page which sets up the session
+  # properly in the browser via a GET request that triggers a form submission.
+  #
+  # For Selenium/JS tests, we need to use a GET-based approach since
+  # Selenium doesn't support direct POST requests.
+  #
+  # @param user [User] The user to log in as
+  # @param role [String] Optional role override (default: 'admin')
+  #
+  # @example In a system spec
+  #   let(:user) { create(:user) }
+  #   before { system_login(user) }
+  #
+  def system_login(user, role: 'admin')
+    # Visit a test login page that will set up the session
+    # The test_login route handles this via GET with query params
+    visit "/test_login?user_id=#{user.id}&role=#{role}"
+
+    # Wait for the redirect to complete and page to load
+    # The test_login controller redirects to root_path after setting session
+    expect(page).to have_current_path(root_path, wait: 5)
+  end
+
   # Generate a mock JWT token with specified user data
   # This token will pass verification when Authlift::Client#verify_token is called
   #

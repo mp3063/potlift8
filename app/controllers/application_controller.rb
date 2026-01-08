@@ -117,22 +117,25 @@ class ApplicationController < ActionController::Base
     end
 
     # Validate JWT token is still valid (decode will fail if revoked/invalid)
-    begin
-      authlift_client.decode_jwt(session[:access_token])
-    rescue Authlift::Client::TokenValidationError => e
-      Rails.logger.warn("JWT validation failed: #{e.message}")
-      # Token may be expired, try refresh
-      if session[:refresh_token].present?
-        begin
-          refresh_access_token
-        rescue StandardError => refresh_error
-          Rails.logger.error("Token refresh failed: #{refresh_error.message}")
+    # Skip JWT validation for test tokens in test environment
+    unless Rails.env.test? && session[:access_token]&.start_with?('test_token_')
+      begin
+        authlift_client.decode_jwt(session[:access_token])
+      rescue Authlift::Client::TokenValidationError => e
+        Rails.logger.warn("JWT validation failed: #{e.message}")
+        # Token may be expired, try refresh
+        if session[:refresh_token].present?
+          begin
+            refresh_access_token
+          rescue StandardError => refresh_error
+            Rails.logger.error("Token refresh failed: #{refresh_error.message}")
+            reset_session
+            return false
+          end
+        else
           reset_session
           return false
         end
-      else
-        reset_session
-        return false
       end
     end
 
