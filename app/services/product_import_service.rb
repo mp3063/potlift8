@@ -89,12 +89,12 @@ class ProductImportService
   def process_row(row, index)
     # Validate required fields
     unless row[:sku].present?
-      @errors << { row: index + 2, error: 'SKU is required' }
+      @errors << { row: index + 2, error: "SKU is required" }
       return
     end
 
     unless row[:name].present?
-      @errors << { row: index + 2, error: 'Name is required' }
+      @errors << { row: index + 2, error: "Name is required" }
       return
     end
 
@@ -125,7 +125,7 @@ class ProductImportService
         @updated_count += 1
       end
     else
-      @errors << { row: index + 2, error: product.errors.full_messages.join(', ') }
+      @errors << { row: index + 2, error: product.errors.full_messages.join(", ") }
     end
   end
 
@@ -159,13 +159,13 @@ class ProductImportService
   # @param row [CSV::Row] CSV row
   #
   def import_labels(product, row)
-    label_names = row[:labels].to_s.split(',').map(&:strip).reject(&:blank?)
+    label_names = row[:labels].to_s.split(",").map(&:strip).reject(&:blank?)
     return if label_names.empty?
 
     labels = label_names.map do |name|
       @company.labels.find_or_create_by!(name: name) do |label|
         label.code = name.parameterize.underscore
-        label.label_type = 'import'
+        label.label_type = "import"
       end
     end
 
@@ -184,10 +184,10 @@ class ProductImportService
   #
   def import_attributes(product, row)
     row.to_h.each do |key, value|
-      next unless key.to_s.start_with?('attr_')
+      next unless key.to_s.start_with?("attr_")
       next if value.blank?
 
-      attr_code = key.to_s.sub('attr_', '')
+      attr_code = key.to_s.sub("attr_", "")
       attribute = @company.product_attributes.find_by(code: attr_code)
 
       if attribute

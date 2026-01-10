@@ -27,7 +27,7 @@
 #
 class ProductAssetsController < ApplicationController
   before_action :set_product
-  before_action :set_asset, only: [:edit, :update, :destroy]
+  before_action :set_asset, only: [ :edit, :update, :destroy ]
 
   # Maximum file sizes by type
   MAX_VIDEO_SIZE = 100.megabytes
@@ -106,22 +106,22 @@ class ProductAssetsController < ApplicationController
     # Handle link URL separately (stored in info JSONB)
     if @asset.link? && url_param.present?
       @asset.info ||= {}
-      @asset.info['url'] = url_param
+      @asset.info["url"] = url_param
     end
 
     # Store URL for video type (similar to link type)
     if @asset.video? && url_param.present?
       @asset.info ||= {}
-      @asset.info['url'] = url_param
+      @asset.info["url"] = url_param
     end
 
     # Validate file presence for document types (always required)
     if @asset.document? && file_param.blank?
-      @asset.errors.add(:file, 'is required for documents')
+      @asset.errors.add(:file, "is required for documents")
       respond_to do |format|
         format.html { render :new, status: :unprocessable_entity }
         format.turbo_stream do
-          flash.now[:alert] = 'File is required for document assets.'
+          flash.now[:alert] = "File is required for document assets."
           render :new, status: :unprocessable_entity
         end
       end
@@ -130,11 +130,11 @@ class ProductAssetsController < ApplicationController
 
     # Validate that video has either file OR URL (at least one required)
     if @asset.video? && file_param.blank? && url_param.blank?
-      @asset.errors.add(:base, 'Either a video file or video URL is required')
+      @asset.errors.add(:base, "Either a video file or video URL is required")
       respond_to do |format|
         format.html { render :new, status: :unprocessable_entity }
         format.turbo_stream do
-          flash.now[:alert] = 'Either a video file or video URL is required.'
+          flash.now[:alert] = "Either a video file or video URL is required."
           render :new, status: :unprocessable_entity
         end
       end
@@ -166,12 +166,12 @@ class ProductAssetsController < ApplicationController
       end
 
       respond_to do |format|
-        format.html { redirect_to product_path(@product, anchor: 'assets'), notice: 'Asset created successfully.' }
+        format.html { redirect_to product_path(@product, anchor: "assets"), notice: "Asset created successfully." }
         format.turbo_stream do
-          flash.now[:notice] = 'Asset created successfully.'
+          flash.now[:notice] = "Asset created successfully."
           render turbo_stream: [
-            turbo_stream.replace('product_assets', partial: 'product_assets/list', locals: { product: @product, assets: @product.product_assets.non_images.ordered }),
-            turbo_stream.update('flash', partial: 'shared/flash', locals: { flash: flash })
+            turbo_stream.replace("product_assets", partial: "product_assets/list", locals: { product: @product, assets: @product.product_assets.non_images.ordered }),
+            turbo_stream.update("flash", partial: "shared/flash", locals: { flash: flash })
           ]
         end
         format.json { render json: @asset, status: :created }
@@ -197,7 +197,7 @@ class ProductAssetsController < ApplicationController
   def edit
     @product_asset = @asset  # View uses @product_asset
     # Populate URL field for link and video assets
-    @asset_url = @asset.info&.dig('url') if @asset.link? || @asset.video?
+    @asset_url = @asset.info&.dig("url") if @asset.link? || @asset.video?
   end
 
   # PATCH /products/:product_id/product_assets/:id
@@ -219,13 +219,13 @@ class ProductAssetsController < ApplicationController
     # Handle link URL update
     if @asset.link? && url_param.present?
       @asset.info ||= {}
-      @asset.info['url'] = url_param
+      @asset.info["url"] = url_param
     end
 
     # Handle video URL update (similar to link type)
     if @asset.video? && url_param.present?
       @asset.info ||= {}
-      @asset.info['url'] = url_param
+      @asset.info["url"] = url_param
     end
 
     # Validate and attach new file if provided
@@ -252,12 +252,12 @@ class ProductAssetsController < ApplicationController
 
     if @asset.update(asset_params)
       respond_to do |format|
-        format.html { redirect_to product_path(@product, anchor: 'assets'), notice: 'Asset updated successfully.' }
+        format.html { redirect_to product_path(@product, anchor: "assets"), notice: "Asset updated successfully." }
         format.turbo_stream do
-          flash.now[:notice] = 'Asset updated successfully.'
+          flash.now[:notice] = "Asset updated successfully."
           render turbo_stream: [
-            turbo_stream.replace('product_assets', partial: 'product_assets/list', locals: { product: @product, assets: @product.product_assets.non_images.ordered }),
-            turbo_stream.update('flash', partial: 'shared/flash', locals: { flash: flash })
+            turbo_stream.replace("product_assets", partial: "product_assets/list", locals: { product: @product, assets: @product.product_assets.non_images.ordered }),
+            turbo_stream.update("flash", partial: "shared/flash", locals: { flash: flash })
           ]
         end
         format.json { render json: @asset, status: :ok }
@@ -289,12 +289,12 @@ class ProductAssetsController < ApplicationController
     @asset.destroy
 
     respond_to do |format|
-      format.html { redirect_to product_path(@product, anchor: 'assets'), notice: "#{asset_type.humanize} '#{asset_name}' deleted successfully." }
+      format.html { redirect_to product_path(@product, anchor: "assets"), notice: "#{asset_type.humanize} '#{asset_name}' deleted successfully." }
       format.turbo_stream do
         flash.now[:notice] = "#{asset_type.humanize} '#{asset_name}' deleted successfully."
         render turbo_stream: [
-          turbo_stream.replace('product_assets', partial: 'product_assets/list', locals: { product: @product, assets: @product.product_assets.non_images.ordered }),
-          turbo_stream.update('flash', partial: 'shared/flash', locals: { flash: flash })
+          turbo_stream.replace("product_assets", partial: "product_assets/list", locals: { product: @product, assets: @product.product_assets.non_images.ordered }),
+          turbo_stream.update("flash", partial: "shared/flash", locals: { flash: flash })
         ]
       end
       format.json { head :no_content }
@@ -313,7 +313,7 @@ class ProductAssetsController < ApplicationController
   def reorder
     unless params[:asset_ids].is_a?(Array)
       respond_to do |format|
-        format.json { render json: { error: 'Invalid asset_ids parameter' }, status: :unprocessable_entity }
+        format.json { render json: { error: "Invalid asset_ids parameter" }, status: :unprocessable_entity }
       end
       return
     end
@@ -324,7 +324,7 @@ class ProductAssetsController < ApplicationController
     current_asset_ids = @product.product_assets.non_images.pluck(:id)
     unless (asset_ids - current_asset_ids).empty?
       respond_to do |format|
-        format.json { render json: { error: 'Invalid asset IDs' }, status: :unprocessable_entity }
+        format.json { render json: { error: "Invalid asset IDs" }, status: :unprocessable_entity }
       end
       return
     end
@@ -338,12 +338,12 @@ class ProductAssetsController < ApplicationController
     end
 
     respond_to do |format|
-      format.json { render json: { success: true, message: 'Assets reordered successfully' }, status: :ok }
+      format.json { render json: { success: true, message: "Assets reordered successfully" }, status: :ok }
       format.turbo_stream do
-        flash.now[:notice] = 'Assets reordered successfully.'
+        flash.now[:notice] = "Assets reordered successfully."
         render turbo_stream: [
-          turbo_stream.replace('product_assets', partial: 'product_assets/list', locals: { product: @product, assets: @product.product_assets.non_images.ordered.reload }),
-          turbo_stream.update('flash', partial: 'shared/flash', locals: { flash: flash })
+          turbo_stream.replace("product_assets", partial: "product_assets/list", locals: { product: @product, assets: @product.product_assets.non_images.ordered.reload }),
+          turbo_stream.update("flash", partial: "shared/flash", locals: { flash: flash })
         ]
       end
     end
@@ -357,9 +357,9 @@ class ProductAssetsController < ApplicationController
     @product = current_potlift_company.products.find(params[:product_id])
   rescue ActiveRecord::RecordNotFound
     respond_to do |format|
-      format.html { redirect_to products_path, alert: 'Product not found.' }
-      format.turbo_stream { flash.now[:alert] = 'Product not found.' }
-      format.json { render json: { error: 'Product not found' }, status: :not_found }
+      format.html { redirect_to products_path, alert: "Product not found." }
+      format.turbo_stream { flash.now[:alert] = "Product not found." }
+      format.json { render json: { error: "Product not found" }, status: :not_found }
     end
   end
 
@@ -369,9 +369,9 @@ class ProductAssetsController < ApplicationController
     @asset = @product.product_assets.non_images.find(params[:id])
   rescue ActiveRecord::RecordNotFound
     respond_to do |format|
-      format.html { redirect_to product_path(@product, anchor: 'assets'), alert: 'Asset not found.' }
-      format.turbo_stream { flash.now[:alert] = 'Asset not found.' }
-      format.json { render json: { error: 'Asset not found' }, status: :not_found }
+      format.html { redirect_to product_path(@product, anchor: "assets"), alert: "Asset not found." }
+      format.turbo_stream { flash.now[:alert] = "Asset not found." }
+      format.json { render json: { error: "Asset not found" }, status: :not_found }
     end
   end
 
@@ -419,15 +419,15 @@ class ProductAssetsController < ApplicationController
   # @return [String, nil] Error message or nil if valid
   #
   def validate_file(file, asset_type)
-    return 'File is required' if file.blank?
+    return "File is required" if file.blank?
 
     case asset_type
-    when 'video'
+    when "video"
       validate_video_file(file)
-    when 'document'
+    when "document"
       validate_document_file(file)
     else
-      'Invalid asset type for file upload'
+      "Invalid asset type for file upload"
     end
   end
 
@@ -438,7 +438,7 @@ class ProductAssetsController < ApplicationController
   #
   def validate_video_file(file)
     unless ALLOWED_VIDEO_TYPES.include?(file.content_type)
-      return 'Invalid video file type. Allowed types: MP4, MPEG, QuickTime, AVI, WebM'
+      return "Invalid video file type. Allowed types: MP4, MPEG, QuickTime, AVI, WebM"
     end
 
     if file.size > MAX_VIDEO_SIZE
@@ -455,7 +455,7 @@ class ProductAssetsController < ApplicationController
   #
   def validate_document_file(file)
     unless ALLOWED_DOCUMENT_TYPES.include?(file.content_type)
-      return 'Invalid document file type. Allowed types: PDF, Word, Excel, PowerPoint, Text, CSV'
+      return "Invalid document file type. Allowed types: PDF, Word, Excel, PowerPoint, Text, CSV"
     end
 
     if file.size > MAX_DOCUMENT_SIZE

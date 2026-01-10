@@ -8,7 +8,7 @@ class CreateCatalogItems < ActiveRecord::Migration[8.0]
       t.jsonb :info, default: {}
       t.timestamps
 
-      t.index [:catalog_id, :product_id], unique: true
+      t.index [ :catalog_id, :product_id ], unique: true
       t.index :catalog_item_state
       t.index :priority
     end

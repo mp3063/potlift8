@@ -58,7 +58,7 @@ class RateLimiter
     @key = key
     @limit = limit
     @period = period
-    @redis = Redis.new(url: ENV.fetch('REDIS_URL', 'redis://localhost:6379/1'))
+    @redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
   end
 
   # Execute block with rate limiting
@@ -155,7 +155,7 @@ class RateLimiter
       limit: @limit,
       period: @period,
       current_usage: current_usage,
-      remaining: [@limit - current_usage, 0].max,
+      remaining: [ @limit - current_usage, 0 ].max,
       time_until_reset: time_until_reset,
       percentage_used: (current_usage.to_f / @limit * 100).round(1)
     }
@@ -204,7 +204,7 @@ class RateLimiter
 
     # Structured log for monitoring/alerting
     Rails.logger.info({
-      event: 'rate_limit_exceeded',
+      event: "rate_limit_exceeded",
       key: @key,
       limit: @limit,
       period: @period,

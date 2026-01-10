@@ -12,6 +12,6 @@ class CreateProductAssets < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :product_assets, [:product_id, :asset_priority], name: 'index_product_assets_on_product_id_and_priority'
+    add_index :product_assets, [ :product_id, :asset_priority ], name: 'index_product_assets_on_product_id_and_priority'
   end
 end

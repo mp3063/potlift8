@@ -155,7 +155,7 @@ module SyncLockable
     return nil unless lock.present? && lock.active?
 
     remaining = SyncLock::LOCK_TIMEOUT.to_i - (Time.current - lock.updated_at).to_i
-    [remaining, 0].max
+    [ remaining, 0 ].max
   end
 
   private

@@ -28,7 +28,7 @@ class CatalogPriceValidator
   # @return [Boolean] true if pricing is valid, false otherwise
   #
   def validate
-    return true if @catalog.currency_code == 'eur' # EUR is base currency
+    return true if @catalog.currency_code == "eur" # EUR is base currency
 
     validate_price_ratio
 
@@ -74,7 +74,7 @@ class CatalogPriceValidator
   # @return [Float, nil] The base price or nil if not found
   #
   def get_base_price
-    price_value = @product.read_attribute_value('price')
+    price_value = @product.read_attribute_value("price")
     return nil if price_value.blank?
 
     price_value.to_f
@@ -86,7 +86,7 @@ class CatalogPriceValidator
   #
   def get_catalog_price
     # Find the price attribute
-    price_attr = @catalog.company.product_attributes.find_by(code: 'price')
+    price_attr = @catalog.company.product_attributes.find_by(code: "price")
     return nil unless price_attr
 
     # Check for catalog-level override only (don't fall back to product price)

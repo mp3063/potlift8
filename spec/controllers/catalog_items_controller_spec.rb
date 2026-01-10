@@ -73,7 +73,7 @@ RSpec.describe CatalogItemsController, type: :controller do
     context 'with valid product IDs' do
       it 'adds products to catalog' do
         expect {
-          post :create, params: { catalog_code: catalog.code, product_ids: [product1.id, product2.id] }
+          post :create, params: { catalog_code: catalog.code, product_ids: [ product1.id, product2.id ] }
         }.to change(catalog.catalog_items, :count).by(2)
 
         expect(response).to redirect_to(catalog_items_path(catalog))
@@ -81,7 +81,7 @@ RSpec.describe CatalogItemsController, type: :controller do
       end
 
       it 'sets default state to active' do
-        post :create, params: { catalog_code: catalog.code, product_ids: [product1.id] }
+        post :create, params: { catalog_code: catalog.code, product_ids: [ product1.id ] }
         catalog_item = catalog.catalog_items.find_by(product: product1)
         expect(catalog_item.catalog_item_state).to eq('active')
       end
@@ -89,13 +89,13 @@ RSpec.describe CatalogItemsController, type: :controller do
       it 'sets priority to max + 1' do
         catalog.catalog_items.create!(product: product3, catalog_item_state: :active, priority: 10)
 
-        post :create, params: { catalog_code: catalog.code, product_ids: [product1.id] }
+        post :create, params: { catalog_code: catalog.code, product_ids: [ product1.id ] }
         catalog_item = catalog.catalog_items.find_by(product: product1)
         expect(catalog_item.priority).to eq(11)
       end
 
       it 'respects custom catalog_item_state' do
-        post :create, params: { catalog_code: catalog.code, product_ids: [product1.id], catalog_item_state: 'inactive' }
+        post :create, params: { catalog_code: catalog.code, product_ids: [ product1.id ], catalog_item_state: 'inactive' }
         catalog_item = catalog.catalog_items.find_by(product: product1)
         expect(catalog_item.catalog_item_state).to eq('inactive')
       end
@@ -108,7 +108,7 @@ RSpec.describe CatalogItemsController, type: :controller do
 
       it 'skips duplicate products' do
         expect {
-          post :create, params: { catalog_code: catalog.code, product_ids: [product1.id, product2.id] }
+          post :create, params: { catalog_code: catalog.code, product_ids: [ product1.id, product2.id ] }
         }.to change(catalog.catalog_items, :count).by(1)
 
         expect(flash[:notice]).to match(/Successfully added 1 product/)
@@ -126,7 +126,7 @@ RSpec.describe CatalogItemsController, type: :controller do
     context 'with invalid product ID' do
       it 'skips invalid products' do
         expect {
-          post :create, params: { catalog_code: catalog.code, product_ids: [999999, product1.id] }
+          post :create, params: { catalog_code: catalog.code, product_ids: [ 999999, product1.id ] }
         }.to change(catalog.catalog_items, :count).by(1)
       end
     end

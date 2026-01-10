@@ -6,11 +6,11 @@ module ProductsHelper
   # @return [String] HTML badge component
   def product_status_badge(product)
     variant = case product.product_status
-              when "active" then :success
-              when "draft", "incoming" then :warning
-              when "discontinued", "deleted" then :danger
-              else :gray
-              end
+    when "active" then :success
+    when "draft", "incoming" then :warning
+    when "discontinued", "deleted" then :danger
+    else :gray
+    end
 
     render Ui::BadgeComponent.new(variant: variant, dot: true) do
       product.product_status.titleize
@@ -22,11 +22,11 @@ module ProductsHelper
   # @return [String] HTML badge component
   def product_type_badge(product)
     variant = case product.product_type
-              when "sellable" then :info
-              when "configurable" then :warning
-              when "bundle" then :gray
-              else :gray
-              end
+    when "sellable" then :info
+    when "configurable" then :warning
+    when "bundle" then :gray
+    else :gray
+    end
 
     render Ui::BadgeComponent.new(variant: variant) do
       product.product_type.titleize

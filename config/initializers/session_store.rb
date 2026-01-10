@@ -19,7 +19,7 @@
 # 7. Clear session on logout
 
 Rails.application.config.session_store :cookie_store,
-  key: '_potlift8_session',
+  key: "_potlift8_session",
   # HttpOnly prevents JavaScript access to session cookie (XSS protection)
   httponly: true,
   # Secure flag ensures cookie only sent over HTTPS (production)

@@ -189,7 +189,7 @@ module AuthHelper
       company_code: "TEST",
       company_name: "Test Company",
       role: "user",
-      scopes: ["read"],
+      scopes: [ "read" ],
       iat: Time.current.to_i,
       exp: 1.hour.from_now.to_i
     }

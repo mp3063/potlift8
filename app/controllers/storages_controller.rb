@@ -11,7 +11,7 @@
 # - Protection against deleting storages with inventory
 #
 class StoragesController < ApplicationController
-  before_action :set_storage, only: [:show, :edit, :update, :destroy, :inventory]
+  before_action :set_storage, only: [ :show, :edit, :update, :destroy, :inventory ]
 
   # GET /storages
   # GET /storages.turbo_stream
@@ -61,11 +61,11 @@ class StoragesController < ApplicationController
 
     # Apply sorting
     case params[:sort]
-    when 'sku'
+    when "sku"
       @inventories = @inventories.order("products.sku #{sort_direction}")
-    when 'name'
+    when "name"
       @inventories = @inventories.order("products.name #{sort_direction}")
-    when 'value'
+    when "value"
       @inventories = @inventories.order("inventories.value #{sort_direction}")
     else
       @inventories = @inventories.order("products.sku #{sort_direction}")
@@ -102,8 +102,8 @@ class StoragesController < ApplicationController
 
     if @storage.save
       respond_to do |format|
-        format.html { redirect_to storages_path, notice: 'Storage location created successfully.' }
-        format.turbo_stream { flash.now[:notice] = 'Storage location created successfully.' }
+        format.html { redirect_to storages_path, notice: "Storage location created successfully." }
+        format.turbo_stream { flash.now[:notice] = "Storage location created successfully." }
       end
     else
       render :new, status: :unprocessable_entity
@@ -119,8 +119,8 @@ class StoragesController < ApplicationController
   def update
     if @storage.update(storage_params)
       respond_to do |format|
-        format.html { redirect_to storages_path, notice: 'Storage location updated successfully.' }
-        format.turbo_stream { flash.now[:notice] = 'Storage location updated successfully.' }
+        format.html { redirect_to storages_path, notice: "Storage location updated successfully." }
+        format.turbo_stream { flash.now[:notice] = "Storage location updated successfully." }
       end
     else
       render :edit, status: :unprocessable_entity
@@ -153,8 +153,8 @@ class StoragesController < ApplicationController
     @storage.destroy
 
     respond_to do |format|
-      format.html { redirect_to storages_path, notice: 'Storage location deleted successfully.' }
-      format.turbo_stream { flash.now[:notice] = 'Storage location deleted successfully.' }
+      format.html { redirect_to storages_path, notice: "Storage location deleted successfully." }
+      format.turbo_stream { flash.now[:notice] = "Storage location deleted successfully." }
     end
   end
 
@@ -188,7 +188,7 @@ class StoragesController < ApplicationController
   #
   def sort_column
     allowed_columns = %w[code name storage_type created_at]
-    allowed_columns.include?(params[:sort]) ? params[:sort] : 'code'
+    allowed_columns.include?(params[:sort]) ? params[:sort] : "code"
   end
 
   # Get sort direction from params
@@ -198,6 +198,6 @@ class StoragesController < ApplicationController
   #
   def sort_direction
     allowed_directions = %w[asc desc]
-    allowed_directions.include?(params[:direction]) ? params[:direction] : 'asc'
+    allowed_directions.include?(params[:direction]) ? params[:direction] : "asc"
   end
 end

@@ -4,9 +4,9 @@ Rails.application.routes.draw do
   # Test-only authentication backdoor for system tests
   # SECURITY: Only available in test environment
   if Rails.env.test?
-    get 'test_login', to: 'test_sessions#create'
-    post 'test_login', to: 'test_sessions#create'
-    delete 'test_logout', to: 'test_sessions#destroy'
+    get "test_login", to: "test_sessions#create"
+    post "test_login", to: "test_sessions#create"
+    delete "test_logout", to: "test_sessions#destroy"
   end
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
@@ -21,16 +21,16 @@ Rails.application.routes.draw do
   # Security: State token validation, secure session handling
   scope :auth, as: :auth do
     # GET /auth/login - Initiate OAuth login flow
-    get 'login', to: 'sessions#new'
+    get "login", to: "sessions#new"
 
     # GET /auth/callback - OAuth callback handler (receives code and state)
-    get 'callback', to: 'sessions#create'
+    get "callback", to: "sessions#create"
 
     # POST /auth/logout - Logout and clear session
-    post 'logout', to: 'sessions#destroy'
+    post "logout", to: "sessions#destroy"
 
     # DELETE /auth/logout - Alternative logout route (RESTful)
-    delete 'logout', to: 'sessions#destroy'
+    delete "logout", to: "sessions#destroy"
   end
 
   # SECURITY: GET logout removed - use POST/DELETE only to prevent CSRF
@@ -47,29 +47,29 @@ Rails.application.routes.draw do
       # - GET /api/v1/products - List active, sellable products
       # - GET /api/v1/products/:sku - Show product details
       # - PATCH /api/v1/products/:sku - Update product
-      resources :products, only: [:index, :show, :update], param: :sku
+      resources :products, only: [ :index, :show, :update ], param: :sku
 
       # Inventories API
       # - POST /api/v1/inventories/update - Update product inventory
-      post 'inventories/update', to: 'inventories#update_inventory'
+      post "inventories/update", to: "inventories#update_inventory"
 
       # Sync Tasks API
       # - POST /api/v1/sync_tasks - Receive sync task from external system
-      resources :sync_tasks, only: [:create]
+      resources :sync_tasks, only: [ :create ]
     end
   end
 
   # Authenticated routes
   # Require user authentication for all routes below
   # Dashboard, products, storages, attributes, labels, catalogs
-  root 'dashboard#index'
+  root "dashboard#index"
 
   # Company switching (for users with multiple companies)
-  post 'switch_company/:id', to: 'companies#switch', as: :switch_company
+  post "switch_company/:id", to: "companies#switch", as: :switch_company
 
   # Global search
-  get 'search', to: 'search#index', as: :search
-  get 'search/recent', to: 'search#recent', as: :search_recent
+  get "search", to: "search#index", as: :search
+  get "search/recent", to: "search#recent", as: :search_recent
 
   # Resource routes
   resources :products do
@@ -89,15 +89,15 @@ Rails.application.routes.draw do
     end
 
     # Nested resources for product detail page
-    resources :images, only: [:create, :update, :destroy], controller: 'product_images' do
+    resources :images, only: [ :create, :update, :destroy ], controller: "product_images" do
       collection do
         patch :reorder         # Reorder images via drag-and-drop
         delete :bulk_destroy   # Delete multiple images at once
       end
     end
-    resources :attribute_values, only: [:update], controller: 'product_attribute_values', param: :attribute_id
-    resources :inventories, only: [:index, :update], controller: 'product_inventories'
-    resources :product_assets, except: [:show] do
+    resources :attribute_values, only: [ :update ], controller: "product_attribute_values", param: :attribute_id
+    resources :inventories, only: [ :index, :update ], controller: "product_inventories"
+    resources :product_assets, except: [ :show ] do
       collection do
         post :reorder  # Reorder assets via drag-and-drop
       end
@@ -105,8 +105,8 @@ Rails.application.routes.draw do
 
     # Advanced product features (Phase 14-16)
     # Configurations and Variants
-    resources :configurations, only: [:index, :new, :create, :edit, :update, :destroy]
-    resources :variants, only: [:index, :new, :create, :edit, :update, :destroy] do
+    resources :configurations, only: [ :index, :new, :create, :edit, :update, :destroy ]
+    resources :variants, only: [ :index, :new, :create, :edit, :update, :destroy ] do
       collection do
         post :generate  # Generate all variant combinations
         patch :reorder  # Reorder variants via drag-and-drop
@@ -114,24 +114,24 @@ Rails.application.routes.draw do
     end
 
     # Bundle Products
-    resources :bundle_products, only: [:index, :create, :update, :destroy] do
+    resources :bundle_products, only: [ :index, :create, :update, :destroy ] do
       collection do
         patch :reorder  # Reorder bundle products
       end
     end
 
     # Related Products
-    resources :related_products, only: [:index, :create, :destroy] do
+    resources :related_products, only: [ :index, :create, :destroy ] do
       collection do
         patch :reorder  # Reorder related products
       end
     end
 
     # Pricing (Phase 17-19)
-    resources :prices, only: [:index, :new, :create, :edit, :update, :destroy]
+    resources :prices, only: [ :index, :new, :create, :edit, :update, :destroy ]
 
     # Version History (Phase 17-19)
-    resources :versions, only: [:index, :show], controller: 'product_versions' do
+    resources :versions, only: [ :index, :show ], controller: "product_versions" do
       member do
         post :revert
       end
@@ -145,13 +145,13 @@ Rails.application.routes.draw do
   resources :customer_groups
 
   # Import/Export (Phase 17-19)
-  resources :imports, only: [:index, :new, :create] do
+  resources :imports, only: [ :index, :new, :create ] do
     member do
       get :progress
       get :errors, action: :download_errors
     end
     collection do
-      get 'template/:type', action: :download_template, as: :download_template
+      get "template/:type", action: :download_template, as: :download_template
     end
   end
 
@@ -161,7 +161,7 @@ Rails.application.routes.draw do
     end
 
     # Storage inventory management - add products to storage
-    resources :inventories, only: [:new, :create], controller: 'storage_inventories'
+    resources :inventories, only: [ :new, :create ], controller: "storage_inventories"
   end
 
   resources :product_attributes do
@@ -184,7 +184,7 @@ Rails.application.routes.draw do
   end
 
   # Custom route for catalog items (generates catalog_items_path)
-  get 'catalogs/:code/items', to: 'catalogs#items', as: :catalog_items
+  get "catalogs/:code/items", to: "catalogs#items", as: :catalog_items
 
   resources :catalogs, param: :code do
     member do
@@ -196,24 +196,24 @@ Rails.application.routes.draw do
     # GET /catalogs/:code/products/new - Show add products modal
     # POST /catalogs/:code/products - Add products to catalog
     # DELETE /catalogs/:code/items/:id - Remove product from catalog
-    get 'products/new', to: 'catalog_items#new', as: :new_product
-    post 'products', to: 'catalog_items#create', as: :products
-    delete 'items/:id', to: 'catalog_items#destroy', as: :item
+    get "products/new", to: "catalog_items#new", as: :new_product
+    post "products", to: "catalog_items#create", as: :products
+    delete "items/:id", to: "catalog_items#destroy", as: :item
 
     # Catalog Imports (CSV import of products)
     # GET /catalogs/:code/imports/new - Show import modal
     # POST /catalogs/:code/imports - Process CSV import
     # GET /catalogs/:code/imports/template - Download CSV template
-    get 'imports/new', to: 'catalog_imports#new', as: :new_import
-    post 'imports', to: 'catalog_imports#create', as: :imports
-    get 'imports/template', to: 'catalog_imports#template', as: :imports_template
+    get "imports/new", to: "catalog_imports#new", as: :new_import
+    post "imports", to: "catalog_imports#create", as: :imports
+    get "imports/template", to: "catalog_imports#template", as: :imports_template
   end
 
   # Catalog Item Attribute Values (catalog-specific attribute overrides)
   # POST /catalog_item_attribute_values - Create override
   # PATCH/PUT /catalog_item_attribute_values/:id - Update override
   # DELETE /catalog_item_attribute_values/:id - Delete override
-  resources :catalog_item_attribute_values, only: [:create, :update, :destroy]
+  resources :catalog_item_attribute_values, only: [ :create, :update, :destroy ]
 
   # Bundle Composer (AJAX search and preview for bundle creation)
   # GET /bundle_composer/search?q=shirt - Search products for bundle
@@ -221,7 +221,7 @@ Rails.application.routes.draw do
   # POST /bundle_composer/preview - Validate bundle configuration
   namespace :bundle_composer do
     get :search
-    get 'product/:id', action: :product_details, as: :product_details
+    get "product/:id", action: :product_details, as: :product_details
     post :preview
   end
 end

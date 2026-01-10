@@ -3,8 +3,8 @@
 FactoryBot.define do
   # ProductConfiguration for bundles
   factory :bundle_component, class: 'ProductConfiguration' do
-    association :superproduct, factory: [:product, :bundle]
-    association :subproduct, factory: [:product, :sellable]
+    association :superproduct, factory: [ :product, :bundle ]
+    association :subproduct, factory: [ :product, :sellable ]
     configuration_position { nil }
 
     # Default quantity for bundle components

@@ -13,8 +13,8 @@ RSpec.describe FilterPanelComponent, type: :component do
 
   let(:available_filters) do
     {
-      product_types: [product_type1, product_type2],
-      labels: [label1, label2]
+      product_types: [ product_type1, product_type2 ],
+      labels: [ label1, label2 ]
     }
   end
 
@@ -73,7 +73,7 @@ RSpec.describe FilterPanelComponent, type: :component do
       {
         product_type_id: product_type1.id.to_s,
         status: 'active',
-        label_ids: [label1.id.to_s, label2.id.to_s]
+        label_ids: [ label1.id.to_s, label2.id.to_s ]
       }
     end
 
@@ -155,8 +155,8 @@ RSpec.describe FilterPanelComponent, type: :component do
       described_class.new(
         filters: {},
         available_filters: {
-          product_types: [product_type1],
-          labels: [label1, label2]
+          product_types: [ product_type1 ],
+          labels: [ label1, label2 ]
         }
       )
     end
@@ -167,7 +167,7 @@ RSpec.describe FilterPanelComponent, type: :component do
     end
 
     it "returns label names joined for label_ids array" do
-      label_ids = [label1.id.to_s, label2.id.to_s]
+      label_ids = [ label1.id.to_s, label2.id.to_s ]
       expect(component.filter_display_value(:label_ids, label_ids))
         .to eq('Electronics, Clothing')
     end
@@ -376,7 +376,7 @@ RSpec.describe FilterPanelComponent, type: :component do
       filters = { product_type_id: '999' }
       component = described_class.new(
         filters: filters,
-        available_filters: { product_types: [product_type1] }
+        available_filters: { product_types: [ product_type1 ] }
       )
 
       # Should return the ID if product type not found
@@ -384,14 +384,14 @@ RSpec.describe FilterPanelComponent, type: :component do
     end
 
     it "handles missing label in available_filters" do
-      filters = { label_ids: ['999'] }
+      filters = { label_ids: [ '999' ] }
       component = described_class.new(
         filters: filters,
-        available_filters: { labels: [label1] }
+        available_filters: { labels: [ label1 ] }
       )
 
       # Should filter out missing labels
-      result = component.filter_display_value(:label_ids, ['999'])
+      result = component.filter_display_value(:label_ids, [ '999' ])
       expect(result).to eq('')
     end
   end

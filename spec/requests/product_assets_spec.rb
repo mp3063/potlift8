@@ -68,7 +68,7 @@ RSpec.describe 'ProductAssets', type: :request do
     end
 
     it 'requires authentication for reorder' do
-      post reorder_product_product_assets_path(product), params: { asset_ids: [1, 2] }
+      post reorder_product_product_assets_path(product), params: { asset_ids: [ 1, 2 ] }
       expect(response).to redirect_to(auth_login_path)
       expect(flash[:alert]).to eq('Please sign in to continue.')
     end
@@ -680,7 +680,7 @@ RSpec.describe 'ProductAssets', type: :request do
 
     context 'with valid asset IDs' do
       let(:reorder_params) do
-        { asset_ids: [asset3.id, asset1.id, asset2.id] }
+        { asset_ids: [ asset3.id, asset1.id, asset2.id ] }
       end
 
       it 'updates asset priorities in new order' do
@@ -725,7 +725,7 @@ RSpec.describe 'ProductAssets', type: :request do
 
       it 'rejects asset IDs not belonging to product' do
         other_asset = create(:product_asset, :document, product: other_product)
-        invalid_params = { asset_ids: [asset1.id, other_asset.id] }
+        invalid_params = { asset_ids: [ asset1.id, other_asset.id ] }
 
         post reorder_product_product_assets_path(product), params: invalid_params, as: :json
         expect(response).to have_http_status(:unprocessable_entity)
@@ -733,7 +733,7 @@ RSpec.describe 'ProductAssets', type: :request do
       end
 
       it 'rejects non-existent asset IDs' do
-        invalid_params = { asset_ids: [asset1.id, 999999] }
+        invalid_params = { asset_ids: [ asset1.id, 999999 ] }
 
         post reorder_product_product_assets_path(product), params: invalid_params, as: :json
         expect(response).to have_http_status(:unprocessable_entity)
@@ -743,7 +743,7 @@ RSpec.describe 'ProductAssets', type: :request do
 
     context 'with partial reordering' do
       it 'allows reordering subset of assets' do
-        reorder_params = { asset_ids: [asset2.id, asset1.id] }
+        reorder_params = { asset_ids: [ asset2.id, asset1.id ] }
 
         post reorder_product_product_assets_path(product), params: reorder_params, as: :json
         expect(response).to be_successful
@@ -756,7 +756,7 @@ RSpec.describe 'ProductAssets', type: :request do
     end
 
     it 'returns 404 for other company product (JSON)' do
-      params = { asset_ids: [asset1.id] }
+      params = { asset_ids: [ asset1.id ] }
 
       post reorder_product_product_assets_path(other_product), params: params, as: :json
       expect(response).to have_http_status(:not_found)

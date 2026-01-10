@@ -459,7 +459,7 @@ RSpec.describe '/products', type: :request do
 
       it 'assigns labels to product' do
         post products_path, params: {
-          product: valid_attributes.merge(label_ids: [label1.id, label2.id])
+          product: valid_attributes.merge(label_ids: [ label1.id, label2.id ])
         }
 
         product = Product.last
@@ -654,7 +654,7 @@ RSpec.describe '/products', type: :request do
 
     it 'destroys multiple products from current company' do
       expect {
-        post bulk_destroy_products_path, params: { product_ids: [product1.id, product2.id] }
+        post bulk_destroy_products_path, params: { product_ids: [ product1.id, product2.id ] }
       }.to change(Product, :count).by(-2)
     end
 
@@ -662,7 +662,7 @@ RSpec.describe '/products', type: :request do
       initial_count = Product.count
 
       post bulk_destroy_products_path, params: {
-        product_ids: [product1.id, other_company_product.id]
+        product_ids: [ product1.id, other_company_product.id ]
       }
 
       # Only product1 should be destroyed
@@ -672,7 +672,7 @@ RSpec.describe '/products', type: :request do
     end
 
     it 'redirects to products list with success message' do
-      post bulk_destroy_products_path, params: { product_ids: [product1.id, product2.id] }
+      post bulk_destroy_products_path, params: { product_ids: [ product1.id, product2.id ] }
 
       expect(response).to redirect_to(products_path)
       follow_redirect!
@@ -690,8 +690,8 @@ RSpec.describe '/products', type: :request do
 
     it 'updates labels for multiple products' do
       post bulk_update_labels_products_path, params: {
-        product_ids: [product1.id, product2.id],
-        label_ids: [label1.id, label2.id]
+        product_ids: [ product1.id, product2.id ],
+        label_ids: [ label1.id, label2.id ]
       }
 
       product1.reload
@@ -703,8 +703,8 @@ RSpec.describe '/products', type: :request do
 
     it 'does not update labels for other company products' do
       post bulk_update_labels_products_path, params: {
-        product_ids: [product1.id, other_company_product.id],
-        label_ids: [label1.id]
+        product_ids: [ product1.id, other_company_product.id ],
+        label_ids: [ label1.id ]
       }
 
       product1.reload
@@ -716,8 +716,8 @@ RSpec.describe '/products', type: :request do
 
     it 'redirects to products list with success message' do
       post bulk_update_labels_products_path, params: {
-        product_ids: [product1.id, product2.id],
-        label_ids: [label1.id]
+        product_ids: [ product1.id, product2.id ],
+        label_ids: [ label1.id ]
       }
 
       expect(response).to redirect_to(products_path)

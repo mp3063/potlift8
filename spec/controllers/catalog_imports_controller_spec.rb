@@ -46,10 +46,10 @@ RSpec.describe CatalogImportsController, type: :controller do
     context 'with valid CSV file' do
       let(:csv_content) do
         CSV.generate do |csv|
-          csv << ['product_sku', 'catalog_item_state', 'priority', 'price_override']
-          csv << ['PROD-001', 'active', '100', '19.99']
-          csv << ['PROD-002', 'inactive', '90', '']
-          csv << ['PROD-003', '', '', '']
+          csv << [ 'product_sku', 'catalog_item_state', 'priority', 'price_override' ]
+          csv << [ 'PROD-001', 'active', '100', '19.99' ]
+          csv << [ 'PROD-002', 'inactive', '90', '' ]
+          csv << [ 'PROD-003', '', '', '' ]
         end
       end
 
@@ -92,9 +92,9 @@ RSpec.describe CatalogImportsController, type: :controller do
 
       let(:csv_content) do
         CSV.generate do |csv|
-          csv << ['product_sku', 'catalog_item_state', 'priority']
-          csv << ['PROD-001', 'inactive', '100']
-          csv << ['PROD-002', 'active', '90']
+          csv << [ 'product_sku', 'catalog_item_state', 'priority' ]
+          csv << [ 'PROD-001', 'inactive', '100' ]
+          csv << [ 'PROD-002', 'active', '90' ]
         end
       end
 
@@ -116,9 +116,9 @@ RSpec.describe CatalogImportsController, type: :controller do
     context 'with invalid SKUs' do
       let(:csv_content) do
         CSV.generate do |csv|
-          csv << ['product_sku', 'catalog_item_state']
-          csv << ['INVALID-SKU', 'active']
-          csv << ['PROD-001', 'active']
+          csv << [ 'product_sku', 'catalog_item_state' ]
+          csv << [ 'INVALID-SKU', 'active' ]
+          csv << [ 'PROD-001', 'active' ]
         end
       end
 
@@ -155,8 +155,8 @@ RSpec.describe CatalogImportsController, type: :controller do
     context 'with missing required headers' do
       let(:csv_content) do
         CSV.generate do |csv|
-          csv << ['wrong_header', 'another_header']
-          csv << ['data1', 'data2']
+          csv << [ 'wrong_header', 'another_header' ]
+          csv << [ 'data1', 'data2' ]
         end
       end
 
@@ -174,8 +174,8 @@ RSpec.describe CatalogImportsController, type: :controller do
 
       let(:csv_content) do
         CSV.generate do |csv|
-          csv << ['product_sku', 'price_override']
-          csv << ['PROD-001', '29.99']
+          csv << [ 'product_sku', 'price_override' ]
+          csv << [ 'PROD-001', '29.99' ]
         end
       end
 
@@ -210,7 +210,7 @@ end
 # Helper method to create fixture file upload from content string
 # Uses Rack::Test::UploadedFile which works properly with controller specs
 def create_csv_upload(content, filename: 'import.csv')
-  tempfile = Tempfile.new(['import', '.csv'])
+  tempfile = Tempfile.new([ 'import', '.csv' ])
   tempfile.write(content)
   tempfile.close
 

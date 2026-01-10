@@ -19,7 +19,7 @@ RSpec::Matchers.define :exceed_query_limit do |expected|
   def count_queries(&block)
     count = 0
     counter = ->(name, start, finish, id, payload) {
-      count += 1 unless payload[:name].in?(['SCHEMA', 'TRANSACTION', nil]) || payload[:sql].match?(/\A\s*(BEGIN|COMMIT|ROLLBACK|SAVEPOINT|RELEASE)/i)
+      count += 1 unless payload[:name].in?([ 'SCHEMA', 'TRANSACTION', nil ]) || payload[:sql].match?(/\A\s*(BEGIN|COMMIT|ROLLBACK|SAVEPOINT|RELEASE)/i)
     }
     ActiveSupport::Notifications.subscribed(counter, 'sql.active_record', &block)
     count

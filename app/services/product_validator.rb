@@ -114,7 +114,7 @@ class ProductValidator
     # Check that all configurations have valid quantities
     # We check the raw value from info, not the quantity method which has a default
     product.product_configurations_as_super.each do |config|
-      raw_quantity = config.info['quantity']
+      raw_quantity = config.info["quantity"]
 
       # Quantity must be explicitly set and positive for bundles
       if raw_quantity.nil? || raw_quantity.to_i <= 0
@@ -165,9 +165,9 @@ class ProductValidator
 
         # Rule failed - add error
         case rule
-        when 'positive'
+        when "positive"
           @errors << "Attribute '#{attr.name}' value must be positive"
-        when 'not_null'
+        when "not_null"
           @errors << "Attribute '#{attr.name}' value cannot be blank"
         else
           @errors << "Attribute '#{attr.name}' value doesn't match validation rules"
@@ -218,7 +218,7 @@ class ProductValidator
   def validate_pricing_for_currency(catalog)
     return unless defined?(Catalog) && catalog.is_a?(Catalog)
     return if catalog.currency_code.blank?
-    return if catalog.currency_code.downcase == 'eur'
+    return if catalog.currency_code.downcase == "eur"
 
     # Get minimum ratio for currency
     minimum_ratio = Catalog::MINIMUM_CURRENCY_RATIO[catalog.currency_code]
@@ -226,7 +226,7 @@ class ProductValidator
 
     # Get product price (from product_attribute_values with code 'price')
     product_price_attr = product.product_attribute_values.joins(:product_attribute)
-                                .find_by(product_attributes: { code: 'price' })
+                                .find_by(product_attributes: { code: "price" })
     return if product_price_attr.nil?
 
     product_price = product_price_attr.value.to_f
@@ -234,10 +234,10 @@ class ProductValidator
     # Get catalog price for this product
     catalog_price = if catalog.respond_to?(:get_product_price)
                       catalog.get_product_price(product)
-                    elsif catalog.respond_to?(:catalog_items)
+    elsif catalog.respond_to?(:catalog_items)
                       catalog_item = catalog.catalog_items.find_by(product_id: product.id)
                       catalog_item&.price
-                    end
+    end
 
     return if catalog_price.nil?
 

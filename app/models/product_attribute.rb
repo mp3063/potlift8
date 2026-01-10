@@ -48,7 +48,7 @@ class ProductAttribute < ApplicationRecord
 
   # Associations
   belongs_to :company
-  belongs_to :attribute_group, class_name: 'AttributeGroup', optional: true
+  belongs_to :attribute_group, class_name: "AttributeGroup", optional: true
   has_many :product_attribute_values, dependent: :destroy
   has_many :products, through: :product_attribute_values
   has_many :catalog_item_attribute_values, dependent: :destroy
@@ -56,7 +56,7 @@ class ProductAttribute < ApplicationRecord
   # List ordering scoped to company and attribute_group
   # This allows independent positioning within each group or ungrouped attributes
   # Using existing attribute_position column
-  acts_as_list scope: [:company_id, :attribute_group_id], column: :attribute_position
+  acts_as_list scope: [ :company_id, :attribute_group_id ], column: :attribute_position
 
   # Scopes
   default_scope { order("attribute_position asc nulls last") }
@@ -127,7 +127,7 @@ class ProductAttribute < ApplicationRecord
   # @return [Array<String>] List of available options
   #
   def options
-    info&.dig('options') || []
+    info&.dig("options") || []
   end
 
   # Formats an attribute value for JSON API response
@@ -144,8 +144,8 @@ class ProductAttribute < ApplicationRecord
       {
         value: av.value,
         display: av.value,
-        localized_value: av.info.to_h['localized_value'],
-        localized_display: av.info.to_h['localized_value']
+        localized_value: av.info.to_h["localized_value"],
+        localized_display: av.info.to_h["localized_value"]
       }
 
     when :view_format_ean, :view_format_selectable
@@ -169,7 +169,7 @@ class ProductAttribute < ApplicationRecord
         display: ActionController::Base.helpers.number_to_human(
           av.value.to_i,
           units: :weight,
-          separator: ','
+          separator: ","
         )
       }
 
@@ -177,8 +177,8 @@ class ProductAttribute < ApplicationRecord
       {
         value: av.value,
         display: av.value,
-        localized_value: av.info.to_h['localized_value'],
-        localized_display: av.info.to_h['localized_value']
+        localized_value: av.info.to_h["localized_value"],
+        localized_display: av.info.to_h["localized_value"]
       }
 
     when :view_format_external_image_list
@@ -186,10 +186,10 @@ class ProductAttribute < ApplicationRecord
 
     when :view_format_customer_group_price
       {
-        value: av.info.to_h['customer_group_prices'].to_h,
-        display: av.info.to_h['customer_group_prices'].to_h.keys.sum('') do |customer_group_key|
+        value: av.info.to_h["customer_group_prices"].to_h,
+        display: av.info.to_h["customer_group_prices"].to_h.keys.sum("") do |customer_group_key|
           price = ActionController::Base.helpers.number_to_currency(
-            (av.info.to_h['customer_group_prices'].to_h[customer_group_key].to_f / 100),
+            (av.info.to_h["customer_group_prices"].to_h[customer_group_key].to_f / 100),
             unit: "€", separator: ",", delimiter: " ", format: "%n %u"
           )
           "<strong>#{customer_group_key.gsub('customer_group_', '')}: </strong><span>#{price}</span>"
@@ -198,27 +198,27 @@ class ProductAttribute < ApplicationRecord
 
     when :view_format_special_price
       price = ActionController::Base.helpers.number_to_currency(
-        (av.info.to_h['special_price'].to_h['amount'].to_f / 100),
+        (av.info.to_h["special_price"].to_h["amount"].to_f / 100),
         unit: "€", separator: ",", delimiter: " ", format: "%n %u"
       )
       {
-        value: av.info.to_h['special_price'].to_h,
+        value: av.info.to_h["special_price"].to_h,
         display: "#{price} (#{av.info.to_h['special_price'].to_h['from']} - #{av.info.to_h['special_price'].to_h['until']})"
       }
 
     when :view_format_related_products
       {
-        value: av.info.to_h['related_products'].to_a,
-        display: av.info.to_h['related_products'].to_a
+        value: av.info.to_h["related_products"].to_a,
+        display: av.info.to_h["related_products"].to_a
       }
 
     when :view_format_markdown
       {
         value: av.value,
-        display: ApplicationController.helpers.markdown_safe(av.value || ''),
-        localized_value: av.info.to_h['localized_value'],
-        localized_display: av.info.to_h['localized_value'].to_h.transform_values { |v|
-          ApplicationController.helpers.markdown_safe(v || '')
+        display: ApplicationController.helpers.markdown_safe(av.value || ""),
+        localized_value: av.info.to_h["localized_value"],
+        localized_display: av.info.to_h["localized_value"].to_h.transform_values { |v|
+          ApplicationController.helpers.markdown_safe(v || "")
         }
       }
 

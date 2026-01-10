@@ -106,7 +106,7 @@ RSpec.describe Products::InventorySummaryComponent, type: :component do
     render_inline(described_class.new(product: product))
 
     storage_names = page.all("dt.text-gray-500").map(&:text)
-    expect(storage_names).to eq(["Main Warehouse", "Retail Store"])
+    expect(storage_names).to eq([ "Main Warehouse", "Retail Store" ])
   end
 
   it "includes proper spacing and layout" do

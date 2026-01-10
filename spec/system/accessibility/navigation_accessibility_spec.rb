@@ -31,7 +31,7 @@ RSpec.describe 'Navigation Accessibility', type: :system, js: true do
       # Should focus on navigation elements
       5.times do
         focused_element = page.evaluate_script('document.activeElement.tagName')
-        expect(['A', 'BUTTON']).to include(focused_element)
+        expect([ 'A', 'BUTTON' ]).to include(focused_element)
 
         page.driver.browser.action.send_keys(:tab).perform
       end
@@ -305,7 +305,7 @@ RSpec.describe 'Navigation Accessibility', type: :system, js: true do
         5.times do
           page.driver.browser.action.send_keys(:tab).perform
           focused = page.evaluate_script('document.activeElement.tagName')
-          expect(['A', 'BUTTON']).to include(focused)
+          expect([ 'A', 'BUTTON' ]).to include(focused)
         end
 
         expect_no_axe_violations
@@ -485,7 +485,7 @@ RSpec.describe 'Navigation Accessibility', type: :system, js: true do
 
         # Focus should be on main content area
         focused_id = page.evaluate_script('document.activeElement.id')
-        expect(['main', 'main-content', 'content']).to include(focused_id)
+        expect([ 'main', 'main-content', 'content' ]).to include(focused_id)
 
         expect_no_axe_violations
       end
@@ -508,7 +508,7 @@ RSpec.describe 'Navigation Accessibility', type: :system, js: true do
         page.driver.browser.action.send_keys(:tab).perform
 
         focused = page.evaluate_script('document.activeElement.tagName')
-        expect(['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON', 'A']).to include(focused)
+        expect([ 'INPUT', 'SELECT', 'TEXTAREA', 'BUTTON', 'A' ]).to include(focused)
       end
 
       expect_no_axe_violations

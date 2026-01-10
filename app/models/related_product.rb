@@ -41,7 +41,7 @@
 class RelatedProduct < ApplicationRecord
   # Associations
   belongs_to :product
-  belongs_to :related_to, class_name: 'Product'
+  belongs_to :related_to, class_name: "Product"
 
   # Relation type enum
   # Creates scopes: .cross_sell, .upsell, .alternative, .accessory, .similar
@@ -56,13 +56,13 @@ class RelatedProduct < ApplicationRecord
 
   # Validations
   validates :relation_type, presence: true
-  validates :related_to_id, uniqueness: { scope: [:product_id, :relation_type] }
+  validates :related_to_id, uniqueness: { scope: [ :product_id, :relation_type ] }
   validate :prevent_self_reference
   validate :same_company
 
   # Position-based ordering within product + relation_type
   # Allows manual ordering of related products (e.g., show most important accessories first)
-  acts_as_list scope: [:product_id, :relation_type]
+  acts_as_list scope: [ :product_id, :relation_type ]
 
   # Scope to retrieve related products by type
   # Usage: product.related_products.for_relation_type(:cross_sell)

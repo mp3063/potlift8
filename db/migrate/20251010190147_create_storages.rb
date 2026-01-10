@@ -13,6 +13,6 @@ class CreateStorages < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :storages, [:company_id, :code], unique: true, name: 'storages_company_code_unique_index'
+    add_index :storages, [ :company_id, :code ], unique: true, name: 'storages_company_code_unique_index'
   end
 end

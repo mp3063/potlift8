@@ -134,33 +134,33 @@ module Api
         # Validate required parameters
         if origin_event_id.blank?
           return render_error(
-            'origin_event_id is required',
+            "origin_event_id is required",
             status: :bad_request,
-            error_code: 'missing_parameter'
+            error_code: "missing_parameter"
           )
         end
 
         if direction.blank?
           return render_error(
-            'direction is required',
+            "direction is required",
             status: :bad_request,
-            error_code: 'missing_parameter'
+            error_code: "missing_parameter"
           )
         end
 
         if event_type.blank?
           return render_error(
-            'event_type is required',
+            "event_type is required",
             status: :bad_request,
-            error_code: 'missing_parameter'
+            error_code: "missing_parameter"
           )
         end
 
         if load.blank?
           return render_error(
-            'load is required',
+            "load is required",
             status: :bad_request,
-            error_code: 'missing_parameter'
+            error_code: "missing_parameter"
           )
         end
 
@@ -181,7 +181,7 @@ module Api
           # Return service error directly with proper structure
           render json: {
             success: false,
-            error: result[:error] || 'Failed to process sync task',
+            error: result[:error] || "Failed to process sync task",
             event_id: origin_event_id,
             event_type: event_type
           }, status: :unprocessable_entity

@@ -219,7 +219,7 @@ class BundleInventoryCalculator
   def fetch_component_value(product)
     # Try to get price from product attributes
     # This assumes you have a 'price' attribute in EAV system
-    price_value = product.read_attribute_value('price')
+    price_value = product.read_attribute_value("price")
     return 0 if price_value.blank?
 
     # Handle different price formats (string, float, etc.)
@@ -227,7 +227,7 @@ class BundleInventoryCalculator
     when Numeric
       price_value
     when String
-      price_value.gsub(/[^\d.]/, '').to_f
+      price_value.gsub(/[^\d.]/, "").to_f
     else
       0
     end

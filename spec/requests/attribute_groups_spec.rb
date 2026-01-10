@@ -358,7 +358,7 @@ RSpec.describe '/attribute_groups', type: :request do
     let!(:group3) { create(:attribute_group, company: company, position: 3) }
 
     it 'updates group positions' do
-      new_order = [group3.id, group1.id, group2.id]
+      new_order = [ group3.id, group1.id, group2.id ]
       patch reorder_attribute_groups_path, params: { order: new_order }
 
       expect(response).to have_http_status(:ok)
@@ -374,7 +374,7 @@ RSpec.describe '/attribute_groups', type: :request do
 
     it 'only reorders current company groups' do
       other_group = create(:attribute_group, company: other_company, position: 1)
-      new_order = [group2.id, group1.id, group3.id]
+      new_order = [ group2.id, group1.id, group3.id ]
 
       patch reorder_attribute_groups_path, params: { order: new_order }
 
@@ -383,7 +383,7 @@ RSpec.describe '/attribute_groups', type: :request do
     end
 
     it 'handles missing groups gracefully' do
-      new_order = [group1.id, 99999, group2.id]
+      new_order = [ group1.id, 99999, group2.id ]
 
       expect {
         patch reorder_attribute_groups_path, params: { order: new_order }
@@ -394,7 +394,7 @@ RSpec.describe '/attribute_groups', type: :request do
       attr1 = create(:product_attribute, company: company, attribute_group: group1, attribute_position: 1)
       attr2 = create(:product_attribute, company: company, attribute_group: group1, attribute_position: 2)
 
-      new_order = [group2.id, group1.id, group3.id]
+      new_order = [ group2.id, group1.id, group3.id ]
       patch reorder_attribute_groups_path, params: { order: new_order }
 
       attr1.reload
@@ -437,7 +437,7 @@ RSpec.describe '/attribute_groups', type: :request do
     end
 
     it 'requires authentication for reorder' do
-      patch reorder_attribute_groups_path, params: { order: [1, 2, 3] }
+      patch reorder_attribute_groups_path, params: { order: [ 1, 2, 3 ] }
       expect(response).to redirect_to(auth_login_path)
     end
   end
@@ -466,7 +466,7 @@ RSpec.describe '/attribute_groups', type: :request do
         expect(response).to be_successful
 
         # Reorder attributes
-        new_order = [attr2.id, attr1.id]
+        new_order = [ attr2.id, attr1.id ]
         patch reorder_product_attributes_path, params: { order: new_order }
 
         attr1.reload

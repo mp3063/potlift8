@@ -139,13 +139,13 @@ module Shared
     end
 
     def pagy_url_for(pagy, page)
-      return '#' if page.nil?
+      return "#" if page.nil?
 
       # Get current request parameters and preserve them all
       current_params = helpers.request.query_parameters.dup
 
       # Update the page parameter
-      current_params['page'] = page.to_s
+      current_params["page"] = page.to_s
 
       # Build URL with preserved params
       path = helpers.request.path

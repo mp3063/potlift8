@@ -15,7 +15,6 @@ RSpec.describe ProductActivatedJob, type: :job do
   end
 
   describe '#perform' do
-
     it 'logs activation event' do
       allow(Rails.logger).to receive(:info).and_call_original
       expect(Rails.logger).to receive(:info).with(/Product activation job started/).and_call_original

@@ -59,7 +59,7 @@ class InventoryUpdateService
   def update(updates:)
     # Validate input
     unless updates.is_a?(Array) && updates.any?
-      return error_response('Updates must be a non-empty array')
+      return error_response("Updates must be a non-empty array")
     end
 
     # Process updates in transaction
@@ -86,7 +86,7 @@ class InventoryUpdateService
 
     # Transaction was rolled back - return the specific error
     error_response(
-      first_error || 'Failed to update inventory',
+      first_error || "Failed to update inventory",
       details: { failed_updates: results.select { |r| r[:error] } }
     )
   end
@@ -105,11 +105,11 @@ class InventoryUpdateService
 
     # Validate required fields
     if storage_code.blank?
-      return { error: 'storage_code is required', storage_code: storage_code }
+      return { error: "storage_code is required", storage_code: storage_code }
     end
 
     if value.blank?
-      return { error: 'value is required', storage_code: storage_code }
+      return { error: "value is required", storage_code: storage_code }
     end
 
     # Convert value to integer

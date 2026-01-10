@@ -347,10 +347,10 @@ RSpec.describe ProductDetailSerializer do
           'dimensions' => '10x20x30cm'
         },
         'metadata' => {
-          'tags' => ['new', 'featured'],
+          'tags' => [ 'new', 'featured' ],
           'seo' => {
             'title' => 'SEO Title',
-            'keywords' => ['keyword1', 'keyword2']
+            'keywords' => [ 'keyword1', 'keyword2' ]
           }
         }
       }

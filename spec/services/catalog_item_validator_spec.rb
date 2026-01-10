@@ -43,7 +43,7 @@ RSpec.describe CatalogItemValidator do
     context 'when product structure is invalid' do
       before do
         product_validator = instance_double(ProductValidator,
-                                          validate_structure: ['Structure error 1', 'Structure error 2'])
+                                          validate_structure: [ 'Structure error 1', 'Structure error 2' ])
         allow(ProductValidator).to receive(:new).with(product).and_return(product_validator)
       end
 
@@ -483,7 +483,7 @@ RSpec.describe CatalogItemValidator do
 
         # Mock product structure validation failure
         product_validator = instance_double(ProductValidator,
-                                          validate_structure: ['Invalid product structure'])
+                                          validate_structure: [ 'Invalid product structure' ])
         allow(ProductValidator).to receive(:new).with(product).and_return(product_validator)
       end
 

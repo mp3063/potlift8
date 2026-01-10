@@ -1,4 +1,4 @@
-require 'csv'
+require "csv"
 
 # Product Export Service
 #
@@ -127,15 +127,15 @@ class ProductExportService
   #
   def headers(attribute_codes = [])
     base_headers = [
-      'SKU',
-      'Name',
-      'Product Type',
-      'Description',
-      'Active',
-      'Labels',
-      'Total Inventory',
-      'Created At',
-      'Updated At'
+      "SKU",
+      "Name",
+      "Product Type",
+      "Description",
+      "Active",
+      "Labels",
+      "Total Inventory",
+      "Created At",
+      "Updated At"
     ]
 
     # Add attribute headers
@@ -155,7 +155,7 @@ class ProductExportService
       product.sku,
       product.name,
       product_type_label(product),
-      product.description || '',
+      product.description || "",
       active_label(product),
       labels_list(product),
       product.total_inventory,
@@ -165,7 +165,7 @@ class ProductExportService
 
     # Add attribute values
     attribute_values = attribute_codes.map do |code|
-      product.read_attribute_value(code) || ''
+      product.read_attribute_value(code) || ""
     end
 
     base_row + attribute_values
@@ -186,7 +186,7 @@ class ProductExportService
   # @return [String] "Yes" if active, "No" otherwise
   #
   def active_label(product)
-    product.active? ? 'Yes' : 'No'
+    product.active? ? "Yes" : "No"
   end
 
   # Get comma-separated list of label names
@@ -195,7 +195,7 @@ class ProductExportService
   # @return [String] Comma-separated label names, or empty string if no labels
   #
   def labels_list(product)
-    product.labels.pluck(:name).join(', ')
+    product.labels.pluck(:name).join(", ")
   end
 
   # Format timestamp as ISO 8601
@@ -204,7 +204,7 @@ class ProductExportService
   # @return [String] ISO 8601 formatted timestamp, or empty string if nil
   #
   def format_timestamp(timestamp)
-    return '' if timestamp.nil?
+    return "" if timestamp.nil?
 
     timestamp.iso8601
   end

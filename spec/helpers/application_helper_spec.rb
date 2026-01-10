@@ -73,8 +73,8 @@ RSpec.describe ApplicationHelper, type: :helper do
     end
 
     it "escapes multiple special characters" do
-      input = %q{Product "ABC-123" with 'quotes' and\nnewlines}
-      expected = %q{Product \\"ABC-123\\" with \\'quotes\\' and\\nnewlines}
+      input = %q(Product "ABC-123" with 'quotes' and\nnewlines)
+      expected = %q(Product \\"ABC-123\\" with \\'quotes\\' and\\nnewlines)
       expect(helper.js_escape_string(input)).to eq(expected)
     end
 

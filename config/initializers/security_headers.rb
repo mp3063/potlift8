@@ -21,33 +21,33 @@ Rails.application.config.action_dispatch.default_headers = {
   # Prevents clickjacking by only allowing framing from same origin
   # Options: DENY (no framing), SAMEORIGIN (same origin only), ALLOW-FROM uri
   # OWASP Rating: Essential
-  'X-Frame-Options' => 'SAMEORIGIN',
+  "X-Frame-Options" => "SAMEORIGIN",
 
   # X-Content-Type-Options: nosniff
   # Prevents browsers from MIME-type sniffing (interpreting files as different type)
   # Protects against attacks where attacker uploads image.jpg containing JavaScript
   # OWASP Rating: Essential
-  'X-Content-Type-Options' => 'nosniff',
+  "X-Content-Type-Options" => "nosniff",
 
   # X-XSS-Protection: 1; mode=block
   # Legacy XSS filter (browser-level protection)
   # Note: Modern browsers rely on CSP; this is for older browsers
   # mode=block: Blocks page rendering if XSS detected
   # OWASP Rating: Recommended (legacy support)
-  'X-XSS-Protection' => '1; mode=block',
+  "X-XSS-Protection" => "1; mode=block",
 
   # Referrer-Policy: strict-origin-when-cross-origin
   # Controls how much referrer information is sent with requests
   # - same-origin: Full URL for same origin, no referrer for cross-origin
   # - strict-origin-when-cross-origin: Full URL for same origin, origin only for cross-origin HTTPS
   # OWASP Rating: Recommended
-  'Referrer-Policy' => 'strict-origin-when-cross-origin',
+  "Referrer-Policy" => "strict-origin-when-cross-origin",
 
   # Permissions-Policy (formerly Feature-Policy)
   # Controls which browser features and APIs can be used
   # Denying unnecessary features reduces attack surface
   # OWASP Rating: Recommended
-  'Permissions-Policy' => 'geolocation=(), microphone=(), camera=()'
+  "Permissions-Policy" => "geolocation=(), microphone=(), camera=()"
 }
 
 # Strict-Transport-Security (HSTS)
@@ -57,8 +57,8 @@ Rails.application.config.action_dispatch.default_headers = {
 # includeSubDomains: Apply to all subdomains
 # OWASP Rating: Critical for production
 if Rails.env.production?
-  Rails.application.config.action_dispatch.default_headers['Strict-Transport-Security'] =
-    'max-age=31536000; includeSubDomains'
+  Rails.application.config.action_dispatch.default_headers["Strict-Transport-Security"] =
+    "max-age=31536000; includeSubDomains"
 end
 
 # Security Headers Notes:

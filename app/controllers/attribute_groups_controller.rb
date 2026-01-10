@@ -10,7 +10,7 @@
 # - Scoped to current_potlift_company
 #
 class AttributeGroupsController < ApplicationController
-  before_action :set_attribute_group, only: [:show, :edit, :update, :destroy]
+  before_action :set_attribute_group, only: [ :show, :edit, :update, :destroy ]
 
   # GET /attribute_groups
   def index
@@ -38,7 +38,7 @@ class AttributeGroupsController < ApplicationController
     @attribute_group = current_potlift_company.attribute_groups.build(attribute_group_params)
 
     if @attribute_group.save
-      redirect_to product_attributes_path, notice: 'Attribute group created successfully.'
+      redirect_to product_attributes_path, notice: "Attribute group created successfully."
     else
       render :new, status: :unprocessable_entity
     end
@@ -47,7 +47,7 @@ class AttributeGroupsController < ApplicationController
   # PATCH /attribute_groups/:code
   def update
     if @attribute_group.update(attribute_group_params)
-      redirect_to product_attributes_path, notice: 'Attribute group updated successfully.'
+      redirect_to product_attributes_path, notice: "Attribute group updated successfully."
     else
       render :edit, status: :unprocessable_entity
     end
@@ -56,10 +56,10 @@ class AttributeGroupsController < ApplicationController
   # DELETE /attribute_groups/:code
   def destroy
     if @attribute_group.product_attributes.any?
-      redirect_to product_attributes_path, alert: 'Cannot delete group with attributes. Move or delete attributes first.'
+      redirect_to product_attributes_path, alert: "Cannot delete group with attributes. Move or delete attributes first."
     else
       @attribute_group.destroy
-      redirect_to product_attributes_path, notice: 'Attribute group deleted successfully.'
+      redirect_to product_attributes_path, notice: "Attribute group deleted successfully."
     end
   end
 

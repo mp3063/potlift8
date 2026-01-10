@@ -219,8 +219,8 @@ class ProductSyncService
   def build_sync_metadata
     {
       synced_at: Time.current.iso8601,
-      source_system: 'potlift8',
-      api_version: 'v1'
+      source_system: "potlift8",
+      api_version: "v1"
     }
   end
 
@@ -231,10 +231,10 @@ class ProductSyncService
   def determine_target_url
     return nil unless @catalog.present?
 
-    case @catalog.info&.dig('sync_target')
-    when 'shopify3'
+    case @catalog.info&.dig("sync_target")
+    when "shopify3"
       shopify3_url
-    when 'bizcart'
+    when "bizcart"
       bizcart_url
     else
       # Default to shopify3 if not specified
@@ -247,7 +247,7 @@ class ProductSyncService
   # @return [String, nil] Shopify3 URL or nil if not configured
   #
   def shopify3_url
-    base_url = ENV['SHOPIFY3_URL']
+    base_url = ENV["SHOPIFY3_URL"]
     return nil if base_url.blank?
 
     "#{base_url}/sync_tasks"
@@ -258,7 +258,7 @@ class ProductSyncService
   # @return [String, nil] Bizcart URL or nil if not configured
   #
   def bizcart_url
-    base_url = ENV['BIZCART_URL']
+    base_url = ENV["BIZCART_URL"]
     return nil if base_url.blank?
 
     "#{base_url}/api/api/update_catalog"
@@ -288,8 +288,8 @@ class ProductSyncService
       Rails.logger.info("[ProductSyncService] Sending payload: #{payload.to_json}")
 
       response = connection.post do |req|
-        req.headers['Content-Type'] = 'application/json'
-        req.headers['Accept'] = 'application/json'
+        req.headers["Content-Type"] = "application/json"
+        req.headers["Accept"] = "application/json"
         req.body = payload
       end
 
@@ -335,7 +335,7 @@ class ProductSyncService
   #
   def rate_limit_value
     # Check catalog info first
-    catalog_limit = @catalog.info&.dig('rate_limit', 'limit')
+    catalog_limit = @catalog.info&.dig("rate_limit", "limit")
     return catalog_limit.to_i if catalog_limit.present? && catalog_limit.to_i > 0
 
     # Check ENV for catalog-specific limit
@@ -353,7 +353,7 @@ class ProductSyncService
   #
   def rate_limit_period
     # Check catalog info first
-    catalog_period = @catalog.info&.dig('rate_limit', 'period')
+    catalog_period = @catalog.info&.dig("rate_limit", "period")
     return catalog_period.to_i if catalog_period.present? && catalog_period.to_i > 0
 
     # Check ENV for catalog-specific period

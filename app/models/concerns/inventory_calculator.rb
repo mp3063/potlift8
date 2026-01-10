@@ -14,7 +14,7 @@
 #
 # Note: pot3 uses 'value' field in inventories, not 'quantity'
 #
-require 'active_support/concern'
+require "active_support/concern"
 
 module InventoryCalculator
   extend ActiveSupport::Concern
@@ -60,12 +60,12 @@ module InventoryCalculator
   #
   def total_max_sellable_saldo
     case product_type
-    when 'sellable'
+    when "sellable"
       total_saldo
-    when 'configurable'
+    when "configurable"
       return 0 if subproducts.empty?
       subproducts.map(&:total_saldo).max || 0
-    when 'bundle'
+    when "bundle"
       calculate_bundle_max_sellable
     else
       0

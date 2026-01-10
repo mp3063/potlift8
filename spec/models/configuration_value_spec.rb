@@ -121,7 +121,7 @@ RSpec.describe ConfigurationValue, type: :model do
       it 'has three size values in order' do
         values = size_config.configuration_values.order(:position)
         expect(values.count).to eq(3)
-        expect(values.pluck(:value)).to eq(['Small', 'Medium', 'Large'])
+        expect(values.pluck(:value)).to eq([ 'Small', 'Medium', 'Large' ])
       end
 
       it 'can add new value to existing configuration' do

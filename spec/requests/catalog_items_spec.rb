@@ -107,7 +107,7 @@ RSpec.describe 'CatalogItems', type: :request do
     context 'with valid product IDs' do
       it 'adds products to catalog' do
         expect {
-          post catalog_products_path(catalog.code), params: { product_ids: [product1.id, product2.id] }
+          post catalog_products_path(catalog.code), params: { product_ids: [ product1.id, product2.id ] }
         }.to change(catalog.catalog_items, :count).by(2)
 
         expect(response).to redirect_to(catalog_items_path(catalog))
@@ -116,7 +116,7 @@ RSpec.describe 'CatalogItems', type: :request do
       end
 
       it 'sets default state to active' do
-        post catalog_products_path(catalog.code), params: { product_ids: [product1.id] }
+        post catalog_products_path(catalog.code), params: { product_ids: [ product1.id ] }
 
         catalog_item = catalog.catalog_items.find_by(product: product1)
         expect(catalog_item.catalog_item_state).to eq('active')
@@ -125,14 +125,14 @@ RSpec.describe 'CatalogItems', type: :request do
       it 'sets priority to max + 1' do
         catalog.catalog_items.create!(product: product3, catalog_item_state: :active, priority: 10)
 
-        post catalog_products_path(catalog.code), params: { product_ids: [product1.id] }
+        post catalog_products_path(catalog.code), params: { product_ids: [ product1.id ] }
 
         catalog_item = catalog.catalog_items.find_by(product: product1)
         expect(catalog_item.priority).to eq(11)
       end
 
       it 'respects custom catalog_item_state' do
-        post catalog_products_path(catalog.code), params: { product_ids: [product1.id], catalog_item_state: 'inactive' }
+        post catalog_products_path(catalog.code), params: { product_ids: [ product1.id ], catalog_item_state: 'inactive' }
 
         catalog_item = catalog.catalog_items.find_by(product: product1)
         expect(catalog_item.catalog_item_state).to eq('inactive')
@@ -146,7 +146,7 @@ RSpec.describe 'CatalogItems', type: :request do
 
       it 'skips duplicate products' do
         expect {
-          post catalog_products_path(catalog.code), params: { product_ids: [product1.id, product2.id] }
+          post catalog_products_path(catalog.code), params: { product_ids: [ product1.id, product2.id ] }
         }.to change(catalog.catalog_items, :count).by(1)
 
         follow_redirect!
@@ -167,7 +167,7 @@ RSpec.describe 'CatalogItems', type: :request do
     context 'with invalid product ID' do
       it 'skips invalid products' do
         expect {
-          post catalog_products_path(catalog.code), params: { product_ids: [999999, product1.id] }
+          post catalog_products_path(catalog.code), params: { product_ids: [ 999999, product1.id ] }
         }.to change(catalog.catalog_items, :count).by(1)
       end
     end

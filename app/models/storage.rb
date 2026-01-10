@@ -51,7 +51,7 @@ class Storage < ApplicationRecord
 
   # Scopes
   scope :has_products, -> {
-    where('(SELECT count(*) FROM inventories WHERE storage_id = storages.id) > 0')
+    where("(SELECT count(*) FROM inventories WHERE storage_id = storages.id) > 0")
   }
 
   scope :order_by_importance, -> {
@@ -82,7 +82,7 @@ class Storage < ApplicationRecord
   #   storage.product_count # => 42
   #
   def product_count
-    inventories.where('value > 0').count
+    inventories.where("value > 0").count
   end
 
   # Check if storage has any inventory
@@ -93,6 +93,6 @@ class Storage < ApplicationRecord
   #   storage.has_inventory? # => true
   #
   def has_inventory?
-    inventories.where('value > 0').exists?
+    inventories.where("value > 0").exists?
   end
 end

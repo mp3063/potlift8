@@ -88,7 +88,7 @@ module ChangePropagator
     # before destroy or handle cleanup differently.
 
     Rails.logger.info({
-      event: 'product_destroyed',
+      event: "product_destroyed",
       product_id: id,
       product_sku: try(:sku),
       destroyed_at: timestamp
@@ -117,7 +117,7 @@ module ChangePropagator
 
     catalogs_to_sync.each do |catalog|
       # Skip if catalog has sync paused
-      if catalog.info&.dig('sync_paused')
+      if catalog.info&.dig("sync_paused")
         Rails.logger.debug(
           "Catalog #{catalog.code} has sync paused. Skipping propagation."
         )

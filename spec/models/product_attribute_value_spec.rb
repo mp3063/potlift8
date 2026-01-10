@@ -195,7 +195,7 @@ RSpec.describe ProductAttributeValue, type: :model do
           pav = create(:product_attribute_value, product: product, product_attribute: attribute, value: '', ready: false)
           pav.save(validate: false)
           # Since value is empty string, it fails both not_null and positive
-          expect(['positive', 'not_null']).to include(pav.broken_rule)
+          expect([ 'positive', 'not_null' ]).to include(pav.broken_rule)
         end
       end
     end

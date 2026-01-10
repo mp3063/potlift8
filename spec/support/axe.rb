@@ -20,7 +20,7 @@ RSpec.configure do |config|
       # https://github.com/dequelabs/axe-core/blob/develop/doc/rule-descriptions.md
       runOnly: {
         type: 'tag',
-        values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice']
+        values: [ 'wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice' ]
       }
     }
   end
@@ -203,7 +203,7 @@ module AccessibilityHelpers
 
     # Verify focus moved to main content
     focused_element = page.evaluate_script('document.activeElement.id')
-    expect(['main-content', 'main']).to include(focused_element)
+    expect([ 'main-content', 'main' ]).to include(focused_element)
   end
 end
 

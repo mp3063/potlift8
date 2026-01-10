@@ -234,7 +234,7 @@ RSpec.describe Authlift::Client do
           if call_count == 1
             raise JWT::VerificationError
           else
-            [payload, {}]
+            [ payload, {} ]
           end
         end
 

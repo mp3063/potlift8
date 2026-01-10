@@ -112,7 +112,7 @@ RSpec.describe SessionsController, type: :controller do
         },
         'membership' => {
           'role' => 'admin',
-          'scopes' => ['read', 'write']
+          'scopes' => [ 'read', 'write' ]
         }
       }
     end
@@ -163,7 +163,7 @@ RSpec.describe SessionsController, type: :controller do
         expect(session[:company_code]).to eq('ABC123')
         expect(session[:company_name]).to eq('ACME Corp')
         expect(session[:role]).to eq('admin')
-        expect(session[:scopes]).to eq(['read', 'write'])
+        expect(session[:scopes]).to eq([ 'read', 'write' ])
         expect(session[:authenticated_at]).to be_present
       end
 
@@ -486,13 +486,13 @@ RSpec.describe SessionsController, type: :controller do
         allow(authlift_client).to receive(:authorization_url).and_return(auth_url)
 
         get :new
-        expect(response.status).to be_in([302, 303]) # Redirect to OAuth provider
+        expect(response.status).to be_in([ 302, 303 ]) # Redirect to OAuth provider
       end
 
       it 'allows unauthenticated access to create action' do
         # Should not redirect to login when there's an OAuth error
         get :create, params: { error: 'access_denied' }
-        expect(response.status).to be_in([302, 303])
+        expect(response.status).to be_in([ 302, 303 ])
       end
     end
 

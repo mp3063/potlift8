@@ -40,7 +40,7 @@ class ProductImportJob < ApplicationJob
 
     # Initialize progress tracking
     progress_key = "import_progress:#{job_id}"
-    update_progress(progress_key, status: 'processing', progress: 0)
+    update_progress(progress_key, status: "processing", progress: 0)
 
     # Perform import
     service = ProductImportService.new(company, file_content, user)
@@ -49,7 +49,7 @@ class ProductImportJob < ApplicationJob
     # Update progress with final results
     update_progress(
       progress_key,
-      status: 'completed',
+      status: "completed",
       progress: 100,
       imported_count: result[:imported_count],
       updated_count: result[:updated_count],
@@ -68,7 +68,7 @@ class ProductImportJob < ApplicationJob
     progress_key = "import_progress:#{job_id}"
     update_progress(
       progress_key,
-      status: 'failed',
+      status: "failed",
       error: e.message
     )
 
@@ -83,7 +83,7 @@ class ProductImportJob < ApplicationJob
   # @param data [Hash] Progress data
   #
   def update_progress(key, data)
-    redis = Redis.new(url: ENV.fetch('REDIS_URL', 'redis://localhost:6379/1'))
+    redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
     redis.setex(key, 1.hour.to_i, data.to_json)
   rescue StandardError => e
     Rails.logger.error("Failed to update import progress: #{e.message}")

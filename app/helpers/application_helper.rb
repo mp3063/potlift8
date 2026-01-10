@@ -9,10 +9,10 @@ module ApplicationHelper
   # @param str [String] the string to escape
   # @return [String] the escaped string safe for use in JavaScript
   def js_escape_string(str)
-    return '' if str.nil?
+    return "" if str.nil?
 
     str.to_s
-       .gsub('\\', '\\\\')  # Backslash must be escaped first
+       .gsub("\\", "\\\\")  # Backslash must be escaped first
        .gsub("'", "\\\\'")   # Single quotes
        .gsub('"', '\\"')     # Double quotes
        .gsub("\n", '\\n')    # Newlines

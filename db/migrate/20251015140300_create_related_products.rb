@@ -9,17 +9,17 @@ class CreateRelatedProducts < ActiveRecord::Migration[8.0]
       t.timestamps
 
       # Performance: Ordered retrieval of related products by type
-      t.index [:product_id, :relation_type, :position],
+      t.index [ :product_id, :relation_type, :position ],
               name: 'index_related_products_on_product_type_position',
               comment: 'Optimizes ordered related product retrieval by type'
 
       # Performance: Reverse lookups - find products that reference this product
-      t.index [:related_to_id, :relation_type],
+      t.index [ :related_to_id, :relation_type ],
               name: 'index_related_products_on_related_to_and_type',
               comment: 'Optimizes reverse lookups (which products reference this one)'
 
       # Uniqueness: Prevent duplicate relationships
-      t.index [:product_id, :related_to_id, :relation_type],
+      t.index [ :product_id, :related_to_id, :relation_type ],
               unique: true,
               name: 'index_related_products_unique_relation',
               comment: 'Ensures unique product relationships per type'

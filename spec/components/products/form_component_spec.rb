@@ -27,7 +27,7 @@ RSpec.describe Products::FormComponent, type: :component do
     it 'includes product type select' do
       render_inline(described_class.new(product: product, url: url, method: method))
 
-      expect(page).to have_select('Product Type', with_options: ['Sellable', 'Configurable', 'Bundle'])
+      expect(page).to have_select('Product Type', with_options: [ 'Sellable', 'Configurable', 'Bundle' ])
     end
 
     it 'includes name field' do
@@ -342,13 +342,13 @@ RSpec.describe Products::FormComponent, type: :component do
     it 'includes all product types' do
       render_inline(described_class.new(product: product, url: url, method: method))
 
-      expect(page).to have_select('Product Type', with_options: ['Sellable', 'Configurable', 'Bundle'])
+      expect(page).to have_select('Product Type', with_options: [ 'Sellable', 'Configurable', 'Bundle' ])
     end
 
     it 'includes prompt option' do
       render_inline(described_class.new(product: product, url: url, method: method))
 
-      expect(page).to have_select('Product Type', with_options: ['Select a product type'])
+      expect(page).to have_select('Product Type', with_options: [ 'Select a product type' ])
     end
 
     it 'maps product types to correct enum values' do
@@ -376,9 +376,9 @@ RSpec.describe Products::FormComponent, type: :component do
         options = component.send(:product_type_options)
 
         expect(options).to eq([
-          ['Sellable', 'sellable'],
-          ['Configurable', 'configurable'],
-          ['Bundle', 'bundle']
+          [ 'Sellable', 'sellable' ],
+          [ 'Configurable', 'configurable' ],
+          [ 'Bundle', 'bundle' ]
         ])
       end
     end
@@ -388,8 +388,8 @@ RSpec.describe Products::FormComponent, type: :component do
         options = component.send(:configuration_type_options)
 
         expect(options).to eq([
-          ['Variant', 'variant'],
-          ['Option', 'option']
+          [ 'Variant', 'variant' ],
+          [ 'Option', 'option' ]
         ])
       end
     end

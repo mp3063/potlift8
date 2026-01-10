@@ -17,6 +17,6 @@ class CompaniesController < ApplicationController
     # 2. Update session with new company context
     # 3. Redirect back with success message
 
-    redirect_to root_path, alert: 'Company switching is not yet implemented'
+    redirect_to root_path, alert: "Company switching is not yet implemented"
   end
 end

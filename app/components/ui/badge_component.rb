@@ -95,7 +95,7 @@ module Ui
     # @return [String] Combined CSS classes including any custom classes from options
     def badge_classes
       custom_class = @options.delete(:class)
-      classes = [BASE_CLASSES, VARIANTS[@variant], SIZES[@size]]
+      classes = [ BASE_CLASSES, VARIANTS[@variant], SIZES[@size] ]
       classes << custom_class if custom_class.present?
       classes.join(" ")
     end

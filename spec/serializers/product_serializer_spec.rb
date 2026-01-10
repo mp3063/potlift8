@@ -158,7 +158,7 @@ RSpec.describe ProductSerializer do
     let!(:product2) { create(:product, company: company, sku: 'PROD-002', name: 'Product 2') }
     let!(:product3) { create(:product, company: company, sku: 'PROD-003', name: 'Product 3') }
 
-    let(:products) { [product1, product2, product3] }
+    let(:products) { [ product1, product2, product3 ] }
 
     it 'serializes collection of products' do
       result = described_class.collection(products)
@@ -179,7 +179,7 @@ RSpec.describe ProductSerializer do
     it 'maintains order of products' do
       result = described_class.collection(products)
 
-      expect(result.map { |p| p[:sku] }).to eq(['PROD-001', 'PROD-002', 'PROD-003'])
+      expect(result.map { |p| p[:sku] }).to eq([ 'PROD-001', 'PROD-002', 'PROD-003' ])
     end
 
     it 'handles empty collection' do
@@ -189,7 +189,7 @@ RSpec.describe ProductSerializer do
     end
 
     it 'works with ActiveRecord relation' do
-      relation = company.products.where(id: [product1.id, product2.id])
+      relation = company.products.where(id: [ product1.id, product2.id ])
       result = described_class.collection(relation)
 
       expect(result.length).to eq(2)

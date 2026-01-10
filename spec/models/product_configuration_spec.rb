@@ -146,7 +146,7 @@ RSpec.describe ProductConfiguration, type: :model do
 
     it 'orders by configuration_position first, then by SKU' do
       configs = ProductConfiguration.where(superproduct: superproduct).to_a
-      expect(configs.map(&:id)).to eq([config2.id, config1.id, config3.id])
+      expect(configs.map(&:id)).to eq([ config2.id, config1.id, config3.id ])
     end
 
     it 'handles null positions correctly' do
@@ -262,7 +262,7 @@ RSpec.describe ProductConfiguration, type: :model do
       end
 
       it 'maintains ordering by configuration_position' do
-        expect(tshirt.subproducts.to_a).to eq([small, medium, large])
+        expect(tshirt.subproducts.to_a).to eq([ small, medium, large ])
       end
 
       it 'allows reverse lookup from variant to parent' do

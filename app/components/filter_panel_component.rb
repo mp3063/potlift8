@@ -139,7 +139,7 @@ class FilterPanelComponent < ViewComponent::Base
   def remove_filter_url(key)
     params = helpers.request.params
     params_hash = params.respond_to?(:to_unsafe_h) ? params.to_unsafe_h : params.to_h
-    new_params = params_hash.except(key.to_s, 'action', 'controller')
+    new_params = params_hash.except(key.to_s, "action", "controller")
     build_url_with_params(new_params)
   end
 

@@ -24,18 +24,18 @@ class Translation < ApplicationRecord
 
   # Locale names for UI
   LOCALE_NAMES = {
-    'en' => 'English',
-    'es' => 'Español',
-    'fr' => 'Français',
-    'de' => 'Deutsch',
-    'it' => 'Italiano',
-    'pt' => 'Português'
+    "en" => "English",
+    "es" => "Español",
+    "fr" => "Français",
+    "de" => "Deutsch",
+    "it" => "Italiano",
+    "pt" => "Português"
   }.freeze
 
   # Validations
   validates :locale, presence: true, inclusion: { in: SUPPORTED_LOCALES }
   validates :key, presence: true
-  validates :locale, uniqueness: { scope: [:translatable_type, :translatable_id, :key] }
+  validates :locale, uniqueness: { scope: [ :translatable_type, :translatable_id, :key ] }
 
   # Scopes
   scope :for_locale, ->(locale) { where(locale: locale) }
@@ -54,6 +54,6 @@ class Translation < ApplicationRecord
   # @return [Array<Array>] Array of [name, code] pairs
   #
   def self.locale_options
-    SUPPORTED_LOCALES.map { |code| [LOCALE_NAMES[code], code] }
+    SUPPORTED_LOCALES.map { |code| [ LOCALE_NAMES[code], code ] }
   end
 end

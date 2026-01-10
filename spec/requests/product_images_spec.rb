@@ -72,12 +72,12 @@ RSpec.describe '/products/:product_id/images', type: :request do
     context 'with valid image file' do
       it 'attaches image to product' do
         expect {
-          post product_images_path(product), params: { images: [test_image] }
+          post product_images_path(product), params: { images: [ test_image ] }
         }.to change { product.images.count }.by(1)
       end
 
       it 'redirects to product show page with success message' do
-        post product_images_path(product), params: { images: [test_image] }
+        post product_images_path(product), params: { images: [ test_image ] }
 
         expect(response).to redirect_to(product)
         follow_redirect!
@@ -85,7 +85,7 @@ RSpec.describe '/products/:product_id/images', type: :request do
       end
 
       it 'attaches image with correct content type' do
-        post product_images_path(product), params: { images: [test_image] }
+        post product_images_path(product), params: { images: [ test_image ] }
 
         product.reload
         expect(product.images.first.content_type).to eq('image/png')
@@ -95,12 +95,12 @@ RSpec.describe '/products/:product_id/images', type: :request do
     context 'with multiple images' do
       it 'attaches all valid images' do
         expect {
-          post product_images_path(product), params: { images: [test_image, test_jpg] }
+          post product_images_path(product), params: { images: [ test_image, test_jpg ] }
         }.to change { product.images.count }.by(2)
       end
 
       it 'shows count of uploaded images' do
-        post product_images_path(product), params: { images: [test_image, test_jpg] }
+        post product_images_path(product), params: { images: [ test_image, test_jpg ] }
 
         expect(response).to redirect_to(product)
         follow_redirect!
@@ -111,12 +111,12 @@ RSpec.describe '/products/:product_id/images', type: :request do
     context 'with invalid file type' do
       it 'does not attach invalid file' do
         expect {
-          post product_images_path(product), params: { images: [invalid_file] }
+          post product_images_path(product), params: { images: [ invalid_file ] }
         }.not_to change { product.images.count }
       end
 
       it 'shows error message for invalid file type' do
-        post product_images_path(product), params: { images: [invalid_file] }
+        post product_images_path(product), params: { images: [ invalid_file ] }
 
         expect(response).to redirect_to(product)
         follow_redirect!
@@ -127,12 +127,12 @@ RSpec.describe '/products/:product_id/images', type: :request do
     context 'with mixed valid and invalid files' do
       it 'attaches only valid images' do
         expect {
-          post product_images_path(product), params: { images: [test_image, invalid_file] }
+          post product_images_path(product), params: { images: [ test_image, invalid_file ] }
         }.to change { product.images.count }.by(1)
       end
 
       it 'shows partial success message' do
-        post product_images_path(product), params: { images: [test_image, invalid_file] }
+        post product_images_path(product), params: { images: [ test_image, invalid_file ] }
 
         expect(response).to redirect_to(product)
         follow_redirect!
@@ -185,7 +185,7 @@ RSpec.describe '/products/:product_id/images', type: :request do
     context 'multi-tenant security' do
       it 'prevents uploading images to other company products' do
         expect {
-          post product_images_path(other_company_product), params: { images: [test_image] }
+          post product_images_path(other_company_product), params: { images: [ test_image ] }
         }.to raise_error(ActiveRecord::RecordNotFound)
       end
     end
@@ -290,7 +290,7 @@ RSpec.describe '/products/:product_id/images', type: :request do
 
     it 'reorders images successfully' do
       original_order = product.images.map(&:id)
-      new_order = [image3.id, image1.id, image2.id]
+      new_order = [ image3.id, image1.id, image2.id ]
 
       patch reorder_product_images_path(product, format: :json),
             params: { image_ids: new_order }
@@ -306,7 +306,7 @@ RSpec.describe '/products/:product_id/images', type: :request do
       blob3_id = image3.blob_id
 
       # Reorder: move last to first
-      new_order = [image3.id, image1.id, image2.id]
+      new_order = [ image3.id, image1.id, image2.id ]
 
       patch reorder_product_images_path(product, format: :json),
             params: { image_ids: new_order }
@@ -315,12 +315,12 @@ RSpec.describe '/products/:product_id/images', type: :request do
 
       # Verify the order changed by blob IDs (attachment IDs change on detach/reattach)
       reordered_blob_ids = product.images.map(&:blob_id)
-      expect(reordered_blob_ids).to eq([blob3_id, blob1_id, blob2_id])
+      expect(reordered_blob_ids).to eq([ blob3_id, blob1_id, blob2_id ])
     end
 
     it 'returns error for invalid image IDs' do
       patch reorder_product_images_path(product, format: :json),
-            params: { image_ids: [99999, 88888] }
+            params: { image_ids: [ 99999, 88888 ] }
 
       expect(response).to have_http_status(:unprocessable_entity)
       expect(JSON.parse(response.body)['error']).to be_present
@@ -342,14 +342,14 @@ RSpec.describe '/products/:product_id/images', type: :request do
       )
 
       patch reorder_product_images_path(product, format: :json),
-            params: { image_ids: [other_product.images.first.id, image1.id] }
+            params: { image_ids: [ other_product.images.first.id, image1.id ] }
 
       expect(response).to have_http_status(:unprocessable_entity)
     end
 
     context 'turbo_stream format' do
       it 'returns turbo stream response' do
-        new_order = [image3.id, image1.id, image2.id]
+        new_order = [ image3.id, image1.id, image2.id ]
 
         patch reorder_product_images_path(product),
               params: { image_ids: new_order },
@@ -360,7 +360,7 @@ RSpec.describe '/products/:product_id/images', type: :request do
       end
 
       it 'updates the product_images_card element' do
-        new_order = [image3.id, image1.id, image2.id]
+        new_order = [ image3.id, image1.id, image2.id ]
 
         patch reorder_product_images_path(product),
               params: { image_ids: new_order },
@@ -376,7 +376,7 @@ RSpec.describe '/products/:product_id/images', type: :request do
         image1.blob.update(metadata: { alt_text: 'First image', caption: 'Test caption' })
 
         # Reorder images
-        new_order = [image3.id, image1.id, image2.id]
+        new_order = [ image3.id, image1.id, image2.id ]
 
         patch reorder_product_images_path(product),
               params: { image_ids: new_order },
@@ -495,13 +495,13 @@ RSpec.describe '/products/:product_id/images', type: :request do
     it 'deletes multiple images successfully' do
       expect {
         delete bulk_destroy_product_images_path(product, format: :json),
-               params: { image_ids: [image1.id, image2.id] }
+               params: { image_ids: [ image1.id, image2.id ] }
       }.to change { product.images.count }.by(-2)
     end
 
     it 'returns success message with count' do
       delete bulk_destroy_product_images_path(product, format: :json),
-             params: { image_ids: [image1.id, image2.id] }
+             params: { image_ids: [ image1.id, image2.id ] }
 
       expect(response).to have_http_status(:ok)
       json = JSON.parse(response.body)
@@ -513,13 +513,13 @@ RSpec.describe '/products/:product_id/images', type: :request do
     it 'deletes single image' do
       expect {
         delete bulk_destroy_product_images_path(product, format: :json),
-               params: { image_ids: [image1.id] }
+               params: { image_ids: [ image1.id ] }
       }.to change { product.images.count }.by(-1)
     end
 
     it 'returns singular message for single image' do
       delete bulk_destroy_product_images_path(product, format: :json),
-             params: { image_ids: [image1.id] }
+             params: { image_ids: [ image1.id ] }
 
       json = JSON.parse(response.body)
       expect(json['message']).to include('1 image deleted')
@@ -528,7 +528,7 @@ RSpec.describe '/products/:product_id/images', type: :request do
     it 'skips invalid image IDs' do
       expect {
         delete bulk_destroy_product_images_path(product, format: :json),
-               params: { image_ids: [image1.id, 99999, image2.id] }
+               params: { image_ids: [ image1.id, 99999, image2.id ] }
       }.to change { product.images.count }.by(-2)
     end
 
@@ -540,7 +540,7 @@ RSpec.describe '/products/:product_id/images', type: :request do
     end
 
     it 'deletes all images when all IDs provided' do
-      image_ids = [image1.id, image2.id, image3.id]
+      image_ids = [ image1.id, image2.id, image3.id ]
 
       expect {
         delete bulk_destroy_product_images_path(product, format: :json),
@@ -558,7 +558,7 @@ RSpec.describe '/products/:product_id/images', type: :request do
 
       expect {
         delete bulk_destroy_product_images_path(product, format: :json),
-               params: { image_ids: [other_product.images.first.id] }
+               params: { image_ids: [ other_product.images.first.id ] }
       }.not_to change { other_product.images.count }
     end
   end
@@ -573,7 +573,7 @@ RSpec.describe '/products/:product_id/images', type: :request do
     end
 
     it 'requires authentication for create' do
-      post product_images_path(product), params: { images: [test_image] }
+      post product_images_path(product), params: { images: [ test_image ] }
       expect(response).to redirect_to(auth_login_path)
     end
 
@@ -590,7 +590,7 @@ RSpec.describe '/products/:product_id/images', type: :request do
 
     it 'requires authentication for reorder' do
       patch reorder_product_images_path(product, format: :json),
-            params: { image_ids: [1, 2, 3] }
+            params: { image_ids: [ 1, 2, 3 ] }
       expect(response).to redirect_to(auth_login_path)
     end
 
@@ -602,7 +602,7 @@ RSpec.describe '/products/:product_id/images', type: :request do
 
     it 'requires authentication for bulk_destroy' do
       delete bulk_destroy_product_images_path(product, format: :json),
-             params: { image_ids: [1, 2] }
+             params: { image_ids: [ 1, 2 ] }
       expect(response).to redirect_to(auth_login_path)
     end
   end

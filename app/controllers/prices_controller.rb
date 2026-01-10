@@ -13,8 +13,8 @@
 #
 class PricesController < ApplicationController
   before_action :set_product
-  before_action :set_price, only: [:edit, :update, :destroy]
-  before_action :load_customer_groups, only: [:new, :create, :edit, :update]
+  before_action :set_price, only: [ :edit, :update, :destroy ]
+  before_action :load_customer_groups, only: [ :new, :create, :edit, :update ]
 
   # List all prices for product
   #
@@ -24,7 +24,7 @@ class PricesController < ApplicationController
     @base_price = @product.prices.base_prices.first
     @special_prices = @product.prices.special_prices.order(:valid_from)
     @group_prices = @product.prices.group_prices.includes(:customer_group)
-                            .order('customer_groups.name')
+                            .order("customer_groups.name")
   end
 
   # New price form
@@ -33,8 +33,8 @@ class PricesController < ApplicationController
   #
   def new
     @price = @product.prices.build(
-      price_type: params[:price_type] || 'base',
-      currency: 'EUR'
+      price_type: params[:price_type] || "base",
+      currency: "EUR"
     )
   end
 
@@ -47,7 +47,7 @@ class PricesController < ApplicationController
 
     if @price.save
       redirect_to product_prices_path(@product),
-                  notice: 'Price created successfully.'
+                  notice: "Price created successfully."
     else
       render :new, status: :unprocessable_entity
     end
@@ -67,7 +67,7 @@ class PricesController < ApplicationController
   def update
     if @price.update(price_params)
       redirect_to product_prices_path(@product),
-                  notice: 'Price updated successfully.'
+                  notice: "Price updated successfully."
     else
       render :edit, status: :unprocessable_entity
     end
@@ -80,7 +80,7 @@ class PricesController < ApplicationController
   def destroy
     @price.destroy
     redirect_to product_prices_path(@product),
-                notice: 'Price deleted successfully.'
+                notice: "Price deleted successfully."
   end
 
   private

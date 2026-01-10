@@ -174,7 +174,7 @@ RSpec.describe '/products/:product_id/attribute_values', type: :request do
         # Create a mock that will cause validation to fail
         allow_any_instance_of(ProductAttributeValue).to receive(:save).and_return(false)
         allow_any_instance_of(ProductAttributeValue).to receive(:errors).and_return(
-          double(full_messages: ['Value is invalid'])
+          double(full_messages: [ 'Value is invalid' ])
         )
 
         patch product_attribute_value_path(product, product_attribute, format: :turbo_stream),

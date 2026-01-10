@@ -10,7 +10,7 @@ class CreateCustomerGroups < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :customer_groups, [:company_id, :code], unique: true
-    add_index :customer_groups, [:company_id, :name]
+    add_index :customer_groups, [ :company_id, :code ], unique: true
+    add_index :customer_groups, [ :company_id, :name ]
   end
 end

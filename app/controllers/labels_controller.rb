@@ -17,7 +17,7 @@
 # - Ordering: label_positions field (integer)
 #
 class LabelsController < ApplicationController
-  before_action :set_label, only: [:edit, :update, :destroy]
+  before_action :set_label, only: [ :edit, :update, :destroy ]
 
   # GET /labels
   # GET /labels.turbo_stream
@@ -69,7 +69,7 @@ class LabelsController < ApplicationController
   def show
     # Eager load label with associations to prevent N+1 queries
     @label = current_potlift_company.labels
-                                    .includes(sublabels: [:products, :sublabels])
+                                    .includes(sublabels: [ :products, :sublabels ])
                                     .find_by!(full_code: params[:id])
 
     # Load sublabels
@@ -81,7 +81,7 @@ class LabelsController < ApplicationController
   rescue ActiveRecord::RecordNotFound
     # Try finding by ID if full_code lookup fails
     @label = current_potlift_company.labels
-                                    .includes(sublabels: [:products, :sublabels])
+                                    .includes(sublabels: [ :products, :sublabels ])
                                     .find(params[:id])
     @sublabels = @label.sublabels
     @products = @label.products.includes(:labels, :inventories)
@@ -127,14 +127,14 @@ class LabelsController < ApplicationController
       if @label.save
         # Reload label and parent with associations for turbo stream rendering
         @label = current_potlift_company.labels
-                                        .includes(:products, :parent_label, sublabels: [:products, :sublabels])
+                                        .includes(:products, :parent_label, sublabels: [ :products, :sublabels ])
                                         .find(@label.id)
 
         # Reload parent with full associations if this is a sublabel
         if @label.parent_label_id.present?
           @label.parent_label.reload
           @label.parent_label = current_potlift_company.labels
-                                                       .includes(:products, sublabels: [:products, :sublabels])
+                                                       .includes(:products, sublabels: [ :products, :sublabels ])
                                                        .find(@label.parent_label_id)
         end
 
@@ -157,7 +157,7 @@ class LabelsController < ApplicationController
       end
     rescue ActiveRecord::RecordNotUnique
       # Handle unique constraint violation for full_code
-      @label.errors.add(:full_code, 'has already been taken')
+      @label.errors.add(:full_code, "has already been taken")
       @parent_label = @label.parent_label if @label.parent_label_id.present?
       respond_to do |format|
         format.html { render :new, status: :unprocessable_entity }
@@ -175,7 +175,7 @@ class LabelsController < ApplicationController
   def update
     if @label.update(label_params)
       # If parent changed, update all children's full_code and full_name
-      @label.update_label_and_children if @label.previous_changes.key?('parent_label_id')
+      @label.update_label_and_children if @label.previous_changes.key?("parent_label_id")
 
       respond_to do |format|
         format.html do
@@ -257,7 +257,7 @@ class LabelsController < ApplicationController
     # Reload parent with associations if needed for turbo stream update
     if @parent_should_update
       @parent_label = current_potlift_company.labels
-                                             .includes(:products, sublabels: [:products, :sublabels])
+                                             .includes(:products, sublabels: [ :products, :sublabels ])
                                              .find(@parent_label_id)
     end
 
@@ -292,11 +292,11 @@ class LabelsController < ApplicationController
     if order_array.blank? || !order_array.is_a?(Array)
       respond_to do |format|
         format.json do
-          render json: { success: false, message: 'Invalid order array' },
+          render json: { success: false, message: "Invalid order array" },
                  status: :unprocessable_entity
         end
         format.turbo_stream do
-          flash.now[:alert] = 'Invalid order array'
+          flash.now[:alert] = "Invalid order array"
           render :index, status: :unprocessable_entity
         end
       end
@@ -329,21 +329,21 @@ class LabelsController < ApplicationController
     if success
       respond_to do |format|
         format.json do
-          render json: { success: true, message: 'Labels reordered successfully' },
+          render json: { success: true, message: "Labels reordered successfully" },
                  status: :ok
         end
         format.turbo_stream do
-          flash.now[:notice] = 'Labels reordered successfully'
+          flash.now[:notice] = "Labels reordered successfully"
         end
       end
     else
       respond_to do |format|
         format.json do
-          render json: { success: false, message: 'Failed to reorder labels' },
+          render json: { success: false, message: "Failed to reorder labels" },
                  status: :unprocessable_entity
         end
         format.turbo_stream do
-          flash.now[:alert] = 'Failed to reorder labels'
+          flash.now[:alert] = "Failed to reorder labels"
           render :index, status: :unprocessable_entity
         end
       end
@@ -374,7 +374,7 @@ class LabelsController < ApplicationController
       :label_type,
       :parent_label_id,
       :product_default_restriction,
-      info: [:color]
+      info: [ :color ]
     )
   end
 end

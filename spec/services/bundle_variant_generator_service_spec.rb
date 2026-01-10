@@ -166,7 +166,7 @@ RSpec.describe BundleVariantGeneratorService, type: :service do
         result = service.call
 
         skus = result.variants.map(&:sku).sort
-        expect(skus).to eq(['BUNDLE-001-L', 'BUNDLE-001-M', 'BUNDLE-001-S'])
+        expect(skus).to eq([ 'BUNDLE-001-L', 'BUNDLE-001-M', 'BUNDLE-001-S' ])
       end
 
       it 'creates correct ProductConfiguration records for each variant' do
@@ -184,7 +184,7 @@ RSpec.describe BundleVariantGeneratorService, type: :service do
           expect(sellable_config.info['quantity']).to eq(1)
 
           # Should have one of the configurable variants
-          variant_config = configs.find { |c| c.subproduct_id.in?([variant_small.id, variant_medium.id, variant_large.id]) }
+          variant_config = configs.find { |c| c.subproduct_id.in?([ variant_small.id, variant_medium.id, variant_large.id ]) }
           expect(variant_config).to be_present
           expect(variant_config.info['quantity']).to eq(1)
         end
@@ -287,8 +287,8 @@ RSpec.describe BundleVariantGeneratorService, type: :service do
           expect(configs.count).to eq(2)
 
           # Should have one variant from configurable1 and one from configurable2
-          conf1_variant_ids = [conf1_var_s.id, conf1_var_m.id]
-          conf2_variant_ids = [conf2_var_red.id, conf2_var_blue.id]
+          conf1_variant_ids = [ conf1_var_s.id, conf1_var_m.id ]
+          conf2_variant_ids = [ conf2_var_red.id, conf2_var_blue.id ]
 
           conf1_config = configs.find { |c| c.subproduct_id.in?(conf1_variant_ids) }
           conf2_config = configs.find { |c| c.subproduct_id.in?(conf2_variant_ids) }
@@ -346,7 +346,7 @@ RSpec.describe BundleVariantGeneratorService, type: :service do
         expect(result.variants.count).to eq(2) # Only S and L
 
         skus = result.variants.map(&:sku).sort
-        expect(skus).to eq(['BUNDLE-001-L', 'BUNDLE-001-S'])
+        expect(skus).to eq([ 'BUNDLE-001-L', 'BUNDLE-001-S' ])
       end
     end
 

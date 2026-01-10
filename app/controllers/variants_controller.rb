@@ -5,7 +5,7 @@
 # A variant is a sellable product linked to a configurable product with specific configuration values
 class VariantsController < ApplicationController
   before_action :set_product
-  before_action :set_variant, only: [:edit, :update, :destroy]
+  before_action :set_variant, only: [ :edit, :update, :destroy ]
 
   # GET /products/:product_id/variants
   def index

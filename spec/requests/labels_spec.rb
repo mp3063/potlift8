@@ -566,7 +566,7 @@ RSpec.describe '/labels', type: :request do
       let!(:label3) { create(:label, company: company, label_positions: 3) }
 
       it 'updates label positions' do
-        new_order = [label3.id, label1.id, label2.id]
+        new_order = [ label3.id, label1.id, label2.id ]
         patch reorder_labels_path, params: { order: new_order }, as: :json
 
         expect(response).to have_http_status(:ok)
@@ -583,7 +583,7 @@ RSpec.describe '/labels', type: :request do
 
       it 'only reorders current company labels' do
         other_label = create(:label, company: other_company, label_positions: 1)
-        new_order = [label2.id, label1.id, label3.id]
+        new_order = [ label2.id, label1.id, label3.id ]
 
         patch reorder_labels_path, params: { order: new_order }, as: :json
 
@@ -599,7 +599,7 @@ RSpec.describe '/labels', type: :request do
       let!(:child3) { create(:label, company: company, parent_label: parent, label_positions: 3) }
 
       it 'updates sublabel positions within parent' do
-        new_order = [child3.id, child1.id, child2.id]
+        new_order = [ child3.id, child1.id, child2.id ]
         patch reorder_labels_path, params: { order: new_order, parent_id: parent.id }, as: :json
 
         expect(response).to have_http_status(:ok)
@@ -670,7 +670,7 @@ RSpec.describe '/labels', type: :request do
     end
 
     it 'requires authentication for reorder' do
-      patch reorder_labels_path, params: { order: [1, 2, 3] }, as: :json
+      patch reorder_labels_path, params: { order: [ 1, 2, 3 ] }, as: :json
       expect(response).to redirect_to(auth_login_path)
     end
   end

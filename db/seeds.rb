@@ -16,9 +16,9 @@ puts "=" * 80
 if Rails.env.development? && ENV['CLEAN_SEED'] == 'true'
   puts "\n🗑️  Cleaning existing data (keeping Company records)..."
 
-  [ProductAttributeValue, ProductLabel, CatalogItem, Inventory,
+  [ ProductAttributeValue, ProductLabel, CatalogItem, Inventory,
    Product, ProductAttribute, AttributeGroup, Label,
-   Catalog, Storage].each do |model|
+   Catalog, Storage ].each do |model|
     count = model.count
     model.destroy_all
     puts "   Deleted #{count} #{model.name.pluralize}"
@@ -150,7 +150,7 @@ catalogs << FactoryBot.create(:catalog,
     'description' => 'Main European online catalog',
     'region' => 'EU',
     'tax_rate' => 0.21,
-    'shipping_regions' => ['DE', 'NL', 'FR', 'ES']
+    'shipping_regions' => [ 'DE', 'NL', 'FR', 'ES' ]
   }
 )
 
@@ -164,7 +164,7 @@ catalogs << FactoryBot.create(:catalog,
     'description' => 'Swedish online catalog',
     'region' => 'Scandinavia',
     'tax_rate' => 0.25,
-    'shipping_regions' => ['SE']
+    'shipping_regions' => [ 'SE' ]
   }
 )
 
@@ -178,7 +178,7 @@ catalogs << FactoryBot.create(:catalog,
     'description' => 'Norwegian online catalog',
     'region' => 'Scandinavia',
     'tax_rate' => 0.25,
-    'shipping_regions' => ['NO']
+    'shipping_regions' => [ 'NO' ]
   }
 )
 
@@ -221,7 +221,7 @@ attributes[:price] = FactoryBot.create(:product_attribute,
   product_attribute_scope: :product_and_catalog_scope,
   mandatory: true,
   has_rules: true,
-  rules: ['positive', 'not_null'],
+  rules: [ 'positive', 'not_null' ],
   attribute_group: pricing_group,
   attribute_position: 1
 )
@@ -235,7 +235,7 @@ attributes[:cost] = FactoryBot.create(:product_attribute,
   product_attribute_scope: :product_scope,
   mandatory: false,
   has_rules: true,
-  rules: ['positive'],
+  rules: [ 'positive' ],
   attribute_group: pricing_group,
   attribute_position: 2
 )
@@ -319,7 +319,7 @@ attributes[:strain_type] = FactoryBot.create(:product_attribute,
   attribute_group: cannabis_group,
   attribute_position: 3,
   info: {
-    'options' => ['Indica', 'Sativa', 'Hybrid', 'CBD-Dominant']
+    'options' => [ 'Indica', 'Sativa', 'Hybrid', 'CBD-Dominant' ]
   }
 )
 
@@ -334,7 +334,7 @@ attributes[:terpene_profile] = FactoryBot.create(:product_attribute,
   attribute_group: cannabis_group,
   attribute_position: 4,
   info: {
-    'options' => ['Myrcene', 'Limonene', 'Caryophyllene', 'Pinene', 'Linalool', 'Humulene']
+    'options' => [ 'Myrcene', 'Limonene', 'Caryophyllene', 'Pinene', 'Linalool', 'Humulene' ]
   }
 )
 
@@ -371,7 +371,7 @@ attributes[:package_size] = FactoryBot.create(:product_attribute,
   attribute_group: physical_group,
   attribute_position: 2,
   info: {
-    'options' => ['1g', '3.5g', '7g', '14g', '28g', '100mg', '250mg', '500mg']
+    'options' => [ '1g', '3.5g', '7g', '14g', '28g', '100mg', '250mg', '500mg' ]
   }
 )
 
@@ -534,7 +534,7 @@ def create_product(company:, sku:, name:, description:, price:, cost:, thc:, cbd
     info: {
       'brand' => labels.find { |l| l.label_type == 'brand' }&.name,
       'lab_tested' => true,
-      'organic' => [true, false].sample
+      'organic' => [ true, false ].sample
     }
   )
 
@@ -656,7 +656,7 @@ flower_products.each_with_index do |fp, idx|
   )
 
   # Terpenes (random selection)
-  terpenes = ['Myrcene', 'Limonene', 'Caryophyllene', 'Pinene'].sample(2)
+  terpenes = [ 'Myrcene', 'Limonene', 'Caryophyllene', 'Pinene' ].sample(2)
   FactoryBot.create(:product_attribute_value,
     product: product,
     product_attribute: attributes[:terpene_profile],

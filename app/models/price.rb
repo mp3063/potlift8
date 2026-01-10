@@ -34,20 +34,20 @@ class Price < ApplicationRecord
 
   # Ensure only one price per product per customer group
   validates :customer_group_id,
-            uniqueness: { scope: [:product_id, :price_type], allow_nil: true },
+            uniqueness: { scope: [ :product_id, :price_type ], allow_nil: true },
             if: :customer_group_id?
 
   # Validate date range for special prices
-  validate :valid_date_range, if: -> { price_type == 'special' }
+  validate :valid_date_range, if: -> { price_type == "special" }
 
   # Scopes
-  scope :base_prices, -> { where(price_type: 'base', customer_group_id: nil) }
-  scope :special_prices, -> { where(price_type: 'special') }
-  scope :group_prices, -> { where(price_type: 'group') }
+  scope :base_prices, -> { where(price_type: "base", customer_group_id: nil) }
+  scope :special_prices, -> { where(price_type: "special") }
+  scope :group_prices, -> { where(price_type: "group") }
   scope :active_special_prices, -> {
-    where(price_type: 'special')
-      .where('valid_from IS NULL OR valid_from <= ?', Time.current)
-      .where('valid_to IS NULL OR valid_to >= ?', Time.current)
+    where(price_type: "special")
+      .where("valid_from IS NULL OR valid_from <= ?", Time.current)
+      .where("valid_to IS NULL OR valid_to >= ?", Time.current)
   }
 
   # Check if special price is currently active
@@ -55,7 +55,7 @@ class Price < ApplicationRecord
   # @return [Boolean] true if price is active based on date range
   #
   def active?
-    return true unless price_type == 'special'
+    return true unless price_type == "special"
 
     now = Time.current
     (valid_from.nil? || valid_from <= now) && (valid_to.nil? || valid_to >= now)
@@ -76,7 +76,7 @@ class Price < ApplicationRecord
     return if valid_from.blank? || valid_to.blank?
 
     if valid_from > valid_to
-      errors.add(:valid_from, 'must be before valid_to')
+      errors.add(:valid_from, "must be before valid_to")
     end
   end
 end

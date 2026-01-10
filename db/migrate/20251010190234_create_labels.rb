@@ -28,6 +28,6 @@ class CreateLabels < ActiveRecord::Migration[8.0]
     end
 
     # Unique constraint on company_id + full_code
-    add_index :labels, [:company_id, :full_code], unique: true
+    add_index :labels, [ :company_id, :full_code ], unique: true
   end
 end

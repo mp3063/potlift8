@@ -284,7 +284,7 @@ RSpec.describe Product, type: :model, performance: true do
       composite_index = indexes.find { |i| i.name == 'index_products_on_company_status_type' }
 
       expect(composite_index).to be_present
-      expect(composite_index.columns).to eq(['company_id', 'product_status', 'product_type'])
+      expect(composite_index.columns).to eq([ 'company_id', 'product_status', 'product_type' ])
     end
 
     it 'has composite index on products (company_id, updated_at)' do
@@ -292,7 +292,7 @@ RSpec.describe Product, type: :model, performance: true do
       composite_index = indexes.find { |i| i.name == 'index_products_on_company_updated_at' }
 
       expect(composite_index).to be_present
-      expect(composite_index.columns).to eq(['company_id', 'updated_at'])
+      expect(composite_index.columns).to eq([ 'company_id', 'updated_at' ])
     end
 
     it 'has composite index on inventories (product_id, storage_id, value)' do
@@ -300,7 +300,7 @@ RSpec.describe Product, type: :model, performance: true do
       composite_index = indexes.find { |i| i.name == 'index_inventories_on_product_storage_value' }
 
       expect(composite_index).to be_present
-      expect(composite_index.columns).to eq(['product_id', 'storage_id', 'value'])
+      expect(composite_index.columns).to eq([ 'product_id', 'storage_id', 'value' ])
     end
 
     it 'has composite index on product_attribute_values' do
@@ -308,7 +308,7 @@ RSpec.describe Product, type: :model, performance: true do
       composite_index = indexes.find { |i| i.name == 'index_pav_on_product_attribute_value' }
 
       expect(composite_index).to be_present
-      expect(composite_index.columns).to eq(['product_id', 'product_attribute_id', 'value'])
+      expect(composite_index.columns).to eq([ 'product_id', 'product_attribute_id', 'value' ])
     end
 
     it 'has composite index on labels (company_id, label_type, parent_label_id)' do
@@ -316,7 +316,7 @@ RSpec.describe Product, type: :model, performance: true do
       composite_index = indexes.find { |i| i.name == 'index_labels_on_company_type_parent' }
 
       expect(composite_index).to be_present
-      expect(composite_index.columns).to eq(['company_id', 'label_type', 'parent_label_id'])
+      expect(composite_index.columns).to eq([ 'company_id', 'label_type', 'parent_label_id' ])
     end
   end
 

@@ -308,7 +308,7 @@ RSpec.describe 'Global Search', type: :system do
 
       # Store a recent search in cache directly (simulating a previous search with results)
       cache_key = "recent_searches:#{user.id}"
-      Rails.cache.write(cache_key, ['iPhone'], expires_in: 30.days)
+      Rails.cache.write(cache_key, [ 'iPhone' ], expires_in: 30.days)
 
       # Login and open modal
       setup_and_login

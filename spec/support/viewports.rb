@@ -5,9 +5,9 @@ module VisualTestHelpers
   # Standard breakpoints matching Tailwind CSS defaults
   # These viewport sizes represent common device categories
   VIEWPORTS = {
-    mobile: [375, 667],     # iPhone SE (smallest common mobile)
-    tablet: [768, 1024],    # iPad portrait
-    desktop: [1440, 900]    # Standard desktop
+    mobile: [ 375, 667 ],     # iPhone SE (smallest common mobile)
+    tablet: [ 768, 1024 ],    # iPad portrait
+    desktop: [ 1440, 900 ]    # Standard desktop
   }.freeze
 
   # Convenience method to test component at multiple viewports
@@ -23,7 +23,7 @@ module VisualTestHelpers
   #     viewports: [:mobile, :tablet, :desktop]
   #   )
   #
-  def screenshot_component(component, name:, viewports: [:desktop])
+  def screenshot_component(component, name:, viewports: [ :desktop ])
     Array(viewports).each do |viewport|
       width, height = VIEWPORTS.fetch(viewport) do
         raise ArgumentError, "Unknown viewport: #{viewport}. Valid options: #{VIEWPORTS.keys.join(', ')}"

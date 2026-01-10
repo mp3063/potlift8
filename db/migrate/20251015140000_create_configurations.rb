@@ -10,18 +10,18 @@ class CreateConfigurations < ActiveRecord::Migration[8.0]
       t.timestamps
 
       # Performance: Ordered retrieval of configurations for a product
-      t.index [:product_id, :position],
+      t.index [ :product_id, :position ],
               name: 'index_configurations_on_product_and_position',
               comment: 'Optimizes ordered configuration dimension retrieval'
 
       # Uniqueness: Prevent duplicate dimension codes per product
-      t.index [:product_id, :code],
+      t.index [ :product_id, :code ],
               unique: true,
               name: 'index_configurations_on_product_and_code',
               comment: 'Ensures unique dimension codes per product'
 
       # Multi-tenancy: Scoped queries by company
-      t.index [:company_id, :product_id],
+      t.index [ :company_id, :product_id ],
               name: 'index_configurations_on_company_and_product',
               comment: 'Supports multi-tenant product configuration queries'
 

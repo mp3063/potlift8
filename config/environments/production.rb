@@ -61,11 +61,12 @@ Rails.application.configure do
   # - compress: Enable compression for entries > 1KB
   # - compress_threshold: Minimum size (bytes) before compression
   #
-  config.cache_store = :solid_cache_store,
-                       namespace: "potlift8_production",
-                       expires_in: 24.hours,
-                       compress: true,
-                       compress_threshold: 1.kilobytes
+  config.cache_store = :solid_cache_store, {
+    namespace: "potlift8_production",
+    expires_in: 24.hours,
+    compress: true,
+    compress_threshold: 1.kilobytes
+  }
 
   # Replace the default in-process and non-durable queuing backend for Active Job.
   config.active_job.queue_adapter = :solid_queue

@@ -36,10 +36,10 @@ class CatalogItem < ApplicationRecord
   validates :catalog_id, uniqueness: { scope: :product_id }
 
   # Scopes
-  default_scope { order(Arel.sql('catalog_items.priority DESC NULLS LAST')) }
+  default_scope { order(Arel.sql("catalog_items.priority DESC NULLS LAST")) }
   scope :active_items, -> { where(catalog_item_state: :active) }
   scope :inactive_items, -> { where(catalog_item_state: :inactive) }
-  scope :by_priority, -> { reorder(Arel.sql('catalog_items.priority DESC NULLS LAST')) }
+  scope :by_priority, -> { reorder(Arel.sql("catalog_items.priority DESC NULLS LAST")) }
 
   # Check if product is ready for sale in this catalog
   # Validates product structure, mandatory attributes, and pricing

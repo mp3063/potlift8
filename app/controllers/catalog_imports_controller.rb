@@ -41,8 +41,8 @@ class CatalogImportsController < ApplicationController
   def create
     unless params[:file].present?
       respond_to do |format|
-        format.html { redirect_to catalog_items_path(@catalog), alert: 'Please select a file to import.' }
-        format.turbo_stream { render turbo_stream: turbo_stream.replace('flash', partial: 'shared/flash', locals: { flash: { alert: 'Please select a file to import.' } }) }
+        format.html { redirect_to catalog_items_path(@catalog), alert: "Please select a file to import." }
+        format.turbo_stream { render turbo_stream: turbo_stream.replace("flash", partial: "shared/flash", locals: { flash: { alert: "Please select a file to import." } }) }
       end
       return
     end
@@ -70,13 +70,13 @@ class CatalogImportsController < ApplicationController
     rescue CSV::MalformedCSVError => e
       respond_to do |format|
         format.html { redirect_to catalog_items_path(@catalog), alert: "Invalid CSV file: #{e.message}" }
-        format.turbo_stream { render turbo_stream: turbo_stream.replace('flash', partial: 'shared/flash', locals: { flash: { alert: "Invalid CSV file: #{e.message}" } }) }
+        format.turbo_stream { render turbo_stream: turbo_stream.replace("flash", partial: "shared/flash", locals: { flash: { alert: "Invalid CSV file: #{e.message}" } }) }
       end
     rescue => e
       Rails.logger.error "Catalog import error: #{e.message}\n#{e.backtrace.join("\n")}"
       respond_to do |format|
         format.html { redirect_to catalog_items_path(@catalog), alert: "Import failed: #{e.message}" }
-        format.turbo_stream { render turbo_stream: turbo_stream.replace('flash', partial: 'shared/flash', locals: { flash: { alert: "Import failed: #{e.message}" } }) }
+        format.turbo_stream { render turbo_stream: turbo_stream.replace("flash", partial: "shared/flash", locals: { flash: { alert: "Import failed: #{e.message}" } }) }
       end
     end
   end
@@ -86,30 +86,30 @@ class CatalogImportsController < ApplicationController
   # Downloads CSV template for catalog imports.
   #
   def template
-    require 'csv'
+    require "csv"
 
     csv_data = CSV.generate(headers: true) do |csv|
       # CSV headers
       csv << [
-        'product_sku',
-        'catalog_item_state',
-        'priority',
-        'price_override'
+        "product_sku",
+        "catalog_item_state",
+        "priority",
+        "price_override"
       ]
 
       # Example row
       csv << [
-        'EXAMPLE-SKU',
-        'active',
-        '100',
-        '19.99'
+        "EXAMPLE-SKU",
+        "active",
+        "100",
+        "19.99"
       ]
     end
 
     send_data csv_data,
               filename: "catalog_#{@catalog.code}_import_template_#{Time.current.strftime('%Y%m%d')}.csv",
-              type: 'text/csv',
-              disposition: 'attachment'
+              type: "text/csv",
+              disposition: "attachment"
   end
 
   private
@@ -126,7 +126,7 @@ class CatalogImportsController < ApplicationController
   # @return [Hash] Import results with counts and errors
   #
   def process_csv_import(file)
-    require 'csv'
+    require "csv"
 
     result = {
       success: 0,
@@ -136,11 +136,11 @@ class CatalogImportsController < ApplicationController
       errors: []
     }
 
-    csv_content = file.read.force_encoding('UTF-8')
+    csv_content = file.read.force_encoding("UTF-8")
     csv = CSV.parse(csv_content, headers: true, header_converters: :symbol)
 
     # Validate headers
-    required_headers = [:product_sku]
+    required_headers = [ :product_sku ]
     missing_headers = required_headers - csv.headers
     if missing_headers.any?
       raise "Missing required headers: #{missing_headers.join(', ')}"
@@ -194,7 +194,7 @@ class CatalogImportsController < ApplicationController
             end
           else
             # Create new catalog item
-            catalog_item_state = row[:catalog_item_state].present? ? row[:catalog_item_state].strip.downcase : 'active'
+            catalog_item_state = row[:catalog_item_state].present? ? row[:catalog_item_state].strip.downcase : "active"
             priority = row[:priority].present? && row[:priority].strip =~ /^\d+$/ ? row[:priority].strip.to_i : nil
 
             # Default priority to max + 1 if not specified
@@ -235,10 +235,10 @@ class CatalogImportsController < ApplicationController
   #
   def update_price_override(catalog_item, price_value)
     # Find the price attribute
-    price_attribute = current_potlift_company.product_attributes.find_by(code: 'price')
+    price_attribute = current_potlift_company.product_attributes.find_by(code: "price")
     return unless price_attribute
 
     # Create or update catalog item attribute value for price
-    catalog_item.write_catalog_attribute_value('price', price_value)
+    catalog_item.write_catalog_attribute_value("price", price_value)
   end
 end

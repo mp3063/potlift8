@@ -22,8 +22,8 @@ RSpec.describe 'Search Performance Benchmark', type: :benchmark do
         company: @company,
         name: "Product #{i}",
         sku: "PROD-#{i}",
-        product_status: [:active, :draft, :discontinued].sample,
-        product_type: [:sellable, :configurable, :bundle].sample
+        product_status: [ :active, :draft, :discontinued ].sample,
+        product_type: [ :sellable, :configurable, :bundle ].sample
       )
 
       # Add labels (50% of products)
@@ -324,7 +324,7 @@ RSpec.describe 'Search Performance Benchmark', type: :benchmark do
     it "benchmarks page traversal" do
       puts "\n--- Pagination Benchmark ---"
 
-      pages = [1, 10, 20, 50]
+      pages = [ 1, 10, 20, 50 ]
       per_page = 20
 
       pages.each do |page_num|

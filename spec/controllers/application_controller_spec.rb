@@ -15,7 +15,7 @@ end
 
 RSpec.describe ApplicationController, type: :controller do
   controller(TestController) do
-    skip_before_action :require_authentication, only: [:public_action]
+    skip_before_action :require_authentication, only: [ :public_action ]
   end
 
   before do

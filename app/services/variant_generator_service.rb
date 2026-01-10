@@ -153,7 +153,7 @@ class VariantGeneratorService
     # Generate Cartesian product
     # For single configuration, wrap in array
     if value_sets.size == 1
-      value_sets.first.map { |v| [v] }
+      value_sets.first.map { |v| [ v ] }
     else
       value_sets.first.product(*value_sets[1..])
     end
@@ -200,7 +200,7 @@ class VariantGeneratorService
         name: generate_variant_name(combination),
         variant_config: variant_config,
         exists: exists,
-        status: exists ? 'existing' : 'new'
+        status: exists ? "existing" : "new"
       }
     end
   end
@@ -213,13 +213,13 @@ class VariantGeneratorService
 
   def variant_exists?(variant_config)
     product.product_configurations_as_super.any? do |pc|
-      pc.info.present? && pc.info['variant_config'] == variant_config
+      pc.info.present? && pc.info["variant_config"] == variant_config
     end
   end
 
   def create_variant_product(combination, variant_config)
     # Generate unique SKU
-    base_suffix = combination.map { |c| sanitize_sku_part(c[:value]) }.join('-')
+    base_suffix = combination.map { |c| sanitize_sku_part(c[:value]) }.join("-")
     sku = generate_unique_sku("#{product.sku}-#{base_suffix}")
 
     # Generate descriptive name
@@ -260,7 +260,7 @@ class VariantGeneratorService
         variant_config: variant_config,
         configuration_details: configuration_details,
         generated_at: Time.current.iso8601,
-        generated_by: 'VariantGeneratorService'
+        generated_by: "VariantGeneratorService"
       }
     )
   rescue ActiveRecord::RecordInvalid => e
@@ -277,7 +277,7 @@ class VariantGeneratorService
   end
 
   def generate_preview_sku(combination)
-    base_suffix = combination.map { |c| sanitize_sku_part(c[:value]) }.join('-')
+    base_suffix = combination.map { |c| sanitize_sku_part(c[:value]) }.join("-")
     sanitize_sku("#{product.sku}-#{base_suffix}")
   end
 
@@ -308,10 +308,10 @@ class VariantGeneratorService
     # Replace spaces with hyphens, collapse multiple hyphens
     sku.to_s
        .upcase
-       .gsub(/\s+/, '-')
-       .gsub(/[^A-Z0-9-]/, '')
-       .gsub(/-+/, '-')
-       .gsub(/^-|-$/, '')  # Remove leading/trailing hyphens
+       .gsub(/\s+/, "-")
+       .gsub(/[^A-Z0-9-]/, "")
+       .gsub(/-+/, "-")
+       .gsub(/^-|-$/, "")  # Remove leading/trailing hyphens
   end
 
   def sanitize_sku_part(part)
@@ -319,9 +319,9 @@ class VariantGeneratorService
     part.to_s
         .strip
         .upcase
-        .gsub(/\s+/, '-')
-        .gsub(/[^A-Z0-9-]/, '')
-        .gsub(/-+/, '-')
-        .gsub(/^-|-$/, '')
+        .gsub(/\s+/, "-")
+        .gsub(/[^A-Z0-9-]/, "")
+        .gsub(/-+/, "-")
+        .gsub(/^-|-$/, "")
   end
 end

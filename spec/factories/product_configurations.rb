@@ -7,14 +7,14 @@ FactoryBot.define do
 
     # Trait for variant configuration
     trait :variant do
-      association :superproduct, factory: [:product, :configurable_variant]
-      association :subproduct, factory: [:product, :sellable]
+      association :superproduct, factory: [ :product, :configurable_variant ]
+      association :subproduct, factory: [ :product, :sellable ]
     end
 
     # Trait for bundle configuration with quantity
     trait :bundle_item do
-      association :superproduct, factory: [:product, :bundle]
-      association :subproduct, factory: [:product, :sellable]
+      association :superproduct, factory: [ :product, :bundle ]
+      association :subproduct, factory: [ :product, :sellable ]
       info { { 'quantity' => 2 } }
     end
 

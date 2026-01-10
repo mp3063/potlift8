@@ -39,7 +39,7 @@ class ApplicationController < ActionController::Base
           "[SessionVersion] Refresh failed for user #{session[:user_id]}, forcing re-login"
         )
         reset_session
-        redirect_to auth_login_path, alert: 'Your session has expired. Please sign in again.'
+        redirect_to auth_login_path, alert: "Your session has expired. Please sign in again."
       end
     end
   end
@@ -81,7 +81,7 @@ class ApplicationController < ActionController::Base
     store_location_for_return
 
     # Redirect to login
-    redirect_to auth_login_path, alert: 'Please sign in to continue.'
+    redirect_to auth_login_path, alert: "Please sign in to continue."
   end
 
   # Check if user is authenticated
@@ -118,7 +118,7 @@ class ApplicationController < ActionController::Base
 
     # Validate JWT token is still valid (decode will fail if revoked/invalid)
     # Skip JWT validation for test tokens in test environment
-    unless Rails.env.test? && session[:access_token]&.start_with?('test_token_')
+    unless Rails.env.test? && session[:access_token]&.start_with?("test_token_")
       begin
         authlift_client.decode_jwt(session[:access_token])
       rescue Authlift::Client::TokenValidationError => e
@@ -244,9 +244,9 @@ class ApplicationController < ActionController::Base
 
     @current_potlift_company ||= begin
       company_data = {
-        'id' => session[:company_id],
-        'code' => session[:company_code],
-        'name' => session[:company_name]
+        "id" => session[:company_id],
+        "code" => session[:company_code],
+        "name" => session[:company_name]
       }
       Company.from_authlift8(company_data)
     end

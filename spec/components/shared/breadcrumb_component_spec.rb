@@ -111,7 +111,7 @@ RSpec.describe Shared::BreadcrumbComponent, type: :component do
 
   describe '#render?' do
     it 'returns true when items are present' do
-      items = [{ label: 'Home', url: '/' }]
+      items = [ { label: 'Home', url: '/' } ]
       component = described_class.new(items: items)
 
       expect(component.render?).to be true
@@ -200,7 +200,7 @@ RSpec.describe Shared::BreadcrumbComponent, type: :component do
   end
 
   describe 'single item breadcrumb' do
-    let(:items) { [{ label: 'Home', url: '/' }] }
+    let(:items) { [ { label: 'Home', url: '/' } ] }
 
     it 'renders single item without separator' do
       render_inline(described_class.new(items: items))

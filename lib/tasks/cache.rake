@@ -54,7 +54,7 @@ namespace :cache do
     print "Are you sure you want to clear ALL cache entries? [yes/NO]: "
     confirmation = STDIN.gets.chomp
 
-    if confirmation.downcase == 'yes'
+    if confirmation.downcase == "yes"
       monitor = CacheMonitorService.new
 
       if monitor.clear_cache
@@ -69,7 +69,7 @@ namespace :cache do
   end
 
   desc "Clear cache by namespace"
-  task :clear_namespace, [:namespace] => :environment do |_t, args|
+  task :clear_namespace, [ :namespace ] => :environment do |_t, args|
     namespace = args[:namespace]
 
     if namespace.blank?
@@ -81,7 +81,7 @@ namespace :cache do
     print "Clear cache namespace '#{namespace}'? [yes/NO]: "
     confirmation = STDIN.gets.chomp
 
-    if confirmation.downcase == 'yes'
+    if confirmation.downcase == "yes"
       monitor = CacheMonitorService.new
 
       if monitor.clear_cache(namespace: namespace)
@@ -130,12 +130,12 @@ namespace :cache do
 
     # Test 1: Simple string cache
     puts "Test 1: Simple String Cache"
-    result = monitor.sample_read('test-string-key') do
+    result = monitor.sample_read("test-string-key") do
       "Hello, World!"
     end
     puts "  First read (miss): #{result[:duration_ms]}ms"
 
-    result = monitor.sample_read('test-string-key') do
+    result = monitor.sample_read("test-string-key") do
       "Hello, World!"
     end
     puts "  Second read (hit): #{result[:duration_ms]}ms"
@@ -143,12 +143,12 @@ namespace :cache do
 
     # Test 2: Array cache
     puts "Test 2: Array Cache (1000 items)"
-    result = monitor.sample_read('test-array-key') do
+    result = monitor.sample_read("test-array-key") do
       (1..1000).to_a
     end
     puts "  First read (miss): #{result[:duration_ms]}ms, Size: #{result[:value_size_bytes]} bytes"
 
-    result = monitor.sample_read('test-array-key') do
+    result = monitor.sample_read("test-array-key") do
       (1..1000).to_a
     end
     puts "  Second read (hit): #{result[:duration_ms]}ms"
@@ -156,7 +156,7 @@ namespace :cache do
 
     # Test 3: Hash cache
     puts "Test 3: Hash Cache (100 products simulation)"
-    result = monitor.sample_read('test-hash-key') do
+    result = monitor.sample_read("test-hash-key") do
       (1..100).map do |i|
         {
           id: i,
@@ -168,7 +168,7 @@ namespace :cache do
     end
     puts "  First read (miss): #{result[:duration_ms]}ms, Size: #{result[:value_size_bytes]} bytes"
 
-    result = monitor.sample_read('test-hash-key') do
+    result = monitor.sample_read("test-hash-key") do
       (1..100).map do |i|
         {
           id: i,
@@ -182,9 +182,9 @@ namespace :cache do
     puts ""
 
     # Cleanup test keys
-    Rails.cache.delete('test-string-key')
-    Rails.cache.delete('test-array-key')
-    Rails.cache.delete('test-hash-key')
+    Rails.cache.delete("test-string-key")
+    Rails.cache.delete("test-array-key")
+    Rails.cache.delete("test-hash-key")
 
     puts "=" * 60
     puts "Test complete (test keys cleaned up)"
@@ -193,7 +193,7 @@ namespace :cache do
   end
 
   desc "Analyze cache usage by namespace"
-  task :analyze, [:namespace] => :environment do |_t, args|
+  task :analyze, [ :namespace ] => :environment do |_t, args|
     namespace = args[:namespace]
 
     if namespace.blank?

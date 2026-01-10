@@ -210,7 +210,7 @@ RSpec.describe ProductAttribute, type: :model do
   describe 'callbacks' do
     describe 'before_save :check_for_rules' do
       it 'sets has_rules to true when rules are present' do
-        attr = create(:product_attribute, rules: ['positive', 'not_null'])
+        attr = create(:product_attribute, rules: [ 'positive', 'not_null' ])
         expect(attr.has_rules).to be true
       end
 
@@ -561,7 +561,7 @@ RSpec.describe ProductAttribute, type: :model do
 
       it 'orders by attribute_position asc with nulls last' do
         attrs = group1.product_attributes.to_a
-        expect(attrs).to eq([attr1, attr2, attr3, attr_nil])
+        expect(attrs).to eq([ attr1, attr2, attr3, attr_nil ])
       end
     end
   end

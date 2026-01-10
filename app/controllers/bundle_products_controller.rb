@@ -5,7 +5,7 @@
 # A bundle product is a product composed of multiple subproducts with quantities
 class BundleProductsController < ApplicationController
   before_action :set_product
-  before_action :set_bundle_product, only: [:update, :destroy]
+  before_action :set_bundle_product, only: [ :update, :destroy ]
 
   # GET /products/:product_id/bundle_products
   def index
@@ -16,8 +16,8 @@ class BundleProductsController < ApplicationController
 
     # Available products (not already in bundle)
     @available_products = current_potlift_company.products
-                                                  .where(product_type: [:sellable, :configurable])
-                                                  .where.not(id: [@product.id] + @bundle_products.pluck(:subproduct_id))
+                                                  .where(product_type: [ :sellable, :configurable ])
+                                                  .where.not(id: [ @product.id ] + @bundle_products.pluck(:subproduct_id))
                                                   .order(:name)
   end
 

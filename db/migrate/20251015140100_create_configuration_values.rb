@@ -8,12 +8,12 @@ class CreateConfigurationValues < ActiveRecord::Migration[8.0]
       t.timestamps
 
       # Performance: Ordered retrieval of values for a configuration dimension
-      t.index [:configuration_id, :position],
+      t.index [ :configuration_id, :position ],
               name: 'index_configuration_values_on_config_and_position',
               comment: 'Optimizes ordered value retrieval for a dimension'
 
       # Uniqueness: Prevent duplicate values per configuration
-      t.index [:configuration_id, :value],
+      t.index [ :configuration_id, :value ],
               unique: true,
               name: 'index_configuration_values_on_config_and_value',
               comment: 'Ensures unique values per configuration dimension'

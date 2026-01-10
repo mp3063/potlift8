@@ -9,6 +9,6 @@ class AddFieldsToStorages < ActiveRecord::Migration[8.0]
     add_column :storages, :storage_position, :integer
     add_column :storages, :storage_status, :integer, default: 1, null: false
 
-    add_index :storages, [:company_id, :code], unique: true, name: 'storages_company_code_unique_index'
+    add_index :storages, [ :company_id, :code ], unique: true, name: 'storages_company_code_unique_index'
   end
 end

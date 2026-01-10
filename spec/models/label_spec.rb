@@ -229,11 +229,11 @@ RSpec.describe Label, type: :model do
       end
 
       it 'returns parent for direct child' do
-        expect(level1.ancestors).to eq([root])
+        expect(level1.ancestors).to eq([ root ])
       end
 
       it 'returns all ancestors in order from root to parent' do
-        expect(level3.ancestors).to eq([root, level1, level2])
+        expect(level3.ancestors).to eq([ root, level1, level2 ])
       end
     end
 

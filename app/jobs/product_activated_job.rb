@@ -75,7 +75,7 @@ class ProductActivatedJob < ApplicationJob
 
     catalogs.each do |catalog|
       # Skip if catalog has sync paused
-      if catalog.info&.dig('sync_paused')
+      if catalog.info&.dig("sync_paused")
         Rails.logger.info(
           "Catalog #{catalog.code} has sync paused. Skipping sync for product #{product.sku}."
         )
@@ -120,7 +120,7 @@ class ProductActivatedJob < ApplicationJob
       # Sync superproduct to its catalogs with a delay
       # The delay prevents overwhelming the sync system when many subproducts are activated
       superproduct.catalogs.each do |catalog|
-        next if catalog.info&.dig('sync_paused')
+        next if catalog.info&.dig("sync_paused")
 
         ProductSyncJob.set(wait: 5.seconds).perform_later(superproduct, catalog, timestamp)
       end
@@ -138,7 +138,7 @@ class ProductActivatedJob < ApplicationJob
   #
   def log_activation(product, timestamp)
     Rails.logger.info({
-      event: 'product_activated',
+      event: "product_activated",
       product_id: product.id,
       sku: product.sku,
       name: product.name,

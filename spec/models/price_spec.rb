@@ -275,7 +275,7 @@ RSpec.describe Price, type: :model do
   # Test PRICE_TYPES constant
   describe 'PRICE_TYPES constant' do
     it 'defines all 3 price types' do
-      expect(Price::PRICE_TYPES).to eq(['base', 'special', 'group'])
+      expect(Price::PRICE_TYPES).to eq([ 'base', 'special', 'group' ])
     end
   end
 

@@ -14,8 +14,8 @@
 # - POST /auth/logout   - Logout and clear session
 class SessionsController < ApplicationController
   # Skip authentication for OAuth flow
-  skip_before_action :require_authentication, only: [:new, :create], raise: false
-  skip_before_action :check_session_version, only: [:new, :create], raise: false
+  skip_before_action :require_authentication, only: [ :new, :create ], raise: false
+  skip_before_action :check_session_version, only: [ :new, :create ], raise: false
 
   # Protect against CSRF for state-changing actions
   protect_from_forgery except: :create # OAuth callback uses GET with state validation
@@ -65,11 +65,11 @@ class SessionsController < ApplicationController
       redirect_to auth_url, allow_other_host: true
     rescue Authlift::Client::ConfigurationError => e
       Rails.logger.error("OAuth configuration error: #{e.message}")
-      @error_message = 'Authentication service is not configured properly.'
+      @error_message = "Authentication service is not configured properly."
       render :new
     rescue StandardError => e
       Rails.logger.error("OAuth initiation failed: #{e.class} - #{e.message}")
-      @error_message = 'Unable to initiate authentication. Please try again.'
+      @error_message = "Unable to initiate authentication. Please try again."
       render :new
     end
   end
@@ -97,8 +97,8 @@ class SessionsController < ApplicationController
 
     # Validate required parameters
     unless params[:code].present? && params[:state].present?
-      Rails.logger.warn('OAuth callback missing required parameters')
-      redirect_to root_path, alert: 'Invalid authentication response.'
+      Rails.logger.warn("OAuth callback missing required parameters")
+      redirect_to root_path, alert: "Invalid authentication response."
       return
     end
 
@@ -108,9 +108,9 @@ class SessionsController < ApplicationController
 
     # Validate OAuth state timeout (5 minutes)
     if oauth_initiated_at.nil? || Time.now.to_i - oauth_initiated_at > 300
-      Rails.logger.warn('OAuth state expired')
+      Rails.logger.warn("OAuth state expired")
       reset_session
-      redirect_to root_path, alert: 'Authentication session expired. Please try again.'
+      redirect_to root_path, alert: "Authentication session expired. Please try again."
       return
     end
 
@@ -130,7 +130,7 @@ class SessionsController < ApplicationController
 
       unless user
         Rails.logger.error("Failed to create user from OAuth payload - likely missing company data")
-        session[:auth_error] = 'Your account is not associated with a company. Please contact your administrator.'
+        session[:auth_error] = "Your account is not associated with a company. Please contact your administrator."
         redirect_to auth_login_path
         return
       end
@@ -141,7 +141,7 @@ class SessionsController < ApplicationController
       # OWASP recommendation: Always regenerate session ID on privilege level change
       old_session_data = session.to_hash
       reset_session
-      old_session_data.each { |k, v| session[k] = v unless k.start_with?('oauth_') }
+      old_session_data.each { |k, v| session[k] = v unless k.start_with?("oauth_") }
 
       # Store authentication data in session
       # Note: In production, consider using encrypted session store
@@ -154,19 +154,19 @@ class SessionsController < ApplicationController
       Rails.logger.info("User authenticated: #{user.oauth_sub} (ID: #{user.id})")
 
       # Redirect to intended destination or root
-      redirect_to session.delete(:return_to) || root_path, notice: 'Successfully signed in.'
+      redirect_to session.delete(:return_to) || root_path, notice: "Successfully signed in."
     rescue Authlift::Client::AuthenticationError => e
       Rails.logger.error("Authentication failed: #{e.message}")
       reset_session
-      redirect_to root_path, alert: 'Authentication failed. Please try again.'
+      redirect_to root_path, alert: "Authentication failed. Please try again."
     rescue Authlift::Client::TokenValidationError => e
       Rails.logger.error("Token validation failed: #{e.message}")
       reset_session
-      redirect_to root_path, alert: 'Invalid authentication token. Please try again.'
+      redirect_to root_path, alert: "Invalid authentication token. Please try again."
     rescue StandardError => e
       Rails.logger.error("OAuth callback error: #{e.class} - #{e.message}")
       reset_session
-      redirect_to root_path, alert: 'An error occurred during authentication. Please try again.'
+      redirect_to root_path, alert: "An error occurred during authentication. Please try again."
     end
   end
 
@@ -201,11 +201,11 @@ class SessionsController < ApplicationController
     # Redirect to login page
     # Note: We've revoked the token at Authlift8, so the session is invalidated
     # Next login will require re-authentication at Authlift8
-    redirect_to auth_login_path, notice: 'Successfully signed out.'
+    redirect_to auth_login_path, notice: "Successfully signed out."
   rescue StandardError => e
     Rails.logger.error("Logout error: #{e.class} - #{e.message}")
     reset_session
-    redirect_to auth_login_path, notice: 'Signed out.'
+    redirect_to auth_login_path, notice: "Signed out."
   end
 
   private
@@ -237,9 +237,9 @@ class SessionsController < ApplicationController
   # @param user_payload [Hash] User payload from JWT
   def store_authentication_session(user, tokens, user_payload)
     # Extract user data
-    user_data = user_payload['user'] || {}
-    company_data = user_payload['company'] || {}
-    membership_data = user_payload['membership'] || {}
+    user_data = user_payload["user"] || {}
+    company_data = user_payload["company"] || {}
+    membership_data = user_payload["membership"] || {}
 
     # Store user ID (database record ID, not oauth_sub)
     session[:user_id] = user.id
@@ -247,16 +247,16 @@ class SessionsController < ApplicationController
     # Store additional user information for convenience
     session[:email] = user.email
     session[:user_name] = user.name
-    session[:locale] = user_data['locale']
+    session[:locale] = user_data["locale"]
 
     # Store company information
-    session[:company_id] = company_data['id']
-    session[:company_code] = company_data['code']
-    session[:company_name] = company_data['name']
+    session[:company_id] = company_data["id"]
+    session[:company_code] = company_data["code"]
+    session[:company_name] = company_data["name"]
 
     # Store membership information
-    session[:role] = membership_data['role']
-    session[:scopes] = membership_data['scopes']
+    session[:role] = membership_data["role"]
+    session[:scopes] = membership_data["scopes"]
 
     # Store tokens
     session[:access_token] = tokens[:access_token]
@@ -265,7 +265,7 @@ class SessionsController < ApplicationController
     session[:authenticated_at] = Time.now.to_i
 
     # Store customer groups from payload (if available)
-    session[:customer_groups] = user_payload['customer_groups'] || []
+    session[:customer_groups] = user_payload["customer_groups"] || []
 
     # Store initial session versions for invalidation checking
     SessionVersionChecker.new(session).store_current_versions!
@@ -284,15 +284,15 @@ class SessionsController < ApplicationController
 
     # Provide user-friendly message based on error type
     message = case error
-              when 'access_denied'
-                'Authentication was cancelled. Please try again if you want to sign in.'
-              when 'invalid_request', 'unauthorized_client', 'unsupported_response_type'
-                'Authentication service configuration error. Please contact support.'
-              when 'server_error', 'temporarily_unavailable'
-                'Authentication service is temporarily unavailable. Please try again later.'
-              else
-                'Authentication failed. Please try again.'
-              end
+    when "access_denied"
+                "Authentication was cancelled. Please try again if you want to sign in."
+    when "invalid_request", "unauthorized_client", "unsupported_response_type"
+                "Authentication service configuration error. Please contact support."
+    when "server_error", "temporarily_unavailable"
+                "Authentication service is temporarily unavailable. Please try again later."
+    else
+                "Authentication failed. Please try again."
+    end
 
     redirect_to root_path, alert: message
   end

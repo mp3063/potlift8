@@ -66,7 +66,7 @@ class JobDeduplicator
     @job_name = job_name
     @params = params.sort.to_h # Sort for consistent key generation
     @window = window
-    @redis = Redis.new(url: ENV.fetch('REDIS_URL', 'redis://localhost:6379/1'))
+    @redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
   end
 
   # Check if job is unique (hasn't run recently)
@@ -79,7 +79,7 @@ class JobDeduplicator
     # Try to set key with NX flag (only if not exists)
     # Returns true if key was set (job is unique)
     # Returns false if key already exists (job is duplicate)
-    result = @redis.set(dedup_key, '1', ex: @window, nx: true)
+    result = @redis.set(dedup_key, "1", ex: @window, nx: true)
 
     if result
       log_unique_job(dedup_key)
@@ -187,7 +187,7 @@ class JobDeduplicator
     time_bucket = (Time.current.to_i / @window).floor
 
     # Build param string from sorted params
-    param_string = @params.map { |k, v| "#{k}:#{v}" }.join(':')
+    param_string = @params.map { |k, v| "#{k}:#{v}" }.join(":")
 
     "job_dedup:#{@job_name}:#{param_string}:#{time_bucket}"
   end
@@ -213,7 +213,7 @@ class JobDeduplicator
 
     # Structured log for monitoring
     Rails.logger.info({
-      event: 'duplicate_job_skipped',
+      event: "duplicate_job_skipped",
       job_name: @job_name,
       params: @params,
       window: @window,

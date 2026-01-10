@@ -467,7 +467,7 @@ RSpec.describe ProductExportService do
       attr_headers = csv_data.headers.select { |h| h.start_with?('attr_') }
 
       # Should be sorted: color, price, weight
-      expect(attr_headers).to eq(['attr_color', 'attr_price', 'attr_weight'])
+      expect(attr_headers).to eq([ 'attr_color', 'attr_price', 'attr_weight' ])
     end
 
     context 'with special characters in attribute values' do
@@ -601,7 +601,7 @@ RSpec.describe ProductExportService do
       data = JSON.parse(json_export)
       product_data = data['products'].first
 
-      expect(product_data['labels']).to eq(['Featured'])
+      expect(product_data['labels']).to eq([ 'Featured' ])
     end
 
     it 'includes attributes as hash' do

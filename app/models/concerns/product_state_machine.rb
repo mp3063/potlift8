@@ -53,7 +53,7 @@ module ProductStateMachine
       # Guards: can_activate?
       # Callbacks: notify_activation (after)
       event :activate do
-        transitions from: [:draft, :disabled, :incoming], to: :active,
+        transitions from: [ :draft, :disabled, :incoming ], to: :active,
                     guard: :can_activate?,
                     after: :notify_activation
       end
@@ -86,7 +86,7 @@ module ProductStateMachine
       # To: deleted
       # Note: Using 'mark_as_deleted' instead of 'delete' to avoid conflict with ActiveRecord
       event :mark_as_deleted do
-        transitions from: [:draft, :disabled, :discontinued], to: :deleted
+        transitions from: [ :draft, :disabled, :discontinued ], to: :deleted
       end
     end
   end

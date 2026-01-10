@@ -16,7 +16,7 @@
 #
 class ProductImagesController < ApplicationController
   before_action :set_product
-  before_action :set_image, only: [:update, :destroy]
+  before_action :set_image, only: [ :update, :destroy ]
 
   # Maximum file size: 10MB
   MAX_FILE_SIZE = 10.megabytes
@@ -50,8 +50,8 @@ class ProductImagesController < ApplicationController
     # Handle regular form upload (multiple files)
     if params[:images].blank?
       respond_to do |format|
-        format.html { redirect_to @product, alert: 'Please select at least one image.' }
-        format.turbo_stream { flash.now[:alert] = 'Please select at least one image.' }
+        format.html { redirect_to @product, alert: "Please select at least one image." }
+        format.turbo_stream { flash.now[:alert] = "Please select at least one image." }
       end
       return
     end
@@ -94,8 +94,8 @@ class ProductImagesController < ApplicationController
       format.turbo_stream do
         flash.now[notice_type] = message
         render turbo_stream: [
-          turbo_stream.replace('product_images', partial: 'products/images', locals: { product: @product }),
-          turbo_stream.update('flash', partial: 'shared/flash', locals: { flash: flash })
+          turbo_stream.replace("product_images", partial: "products/images", locals: { product: @product }),
+          turbo_stream.update("flash", partial: "shared/flash", locals: { flash: flash })
         ]
       end
       format.json { render json: { uploaded: uploaded_count, errors: errors }, status: uploaded_count > 0 ? :created : :unprocessable_entity }
@@ -116,7 +116,7 @@ class ProductImagesController < ApplicationController
   def reorder
     unless params[:image_ids].is_a?(Array)
       respond_to do |format|
-        format.json { render json: { error: 'Invalid image_ids parameter' }, status: :unprocessable_entity }
+        format.json { render json: { error: "Invalid image_ids parameter" }, status: :unprocessable_entity }
         format.turbo_stream { head :unprocessable_entity }
       end
       return
@@ -128,7 +128,7 @@ class ProductImagesController < ApplicationController
     current_image_ids = @product.images.map(&:id)
     unless (image_ids - current_image_ids).empty?
       respond_to do |format|
-        format.json { render json: { error: 'Invalid image IDs' }, status: :unprocessable_entity }
+        format.json { render json: { error: "Invalid image IDs" }, status: :unprocessable_entity }
         format.turbo_stream { head :unprocessable_entity }
       end
       return
@@ -162,13 +162,13 @@ class ProductImagesController < ApplicationController
 
     respond_to do |format|
       format.turbo_stream do
-        flash.now[:notice] = 'Images reordered successfully'
+        flash.now[:notice] = "Images reordered successfully"
         render turbo_stream: [
-          turbo_stream.replace('product_images_card', partial: 'products/images', locals: { product: @product }),
-          turbo_stream.update('flash', partial: 'shared/flash', locals: { flash: flash })
+          turbo_stream.replace("product_images_card", partial: "products/images", locals: { product: @product }),
+          turbo_stream.update("flash", partial: "shared/flash", locals: { flash: flash })
         ]
       end
-      format.json { render json: { success: true, message: 'Images reordered successfully' }, status: :ok }
+      format.json { render json: { success: true, message: "Images reordered successfully" }, status: :ok }
     end
   end
 
@@ -188,12 +188,12 @@ class ProductImagesController < ApplicationController
     @image.blob.update(metadata: @image.blob.metadata.merge(metadata))
 
     respond_to do |format|
-      format.html { redirect_to @product, notice: 'Image metadata updated successfully.' }
+      format.html { redirect_to @product, notice: "Image metadata updated successfully." }
       format.turbo_stream do
-        flash.now[:notice] = 'Image metadata updated successfully.'
+        flash.now[:notice] = "Image metadata updated successfully."
         render turbo_stream: [
-          turbo_stream.replace('product_images', partial: 'products/images', locals: { product: @product }),
-          turbo_stream.update('flash', partial: 'shared/flash', locals: { flash: flash })
+          turbo_stream.replace("product_images", partial: "products/images", locals: { product: @product }),
+          turbo_stream.update("flash", partial: "shared/flash", locals: { flash: flash })
         ]
       end
       format.json { render json: { success: true, metadata: metadata }, status: :ok }
@@ -214,8 +214,8 @@ class ProductImagesController < ApplicationController
       format.turbo_stream do
         flash.now[:notice] = "Image '#{filename}' deleted successfully."
         render turbo_stream: [
-          turbo_stream.replace('product_images', partial: 'products/images', locals: { product: @product }),
-          turbo_stream.update('flash', partial: 'shared/flash', locals: { flash: flash })
+          turbo_stream.replace("product_images", partial: "products/images", locals: { product: @product }),
+          turbo_stream.update("flash", partial: "shared/flash", locals: { flash: flash })
         ]
       end
       format.json { head :no_content }
@@ -233,7 +233,7 @@ class ProductImagesController < ApplicationController
   def bulk_destroy
     unless params[:image_ids].is_a?(Array)
       respond_to do |format|
-        format.json { render json: { error: 'Invalid image_ids parameter' }, status: :unprocessable_entity }
+        format.json { render json: { error: "Invalid image_ids parameter" }, status: :unprocessable_entity }
       end
       return
     end
@@ -259,8 +259,8 @@ class ProductImagesController < ApplicationController
       format.turbo_stream do
         flash.now[:notice] = message
         render turbo_stream: [
-          turbo_stream.replace('product_images', partial: 'products/images', locals: { product: @product }),
-          turbo_stream.update('flash', partial: 'shared/flash', locals: { flash: flash })
+          turbo_stream.replace("product_images", partial: "products/images", locals: { product: @product }),
+          turbo_stream.update("flash", partial: "shared/flash", locals: { flash: flash })
         ]
       end
       format.json { render json: { success: true, deleted: deleted_count, message: message }, status: :ok }
@@ -281,9 +281,9 @@ class ProductImagesController < ApplicationController
     @image = @product.images.find(params[:id])
   rescue ActiveRecord::RecordNotFound
     respond_to do |format|
-      format.html { redirect_to @product, alert: 'Image not found.' }
-      format.turbo_stream { flash.now[:alert] = 'Image not found.' }
-      format.json { render json: { error: 'Image not found' }, status: :not_found }
+      format.html { redirect_to @product, alert: "Image not found." }
+      format.turbo_stream { flash.now[:alert] = "Image not found." }
+      format.json { render json: { error: "Image not found" }, status: :not_found }
     end
   end
 
@@ -298,14 +298,14 @@ class ProductImagesController < ApplicationController
     # Validate blob
     unless ALLOWED_CONTENT_TYPES.include?(blob.content_type)
       respond_to do |format|
-        format.json { render json: { error: 'Invalid file type' }, status: :unprocessable_entity }
+        format.json { render json: { error: "Invalid file type" }, status: :unprocessable_entity }
       end
       return
     end
 
     if blob.byte_size > MAX_FILE_SIZE
       respond_to do |format|
-        format.json { render json: { error: 'File size exceeds 10MB limit' }, status: :unprocessable_entity }
+        format.json { render json: { error: "File size exceeds 10MB limit" }, status: :unprocessable_entity }
       end
       return
     end
@@ -318,7 +318,7 @@ class ProductImagesController < ApplicationController
     end
   rescue ActiveSupport::MessageVerifier::InvalidSignature
     respond_to do |format|
-      format.json { render json: { error: 'Invalid signed blob ID' }, status: :unprocessable_entity }
+      format.json { render json: { error: "Invalid signed blob ID" }, status: :unprocessable_entity }
     end
   end
 end

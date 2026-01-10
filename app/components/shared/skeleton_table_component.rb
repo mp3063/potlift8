@@ -20,7 +20,7 @@ module Shared
 
     def initialize(rows: 10, columns: nil)
       @rows = rows
-      @columns = columns || ['', '', '', '', '']
+      @columns = columns || [ "", "", "", "", "" ]
     end
 
     def call
@@ -68,11 +68,11 @@ module Shared
       content_tag(:td, class: "whitespace-nowrap px-3 py-4") do
         # Vary skeleton widths for more realistic appearance
         width = case index
-                when 0 then "w-24"
-                when 1 then "w-48"
-                when 2 then "w-32"
-                else "w-20"
-                end
+        when 0 then "w-24"
+        when 1 then "w-48"
+        when 2 then "w-32"
+        else "w-20"
+        end
         content_tag(:div, nil, class: "h-4 bg-gray-200 rounded #{width}")
       end
     end

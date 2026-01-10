@@ -13,7 +13,7 @@
 # - DELETE /customer_groups/:id       - Delete group
 #
 class CustomerGroupsController < ApplicationController
-  before_action :set_customer_group, only: [:show, :edit, :update, :destroy]
+  before_action :set_customer_group, only: [ :show, :edit, :update, :destroy ]
 
   # List all customer groups
   #
@@ -51,7 +51,7 @@ class CustomerGroupsController < ApplicationController
 
     if @customer_group.save
       redirect_to customer_groups_path,
-                  notice: 'Customer group created successfully.'
+                  notice: "Customer group created successfully."
     else
       render :new, status: :unprocessable_entity
     end
@@ -71,7 +71,7 @@ class CustomerGroupsController < ApplicationController
   def update
     if @customer_group.update(customer_group_params)
       redirect_to customer_groups_path,
-                  notice: 'Customer group updated successfully.'
+                  notice: "Customer group updated successfully."
     else
       render :edit, status: :unprocessable_entity
     end
@@ -84,13 +84,13 @@ class CustomerGroupsController < ApplicationController
   def destroy
     if @customer_group.prices.any?
       redirect_to customer_groups_path,
-                  alert: 'Cannot delete customer group with existing prices.'
+                  alert: "Cannot delete customer group with existing prices."
       return
     end
 
     @customer_group.destroy
     redirect_to customer_groups_path,
-                notice: 'Customer group deleted successfully.'
+                notice: "Customer group deleted successfully."
   end
 
   private

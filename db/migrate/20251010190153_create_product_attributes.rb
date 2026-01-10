@@ -20,6 +20,6 @@ class CreateProductAttributes < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :product_attributes, [:company_id, :code], unique: true
+    add_index :product_attributes, [ :company_id, :code ], unique: true
   end
 end

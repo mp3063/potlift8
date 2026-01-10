@@ -50,7 +50,7 @@ class BatchProductSyncJob < ApplicationJob
     catalog = Catalog.find(catalog_id)
 
     # Validate catalog is not paused
-    if catalog.info&.dig('sync_paused')
+    if catalog.info&.dig("sync_paused")
       Rails.logger.info(
         "[BatchProductSyncJob] Catalog #{catalog.code} has sync paused. Skipping batch sync."
       )
@@ -135,7 +135,7 @@ class BatchProductSyncJob < ApplicationJob
       Rails.logger.debug(
         "[BatchProductSyncJob] Product #{product.id} (#{product.sku}) is sync locked. Skipping."
       )
-      return { status: :skipped, reason: 'sync_locked' }
+      return { status: :skipped, reason: "sync_locked" }
     end
 
     # Perform the sync
@@ -172,7 +172,7 @@ class BatchProductSyncJob < ApplicationJob
   #
   def log_batch_completion(total, success, failure, skipped, duration, catalog, errors)
     summary = {
-      event: 'batch_sync_completed',
+      event: "batch_sync_completed",
       catalog_id: catalog.id,
       catalog_code: catalog.code,
       total_products: total,

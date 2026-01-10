@@ -116,7 +116,7 @@ RSpec.describe ProductImportJob, type: :job do
           progress: 100,
           imported_count: 1,
           updated_count: 0,
-          errors: [{ row: 2, error: 'SKU cannot be blank' }]
+          errors: [ { row: 2, error: 'SKU cannot be blank' } ]
         }.to_json
 
         expect(mock_redis).to receive(:setex).with(

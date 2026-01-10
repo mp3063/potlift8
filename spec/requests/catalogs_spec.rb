@@ -379,7 +379,7 @@ RSpec.describe '/catalogs', type: :request do
     context 'with valid order' do
       it 'updates priorities based on order' do
         patch reorder_items_catalog_path(catalog), params: {
-          order: [item3.id, item1.id, item2.id]
+          order: [ item3.id, item1.id, item2.id ]
         }
 
         expect(response).to have_http_status(:ok)
@@ -411,7 +411,7 @@ RSpec.describe '/catalogs', type: :request do
 
       it 'silently skips invalid IDs and reorders valid items' do
         patch reorder_items_catalog_path(catalog), params: {
-          order: [item1.id, 999999, item2.id]
+          order: [ item1.id, 999999, item2.id ]
         }
         # Controller skips invalid IDs and processes valid ones
         expect(response).to have_http_status(:ok)
@@ -423,7 +423,7 @@ RSpec.describe '/catalogs', type: :request do
 
       it 'prevents reordering other company catalog items' do
         expect {
-          patch reorder_items_catalog_path(other_catalog), params: { order: [1, 2, 3] }
+          patch reorder_items_catalog_path(other_catalog), params: { order: [ 1, 2, 3 ] }
         }.to raise_error(ActiveRecord::RecordNotFound)
       end
     end
@@ -580,7 +580,7 @@ RSpec.describe '/catalogs', type: :request do
 
     it 'requires authentication for reorder_items' do
       catalog = create(:catalog, company: company)
-      patch reorder_items_catalog_path(catalog), params: { order: [1, 2, 3] }
+      patch reorder_items_catalog_path(catalog), params: { order: [ 1, 2, 3 ] }
       expect(response).to redirect_to(auth_login_path)
     end
 

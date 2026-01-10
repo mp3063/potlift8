@@ -11,7 +11,7 @@ class CreateCatalogs < ActiveRecord::Migration[8.0]
       t.references :sync_lock, foreign_key: true  # pot3 has this
       t.timestamps
 
-      t.index [:company_id, :code], unique: true
+      t.index [ :company_id, :code ], unique: true
       t.index :catalog_type
       t.index :currency_code
     end

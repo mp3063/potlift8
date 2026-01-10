@@ -389,12 +389,12 @@ RSpec.describe CatalogItem, type: :model do
 
     describe '#validation_errors' do
       it 'returns errors from CatalogItemValidator' do
-        validator_double = instance_double(CatalogItemValidator, valid?: false, errors: ['Error 1', 'Error 2'])
+        validator_double = instance_double(CatalogItemValidator, valid?: false, errors: [ 'Error 1', 'Error 2' ])
         allow(CatalogItemValidator).to receive(:new).with(catalog_item).and_return(validator_double)
 
         errors = catalog_item.validation_errors
 
-        expect(errors).to eq(['Error 1', 'Error 2'])
+        expect(errors).to eq([ 'Error 1', 'Error 2' ])
       end
     end
   end

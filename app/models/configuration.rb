@@ -40,7 +40,7 @@ class Configuration < ApplicationRecord
 
   # Validations
   validates :name, presence: true
-  validates :code, presence: true, uniqueness: { scope: [:company_id, :product_id] }
+  validates :code, presence: true, uniqueness: { scope: [ :company_id, :product_id ] }
   validate :product_must_be_configurable
   validate :company_must_match_product
 

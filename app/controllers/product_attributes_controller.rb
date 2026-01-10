@@ -12,8 +12,8 @@
 # - Scoped to current_potlift_company
 #
 class ProductAttributesController < ApplicationController
-  before_action :set_product_attribute, only: [:show, :edit, :update, :destroy]
-  before_action :set_attribute_groups, only: [:new, :edit, :create, :update]
+  before_action :set_product_attribute, only: [ :show, :edit, :update, :destroy ]
+  before_action :set_attribute_groups, only: [ :new, :edit, :create, :update ]
 
   # GET /product_attributes
   # Lists all attributes grouped by AttributeGroup
@@ -31,7 +31,7 @@ class ProductAttributesController < ApplicationController
   def show
     @attribute_values = @product_attribute.product_attribute_values
       .includes(:product)
-      .order('products.name')
+      .order("products.name")
       .limit(50)
   end
 
@@ -49,7 +49,7 @@ class ProductAttributesController < ApplicationController
     @product_attribute = current_potlift_company.product_attributes.build(product_attribute_params)
 
     if @product_attribute.save
-      redirect_to product_attributes_path, notice: 'Attribute created successfully.'
+      redirect_to product_attributes_path, notice: "Attribute created successfully."
     else
       render :new, status: :unprocessable_entity
     end
@@ -58,7 +58,7 @@ class ProductAttributesController < ApplicationController
   # PATCH /product_attributes/:code
   def update
     if @product_attribute.update(product_attribute_params)
-      redirect_to product_attributes_path, notice: 'Attribute updated successfully.'
+      redirect_to product_attributes_path, notice: "Attribute updated successfully."
     else
       render :edit, status: :unprocessable_entity
     end
@@ -67,10 +67,10 @@ class ProductAttributesController < ApplicationController
   # DELETE /product_attributes/:code
   def destroy
     if @product_attribute.product_attribute_values.any?
-      redirect_to product_attributes_path, alert: 'Cannot delete attribute with existing values.'
+      redirect_to product_attributes_path, alert: "Cannot delete attribute with existing values."
     else
       @product_attribute.destroy
-      redirect_to product_attributes_path, notice: 'Attribute deleted successfully.'
+      redirect_to product_attributes_path, notice: "Attribute deleted successfully."
     end
   end
 
@@ -93,18 +93,18 @@ class ProductAttributesController < ApplicationController
 
     # Validate format (must be lowercase, no conversion)
     unless code.match?(/\A[a-z0-9_]+\z/)
-      render json: { valid: false, message: 'Code must contain only lowercase letters, numbers, and underscores' }
+      render json: { valid: false, message: "Code must contain only lowercase letters, numbers, and underscores" }
       return
     end
 
     # Check uniqueness within company (case-insensitive)
     exists = current_potlift_company.product_attributes
-      .where('LOWER(code) = ?', code.downcase)
+      .where("LOWER(code) = ?", code.downcase)
       .where.not(id: attribute_id)
       .exists?
 
     if exists
-      render json: { valid: false, message: 'Code already exists' }
+      render json: { valid: false, message: "Code already exists" }
     else
       render json: { valid: true }
     end
@@ -151,8 +151,8 @@ class ProductAttributesController < ApplicationController
 
       # Convert to hash and add info field with options
       result = permitted.to_h
-      result.delete('options')
-      result['info'] = { 'options' => options_array.compact_blank }
+      result.delete("options")
+      result["info"] = { "options" => options_array.compact_blank }
       result
     else
       permitted

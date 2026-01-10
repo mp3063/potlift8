@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe TopbarComponent, type: :component do
   let(:user) { { id: 1, name: 'John Doe', email: 'john@example.com' } }
   let(:company) { create(:company, name: 'ACME Corp') }
-  let(:companies) { [company] }
+  let(:companies) { [ company ] }
 
   describe 'rendering' do
     it 'renders component' do
@@ -68,7 +68,7 @@ RSpec.describe TopbarComponent, type: :component do
   describe 'company selector' do
     context 'with single company' do
       it 'does not show company selector' do
-        render_inline(described_class.new(user: user, company: company, companies: [company]))
+        render_inline(described_class.new(user: user, company: company, companies: [ company ]))
 
         # Should not have the company selector dropdown
         expect(page).not_to have_text('ACME Corp', count: 2) # Only in current company display
@@ -77,7 +77,7 @@ RSpec.describe TopbarComponent, type: :component do
 
     context 'with multiple companies' do
       let(:company2) { create(:company, name: 'Other Corp') }
-      let(:multiple_companies) { [company, company2] }
+      let(:multiple_companies) { [ company, company2 ] }
 
       it 'shows company selector dropdown' do
         render_inline(described_class.new(user: user, company: company, companies: multiple_companies))
@@ -147,14 +147,14 @@ RSpec.describe TopbarComponent, type: :component do
 
     describe '#multiple_companies?' do
       it 'returns true when user has multiple companies' do
-        companies = [company, create(:company)]
+        companies = [ company, create(:company) ]
         component = described_class.new(user: user, company: company, companies: companies)
 
         expect(component.send(:multiple_companies?)).to be true
       end
 
       it 'returns false when user has single company' do
-        component = described_class.new(user: user, company: company, companies: [company])
+        component = described_class.new(user: user, company: company, companies: [ company ])
 
         expect(component.send(:multiple_companies?)).to be false
       end

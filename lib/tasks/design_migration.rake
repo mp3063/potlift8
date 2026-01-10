@@ -11,25 +11,25 @@ namespace :design do
 
     # Color mapping from indigo to blue (all Tailwind shades)
     color_map = {
-      'indigo-50' => 'blue-50',
-      'indigo-100' => 'blue-100',
-      'indigo-200' => 'blue-200',
-      'indigo-300' => 'blue-300',
-      'indigo-400' => 'blue-400',
-      'indigo-500' => 'blue-500',
-      'indigo-600' => 'blue-600',
-      'indigo-700' => 'blue-700',
-      'indigo-800' => 'blue-800',
-      'indigo-900' => 'blue-900',
-      'indigo-950' => 'blue-950'
+      "indigo-50" => "blue-50",
+      "indigo-100" => "blue-100",
+      "indigo-200" => "blue-200",
+      "indigo-300" => "blue-300",
+      "indigo-400" => "blue-400",
+      "indigo-500" => "blue-500",
+      "indigo-600" => "blue-600",
+      "indigo-700" => "blue-700",
+      "indigo-800" => "blue-800",
+      "indigo-900" => "blue-900",
+      "indigo-950" => "blue-950"
     }
 
     # File patterns to search
     patterns = [
-      'app/components/**/*.rb',
-      'app/components/**/*.html.erb',
-      'app/views/**/*.html.erb',
-      'app/assets/stylesheets/**/*.css'
+      "app/components/**/*.rb",
+      "app/components/**/*.html.erb",
+      "app/views/**/*.html.erb",
+      "app/assets/stylesheets/**/*.css"
     ]
 
     # Collect all matching files
@@ -62,7 +62,7 @@ namespace :design do
           total_replacements += replacements_in_file
 
           # Show progress
-          relative_path = file.gsub(/^#{Regexp.escape(Rails.root.to_s)}\//, '')
+          relative_path = file.gsub(/^#{Regexp.escape(Rails.root.to_s)}\//, "")
           puts "✓ Updated: #{relative_path} (#{replacements_in_file} replacements)"
         end
       rescue StandardError => e
@@ -81,7 +81,7 @@ namespace :design do
     if updated_files.any?
       puts "\nUpdated files:"
       updated_files.each do |file|
-        relative_path = file.gsub(/^#{Regexp.escape(Rails.root.to_s)}\//, '')
+        relative_path = file.gsub(/^#{Regexp.escape(Rails.root.to_s)}\//, "")
         puts "  • #{relative_path}"
       end
     else
@@ -108,10 +108,10 @@ namespace :design do
     puts "\nChecking for remaining indigo color references...\n\n"
 
     patterns = [
-      'app/components/**/*.rb',
-      'app/components/**/*.html.erb',
-      'app/views/**/*.html.erb',
-      'app/assets/stylesheets/**/*.css'
+      "app/components/**/*.rb",
+      "app/components/**/*.html.erb",
+      "app/views/**/*.html.erb",
+      "app/assets/stylesheets/**/*.css"
     ]
 
     files = patterns.flat_map { |pattern| Dir.glob(pattern) }.uniq
@@ -125,7 +125,7 @@ namespace :design do
         content.each_line do |line|
           line_number += 1
           if line.match?(/\bindigo-\d+\b/)
-            relative_path = file.gsub(/^#{Regexp.escape(Rails.root.to_s)}\//, '')
+            relative_path = file.gsub(/^#{Regexp.escape(Rails.root.to_s)}\//, "")
             indigo_references << {
               file: relative_path,
               line: line_number,
@@ -166,7 +166,7 @@ namespace :design do
 
     response = STDIN.gets.chomp.downcase
 
-    unless response == 'yes'
+    unless response == "yes"
       puts "\nRollback cancelled.\n\n"
       exit
     end
@@ -175,24 +175,24 @@ namespace :design do
 
     # Reverse color mapping (blue to indigo)
     color_map = {
-      'blue-50' => 'indigo-50',
-      'blue-100' => 'indigo-100',
-      'blue-200' => 'indigo-200',
-      'blue-300' => 'indigo-300',
-      'blue-400' => 'indigo-400',
-      'blue-500' => 'indigo-500',
-      'blue-600' => 'indigo-600',
-      'blue-700' => 'indigo-700',
-      'blue-800' => 'indigo-800',
-      'blue-900' => 'indigo-900',
-      'blue-950' => 'indigo-950'
+      "blue-50" => "indigo-50",
+      "blue-100" => "indigo-100",
+      "blue-200" => "indigo-200",
+      "blue-300" => "indigo-300",
+      "blue-400" => "indigo-400",
+      "blue-500" => "indigo-500",
+      "blue-600" => "indigo-600",
+      "blue-700" => "indigo-700",
+      "blue-800" => "indigo-800",
+      "blue-900" => "indigo-900",
+      "blue-950" => "indigo-950"
     }
 
     patterns = [
-      'app/components/**/*.rb',
-      'app/components/**/*.html.erb',
-      'app/views/**/*.html.erb',
-      'app/assets/stylesheets/**/*.css'
+      "app/components/**/*.rb",
+      "app/components/**/*.html.erb",
+      "app/views/**/*.html.erb",
+      "app/assets/stylesheets/**/*.css"
     ]
 
     files = patterns.flat_map { |pattern| Dir.glob(pattern) }.uniq
@@ -211,7 +211,7 @@ namespace :design do
 
         if content != original_content
           File.write(file, content)
-          relative_path = file.gsub(/^#{Regexp.escape(Rails.root.to_s)}\//, '')
+          relative_path = file.gsub(/^#{Regexp.escape(Rails.root.to_s)}\//, "")
           puts "✓ Rolled back: #{relative_path}"
           updated_count += 1
         end

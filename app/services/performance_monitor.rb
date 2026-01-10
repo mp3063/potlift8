@@ -40,7 +40,7 @@ class PerformanceMonitor
   DEFAULT_THRESHOLD = 5.0
 
   # Track memory usage by default
-  TRACK_MEMORY = ENV.fetch('TRACK_MEMORY', 'false') == 'true'
+  TRACK_MEMORY = ENV.fetch("TRACK_MEMORY", "false") == "true"
 
   class << self
     # Track an operation's performance
@@ -63,20 +63,20 @@ class PerformanceMonitor
     #
     def stats(operation_name)
       stats_key = "perf_stats:#{operation_name}"
-      redis = Redis.new(url: ENV.fetch('REDIS_URL', 'redis://localhost:6379/1'))
+      redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
 
       data = redis.hgetall(stats_key)
       return nil if data.empty?
 
       {
         operation: operation_name,
-        count: data['count'].to_i,
-        total_duration: data['total_duration'].to_f.round(3),
-        avg_duration: data['avg_duration'].to_f.round(3),
-        min_duration: data['min_duration'].to_f.round(3),
-        max_duration: data['max_duration'].to_f.round(3),
-        slow_count: data['slow_count'].to_i,
-        last_execution: data['last_execution']
+        count: data["count"].to_i,
+        total_duration: data["total_duration"].to_f.round(3),
+        avg_duration: data["avg_duration"].to_f.round(3),
+        min_duration: data["min_duration"].to_f.round(3),
+        max_duration: data["max_duration"].to_f.round(3),
+        slow_count: data["slow_count"].to_i,
+        last_execution: data["last_execution"]
       }
     rescue Redis::BaseError => e
       Rails.logger.error(
@@ -91,7 +91,7 @@ class PerformanceMonitor
     #
     def reset_stats(operation_name)
       stats_key = "perf_stats:#{operation_name}"
-      redis = Redis.new(url: ENV.fetch('REDIS_URL', 'redis://localhost:6379/1'))
+      redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
       redis.del(stats_key)
       Rails.logger.info("[PerformanceMonitor] Reset stats for '#{operation_name}'")
     rescue Redis::BaseError => e
@@ -113,7 +113,7 @@ class PerformanceMonitor
     @operation_name = operation_name
     @context = context
     @threshold = threshold
-    @redis = Redis.new(url: ENV.fetch('REDIS_URL', 'redis://localhost:6379/1'))
+    @redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
   end
 
   # Track operation performance
@@ -152,7 +152,7 @@ class PerformanceMonitor
     is_slow = duration >= @threshold
 
     metric_data = {
-      event: 'performance_metric',
+      event: "performance_metric",
       operation: @operation_name,
       duration_seconds: duration,
       threshold_seconds: @threshold,
@@ -192,22 +192,22 @@ class PerformanceMonitor
     stats_key = "perf_stats:#{@operation_name}"
 
     # Fetch current values before pipeline for conditional logic
-    current_min = @redis.hget(stats_key, 'min_duration')
-    current_max = @redis.hget(stats_key, 'max_duration')
+    current_min = @redis.hget(stats_key, "min_duration")
+    current_max = @redis.hget(stats_key, "max_duration")
 
     @redis.multi do |pipeline|
-      pipeline.hincrby(stats_key, 'count', 1)
-      pipeline.hincrbyfloat(stats_key, 'total_duration', duration)
+      pipeline.hincrby(stats_key, "count", 1)
+      pipeline.hincrbyfloat(stats_key, "total_duration", duration)
 
       # Track slow operations
-      pipeline.hincrby(stats_key, 'slow_count', 1) if duration >= @threshold
+      pipeline.hincrby(stats_key, "slow_count", 1) if duration >= @threshold
 
       # Update min/max durations (check before pipeline)
-      pipeline.hset(stats_key, 'min_duration', duration) if current_min.nil? || duration < current_min.to_f
-      pipeline.hset(stats_key, 'max_duration', duration) if current_max.nil? || duration > current_max.to_f
+      pipeline.hset(stats_key, "min_duration", duration) if current_min.nil? || duration < current_min.to_f
+      pipeline.hset(stats_key, "max_duration", duration) if current_max.nil? || duration > current_max.to_f
 
       # Track last execution
-      pipeline.hset(stats_key, 'last_execution', Time.current.iso8601)
+      pipeline.hset(stats_key, "last_execution", Time.current.iso8601)
 
       # Set expiration (30 days)
       pipeline.expire(stats_key, 30.days.to_i)
@@ -215,10 +215,10 @@ class PerformanceMonitor
 
     # Calculate and update average after pipeline completes
     # This is more accurate since count and total have been updated
-    count = @redis.hget(stats_key, 'count').to_i
-    total = @redis.hget(stats_key, 'total_duration').to_f
+    count = @redis.hget(stats_key, "count").to_i
+    total = @redis.hget(stats_key, "total_duration").to_f
     avg = total / count if count > 0
-    @redis.hset(stats_key, 'avg_duration', avg.round(3)) if avg
+    @redis.hset(stats_key, "avg_duration", avg.round(3)) if avg
   rescue Redis::BaseError => e
     # Don't fail operation if stats update fails
     Rails.logger.error(

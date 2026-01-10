@@ -242,22 +242,22 @@ RSpec.describe BundleValidationService do
             {
               'product_id' => configurable.id,
               'product_type' => 'configurable',
-              'variants' => [{ 'variant_id' => variant1.id, 'included' => true, 'quantity' => 1 }]
+              'variants' => [ { 'variant_id' => variant1.id, 'included' => true, 'quantity' => 1 } ]
             },
             {
               'product_id' => configurable2.id,
               'product_type' => 'configurable',
-              'variants' => [{ 'variant_id' => variant1.id, 'included' => true, 'quantity' => 1 }]
+              'variants' => [ { 'variant_id' => variant1.id, 'included' => true, 'quantity' => 1 } ]
             },
             {
               'product_id' => configurable3.id,
               'product_type' => 'configurable',
-              'variants' => [{ 'variant_id' => variant1.id, 'included' => true, 'quantity' => 1 }]
+              'variants' => [ { 'variant_id' => variant1.id, 'included' => true, 'quantity' => 1 } ]
             },
             {
               'product_id' => configurable4.id,
               'product_type' => 'configurable',
-              'variants' => [{ 'variant_id' => variant1.id, 'included' => true, 'quantity' => 1 }]
+              'variants' => [ { 'variant_id' => variant1.id, 'included' => true, 'quantity' => 1 } ]
             }
           ]
         }

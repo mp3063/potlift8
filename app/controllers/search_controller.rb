@@ -30,7 +30,7 @@ class SearchController < ApplicationController
   #
   def index
     @query = params[:q]
-    @scope = params[:scope] || 'all'
+    @scope = params[:scope] || "all"
 
     # Return empty results if no query provided
     if @query.blank?
@@ -47,21 +47,21 @@ class SearchController < ApplicationController
 
     # Perform search based on scope
     @results = case @scope
-               when 'all'
+    when "all"
                  search_all(sanitized_query)
-               when 'products'
+    when "products"
                  { products: search_products(sanitized_query) }
-               when 'storage'
+    when "storage"
                  { storage: search_storage(sanitized_query) }
-               when 'attributes'
+    when "attributes"
                  { attributes: search_attributes(sanitized_query) }
-               when 'labels'
+    when "labels"
                  { labels: search_labels(sanitized_query) }
-               when 'catalogs'
+    when "catalogs"
                  { catalogs: search_catalogs(sanitized_query) }
-               else
+    else
                  {}
-               end
+    end
 
     # Store recent search if results found
     store_recent_search(@query) if results_found?(@results)
@@ -248,19 +248,19 @@ class SearchController < ApplicationController
 
     results.each do |scope, records|
       formatted[scope] = case scope
-                         when :products
+      when :products
                            format_products_json(records)
-                         when :storage
+      when :storage
                            format_storage_json(records)
-                         when :attributes
+      when :attributes
                            format_attributes_json(records)
-                         when :labels
+      when :labels
                            format_labels_json(records)
-                         when :catalogs
+      when :catalogs
                            format_catalogs_json(records)
-                         else
+      else
                            []
-                         end
+      end
     end
 
     formatted

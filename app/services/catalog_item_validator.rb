@@ -58,7 +58,7 @@ class CatalogItemValidator
     # Get mandatory attributes that apply to catalogs
     mandatory_attrs = @catalog.company.product_attributes
                               .where(mandatory: true)
-                              .where(product_attribute_scope: [:catalog_scope, :product_and_catalog_scope])
+                              .where(product_attribute_scope: [ :catalog_scope, :product_and_catalog_scope ])
 
     mandatory_attrs.each do |attr|
       value = @catalog_item.effective_attribute_value(attr.code)

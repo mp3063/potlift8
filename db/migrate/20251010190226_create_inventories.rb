@@ -11,6 +11,6 @@ class CreateInventories < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :inventories, [:product_id, :storage_id], unique: true, name: 'inventories_product_storage_unique_index'
+    add_index :inventories, [ :product_id, :storage_id ], unique: true, name: 'inventories_product_storage_unique_index'
   end
 end

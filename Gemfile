@@ -31,7 +31,7 @@ gem "jwt", "~> 2.7"
 # HTTP client for API requests
 gem "faraday", "~> 2.7"
 # Environment variable management
-gem "dotenv-rails", groups: [:development, :test]
+gem "dotenv-rails", groups: [ :development, :test ]
 # State machine for product lifecycle management
 gem "aasm", "~> 5.5"
 # List ordering for models (used by AttributeGroup and ProductAttribute)
@@ -123,4 +123,4 @@ group :development do
   # Use console on exceptions pages [https://github.com/rails/web-console]
   gem "web-console"
 end
-gem 'pagy', '~> 9.0'
+gem "pagy", "~> 9.0"

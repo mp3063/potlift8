@@ -73,21 +73,21 @@ class Company < ApplicationRecord
     return nil if company_data.blank?
 
     # Extract required fields
-    authlift_id = company_data['id'] || company_data[:id]
-    code = company_data['code'] || company_data[:code]
-    name = company_data['name'] || company_data[:name]
+    authlift_id = company_data["id"] || company_data[:id]
+    code = company_data["code"] || company_data[:code]
+    name = company_data["name"] || company_data[:name]
 
     return nil if code.blank? || name.blank?
 
     # Find or initialize company by code (primary identifier)
     # Use case-insensitive search to match validation
     code = code.to_s.strip.upcase
-    company = where('UPPER(code) = ?', code).first_or_initialize(code: code)
+    company = where("UPPER(code) = ?", code).first_or_initialize(code: code)
 
     # Update attributes
     company.authlift_id = authlift_id if authlift_id.present?
     company.name = name
-    company.info = company_data.except('id', 'code', 'name', :id, :code, :name)
+    company.info = company_data.except("id", "code", "name", :id, :code, :name)
     company.active = true # Always activate on sync
 
     # Save and return

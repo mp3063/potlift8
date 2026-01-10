@@ -8,7 +8,7 @@ class CreateCatalogItemAttributeValues < ActiveRecord::Migration[8.0]
       t.boolean :ready, default: true
       t.timestamps
 
-      t.index [:catalog_item_id, :product_attribute_id], unique: true, name: 'ciav_index'
+      t.index [ :catalog_item_id, :product_attribute_id ], unique: true, name: 'ciav_index'
     end
   end
 end

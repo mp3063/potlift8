@@ -10,8 +10,8 @@
 # - Turbo Stream support for dynamic updates
 #
 class CatalogItemAttributeValuesController < ApplicationController
-  before_action :set_catalog_item, only: [:create]
-  before_action :set_catalog_item_attribute_value, only: [:update, :destroy]
+  before_action :set_catalog_item, only: [ :create ]
+  before_action :set_catalog_item_attribute_value, only: [ :update, :destroy ]
 
   # POST /catalog_items/:catalog_item_id/catalog_item_attribute_values
   # POST /catalog_item_attribute_values (with catalog_item_id in params)

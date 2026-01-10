@@ -4,7 +4,7 @@
 # Configurations define the axes of variation for configurable products
 class ConfigurationsController < ApplicationController
   before_action :set_product
-  before_action :set_configuration, only: [:edit, :update, :destroy]
+  before_action :set_configuration, only: [ :edit, :update, :destroy ]
 
   # GET /products/:product_id/configurations
   def index
@@ -75,7 +75,7 @@ class ConfigurationsController < ApplicationController
       :name,
       :code,
       :position,
-      configuration_values_attributes: [:id, :value, :position, :_destroy]
+      configuration_values_attributes: [ :id, :value, :position, :_destroy ]
     )
   end
 end

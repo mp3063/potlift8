@@ -46,10 +46,10 @@ RSpec.describe BundleTemplate, type: :model do
 
   describe '#components' do
     it 'returns components array from configuration' do
-      config = { 'components' => [{ 'product_id' => 1 }] }
+      config = { 'components' => [ { 'product_id' => 1 } ] }
       template = build(:bundle_template, configuration: config)
 
-      expect(template.components).to eq([{ 'product_id' => 1 }])
+      expect(template.components).to eq([ { 'product_id' => 1 } ])
     end
 
     it 'returns empty array when no components' do

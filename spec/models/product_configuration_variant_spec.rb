@@ -81,7 +81,7 @@ RSpec.describe ProductConfiguration, type: :model, context: 'variants' do
                             .where(superproduct: configurable)
                             .order('configuration_position ASC NULLS LAST')
 
-      expect(configs.map(&:id)).to eq([config1.id, config2.id, config3.id])
+      expect(configs.map(&:id)).to eq([ config1.id, config2.id, config3.id ])
     end
 
     it 'orders by subproduct SKU when position is null' do
@@ -98,7 +98,7 @@ RSpec.describe ProductConfiguration, type: :model, context: 'variants' do
                                     .where(superproduct: configurable)
                                     .order('product_configurations.configuration_position ASC NULLS LAST, products.sku ASC')
 
-      expect(configs.map(&:subproduct).map(&:sku)).to eq(['SKU-A', 'SKU-B', 'SKU-C'])
+      expect(configs.map(&:subproduct).map(&:sku)).to eq([ 'SKU-A', 'SKU-B', 'SKU-C' ])
     end
   end
 

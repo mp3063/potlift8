@@ -47,7 +47,7 @@ namespace :solid_queue do
   end
 
   desc "Display queue statistics for a specific queue (e.g., rake solid_queue:queue_stats[high_priority])"
-  task :queue_stats, [:queue_name] => :environment do |_t, args|
+  task :queue_stats, [ :queue_name ] => :environment do |_t, args|
     queue_name = args[:queue_name] || "default"
 
     puts "\n" + "=" * 80
@@ -128,7 +128,7 @@ namespace :solid_queue do
   end
 
   desc "Discard all failed jobs older than specified days (default: 30)"
-  task :discard_old_failed, [:days] => :environment do |_t, args|
+  task :discard_old_failed, [ :days ] => :environment do |_t, args|
     days = (args[:days] || 30).to_i
     cutoff_date = days.days.ago
 
@@ -217,7 +217,7 @@ namespace :solid_queue do
   end
 
   desc "Clear completed jobs older than specified days (default: 7)"
-  task :clear_completed, [:days] => :environment do |_t, args|
+  task :clear_completed, [ :days ] => :environment do |_t, args|
     days = (args[:days] || 7).to_i
     cutoff_date = days.days.ago
 

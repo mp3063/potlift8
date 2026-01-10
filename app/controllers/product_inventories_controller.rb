@@ -5,14 +5,14 @@
 #
 class ProductInventoriesController < ApplicationController
   before_action :set_product
-  before_action :set_inventory, only: [:update]
+  before_action :set_inventory, only: [ :update ]
 
   # GET /products/:product_id/inventories
   # Display all inventory records for a product across storage locations
   def index
     @inventories = @product.inventories
       .includes(:storage)
-      .order('storages.storage_position ASC, storages.name ASC')
+      .order("storages.storage_position ASC, storages.name ASC")
     @storages = current_potlift_company.storages.active
   end
 
@@ -27,12 +27,12 @@ class ProductInventoriesController < ApplicationController
 
     # Handle ETA quantity - only update if present
     if inventory_params[:eta_quantity].present?
-      info_updates['eta_quantity'] = inventory_params[:eta_quantity].to_i
+      info_updates["eta_quantity"] = inventory_params[:eta_quantity].to_i
     end
 
     # Handle ETA date - support clearing by setting to nil if empty string
     if inventory_params.key?(:eta_date)
-      info_updates['eta_date'] = inventory_params[:eta_date].present? ? inventory_params[:eta_date] : nil
+      info_updates["eta_date"] = inventory_params[:eta_date].present? ? inventory_params[:eta_date] : nil
     end
 
     # Merge with existing info data

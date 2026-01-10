@@ -260,7 +260,7 @@ RSpec.describe SessionVersionChecker, type: :service do
         },
         'membership' => {
           'role' => 'admin',
-          'scopes' => ['products:write', 'orders:read']
+          'scopes' => [ 'products:write', 'orders:read' ]
         }
       }
     end
@@ -318,7 +318,7 @@ RSpec.describe SessionVersionChecker, type: :service do
         checker.refresh_session!
 
         expect(session[:role]).to eq('admin')
-        expect(session[:scopes]).to eq(['products:write', 'orders:read'])
+        expect(session[:scopes]).to eq([ 'products:write', 'orders:read' ])
       end
 
       it 'stores current versions after refresh' do

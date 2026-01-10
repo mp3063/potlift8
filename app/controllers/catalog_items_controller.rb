@@ -68,7 +68,7 @@ class CatalogItemsController < ApplicationController
     product_ids = Array(params[:product_ids]).compact_blank
 
     if product_ids.blank?
-      redirect_to catalog_items_path(@catalog), alert: 'No products selected.'
+      redirect_to catalog_items_path(@catalog), alert: "No products selected."
       return
     end
 
@@ -85,7 +85,7 @@ class CatalogItemsController < ApplicationController
 
         catalog_item = @catalog.catalog_items.build(
           product: product,
-          catalog_item_state: params[:catalog_item_state] || 'active',
+          catalog_item_state: params[:catalog_item_state] || "active",
           priority: @catalog.catalog_items.maximum(:priority).to_i + 1
         )
 
@@ -99,9 +99,9 @@ class CatalogItemsController < ApplicationController
 
     message = if added_count > 0
                 "Successfully added #{added_count} product#{'s' if added_count != 1} to catalog."
-              else
+    else
                 "No products were added to the catalog."
-              end
+    end
 
     message += " Errors: #{errors.join('; ')}" if errors.any?
 
@@ -124,8 +124,8 @@ class CatalogItemsController < ApplicationController
 
     if catalog_item.nil?
       respond_to do |format|
-        format.html { redirect_to catalog_items_path(@catalog), alert: 'Product not found in catalog.' }
-        format.turbo_stream { render turbo_stream: turbo_stream.replace('flash', partial: 'shared/flash', locals: { flash: { alert: 'Product not found in catalog.' } }) }
+        format.html { redirect_to catalog_items_path(@catalog), alert: "Product not found in catalog." }
+        format.turbo_stream { render turbo_stream: turbo_stream.replace("flash", partial: "shared/flash", locals: { flash: { alert: "Product not found in catalog." } }) }
       end
       return
     end
@@ -134,20 +134,20 @@ class CatalogItemsController < ApplicationController
 
     respond_to do |format|
       format.html do
-        redirect_to catalog_items_path(@catalog), notice: 'Product removed from catalog.'
+        redirect_to catalog_items_path(@catalog), notice: "Product removed from catalog."
       end
 
       format.turbo_stream do
         render turbo_stream: [
           turbo_stream.remove("catalog_item_#{catalog_item.id}"),
-          turbo_stream.prepend('flash', partial: 'shared/flash', locals: { flash: { notice: 'Product removed from catalog.' } })
+          turbo_stream.prepend("flash", partial: "shared/flash", locals: { flash: { notice: "Product removed from catalog." } })
         ]
       end
     end
   rescue ActiveRecord::RecordNotFound
     respond_to do |format|
-      format.html { redirect_to catalog_items_path(@catalog), alert: 'Product not found.' }
-      format.turbo_stream { render turbo_stream: turbo_stream.replace('flash', partial: 'shared/flash', locals: { flash: { alert: 'Product not found.' } }) }
+      format.html { redirect_to catalog_items_path(@catalog), alert: "Product not found." }
+      format.turbo_stream { render turbo_stream: turbo_stream.replace("flash", partial: "shared/flash", locals: { flash: { alert: "Product not found." } }) }
     end
   end
 

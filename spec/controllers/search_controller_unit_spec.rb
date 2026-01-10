@@ -46,7 +46,7 @@ RSpec.describe SearchController, type: :controller do
 
     describe '#results_found?' do
       it 'returns true when results exist' do
-        results = { products: [double] }
+        results = { products: [ double ] }
         expect(controller.send(:results_found?, results)).to be true
       end
 
@@ -61,7 +61,7 @@ RSpec.describe SearchController, type: :controller do
       end
 
       it 'returns true when at least one scope has results' do
-        results = { products: [], storage: [double], labels: [] }
+        results = { products: [], storage: [ double ], labels: [] }
         expect(controller.send(:results_found?, results)).to be true
       end
     end
@@ -81,7 +81,7 @@ RSpec.describe SearchController, type: :controller do
       let!(:product) { create(:product, company: company, name: 'Test Product', sku: 'TEST-1', product_type: :sellable, product_status: :active) }
 
       it 'formats products with required fields' do
-        products = [product]
+        products = [ product ]
         result = controller.send(:format_products_json, products)
 
         expect(result).to be_an(Array)
@@ -105,7 +105,7 @@ RSpec.describe SearchController, type: :controller do
       let!(:storage) { create(:storage, company: company, name: 'Test Storage', code: 'STORE-1', storage_type: :regular) }
 
       it 'formats storages with required fields' do
-        storages = [storage]
+        storages = [ storage ]
         result = controller.send(:format_storage_json, storages)
 
         expect(result).to be_an(Array)
@@ -123,7 +123,7 @@ RSpec.describe SearchController, type: :controller do
       let!(:attribute) { create(:product_attribute, company: company, name: 'Price', code: 'price', pa_type: :patype_text) }
 
       it 'formats attributes with required fields' do
-        attributes = [attribute]
+        attributes = [ attribute ]
         result = controller.send(:format_attributes_json, attributes)
 
         expect(result).to be_an(Array)
@@ -141,7 +141,7 @@ RSpec.describe SearchController, type: :controller do
       let!(:label) { create(:label, company: company, name: 'Electronics', code: 'electronics', label_type: 'category') }
 
       it 'formats labels with required fields' do
-        labels = [label]
+        labels = [ label ]
         result = controller.send(:format_labels_json, labels)
 
         expect(result).to be_an(Array)
@@ -160,7 +160,7 @@ RSpec.describe SearchController, type: :controller do
       let!(:catalog) { create(:catalog, company: company, name: 'Webshop', code: 'webshop', catalog_type: :webshop, currency_code: :eur) }
 
       it 'formats catalogs with required fields' do
-        catalogs = [catalog]
+        catalogs = [ catalog ]
         result = controller.send(:format_catalogs_json, catalogs)
 
         expect(result).to be_an(Array)
@@ -181,8 +181,8 @@ RSpec.describe SearchController, type: :controller do
 
       it 'formats all result scopes' do
         results = {
-          products: [product],
-          storage: [storage],
+          products: [ product ],
+          storage: [ storage ],
           attributes: [],
           labels: [],
           catalogs: []

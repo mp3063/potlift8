@@ -26,7 +26,7 @@ module Products
     #
     # @return [ActiveRecord::Relation] Collection of inventories with storage
     def storage_locations
-      product.inventories.includes(:storage).order('storages.name')
+      product.inventories.includes(:storage).order("storages.name")
     end
 
     # Returns total inventory count

@@ -34,7 +34,7 @@ class Inventory < ApplicationRecord
   # Scopes
   scope :for_product, ->(product) { where(product: product) }
   scope :except_in, ->(storage) { where.not(storage: storage) }
-  scope :with_stock, -> { where('value > 0') }
+  scope :with_stock, -> { where("value > 0") }
   scope :incoming, -> { joins(:storage).where(storages: { storage_type: 3 }) }
 
   # Custom JSON serialization for catalog integration
@@ -42,9 +42,9 @@ class Inventory < ApplicationRecord
   def as_json(options = {})
     res = super(options)
     if options[:include_related_objects_for_catalog].present?
-      res.delete('storage_id')
-      res.merge!(storage.as_json(except: [:id, :company_id, :info, :created_at, :updated_at, :default]))
-      res['default'] ||= storage.default
+      res.delete("storage_id")
+      res.merge!(storage.as_json(except: [ :id, :company_id, :info, :created_at, :updated_at, :default ]))
+      res["default"] ||= storage.default
     end
     res
   end

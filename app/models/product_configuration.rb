@@ -25,8 +25,8 @@
 #
 class ProductConfiguration < ApplicationRecord
   # Associations
-  belongs_to :superproduct, class_name: 'Product', foreign_key: 'superproduct_id'
-  belongs_to :subproduct, class_name: 'Product', foreign_key: 'subproduct_id'
+  belongs_to :superproduct, class_name: "Product", foreign_key: "superproduct_id"
+  belongs_to :subproduct, class_name: "Product", foreign_key: "subproduct_id"
 
   # Validations
   validates :superproduct_id, presence: true
@@ -44,8 +44,8 @@ class ProductConfiguration < ApplicationRecord
   # Default scope for ordering - matches pot3 implementation
   default_scope {
     joins(:subproduct)
-      .order('product_configurations.configuration_position ASC NULLS LAST')
-      .order('products.sku ASC')
+      .order("product_configurations.configuration_position ASC NULLS LAST")
+      .order("products.sku ASC")
   }
 
   # Get the quantity for bundle configurations
@@ -57,7 +57,7 @@ class ProductConfiguration < ApplicationRecord
   #   config.quantity # => 1 (default for variants)
   #
   def quantity
-    info['quantity'].to_i.positive? ? info['quantity'].to_i : 1
+    info["quantity"].to_i.positive? ? info["quantity"].to_i : 1
   end
 
   # Set the quantity for bundle configurations
@@ -66,7 +66,7 @@ class ProductConfiguration < ApplicationRecord
   #
   def quantity=(value)
     self.info ||= {}
-    self.info['quantity'] = value.to_i
+    self.info["quantity"] = value.to_i
   end
 
   private

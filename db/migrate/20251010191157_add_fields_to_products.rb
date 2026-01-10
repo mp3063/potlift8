@@ -22,7 +22,7 @@ class AddFieldsToProducts < ActiveRecord::Migration[8.0]
     add_column :products, :product_status, :integer
 
     # Add unique constraint on company_id + sku
-    add_index :products, [:company_id, :sku], unique: true, name: 'products_company_sku_unique_index'
+    add_index :products, [ :company_id, :sku ], unique: true, name: 'products_company_sku_unique_index'
 
     # Add indexes for frequently queried fields
     add_index :products, :product_status

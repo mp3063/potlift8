@@ -41,8 +41,8 @@ class TestSessionsController < ApplicationController
     session[:company_id] = params[:company_id].present? ? params[:company_id].to_i : company.id
     session[:company_code] = params[:company_code].presence || company.code
     session[:company_name] = params[:company_name].presence || company.name
-    session[:role] = params[:role] || 'admin'
-    session[:scopes] = params[:scopes] || ['read', 'write']
+    session[:role] = params[:role] || "admin"
+    session[:scopes] = params[:scopes] || [ "read", "write" ]
     session[:access_token] = params[:access_token].presence || "test_token_#{SecureRandom.hex(16)}"
     session[:refresh_token] = params[:refresh_token].presence || "test_refresh_#{SecureRandom.hex(16)}"
     session[:expires_at] = params[:expires_at].present? ? params[:expires_at].to_i : 1.hour.from_now.to_i

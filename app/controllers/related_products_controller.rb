@@ -4,7 +4,7 @@
 # Allows products to be linked with specific relationship types
 class RelatedProductsController < ApplicationController
   before_action :set_product
-  before_action :set_related_product, only: [:destroy]
+  before_action :set_related_product, only: [ :destroy ]
 
   # GET /products/:product_id/related_products
   def index

@@ -42,7 +42,7 @@ VCR.configure do |config|
   # This determines which recorded response to use for a request
   config.default_cassette_options = {
     record: :once,                    # Record cassette once, then replay
-    match_requests_on: [:method, :uri] # Match on HTTP method and URI
+    match_requests_on: [ :method, :uri ] # Match on HTTP method and URI
   }
 
   # Allow requests to localhost during tests

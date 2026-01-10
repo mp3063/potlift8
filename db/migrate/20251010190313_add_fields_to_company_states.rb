@@ -5,6 +5,6 @@ class AddFieldsToCompanyStates < ActiveRecord::Migration[8.0]
     add_column :company_states, :state, :string
 
     add_foreign_key :company_states, :companies
-    add_index :company_states, [:company_id, :code], unique: true
+    add_index :company_states, [ :company_id, :code ], unique: true
   end
 end

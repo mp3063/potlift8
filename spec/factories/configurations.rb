@@ -4,7 +4,7 @@ FactoryBot.define do
       use_product_company { true }
     end
 
-    association :product, factory: [:product, :configurable_variant]
+    association :product, factory: [ :product, :configurable_variant ]
     company { use_product_company && product ? product.company : association(:company) }
     sequence(:name) { |n| "Configuration #{n}" }
     sequence(:code) { |n| "config_#{n}" }

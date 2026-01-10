@@ -21,17 +21,17 @@ FactoryBot.define do
     # Trait with rules
     trait :with_positive_rule do
       has_rules { true }
-      rules { ['positive'] }
+      rules { [ 'positive' ] }
     end
 
     trait :with_not_null_rule do
       has_rules { true }
-      rules { ['not_null'] }
+      rules { [ 'not_null' ] }
     end
 
     trait :with_all_rules do
       has_rules { true }
-      rules { ['positive', 'not_null'] }
+      rules { [ 'positive', 'not_null' ] }
     end
 
     # Trait with position
@@ -46,15 +46,15 @@ FactoryBot.define do
 
     # Trait for grouped attribute with specific group
     trait :in_pricing_group do
-      association :attribute_group, factory: [:attribute_group, :pricing_group]
+      association :attribute_group, factory: [ :attribute_group, :pricing_group ]
     end
 
     trait :in_basic_info_group do
-      association :attribute_group, factory: [:attribute_group, :basic_info_group]
+      association :attribute_group, factory: [ :attribute_group, :basic_info_group ]
     end
 
     trait :in_dimensions_group do
-      association :attribute_group, factory: [:attribute_group, :dimensions_group]
+      association :attribute_group, factory: [ :attribute_group, :dimensions_group ]
     end
 
     # PA Type traits (7 types)
@@ -78,7 +78,7 @@ FactoryBot.define do
       view_format { :view_format_selectable }
       info do
         {
-          'options' => ['Option 1', 'Option 2', 'Option 3']
+          'options' => [ 'Option 1', 'Option 2', 'Option 3' ]
         }
       end
     end
@@ -88,7 +88,7 @@ FactoryBot.define do
       view_format { :view_format_selectable }
       info do
         {
-          'options' => ['Option A', 'Option B', 'Option C']
+          'options' => [ 'Option A', 'Option B', 'Option C' ]
         }
       end
     end
@@ -199,7 +199,7 @@ FactoryBot.define do
       view_format { :view_format_price }
       mandatory { true }
       has_rules { true }
-      rules { ['positive', 'not_null'] }
+      rules { [ 'positive', 'not_null' ] }
     end
 
     trait :ean_attribute do
@@ -217,7 +217,7 @@ FactoryBot.define do
       view_format { :view_format_html }
       mandatory { true }
       has_rules { true }
-      rules { ['not_null'] }
+      rules { [ 'not_null' ] }
     end
   end
 end

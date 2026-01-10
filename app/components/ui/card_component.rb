@@ -141,7 +141,7 @@ module Ui
     #
     # @return [String] Combined CSS classes for card styling
     def card_classes
-      classes = ["bg-white rounded-lg shadow-sm"]
+      classes = [ "bg-white rounded-lg shadow-sm" ]
       classes << "border border-gray-200" if @border
       classes << "hover:shadow-md transition-shadow duration-200" if @hover
       classes.join(" ")

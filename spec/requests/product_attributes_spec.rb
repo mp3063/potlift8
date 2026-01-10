@@ -229,7 +229,7 @@ RSpec.describe '/product_attributes', type: :request do
         valid_attributes.merge(
           pa_type: :patype_select,
           view_format: :view_format_selectable,
-          options: ['Option 1', 'Option 2', 'Option 3']
+          options: [ 'Option 1', 'Option 2', 'Option 3' ]
         )
       end
 
@@ -237,15 +237,15 @@ RSpec.describe '/product_attributes', type: :request do
         post product_attributes_path, params: { product_attribute: select_attributes }
 
         attribute = ProductAttribute.unscoped.last
-        expect(attribute.info['options']).to eq(['Option 1', 'Option 2', 'Option 3'])
+        expect(attribute.info['options']).to eq([ 'Option 1', 'Option 2', 'Option 3' ])
       end
 
       it 'filters out blank options' do
-        attrs = select_attributes.merge(options: ['Option 1', '', 'Option 2', nil])
+        attrs = select_attributes.merge(options: [ 'Option 1', '', 'Option 2', nil ])
         post product_attributes_path, params: { product_attribute: attrs }
 
         attribute = ProductAttribute.unscoped.last
-        expect(attribute.info['options']).to eq(['Option 1', 'Option 2'])
+        expect(attribute.info['options']).to eq([ 'Option 1', 'Option 2' ])
       end
     end
 
@@ -254,7 +254,7 @@ RSpec.describe '/product_attributes', type: :request do
         valid_attributes.merge(
           pa_type: :patype_multiselect,
           view_format: :view_format_selectable,
-          options: ['Tag 1', 'Tag 2', 'Tag 3']
+          options: [ 'Tag 1', 'Tag 2', 'Tag 3' ]
         )
       end
 
@@ -262,7 +262,7 @@ RSpec.describe '/product_attributes', type: :request do
         post product_attributes_path, params: { product_attribute: multiselect_attributes }
 
         attribute = ProductAttribute.unscoped.last
-        expect(attribute.info['options']).to eq(['Tag 1', 'Tag 2', 'Tag 3'])
+        expect(attribute.info['options']).to eq([ 'Tag 1', 'Tag 2', 'Tag 3' ])
       end
     end
   end
@@ -331,7 +331,7 @@ RSpec.describe '/product_attributes', type: :request do
 
     context 'with options update' do
       let(:select_attribute) { create(:product_attribute, :select_type, company: company) }
-      let(:new_options) { ['New Option 1', 'New Option 2'] }
+      let(:new_options) { [ 'New Option 1', 'New Option 2' ] }
 
       it 'updates options in info field' do
         patch product_attribute_path(select_attribute.code), params: {
@@ -407,7 +407,7 @@ RSpec.describe '/product_attributes', type: :request do
     let!(:attr3) { create(:product_attribute, company: company, attribute_position: 3) }
 
     it 'updates attribute positions' do
-      new_order = [attr3.id, attr1.id, attr2.id]
+      new_order = [ attr3.id, attr1.id, attr2.id ]
       patch reorder_product_attributes_path, params: { order: new_order }
 
       expect(response).to have_http_status(:ok)
@@ -423,7 +423,7 @@ RSpec.describe '/product_attributes', type: :request do
 
     it 'only reorders current company attributes' do
       other_attr = create(:product_attribute, company: other_company, attribute_position: 1)
-      new_order = [attr2.id, attr1.id, attr3.id]
+      new_order = [ attr2.id, attr1.id, attr3.id ]
 
       patch reorder_product_attributes_path, params: { order: new_order }
 
@@ -432,7 +432,7 @@ RSpec.describe '/product_attributes', type: :request do
     end
 
     it 'handles missing attributes gracefully' do
-      new_order = [attr1.id, 99999, attr2.id]
+      new_order = [ attr1.id, 99999, attr2.id ]
 
       expect {
         patch reorder_product_attributes_path, params: { order: new_order }
@@ -561,7 +561,7 @@ RSpec.describe '/product_attributes', type: :request do
     end
 
     it 'requires authentication for reorder' do
-      patch reorder_product_attributes_path, params: { order: [1, 2, 3] }
+      patch reorder_product_attributes_path, params: { order: [ 1, 2, 3 ] }
       expect(response).to redirect_to(auth_login_path)
     end
 

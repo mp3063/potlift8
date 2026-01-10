@@ -10,6 +10,6 @@ class CreateProductAttributeValues < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :product_attribute_values, [:product_id, :product_attribute_id], unique: true, name: 'pavs_index'
+    add_index :product_attribute_values, [ :product_id, :product_attribute_id ], unique: true, name: 'pavs_index'
   end
 end

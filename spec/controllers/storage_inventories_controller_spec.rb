@@ -133,7 +133,7 @@ RSpec.describe StorageInventoriesController, type: :request do
     context 'with valid parameters' do
       let(:valid_params) do
         {
-          product_ids: [product1.id, product2.id],
+          product_ids: [ product1.id, product2.id ],
           quantities: {
             product1.id.to_s => '10',
             product2.id.to_s => '20'
@@ -178,7 +178,7 @@ RSpec.describe StorageInventoriesController, type: :request do
     context 'with zero quantities' do
       let(:params_with_zero) do
         {
-          product_ids: [product1.id],
+          product_ids: [ product1.id ],
           quantities: {
             product1.id.to_s => '0'
           }
@@ -196,7 +196,7 @@ RSpec.describe StorageInventoriesController, type: :request do
     context 'with missing quantities' do
       let(:params_no_qty) do
         {
-          product_ids: [product1.id],
+          product_ids: [ product1.id ],
           quantities: {}
         }
       end
@@ -232,7 +232,7 @@ RSpec.describe StorageInventoriesController, type: :request do
     context 'with invalid product IDs' do
       let(:invalid_params) do
         {
-          product_ids: [99999, product1.id]
+          product_ids: [ 99999, product1.id ]
         }
       end
 
@@ -255,7 +255,7 @@ RSpec.describe StorageInventoriesController, type: :request do
 
       let(:cross_company_params) do
         {
-          product_ids: [other_product.id]
+          product_ids: [ other_product.id ]
         }
       end
 
@@ -278,7 +278,7 @@ RSpec.describe StorageInventoriesController, type: :request do
 
       let(:duplicate_params) do
         {
-          product_ids: [product1.id, product2.id],
+          product_ids: [ product1.id, product2.id ],
           quantities: {
             product1.id.to_s => '10',
             product2.id.to_s => '20'
@@ -313,7 +313,7 @@ RSpec.describe StorageInventoriesController, type: :request do
 
       let(:multi_params) do
         {
-          product_ids: [product1.id, product2.id],
+          product_ids: [ product1.id, product2.id ],
           quantities: {
             product1.id.to_s => '10',
             product2.id.to_s => '20'
@@ -330,7 +330,7 @@ RSpec.describe StorageInventoriesController, type: :request do
     context 'with turbo_stream format' do
       let(:valid_params) do
         {
-          product_ids: [product1.id],
+          product_ids: [ product1.id ],
           quantities: { product1.id.to_s => '10' }
         }
       end
@@ -361,7 +361,7 @@ RSpec.describe StorageInventoriesController, type: :request do
       end
 
       it 'redirects create action to login' do
-        post storage_inventories_path(storage), params: { product_ids: [product1.id] }
+        post storage_inventories_path(storage), params: { product_ids: [ product1.id ] }
         expect(response).to redirect_to(auth_login_path)
       end
     end
@@ -378,7 +378,7 @@ RSpec.describe StorageInventoriesController, type: :request do
 
       it 'raises RecordNotFound for create action' do
         expect {
-          post storage_inventories_path(other_storage), params: { product_ids: [product1.id] }
+          post storage_inventories_path(other_storage), params: { product_ids: [ product1.id ] }
         }.to raise_error(ActiveRecord::RecordNotFound)
       end
     end

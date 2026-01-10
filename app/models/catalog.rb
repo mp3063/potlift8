@@ -47,7 +47,7 @@ class Catalog < ApplicationRecord
   validates :name, presence: true
   validates :catalog_type, presence: true
   validates :currency_code, inclusion: { in: %w[eur sek nok] }
-  validate :currency_ratio_compliance, if: -> { currency_code != 'eur' }
+  validate :currency_ratio_compliance, if: -> { currency_code != "eur" }
 
   # Scopes
   scope :for_company, ->(company_id) { where(company_id: company_id) }
@@ -129,7 +129,7 @@ class Catalog < ApplicationRecord
         "Syncing all #{product_ids.size} products to catalog #{code} in single batch"
       )
 
-      jobs = [BatchProductSyncJob.set(queue: queue).perform_later(product_ids, id)]
+      jobs = [ BatchProductSyncJob.set(queue: queue).perform_later(product_ids, id) ]
     end
 
     jobs
@@ -200,7 +200,7 @@ class Catalog < ApplicationRecord
   # @return [String, nil] Description or nil
   #
   def description
-    info&.dig('description')
+    info&.dig("description")
   end
 
   # Set catalog description in info JSONB field
@@ -209,7 +209,7 @@ class Catalog < ApplicationRecord
   #
   def description=(value)
     self.info ||= {}
-    self.info['description'] = value
+    self.info["description"] = value
   end
 
   # Check if catalog is active (from info JSONB field)
@@ -218,7 +218,7 @@ class Catalog < ApplicationRecord
   #
   def active?
     # Default to true if not explicitly set to false
-    info&.dig('active') != false
+    info&.dig("active") != false
   end
 
   # Set catalog active status in info JSONB field
@@ -227,7 +227,7 @@ class Catalog < ApplicationRecord
   #
   def active=(value)
     self.info ||= {}
-    self.info['active'] = ActiveModel::Type::Boolean.new.cast(value)
+    self.info["active"] = ActiveModel::Type::Boolean.new.cast(value)
   end
 
   # Get rate limit configuration for this catalog
@@ -236,8 +236,8 @@ class Catalog < ApplicationRecord
   #
   def rate_limit_config
     {
-      limit: info&.dig('rate_limit', 'limit')&.to_i || 100,
-      period: info&.dig('rate_limit', 'period')&.to_i || 60
+      limit: info&.dig("rate_limit", "limit")&.to_i || 100,
+      period: info&.dig("rate_limit", "period")&.to_i || 60
     }
   end
 
@@ -248,10 +248,10 @@ class Catalog < ApplicationRecord
   #
   def update_rate_limit(limit:, period:)
     self.info ||= {}
-    self.info['rate_limit'] = {
-      'limit' => limit,
-      'period' => period,
-      'updated_at' => Time.current.iso8601
+    self.info["rate_limit"] = {
+      "limit" => limit,
+      "period" => period,
+      "updated_at" => Time.current.iso8601
     }
     save!
 

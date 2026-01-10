@@ -165,7 +165,7 @@ RSpec.describe BundleRegeneratorService, type: :service do
       it 'rolls back if variant generation fails' do
         # Create a scenario where generation might fail
         allow_any_instance_of(BundleVariantGeneratorService).to receive(:call)
-          .and_return(BundleVariantGeneratorService::Result.new(success?: false, variants: [], errors: ['Generation failed']))
+          .and_return(BundleVariantGeneratorService::Result.new(success?: false, variants: [], errors: [ 'Generation failed' ]))
 
         initial_variant_count = bundle.bundle_variants.where.not(product_status: :deleted).count
 

@@ -1,4 +1,4 @@
-require 'active_support/concern'
+require "active_support/concern"
 
 # AttributeValues Module
 #
@@ -39,38 +39,38 @@ module AttributeValues
     self.info ||= {}
 
     if product_attribute.view_format_customer_group_price?
-      self.info['customer_group_prices'] ||= {}
+      self.info["customer_group_prices"] ||= {}
       params.keys.select { |k| k.to_s.match?(/customer_group_.+/) }.each do |customer_group_key_base|
-        customer_group_key = customer_group_key_base.to_s.gsub('customer_group_', '')
+        customer_group_key = customer_group_key_base.to_s.gsub("customer_group_", "")
         if params[customer_group_key_base].to_i > 0
-          self.info['customer_group_prices'] = {} if self.info['customer_group_prices'].blank?
-          self.info['customer_group_prices'][customer_group_key] = params[customer_group_key_base].to_i
+          self.info["customer_group_prices"] = {} if self.info["customer_group_prices"].blank?
+          self.info["customer_group_prices"][customer_group_key] = params[customer_group_key_base].to_i
         else
-          self.info['customer_group_prices'].delete(customer_group_key)
+          self.info["customer_group_prices"].delete(customer_group_key)
         end
       end
 
       # Return formatted display value
-      info['customer_group_prices'].keys.sum('') do |customer_group_key|
+      info["customer_group_prices"].keys.sum("") do |customer_group_key|
         price = ActionController::Base.helpers.number_to_currency(
-          (info.to_h['customer_group_prices'].to_h[customer_group_key].to_f / 100),
+          (info.to_h["customer_group_prices"].to_h[customer_group_key].to_f / 100),
           unit: "€", separator: ",", delimiter: " ", format: "%n %u"
         )
         "<strong>#{customer_group_key.gsub('customer_group_', '')}: </strong><span>#{price}</span>"
       end.html_safe
 
     elsif product_attribute.view_format_special_price?
-      raise ArgumentError, "Special price amount must be positive" unless params['special-price-amount'].to_i > 0
-      raise ArgumentError, "Special price from date is invalid" unless params['special-price-from'].to_date.present?
-      raise ArgumentError, "Special price until date is invalid" unless params['special-price-until'].to_date.present?
+      raise ArgumentError, "Special price amount must be positive" unless params["special-price-amount"].to_i > 0
+      raise ArgumentError, "Special price from date is invalid" unless params["special-price-from"].to_date.present?
+      raise ArgumentError, "Special price until date is invalid" unless params["special-price-until"].to_date.present?
 
-      self.info['special_price'] ||= {}
-      self.info['special_price']['amount'] = params['special-price-amount'].to_i
-      self.info['special_price']['from'] = params['special-price-from'].to_date
-      self.info['special_price']['until'] = params['special-price-until'].to_date
+      self.info["special_price"] ||= {}
+      self.info["special_price"]["amount"] = params["special-price-amount"].to_i
+      self.info["special_price"]["from"] = params["special-price-from"].to_date
+      self.info["special_price"]["until"] = params["special-price-until"].to_date
 
       price = ActionController::Base.helpers.number_to_currency(
-        (info['special_price']['amount'].to_f / 100),
+        (info["special_price"]["amount"].to_f / 100),
         unit: "€", separator: ",", delimiter: " ", format: "%n %u"
       )
       "#{price} (#{self.info['special_price']['from']} - #{self.info['special_price']['until']})"
@@ -91,25 +91,25 @@ module AttributeValues
     if product_attribute.view_format_special_price?
       raise ArgumentError, "Special price value cannot be blank" unless value.present?
 
-      special_price = value.split(',')
+      special_price = value.split(",")
       raise ArgumentError, "Special price must have 3 parts: amount,from,until" unless special_price.present? && special_price.size == 3
       raise ArgumentError, "Special price amount must be positive" unless special_price[0].to_i > 0
       raise ArgumentError, "Special price from date is invalid" unless special_price[1].to_date.present?
       raise ArgumentError, "Special price until date is invalid" unless special_price[2].to_date.present?
 
-      self.info['special_price'] ||= {}
-      self.info['special_price']['amount'] = special_price[0]
-      self.info['special_price']['from'] = special_price[1]
-      self.info['special_price']['until'] = special_price[2]
+      self.info["special_price"] ||= {}
+      self.info["special_price"]["amount"] = special_price[0]
+      self.info["special_price"]["from"] = special_price[1]
+      self.info["special_price"]["until"] = special_price[2]
 
     elsif product_attribute.view_format_customer_group_price?
       raise ArgumentError, "Customer group price value cannot be blank" unless value.present?
 
-      self.info['customer_group_prices'] ||= {}
-      value.split(',').each do |customer_price|
-        customer = customer_price.split(':')[0]
-        price = customer_price.split(':')[1]
-        info['customer_group_prices'][customer] = price
+      self.info["customer_group_prices"] ||= {}
+      value.split(",").each do |customer_price|
+        customer = customer_price.split(":")[0]
+        price = customer_price.split(":")[1]
+        info["customer_group_prices"][customer] = price
       end
 
     else
@@ -147,12 +147,12 @@ module AttributeValues
   def value
     return super unless product_attribute.patype_custom?
 
-    if product_attribute.view_format_special_price? && self.info.to_h['special_price'].present?
+    if product_attribute.view_format_special_price? && self.info.to_h["special_price"].present?
       return "#{self.info.to_h['special_price'].to_h['amount']},#{self.info.to_h['special_price'].to_h['from']},#{self.info.to_h['special_price'].to_h['until']}"
     end
 
-    if product_attribute.view_format_customer_group_price? && self.info.to_h['customer_group_prices'].present?
-      return self.info.to_h['customer_group_prices'].to_h.map { |k, v| "#{k}:#{v}" }.join(',')
+    if product_attribute.view_format_customer_group_price? && self.info.to_h["customer_group_prices"].present?
+      return self.info.to_h["customer_group_prices"].to_h.map { |k, v| "#{k}:#{v}" }.join(",")
     end
 
     super
@@ -163,7 +163,7 @@ module AttributeValues
   # @return [ActiveRecord::Relation<Product>] Related products
   #
   def related_products
-    related_products = self.info.to_h['related_products'].to_a
+    related_products = self.info.to_h["related_products"].to_a
     Product.where(sku: related_products)
   end
 
@@ -172,7 +172,7 @@ module AttributeValues
   # @return [Boolean] true if localized values exist
   #
   def localized_values?
-    info.to_h['localized_value'].to_h.values.any? { |x| x.present? }
+    info.to_h["localized_value"].to_h.values.any? { |x| x.present? }
   end
 
   private

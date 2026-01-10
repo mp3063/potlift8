@@ -19,12 +19,12 @@ class EnhanceProductConfigurations < ActiveRecord::Migration[8.0]
     # SQL
 
     # Performance: Ordered retrieval of variants/components for a product
-    add_index :product_configurations, [:superproduct_id, :configuration_position],
+    add_index :product_configurations, [ :superproduct_id, :configuration_position ],
               name: 'index_pc_on_super_and_position',
               comment: 'Optimizes ordered variant/component retrieval for parent product'
 
     # Performance: Reverse lookup - find parent products containing a specific product
-    add_index :product_configurations, [:subproduct_id, :superproduct_id],
+    add_index :product_configurations, [ :subproduct_id, :superproduct_id ],
               name: 'index_pc_on_sub_and_super',
               comment: 'Optimizes reverse lookup to find parent products'
 

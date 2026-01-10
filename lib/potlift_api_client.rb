@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative 'potlift_api_client/version'
-require_relative 'potlift_api_client/client'
+require_relative "potlift_api_client/version"
+require_relative "potlift_api_client/client"
 
 # Potlift8 API Client
 #

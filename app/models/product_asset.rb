@@ -49,7 +49,7 @@ class ProductAsset < ApplicationRecord
   # Returns the file extension (e.g., 'pdf', 'docx')
   def file_extension
     return nil unless file.attached?
-    File.extname(file.filename.to_s).delete('.').downcase
+    File.extname(file.filename.to_s).delete(".").downcase
   end
 
   # Returns the file size in bytes
@@ -70,22 +70,22 @@ class ProductAsset < ApplicationRecord
 
   # Returns the stored URL for link/video assets
   def url
-    info&.dig('url')
+    info&.dig("url")
   end
 
   # Returns the thumbnail URL for video assets (stored in info['thumbnail_url'])
   def thumbnail_url
-    info&.dig('thumbnail_url')
+    info&.dig("thumbnail_url")
   end
 
   private
 
   def validate_link_url
-    url = info&.dig('url')
+    url = info&.dig("url")
     if url.blank?
-      errors.add(:base, 'URL is required for link assets')
+      errors.add(:base, "URL is required for link assets")
     elsif url.present? && !url.match?(/\A#{URI::DEFAULT_PARSER.make_regexp(%w[http https])}\z/)
-      errors.add(:base, 'URL must be a valid http or https URL')
+      errors.add(:base, "URL must be a valid http or https URL")
     end
   end
 end

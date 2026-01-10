@@ -108,7 +108,7 @@ module Products
     #   product_type_options
     #   # => [['Sellable', 'sellable'], ['Configurable', 'configurable'], ['Bundle', 'bundle']]
     def product_type_options
-      Product.product_types.map { |key, _value| [key.humanize, key] }
+      Product.product_types.map { |key, _value| [ key.humanize, key ] }
     end
 
     # Configuration type options for select dropdown
@@ -122,7 +122,7 @@ module Products
     #   configuration_type_options
     #   # => [['Variant', 'variant'], ['Option', 'option']]
     def configuration_type_options
-      Product.configuration_types.map { |key, _value| [key.humanize, key] }
+      Product.configuration_types.map { |key, _value| [ key.humanize, key ] }
     end
 
     # Available labels for the current company

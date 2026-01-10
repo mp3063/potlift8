@@ -24,6 +24,6 @@ class AddFieldsToLabels < ActiveRecord::Migration[8.0]
     add_column :labels, :product_default_restriction, :integer, default: 1
 
     # Unique constraint on company_id + full_code
-    add_index :labels, [:company_id, :full_code], unique: true
+    add_index :labels, [ :company_id, :full_code ], unique: true
   end
 end

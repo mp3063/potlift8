@@ -16,7 +16,7 @@ class CreateProductConfigurations < ActiveRecord::Migration[8.0]
     # Add indexes
     add_index :product_configurations, :superproduct_id
     add_index :product_configurations, :subproduct_id
-    add_index :product_configurations, [:superproduct_id, :subproduct_id],
+    add_index :product_configurations, [ :superproduct_id, :subproduct_id ],
               unique: true,
               name: 'index_product_configs_on_super_and_sub'
   end

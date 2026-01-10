@@ -24,7 +24,7 @@ module Shared
     end
 
     def call
-      css_classes = ["text-center", "py-12", @options.delete(:class)].compact.join(" ")
+      css_classes = [ "text-center", "py-12", @options.delete(:class) ].compact.join(" ")
       content_tag(:div, class: css_classes, **@options) do
         concat(render_icon)
         concat(content_tag(:h3, @title, class: "mt-4 text-lg font-semibold text-gray-900"))

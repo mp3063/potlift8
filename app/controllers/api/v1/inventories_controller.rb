@@ -70,14 +70,14 @@ module Api
         updates = params.dig(:inventory, :updates)
 
         if sku.blank?
-          return render_error('SKU is required', status: :bad_request, error_code: 'missing_parameter')
+          return render_error("SKU is required", status: :bad_request, error_code: "missing_parameter")
         end
 
         if updates.blank? || !updates.is_a?(Array)
           return render_error(
-            'inventory.updates must be a non-empty array',
+            "inventory.updates must be a non-empty array",
             status: :bad_request,
-            error_code: 'invalid_parameter'
+            error_code: "invalid_parameter"
           )
         end
 
@@ -88,7 +88,7 @@ module Api
           return render_error(
             "Product not found: #{sku}",
             status: :not_found,
-            error_code: 'product_not_found'
+            error_code: "product_not_found"
           )
         end
 
@@ -113,7 +113,7 @@ module Api
           render_error(
             result[:error],
             status: :unprocessable_entity,
-            error_code: 'inventory_update_failed'
+            error_code: "inventory_update_failed"
           )
         end
       end

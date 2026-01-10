@@ -100,7 +100,7 @@ RSpec.describe 'Search API', type: :request do
       it 'stores recent search in cache' do
         expect(Rails.cache).to receive(:write).with(
           "recent_searches:#{user.id}",
-          ['Test'],
+          [ 'Test' ],
           expires_in: 30.days
         )
 
@@ -266,18 +266,18 @@ RSpec.describe 'Search API', type: :request do
     it 'returns recent searches from cache' do
       # Write directly to cache using the user ID
       cache_key = "recent_searches:#{user.id}"
-      Rails.cache.write(cache_key, ['iPhone', 'Samsung', 'Google'], expires_in: 30.days)
+      Rails.cache.write(cache_key, [ 'iPhone', 'Samsung', 'Google' ], expires_in: 30.days)
 
       get search_recent_path, as: :json
 
       expect(response).to have_http_status(:success)
       json = JSON.parse(response.body)
-      expect(json).to eq(['iPhone', 'Samsung', 'Google'])
+      expect(json).to eq([ 'iPhone', 'Samsung', 'Google' ])
     end
 
     it 'returns searches in correct order (most recent first)' do
       cache_key = "recent_searches:#{user.id}"
-      Rails.cache.write(cache_key, ['Latest', 'Middle', 'Oldest'], expires_in: 30.days)
+      Rails.cache.write(cache_key, [ 'Latest', 'Middle', 'Oldest' ], expires_in: 30.days)
 
       get search_recent_path, as: :json
 

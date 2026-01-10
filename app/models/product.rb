@@ -40,8 +40,8 @@ class Product < ApplicationRecord
   include ChangePropagator
 
   # Version tracking with PaperTrail
-  has_paper_trail on: [:update, :destroy],
-                  ignore: [:updated_at],
+  has_paper_trail on: [ :update, :destroy ],
+                  ignore: [ :updated_at ],
                   meta: {
                     company_id: :company_id
                   }
@@ -94,15 +94,15 @@ class Product < ApplicationRecord
   # Product Configuration associations (for configurable and bundle products)
   # When this product is the superproduct (parent)
   has_many :product_configurations_as_super,
-           class_name: 'ProductConfiguration',
-           foreign_key: 'superproduct_id',
+           class_name: "ProductConfiguration",
+           foreign_key: "superproduct_id",
            dependent: :destroy
   has_many :subproducts, through: :product_configurations_as_super, source: :subproduct
 
   # When this product is the subproduct (child)
   has_many :product_configurations_as_sub,
-           class_name: 'ProductConfiguration',
-           foreign_key: 'subproduct_id',
+           class_name: "ProductConfiguration",
+           foreign_key: "subproduct_id",
            dependent: :destroy,
            counter_cache: :subproducts_count
   has_many :superproducts, through: :product_configurations_as_sub, source: :superproduct
@@ -112,7 +112,7 @@ class Product < ApplicationRecord
 
   # Related product associations (Phase 14-16)
   has_many :related_products, dependent: :destroy
-  has_many :related_to_products, class_name: 'RelatedProduct', foreign_key: 'related_to_id', dependent: :destroy
+  has_many :related_to_products, class_name: "RelatedProduct", foreign_key: "related_to_id", dependent: :destroy
 
   # Translation associations (Phase 17-19)
   has_many :translations, as: :translatable, dependent: :destroy
@@ -125,13 +125,13 @@ class Product < ApplicationRecord
 
   # Generated variants relationship (this bundle is the parent)
   has_many :bundle_variants,
-           class_name: 'Product',
-           foreign_key: 'parent_bundle_id',
+           class_name: "Product",
+           foreign_key: "parent_bundle_id",
            dependent: :destroy
 
   # Parent bundle relationship (this product is a generated variant)
   belongs_to :parent_bundle,
-             class_name: 'Product',
+             class_name: "Product",
              optional: true
 
   # Validations
@@ -330,7 +330,7 @@ class Product < ApplicationRecord
     return nil unless pav
 
     # Return the value from the appropriate field based on attribute type
-    pav.value.presence || pav.info['value']
+    pav.value.presence || pav.info["value"]
   end
 
   # Write an attribute value by its code
@@ -375,13 +375,13 @@ class Product < ApplicationRecord
     # Use the already-loaded association if available, otherwise load with includes
     pavs = if product_attribute_values.loaded?
              product_attribute_values
-           else
+    else
              product_attribute_values.includes(:product_attribute)
-           end
+    end
 
     pavs.each_with_object({}) do |pav, hash|
       code = pav.product_attribute.code
-      hash[code] = pav.value.presence || pav.info['value']
+      hash[code] = pav.value.presence || pav.info["value"]
     end
   end
 
@@ -457,7 +457,7 @@ class Product < ApplicationRecord
   # @return [String, nil] Description or nil
   #
   def description
-    info&.dig('description')
+    info&.dig("description")
   end
 
   # Set product description in info JSONB field
@@ -466,7 +466,7 @@ class Product < ApplicationRecord
   #
   def description=(value)
     self.info ||= {}
-    self.info['description'] = value
+    self.info["description"] = value
   end
 
   # Product Relationship Helper Methods
@@ -573,7 +573,7 @@ class Product < ApplicationRecord
     return [] if catalog_ids.empty?
 
     jobs = catalog_ids.map do |catalog_id|
-      BatchProductSyncJob.set(queue: queue).perform_later([id], catalog_id)
+      BatchProductSyncJob.set(queue: queue).perform_later([ id ], catalog_id)
     end
 
     Rails.logger.info(
@@ -593,7 +593,7 @@ class Product < ApplicationRecord
     # Check deduplication unless forced
     unless force
       deduplicator = JobDeduplicator.new(
-        job_name: 'ProductSyncJob',
+        job_name: "ProductSyncJob",
         params: { product_id: id, catalog_id: catalog.id },
         window: 30
       )
@@ -694,7 +694,7 @@ class Product < ApplicationRecord
   #   product.translated_name(:fr)  # => "Produit"
   #
   def translated_name(locale = I18n.locale)
-    translations.find_by(locale: locale.to_s, key: 'name')&.value || name
+    translations.find_by(locale: locale.to_s, key: "name")&.value || name
   end
 
   # Get translated description for a specific locale
@@ -706,7 +706,7 @@ class Product < ApplicationRecord
   #   product.translated_description('es') # => "Descripción del producto"
   #
   def translated_description(locale = I18n.locale)
-    translations.find_by(locale: locale.to_s, key: 'description')&.value || description
+    translations.find_by(locale: locale.to_s, key: "description")&.value || description
   end
 
   # Set translated name for a specific locale
@@ -716,7 +716,7 @@ class Product < ApplicationRecord
   # @return [Translation] The translation record
   #
   def set_translated_name(locale, value)
-    translation = translations.find_or_initialize_by(locale: locale.to_s, key: 'name')
+    translation = translations.find_or_initialize_by(locale: locale.to_s, key: "name")
     translation.value = value
     translation.save!
     translation
@@ -729,7 +729,7 @@ class Product < ApplicationRecord
   # @return [Translation] The translation record
   #
   def set_translated_description(locale, value)
-    translation = translations.find_or_initialize_by(locale: locale.to_s, key: 'description')
+    translation = translations.find_or_initialize_by(locale: locale.to_s, key: "description")
     translation.value = value
     translation.save!
     translation
@@ -743,7 +743,7 @@ class Product < ApplicationRecord
     return if sku.present?
     return unless company.present? # Need company for uniqueness check
 
-    self.sku = generate_unique_sku('PRD')
+    self.sku = generate_unique_sku("PRD")
   end
 
   # Normalize SKU by stripping whitespace and converting to uppercase

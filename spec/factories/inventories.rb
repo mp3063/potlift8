@@ -24,7 +24,7 @@ FactoryBot.define do
 
     # Trait for incoming inventory with ETA
     trait :incoming_with_eta do
-      association :storage, factory: [:storage, :incoming]
+      association :storage, factory: [ :storage, :incoming ]
       eta { 7.days.from_now }
       value { 50 }
     end
@@ -42,17 +42,17 @@ FactoryBot.define do
 
     # Trait for regular storage inventory
     trait :in_regular_storage do
-      association :storage, factory: [:storage, :regular]
+      association :storage, factory: [ :storage, :regular ]
     end
 
     # Trait for temporary storage inventory
     trait :in_temporary_storage do
-      association :storage, factory: [:storage, :temporary]
+      association :storage, factory: [ :storage, :temporary ]
     end
 
     # Trait for incoming storage inventory
     trait :in_incoming_storage do
-      association :storage, factory: [:storage, :incoming]
+      association :storage, factory: [ :storage, :incoming ]
     end
   end
 end

@@ -19,10 +19,10 @@ RSpec.describe Product, type: :model do
         allow(BatchProductSyncJob).to receive(:set).with(queue: :low_priority).and_return(BatchProductSyncJob)
 
         expect(BatchProductSyncJob).to receive(:perform_later)
-          .with([product.id], catalog1.id)
+          .with([ product.id ], catalog1.id)
           .and_return(job_double)
         expect(BatchProductSyncJob).to receive(:perform_later)
-          .with([product.id], catalog2.id)
+          .with([ product.id ], catalog2.id)
           .and_return(job_double)
 
         product.sync_to_all_catalogs_batch

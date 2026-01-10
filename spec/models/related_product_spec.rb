@@ -195,7 +195,7 @@ RSpec.describe RelatedProduct, type: :model do
       it 'maintains order within relation type' do
         cross_sells = main_product.related_products.cross_sell.order(:position)
         expect(cross_sells.count).to eq(3)
-        expect(cross_sells.pluck(:position)).to eq([1, 2, 3])
+        expect(cross_sells.pluck(:position)).to eq([ 1, 2, 3 ])
       end
 
       it 'can reorder within same type' do

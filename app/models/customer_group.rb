@@ -53,6 +53,6 @@ class CustomerGroup < ApplicationRecord
   # @return [Boolean] true if active (default: true)
   #
   def active?
-    info.dig('active').nil? || info.dig('active') == true
+    info.dig("active").nil? || info.dig("active") == true
   end
 end

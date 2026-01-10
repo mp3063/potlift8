@@ -32,8 +32,8 @@
 class Label < ApplicationRecord
   # Associations
   belongs_to :company
-  belongs_to :parent_label, class_name: 'Label', optional: true
-  has_many :sublabels, class_name: 'Label', foreign_key: 'parent_label_id', dependent: :destroy
+  belongs_to :parent_label, class_name: "Label", optional: true
+  has_many :sublabels, class_name: "Label", foreign_key: "parent_label_id", dependent: :destroy
   has_many :product_labels, dependent: :destroy
   has_many :products, through: :product_labels
 
@@ -99,7 +99,7 @@ class Label < ApplicationRecord
   # Returns all descendant labels (children, grandchildren, etc.)
   # @return [Array<Label>] Array of all descendant labels
   def descendants
-    sublabels.flat_map { |sublabel| [sublabel] + sublabel.descendants }
+    sublabels.flat_map { |sublabel| [ sublabel ] + sublabel.descendants }
   end
 
   # Returns all products including those from sublabels
@@ -150,10 +150,10 @@ class Label < ApplicationRecord
     result = super(options)
 
     if options[:include_related_objects_for_catalog].present?
-      result.delete('parent_label_id')
-      result['localized_value'] = info.to_h['localized_value']
-      result['localized_full_value'] = info.to_h['localized_full_value']
-      result['parent_label'] = parent_label&.as_json(options)
+      result.delete("parent_label_id")
+      result["localized_value"] = info.to_h["localized_value"]
+      result["localized_full_value"] = info.to_h["localized_full_value"]
+      result["parent_label"] = parent_label&.as_json(options)
     end
 
     result
@@ -164,9 +164,9 @@ class Label < ApplicationRecord
   # Validate color format to prevent CSS injection
   # Only allows valid hex colors (#RGB or #RRGGBB)
   def validate_color_format
-    return if info.blank? || info['color'].blank?
+    return if info.blank? || info["color"].blank?
 
-    color = info['color'].to_s.strip
+    color = info["color"].to_s.strip
     unless color.match?(/\A#(?:[0-9a-fA-F]{3}){1,2}\z/)
       errors.add(:base, "Color must be a valid hex color (e.g., #fff or #ffffff)")
     end
@@ -190,14 +190,14 @@ class Label < ApplicationRecord
       self.full_name = "#{parent_label.full_name} > #{name}"
 
       # Handle localized values
-      localized_values = info.to_h['localized_value'].to_a
-      parent_localized = parent_label.info.to_h['localized_value'].to_a
+      localized_values = info.to_h["localized_value"].to_a
+      parent_localized = parent_label.info.to_h["localized_value"].to_a
 
       (localized_values + parent_localized).uniq.each do |key, _value|
-        self.info['localized_full_value'] ||= {}
-        parent_full_value = parent_label.info.to_h['localized_full_value'].to_h[key].presence || parent_label.full_name
-        child_value = info.to_h['localized_value'].to_h[key].presence || name
-        self.info['localized_full_value'][key] = "#{parent_full_value} > #{child_value}"
+        self.info["localized_full_value"] ||= {}
+        parent_full_value = parent_label.info.to_h["localized_full_value"].to_h[key].presence || parent_label.full_name
+        child_value = info.to_h["localized_value"].to_h[key].presence || name
+        self.info["localized_full_value"][key] = "#{parent_full_value} > #{child_value}"
       end
     else
       # Root label: use code and name as-is
@@ -205,8 +205,8 @@ class Label < ApplicationRecord
       self.full_name = name
 
       # Copy localized_value to localized_full_value for root labels
-      if info.to_h['localized_value'].present?
-        self.info['localized_full_value'] = info['localized_value'].dup
+      if info.to_h["localized_value"].present?
+        self.info["localized_full_value"] = info["localized_value"].dup
       end
     end
   end

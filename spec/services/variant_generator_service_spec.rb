@@ -117,8 +117,8 @@ RSpec.describe VariantGeneratorService, type: :service do
         service = VariantGeneratorService.new(configurable_product)
         service.generate!
 
-        sizes = ['Small', 'Medium', 'Large']
-        colors = ['Red', 'Blue', 'Green']
+        sizes = [ 'Small', 'Medium', 'Large' ]
+        colors = [ 'Red', 'Blue', 'Green' ]
 
         sizes.each do |size|
           colors.each do |color|

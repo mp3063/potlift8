@@ -108,15 +108,15 @@ module Products
     #   # => <a href="/products?sort=sku&direction=asc">Product SKU <svg>...</svg></a>
     def sort_link(column, label)
       direction = if current_sort == column
-                    current_direction == 'asc' ? 'desc' : 'asc'
-                  else
-                    'asc'
-                  end
+                    current_direction == "asc" ? "desc" : "asc"
+      else
+                    "asc"
+      end
 
       link_to(
         products_path(sort: column, direction: direction),
         class: sort_link_classes(column),
-        data: { turbo_frame: 'products_table' }
+        data: { turbo_frame: "products_table" }
       ) do
         content_tag(:span, label, class: "flex-1") +
         sort_icon(column)
@@ -159,7 +159,7 @@ module Products
     def sort_icon(column)
       if current_sort == column
         # Active sort - show directional arrow
-        if current_direction == 'asc'
+        if current_direction == "asc"
           chevron_down_icon  # DOWN arrow for ascending (A at top)
         else
           chevron_up_icon    # UP arrow for descending (Z at top)
@@ -292,11 +292,11 @@ module Products
     # @return [String] Label text (e.g., "variants" or "items")
     def children_label(product)
       if product.product_type_bundle?
-        'variants'
+        "variants"
       elsif product.product_type_configurable?
-        'variants'
+        "variants"
       else
-        'items'
+        "items"
       end
     end
 

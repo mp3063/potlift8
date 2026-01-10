@@ -51,14 +51,14 @@ module Api
         token = extract_token_from_header
 
         unless token.present?
-          render_unauthorized('Missing authorization token')
+          render_unauthorized("Missing authorization token")
           return
         end
 
         @current_company = Company.find_by(api_token: token, active: true)
 
         unless @current_company
-          render_unauthorized('Invalid or inactive API token')
+          render_unauthorized("Invalid or inactive API token")
         end
       end
 
@@ -67,7 +67,7 @@ module Api
       # @return [String, nil] The API token or nil
       #
       def extract_token_from_header
-        auth_header = request.headers['Authorization']
+        auth_header = request.headers["Authorization"]
         return nil unless auth_header.present?
 
         # Expected format: "Bearer <token>"
@@ -79,9 +79,9 @@ module Api
       #
       # @param message [String] Error message
       #
-      def render_unauthorized(message = 'Unauthorized')
+      def render_unauthorized(message = "Unauthorized")
         render json: {
-          error: 'unauthorized',
+          error: "unauthorized",
           message: message
         }, status: :unauthorized
       end
@@ -92,7 +92,7 @@ module Api
       #
       def render_not_found(exception)
         render json: {
-          error: 'not_found',
+          error: "not_found",
           message: exception.message
         }, status: :not_found
       end
@@ -103,7 +103,7 @@ module Api
       #
       def render_unprocessable_entity(exception)
         render json: {
-          error: 'validation_failed',
+          error: "validation_failed",
           message: exception.message,
           errors: exception.record.errors.as_json
         }, status: :unprocessable_entity
@@ -115,7 +115,7 @@ module Api
       #
       def render_bad_request(exception)
         render json: {
-          error: 'bad_request',
+          error: "bad_request",
           message: exception.message
         }, status: :bad_request
       end
@@ -135,7 +135,7 @@ module Api
       # @param status [Symbol] HTTP status
       # @param error_code [String] Error code
       #
-      def render_error(message, status: :internal_server_error, error_code: 'error')
+      def render_error(message, status: :internal_server_error, error_code: "error")
         render json: {
           success: false,
           error: error_code,

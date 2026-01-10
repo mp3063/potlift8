@@ -132,10 +132,10 @@ RSpec.describe Ui::FormFieldComponent, type: :component do
         attribute: :product_type,
         label: "Product Type",
         type: :select,
-        options: [['Sellable', 1], ['Configurable', 2]]
+        options: [ [ 'Sellable', 1 ], [ 'Configurable', 2 ] ]
       ))
 
-      expect(page).to have_select('product_product_type', options: ['Sellable', 'Configurable'])
+      expect(page).to have_select('product_product_type', options: [ 'Sellable', 'Configurable' ])
       expect(page).to have_content('Product Type')
     end
 
@@ -147,7 +147,7 @@ RSpec.describe Ui::FormFieldComponent, type: :component do
         attribute: :product_type,
         label: "Product Type",
         type: :select,
-        options: [['Sellable', 1], ['Configurable', 2]]
+        options: [ [ 'Sellable', 1 ], [ 'Configurable', 2 ] ]
       ))
 
       expect(page).to have_css('p.text-red-600', text: "must be selected")
@@ -161,7 +161,7 @@ RSpec.describe Ui::FormFieldComponent, type: :component do
         label: "Product Type",
         type: :select,
         required: true,
-        options: [['Sellable', 1], ['Configurable', 2]]
+        options: [ [ 'Sellable', 1 ], [ 'Configurable', 2 ] ]
       ))
 
       expect(page).to have_css('select[required]')

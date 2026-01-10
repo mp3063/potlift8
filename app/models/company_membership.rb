@@ -23,25 +23,25 @@ class CompanyMembership < ApplicationRecord
 
   # Validations
   validates :role, presence: true
-  validates :user_id, uniqueness: { scope: :company_id, message: 'already has membership for this company' }
+  validates :user_id, uniqueness: { scope: :company_id, message: "already has membership for this company" }
 
   # Role validation (can be extended to enum in the future)
   validates :role, inclusion: {
     in: %w[admin member viewer],
-    message: '%{value} is not a valid role'
+    message: "%{value} is not a valid role"
   }
 
   # Scopes
-  scope :admins, -> { where(role: 'admin') }
-  scope :members, -> { where(role: 'member') }
-  scope :viewers, -> { where(role: 'viewer') }
+  scope :admins, -> { where(role: "admin") }
+  scope :members, -> { where(role: "member") }
+  scope :viewers, -> { where(role: "viewer") }
 
   # Check if membership has admin role
   #
   # @return [Boolean]
   #
   def admin?
-    role == 'admin'
+    role == "admin"
   end
 
   # Check if membership has member role
@@ -49,7 +49,7 @@ class CompanyMembership < ApplicationRecord
   # @return [Boolean]
   #
   def member?
-    role == 'member'
+    role == "member"
   end
 
   # Check if membership has viewer role
@@ -57,6 +57,6 @@ class CompanyMembership < ApplicationRecord
   # @return [Boolean]
   #
   def viewer?
-    role == 'viewer'
+    role == "viewer"
   end
 end

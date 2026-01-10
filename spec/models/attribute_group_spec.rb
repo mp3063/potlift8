@@ -321,7 +321,7 @@ RSpec.describe AttributeGroup, type: :model do
 
       it 'returns attributes in order' do
         attributes = group.product_attributes.to_a
-        expect(attributes).to eq([attr1, attr2, attr3])
+        expect(attributes).to eq([ attr1, attr2, attr3 ])
       end
 
       it 'nullifies attributes when destroyed' do
@@ -366,7 +366,7 @@ RSpec.describe AttributeGroup, type: :model do
 
       it 'returns attributes ordered by position' do
         attributes = group.product_attributes.to_a
-        expect(attributes).to eq([attr1, attr2, attr3])
+        expect(attributes).to eq([ attr1, attr2, attr3 ])
       end
     end
   end

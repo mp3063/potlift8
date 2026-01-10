@@ -71,16 +71,16 @@ class User < ApplicationRecord
   #
   def self.find_or_create_from_oauth(payload)
     # Extract user data from payload
-    oauth_sub = payload['sub']
-    user_data = payload['user'] || {}
-    company_data = payload['company'] || {}
-    membership_data = payload['membership'] || {}
+    oauth_sub = payload["sub"]
+    user_data = payload["user"] || {}
+    company_data = payload["company"] || {}
+    membership_data = payload["membership"] || {}
 
     # Build full name from first_name and last_name
     full_name = [
-      user_data['first_name'],
-      user_data['last_name']
-    ].compact.join(' ').presence || user_data['email']&.split('@')&.first
+      user_data["first_name"],
+      user_data["last_name"]
+    ].compact.join(" ").presence || user_data["email"]&.split("@")&.first
 
     # Find or create company from payload
     company = Company.from_authlift8(company_data)
@@ -93,7 +93,7 @@ class User < ApplicationRecord
     if user
       # Update existing user
       user.update!(
-        email: user_data['email'],
+        email: user_data["email"],
         name: full_name,
         last_sign_in_at: Time.current,
         company_id: company.id
@@ -102,7 +102,7 @@ class User < ApplicationRecord
       # Create new user
       user = create!(
         oauth_sub: oauth_sub,
-        email: user_data['email'],
+        email: user_data["email"],
         name: full_name,
         last_sign_in_at: Time.current,
         company_id: company.id
@@ -110,7 +110,7 @@ class User < ApplicationRecord
     end
 
     # Ensure company membership exists
-    user.ensure_company_membership(company, membership_data['role'] || 'member')
+    user.ensure_company_membership(company, membership_data["role"] || "member")
 
     user
   end
@@ -129,9 +129,9 @@ class User < ApplicationRecord
   # @param role [String] The user's role in the company from Authlift8
   # @return [CompanyMembership] The membership record
   #
-  def ensure_company_membership(company, role = 'member')
+  def ensure_company_membership(company, role = "member")
     # Map Authlift8 'owner' role to 'admin' role
-    normalized_role = role == 'owner' ? 'admin' : role
+    normalized_role = role == "owner" ? "admin" : role
 
     membership = company_memberships.find_or_initialize_by(company: company)
     membership.role = normalized_role

@@ -11,7 +11,7 @@
 #
 class ProductVersionsController < ApplicationController
   before_action :set_product
-  before_action :set_version, only: [:show, :revert]
+  before_action :set_version, only: [ :show, :revert ]
 
   # List all versions for product
   #
@@ -30,7 +30,7 @@ class ProductVersionsController < ApplicationController
   #
   def show
     @previous_version = @product.versions
-                                .where('id < ?', @version.id)
+                                .where("id < ?", @version.id)
                                 .order(id: :desc)
                                 .first
 
@@ -57,16 +57,16 @@ class ProductVersionsController < ApplicationController
 
     unless reified_product
       redirect_to product_versions_path(@product),
-                  alert: 'Cannot revert to this version.'
+                  alert: "Cannot revert to this version."
       return
     end
 
-    if @product.update(reified_product.attributes.except('id', 'created_at'))
+    if @product.update(reified_product.attributes.except("id", "created_at"))
       redirect_to product_path(@product),
                   notice: "Product reverted to version from #{@version.created_at.strftime('%Y-%m-%d %H:%M')}"
     else
       redirect_to product_versions_path(@product),
-                  alert: 'Failed to revert product.'
+                  alert: "Failed to revert product."
     end
   end
 

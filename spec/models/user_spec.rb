@@ -65,7 +65,7 @@ RSpec.describe User, type: :model do
         },
         'membership' => {
           'role' => 'admin',
-          'scopes' => ['read', 'write']
+          'scopes' => [ 'read', 'write' ]
         }
       }
     end

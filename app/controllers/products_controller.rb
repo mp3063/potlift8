@@ -42,7 +42,7 @@ class ProductsController < ApplicationController
                                        .parent_products_only
                                        .with_labels_only
                                        .with_subproducts
-                                       .includes(bundle_variants: [:subproducts, { product_configurations_as_super: :subproduct }])
+                                       .includes(bundle_variants: [ :subproducts, { product_configurations_as_super: :subproduct } ])
 
     # Load labels for filter dropdown and bulk label editor
     load_filter_labels
@@ -115,7 +115,7 @@ class ProductsController < ApplicationController
     @product = current_potlift_company.products
                                       .with_attributes
                                       .includes(:labels)
-                                      .includes(catalog_items: [:catalog, :catalog_item_attribute_values])
+                                      .includes(catalog_items: [ :catalog, :catalog_item_attribute_values ])
                                       .includes(configurations: :configuration_values)
                                       .with_subproducts
                                       # TODO: Add .with_inventory when inventory is displayed in show view
@@ -206,7 +206,7 @@ class ProductsController < ApplicationController
         result = BundleVariantGeneratorService.new(@product, bundle_configuration).call
 
         unless result.success?
-          @product.errors.add(:base, result.errors.join(', '))
+          @product.errors.add(:base, result.errors.join(", "))
           raise ActiveRecord::Rollback
         end
 
@@ -219,9 +219,9 @@ class ProductsController < ApplicationController
     if success
       notice_message = if @generated_count > 0
                         "Product created successfully. Generated #{@generated_count} #{'variant'.pluralize(@generated_count)}."
-                      else
+      else
                         "Product created successfully."
-                      end
+      end
       redirect_to products_path, notice: notice_message
     else
       # Turbo will automatically handle re-rendering the form in place
@@ -259,7 +259,7 @@ class ProductsController < ApplicationController
         result = BundleRegeneratorService.new(@product, bundle_configuration).call
 
         unless result.success?
-          @product.errors.add(:base, result.errors.join(', '))
+          @product.errors.add(:base, result.errors.join(", "))
           raise ActiveRecord::Rollback
         end
 
@@ -273,9 +273,9 @@ class ProductsController < ApplicationController
     if success
       notice_message = if @created_count > 0
                         "Product updated successfully. Regenerated #{@created_count} #{'variant'.pluralize(@created_count)}."
-                      else
+      else
                         "Product updated successfully."
-                      end
+      end
       redirect_to products_path, notice: notice_message
     else
       # Turbo will automatically handle re-rendering the form in place
@@ -561,9 +561,9 @@ class ProductsController < ApplicationController
       # Handle state machine transition failures (e.g., missing required attributes)
       error_message = if @product.active?
                         "Cannot deactivate product: #{e.message}"
-                      else
+      else
                         "Cannot activate product. Ensure all mandatory attributes are set and product structure is valid."
-                      end
+      end
 
       respond_to do |format|
         format.html { redirect_to @product, alert: error_message }
@@ -930,7 +930,7 @@ class ProductsController < ApplicationController
   # @return [Hash] The bundle configuration hash
   #
   def bundle_configuration
-    @bundle_configuration ||= JSON.parse(params[:bundle_configuration] || '{}')
+    @bundle_configuration ||= JSON.parse(params[:bundle_configuration] || "{}")
   rescue JSON::ParserError
     {}
   end
@@ -941,7 +941,7 @@ class ProductsController < ApplicationController
   # @return [Boolean] True if configuration is present and has components
   #
   def bundle_config_present?
-    params[:bundle_configuration].present? && bundle_configuration['components'].present?
+    params[:bundle_configuration].present? && bundle_configuration["components"].present?
   end
 
   # Check if bundle variants should be regenerated
@@ -950,6 +950,6 @@ class ProductsController < ApplicationController
   # @return [Boolean] True if should regenerate variants
   #
   def should_regenerate?
-    params[:regenerate] == 'true' && bundle_config_present?
+    params[:regenerate] == "true" && bundle_config_present?
   end
 end

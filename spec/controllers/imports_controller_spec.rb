@@ -35,7 +35,7 @@ RSpec.describe ImportsController, type: :request do
       end
 
       before do
-        allow(redis).to receive(:keys).with('import_progress:*').and_return(['import_progress:job-123'])
+        allow(redis).to receive(:keys).with('import_progress:*').and_return([ 'import_progress:job-123' ])
         allow(redis).to receive(:get).with('import_progress:job-123').and_return(import_data)
       end
 

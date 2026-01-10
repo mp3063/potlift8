@@ -15,7 +15,7 @@
 # - Uses catalog 'code' instead of 'id' for cleaner URLs
 #
 class CatalogsController < ApplicationController
-  before_action :set_catalog, only: [:show, :edit, :update, :destroy, :items, :reorder_items, :export]
+  before_action :set_catalog, only: [ :show, :edit, :update, :destroy, :items, :reorder_items, :export ]
 
   # GET /catalogs
   # GET /catalogs.turbo_stream
@@ -54,7 +54,7 @@ class CatalogsController < ApplicationController
   #
   def items
     @catalog_items = @catalog.catalog_items
-                             .includes(:catalog_item_attribute_values, product: [:labels, :inventories, :product_attribute_values])
+                             .includes(:catalog_item_attribute_values, product: [ :labels, :inventories, :product_attribute_values ])
                              .by_priority
 
     # Apply search filter
@@ -70,8 +70,8 @@ class CatalogsController < ApplicationController
 
         # HTTP caching with ETag (per page and search query)
         fresh_when(
-          etag: [@catalog, @catalog_items.maximum(:updated_at), params[:page], params[:q]],
-          last_modified: [@catalog.updated_at, @catalog_items.maximum(:updated_at)].compact.max,
+          etag: [ @catalog, @catalog_items.maximum(:updated_at), params[:page], params[:q] ],
+          last_modified: [ @catalog.updated_at, @catalog_items.maximum(:updated_at) ].compact.max,
           public: false
         )
       end
@@ -107,9 +107,9 @@ class CatalogsController < ApplicationController
 
     if @catalog.save
       respond_to do |format|
-        format.html { redirect_to catalogs_path, notice: 'Catalog created successfully.' }
+        format.html { redirect_to catalogs_path, notice: "Catalog created successfully." }
         format.turbo_stream do
-          redirect_to catalogs_path, notice: 'Catalog created successfully.'
+          redirect_to catalogs_path, notice: "Catalog created successfully."
         end
       end
     else
@@ -129,9 +129,9 @@ class CatalogsController < ApplicationController
   def update
     if @catalog.update(catalog_params)
       respond_to do |format|
-        format.html { redirect_to catalogs_path, notice: 'Catalog updated successfully.' }
+        format.html { redirect_to catalogs_path, notice: "Catalog updated successfully." }
         format.turbo_stream do
-          redirect_to catalogs_path, notice: 'Catalog updated successfully.'
+          redirect_to catalogs_path, notice: "Catalog updated successfully."
         end
       end
     else
@@ -151,9 +151,9 @@ class CatalogsController < ApplicationController
     @catalog.destroy
 
     respond_to do |format|
-      format.html { redirect_to catalogs_path, notice: 'Catalog deleted successfully.' }
+      format.html { redirect_to catalogs_path, notice: "Catalog deleted successfully." }
       format.turbo_stream do
-        redirect_to catalogs_path, notice: 'Catalog deleted successfully.'
+        redirect_to catalogs_path, notice: "Catalog deleted successfully."
       end
     end
   end
@@ -203,7 +203,7 @@ class CatalogsController < ApplicationController
   #
   def export
     @catalog_items = @catalog.catalog_items
-                             .includes(product: [:labels, :product_attribute_values])
+                             .includes(product: [ :labels, :product_attribute_values ])
                              .by_priority
 
     respond_to do |format|
@@ -278,22 +278,22 @@ class CatalogsController < ApplicationController
   # @param catalog_items [ActiveRecord::Relation] Catalog items to export
   #
   def send_csv_export(catalog_items)
-    require 'csv'
+    require "csv"
 
     csv_data = CSV.generate(headers: true) do |csv|
       # CSV headers
       csv << [
-        'Priority',
-        'State',
-        'Product SKU',
-        'Product Name',
-        'Product Type',
-        'Product Status',
-        'EAN',
-        'Labels',
-        'Price',
-        'Weight',
-        'Stock'
+        "Priority",
+        "State",
+        "Product SKU",
+        "Product Name",
+        "Product Type",
+        "Product Status",
+        "EAN",
+        "Labels",
+        "Price",
+        "Weight",
+        "Stock"
       ]
 
       # CSV rows
@@ -308,9 +308,9 @@ class CatalogsController < ApplicationController
           product.product_type,
           product.product_status,
           product.ean,
-          product.labels.map(&:name).join(', '),
-          item.effective_attribute_value('price'),
-          item.effective_attribute_value('weight'),
+          product.labels.map(&:name).join(", "),
+          item.effective_attribute_value("price"),
+          item.effective_attribute_value("weight"),
           product.inventories.sum(:value)
         ]
       end
@@ -318,7 +318,7 @@ class CatalogsController < ApplicationController
 
     send_data csv_data,
               filename: "catalog_#{@catalog.code}_#{Time.current.strftime('%Y%m%d_%H%M%S')}.csv",
-              type: 'text/csv',
-              disposition: 'attachment'
+              type: "text/csv",
+              disposition: "attachment"
   end
 end

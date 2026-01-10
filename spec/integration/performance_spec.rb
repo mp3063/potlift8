@@ -351,7 +351,7 @@ RSpec.describe 'Performance Integration', type: :request do
 
     it "uses includes for associations when filtering" do
       queries = count_queries do
-        get products_path, params: { label_ids: [product.labels.first.id] }
+        get products_path, params: { label_ids: [ product.labels.first.id ] }
       end
 
       expect(response).to have_http_status(:success)

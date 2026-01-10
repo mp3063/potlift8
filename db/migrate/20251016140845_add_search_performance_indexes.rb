@@ -52,8 +52,8 @@ class AddSearchPerformanceIndexes < ActiveRecord::Migration[8.0]
     # Products: Index on created_at for date filtering within company
     # Optimizes queries like: products.where("created_at >= ?", date).order(created_at: :desc)
     # Expected speedup: 5-10x for date range filters
-    unless index_exists?(:products, [:company_id, :created_at])
-      add_index :products, [:company_id, :created_at],
+    unless index_exists?(:products, [ :company_id, :created_at ])
+      add_index :products, [ :company_id, :created_at ],
                 name: 'index_products_on_company_created_at',
                 comment: 'Optimizes date filtering and sorting for products'
     end
@@ -143,8 +143,8 @@ class AddSearchPerformanceIndexes < ActiveRecord::Migration[8.0]
     # Product Attribute Values: Composite index for filtering by attribute and value
     # Optimizes queries like: product_attribute_values.where(product_attribute_id: x, value: y)
     # Expected speedup: 5-10x for attribute value filtering
-    unless index_exists?(:product_attribute_values, [:product_attribute_id, :value])
-      add_index :product_attribute_values, [:product_attribute_id, :value],
+    unless index_exists?(:product_attribute_values, [ :product_attribute_id, :value ])
+      add_index :product_attribute_values, [ :product_attribute_id, :value ],
                 name: 'index_pav_on_attribute_value',
                 comment: 'Optimizes filtering by attribute and value'
     end
@@ -165,8 +165,8 @@ class AddSearchPerformanceIndexes < ActiveRecord::Migration[8.0]
     # Inventories: Composite index for inventory queries by storage and saldo
     # Optimizes queries like: inventories.where(storage_id: x).where("value > ?", 0)
     # Expected speedup: 5-10x for storage inventory reports
-    unless index_exists?(:inventories, [:storage_id, :value])
-      add_index :inventories, [:storage_id, :value],
+    unless index_exists?(:inventories, [ :storage_id, :value ])
+      add_index :inventories, [ :storage_id, :value ],
                 name: 'index_inventories_on_storage_value',
                 comment: 'Optimizes inventory queries by storage and stock level'
     end
@@ -178,8 +178,8 @@ class AddSearchPerformanceIndexes < ActiveRecord::Migration[8.0]
     # Catalog Items: Composite index for priority ordering
     # Optimizes queries like: catalog_items.where(catalog_id: x).order(:priority)
     # Expected speedup: 5-10x for catalog product listings
-    unless index_exists?(:catalog_items, [:catalog_id, :priority])
-      add_index :catalog_items, [:catalog_id, :priority],
+    unless index_exists?(:catalog_items, [ :catalog_id, :priority ])
+      add_index :catalog_items, [ :catalog_id, :priority ],
                 name: 'index_catalog_items_on_catalog_priority',
                 comment: 'Optimizes ordered catalog product retrieval'
     end
@@ -192,8 +192,8 @@ class AddSearchPerformanceIndexes < ActiveRecord::Migration[8.0]
     # Optimizes queries like: prices.where(product_id: x, customer_group_id: y)
     # Expected speedup: 5-10x for customer-specific pricing
     if table_exists?(:prices)
-      unless index_exists?(:prices, [:product_id, :customer_group_id])
-        add_index :prices, [:product_id, :customer_group_id],
+      unless index_exists?(:prices, [ :product_id, :customer_group_id ])
+        add_index :prices, [ :product_id, :customer_group_id ],
                   name: 'index_prices_on_product_customer_group',
                   comment: 'Optimizes price lookups by product and customer group',
                   where: 'customer_group_id IS NOT NULL'
@@ -208,8 +208,8 @@ class AddSearchPerformanceIndexes < ActiveRecord::Migration[8.0]
     # Optimizes queries like: translations.where(translatable_type: 'Product', translatable_id: x, locale: 'en')
     # Expected speedup: 5-10x for translated content retrieval
     if table_exists?(:translations)
-      unless index_exists?(:translations, [:translatable_type, :translatable_id, :locale])
-        add_index :translations, [:translatable_type, :translatable_id, :locale],
+      unless index_exists?(:translations, [ :translatable_type, :translatable_id, :locale ])
+        add_index :translations, [ :translatable_type, :translatable_id, :locale ],
                   name: 'index_translations_on_type_id_locale',
                   comment: 'Optimizes translation lookups by type, ID, and locale'
       end

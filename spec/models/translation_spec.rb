@@ -100,7 +100,7 @@ RSpec.describe Translation, type: :model do
   # Test SUPPORTED_LOCALES constant
   describe 'SUPPORTED_LOCALES constant' do
     it 'defines all 6 supported locales' do
-      expect(Translation::SUPPORTED_LOCALES).to eq(['en', 'es', 'fr', 'de', 'it', 'pt'])
+      expect(Translation::SUPPORTED_LOCALES).to eq([ 'en', 'es', 'fr', 'de', 'it', 'pt' ])
     end
   end
 

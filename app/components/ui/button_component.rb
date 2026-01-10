@@ -231,7 +231,7 @@ module Ui
     #
     # @return [String] Combined CSS classes for variant, size, and base styles
     def button_classes
-      [BASE_CLASSES, VARIANTS[@variant], SIZES[@size]].join(" ")
+      [ BASE_CLASSES, VARIANTS[@variant], SIZES[@size] ].join(" ")
     end
   end
 end

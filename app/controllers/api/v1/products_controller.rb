@@ -66,7 +66,7 @@ module Api
       def index
         # Parse pagination parameters
         page = params[:page]&.to_i || 1
-        per_page = [params[:per_page]&.to_i || 50, 100].min # Max 100 per page
+        per_page = [ params[:per_page]&.to_i || 50, 100 ].min # Max 100 per page
 
         # Build base query (eager loading not needed for basic serializer)
         products = @current_company.products
@@ -139,9 +139,9 @@ module Api
           render_success({ product: serialized_product })
         else
           render_error(
-            product.errors.full_messages.join(', '),
+            product.errors.full_messages.join(", "),
             status: :unprocessable_entity,
-            error_code: 'validation_failed'
+            error_code: "validation_failed"
           )
         end
       end

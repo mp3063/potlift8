@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :bundle_template do
-    association :product, factory: [:product, :bundle]
+    association :product, factory: [ :product, :bundle ]
     company { product.company }
     configuration { {} }
     generated_variants_count { 0 }

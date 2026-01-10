@@ -196,7 +196,7 @@ RSpec.describe InventoryUpdateService do
       end
 
       it 'returns error for missing storage_code' do
-        updates = [{ value: 100 }]
+        updates = [ { value: 100 } ]
 
         result = service.update(updates: updates)
 
@@ -205,7 +205,7 @@ RSpec.describe InventoryUpdateService do
       end
 
       it 'returns error for missing value' do
-        updates = [{ storage_code: 'MAIN' }]
+        updates = [ { storage_code: 'MAIN' } ]
 
         result = service.update(updates: updates)
 
@@ -214,7 +214,7 @@ RSpec.describe InventoryUpdateService do
       end
 
       it 'returns error for invalid storage code' do
-        updates = [{ storage_code: 'NONEXISTENT', value: 100 }]
+        updates = [ { storage_code: 'NONEXISTENT', value: 100 } ]
 
         result = service.update(updates: updates)
 
@@ -223,7 +223,7 @@ RSpec.describe InventoryUpdateService do
       end
 
       it 'returns error for non-numeric value' do
-        updates = [{ storage_code: 'MAIN', value: 'not a number' }]
+        updates = [ { storage_code: 'MAIN', value: 'not a number' } ]
 
         result = service.update(updates: updates)
 
@@ -232,7 +232,7 @@ RSpec.describe InventoryUpdateService do
       end
 
       it 'converts string numbers to integers' do
-        updates = [{ storage_code: 'MAIN', value: '150' }]
+        updates = [ { storage_code: 'MAIN', value: '150' } ]
 
         service.update(updates: updates)
 
@@ -241,7 +241,7 @@ RSpec.describe InventoryUpdateService do
       end
 
       it 'handles negative values' do
-        updates = [{ storage_code: 'MAIN', value: -50 }]
+        updates = [ { storage_code: 'MAIN', value: -50 } ]
 
         service.update(updates: updates)
 
@@ -334,7 +334,7 @@ RSpec.describe InventoryUpdateService do
         other_company = create(:company)
         other_storage = create(:storage, company: other_company, code: 'OTHER')
 
-        updates = [{ storage_code: 'OTHER', value: 100 }]
+        updates = [ { storage_code: 'OTHER', value: 100 } ]
 
         result = service.update(updates: updates)
 
@@ -369,11 +369,11 @@ RSpec.describe InventoryUpdateService do
         # Create initial inventory
         create(:inventory, product: product, storage: storage_main, value: 100)
 
-        updates = [{ storage_code: 'MAIN', value: 200 }]
+        updates = [ { storage_code: 'MAIN', value: 200 } ]
 
         # Simulate concurrent update
         result1 = service.update(updates: updates)
-        result2 = service.update(updates: [{ storage_code: 'MAIN', value: 300 }])
+        result2 = service.update(updates: [ { storage_code: 'MAIN', value: 300 } ])
 
         expect(result1[:success]).to be true
         expect(result2[:success]).to be true
@@ -390,7 +390,7 @@ RSpec.describe InventoryUpdateService do
       end
 
       it 'handles zero value' do
-        updates = [{ storage_code: 'MAIN', value: 0 }]
+        updates = [ { storage_code: 'MAIN', value: 0 } ]
 
         result = service.update(updates: updates)
 
@@ -401,7 +401,7 @@ RSpec.describe InventoryUpdateService do
       end
 
       it 'handles very large values' do
-        updates = [{ storage_code: 'MAIN', value: 999_999_999 }]
+        updates = [ { storage_code: 'MAIN', value: 999_999_999 } ]
 
         result = service.update(updates: updates)
 
@@ -412,7 +412,7 @@ RSpec.describe InventoryUpdateService do
       end
 
       it 'handles blank storage_code' do
-        updates = [{ storage_code: '', value: 100 }]
+        updates = [ { storage_code: '', value: 100 } ]
 
         result = service.update(updates: updates)
 
@@ -420,7 +420,7 @@ RSpec.describe InventoryUpdateService do
       end
 
       it 'handles nil storage_code' do
-        updates = [{ storage_code: nil, value: 100 }]
+        updates = [ { storage_code: nil, value: 100 } ]
 
         result = service.update(updates: updates)
 

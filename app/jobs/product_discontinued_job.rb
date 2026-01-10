@@ -45,7 +45,7 @@ class ProductDiscontinuedJob < ApplicationJob
   #
   def log_discontinuation(product)
     Rails.logger.info({
-      event: 'product_discontinued',
+      event: "product_discontinued",
       product_id: product.id,
       sku: product.sku,
       name: product.name,

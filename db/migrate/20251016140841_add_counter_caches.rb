@@ -25,7 +25,7 @@ class AddCounterCaches < ActiveRecord::Migration[8.0]
 
     # Add counter cache column for products (subproducts_count for configurable/bundle products)
     add_column :products, :subproducts_count, :integer, default: 0, null: false
-    add_index :products, [:company_id, :subproducts_count],
+    add_index :products, [ :company_id, :subproducts_count ],
               name: 'index_products_on_company_and_subproducts_count',
               comment: 'Optimizes queries for products with variants/components'
 
@@ -35,7 +35,7 @@ class AddCounterCaches < ActiveRecord::Migration[8.0]
     say_with_time "Backfilling labels.products_count" do
       Label.find_each do |label|
         # Count products with this label or any sublabel (includes descendants)
-        label_ids = [label.id] + label.descendants.pluck(:id)
+        label_ids = [ label.id ] + label.descendants.pluck(:id)
         count = ProductLabel.where(label_id: label_ids).distinct.count(:product_id)
         label.update_column(:products_count, count)
       end
@@ -49,7 +49,7 @@ class AddCounterCaches < ActiveRecord::Migration[8.0]
     end
 
     say_with_time "Backfilling products.subproducts_count" do
-      Product.where(product_type: [:configurable, :bundle]).find_each do |product|
+      Product.where(product_type: [ :configurable, :bundle ]).find_each do |product|
         count = product.subproducts.count
         product.update_column(:subproducts_count, count)
       end
@@ -63,7 +63,7 @@ class AddCounterCaches < ActiveRecord::Migration[8.0]
     remove_index :catalogs, :catalog_items_count if index_exists?(:catalogs, :catalog_items_count)
     remove_column :catalogs, :catalog_items_count
 
-    remove_index :products, name: 'index_products_on_company_and_subproducts_count' if index_exists?(:products, [:company_id, :subproducts_count], name: 'index_products_on_company_and_subproducts_count')
+    remove_index :products, name: 'index_products_on_company_and_subproducts_count' if index_exists?(:products, [ :company_id, :subproducts_count ], name: 'index_products_on_company_and_subproducts_count')
     remove_column :products, :subproducts_count
   end
 end

@@ -3,8 +3,8 @@
 FactoryBot.define do
   # ProductConfiguration for variants
   factory :variant_configuration, class: 'ProductConfiguration' do
-    association :superproduct, factory: [:product, :configurable_variant]
-    association :subproduct, factory: [:product, :sellable]
+    association :superproduct, factory: [ :product, :configurable_variant ]
+    association :subproduct, factory: [ :product, :sellable ]
     configuration_position { nil }
     info { {} }
 

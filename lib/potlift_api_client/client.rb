@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require 'faraday'
-require 'json'
+require "faraday"
+require "json"
 
 module PotliftApiClient
   # Main client class for interacting with the Potlift8 API
@@ -57,11 +57,11 @@ module PotliftApiClient
     #
     # @raise [ArgumentError] if api_token is not provided
     #
-    def initialize(api_token:, base_url: 'http://localhost:3246', timeout: 30, open_timeout: 10)
-      raise ArgumentError, 'api_token is required' if api_token.nil? || api_token.empty?
+    def initialize(api_token:, base_url: "http://localhost:3246", timeout: 30, open_timeout: 10)
+      raise ArgumentError, "api_token is required" if api_token.nil? || api_token.empty?
 
       @api_token = api_token
-      @base_url = base_url.chomp('/')
+      @base_url = base_url.chomp("/")
       @connection = build_connection(timeout, open_timeout)
     end
 
@@ -172,9 +172,9 @@ module PotliftApiClient
         f.response :json, content_type: /\bjson$/
         f.options.timeout = timeout
         f.options.open_timeout = open_timeout
-        f.headers['Authorization'] = "Bearer #{api_token}"
-        f.headers['Content-Type'] = 'application/json'
-        f.headers['Accept'] = 'application/json'
+        f.headers["Authorization"] = "Bearer #{api_token}"
+        f.headers["Content-Type"] = "application/json"
+        f.headers["Accept"] = "application/json"
         f.adapter Faraday.default_adapter
       end
     end
@@ -197,13 +197,13 @@ module PotliftApiClient
       when 200..299
         body
       when 401
-        raise AuthenticationError.new(body['error'] || 'Unauthorized', response)
+        raise AuthenticationError.new(body["error"] || "Unauthorized", response)
       when 404
-        raise NotFoundError.new(body['error'] || 'Not found', response)
+        raise NotFoundError.new(body["error"] || "Not found", response)
       when 422
-        raise ValidationError.new(body['error'] || 'Validation failed', response, body['details'])
+        raise ValidationError.new(body["error"] || "Validation failed", response, body["details"])
       else
-        raise ApiError.new(body['error'] || "HTTP #{response.status}", response)
+        raise ApiError.new(body["error"] || "HTTP #{response.status}", response)
       end
     rescue Faraday::TimeoutError => e
       raise TimeoutError.new("Request timeout: #{e.message}")
@@ -236,7 +236,7 @@ module PotliftApiClient
     #   products.each { |p| puts p['sku'] }
     #
     def list(page: 1, per_page: 100)
-      client.get('/products', { page: page, per_page: per_page })
+      client.get("/products", { page: page, per_page: per_page })
     end
 
     # Get product by SKU
@@ -310,7 +310,7 @@ module PotliftApiClient
     #   ])
     #
     def update(sku, updates)
-      client.post('/inventories/update', {
+      client.post("/inventories/update", {
         sku: sku,
         inventory: { updates: updates }
       })
@@ -349,7 +349,7 @@ module PotliftApiClient
     #   )
     #
     def create(origin_event_id:, direction:, event_type:, key:, load:)
-      client.post('/sync_tasks', {
+      client.post("/sync_tasks", {
         origin_event_id: origin_event_id,
         direction: direction,
         event_type: event_type,

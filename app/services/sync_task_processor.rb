@@ -79,19 +79,19 @@ class SyncTaskProcessor
 
     # Process event based on type
     result = case event_type
-             when 'product_update'
+    when "product_update"
                process_product_update(load, key)
-             when 'product_create'
+    when "product_create"
                process_product_create(load)
-             when 'inventory_update'
+    when "inventory_update"
                process_inventory_update(load, key)
-             when 'order_sync'
+    when "order_sync"
                process_order_sync(load, key)
-             when 'catalog_sync'
+    when "catalog_sync"
                process_catalog_sync(load, key)
-             else
+    else
                { error: "Unsupported event type: #{event_type}" }
-             end
+    end
 
     # Build response
     if result[:error]
@@ -115,7 +115,7 @@ class SyncTaskProcessor
   #
   def validate_params(origin_event_id, direction, event_type, load)
     if origin_event_id.blank?
-      return { success: false, error: 'origin_event_id is required' }
+      return { success: false, error: "origin_event_id is required" }
     end
 
     unless DIRECTIONS.include?(direction)
@@ -128,7 +128,7 @@ class SyncTaskProcessor
 
     # Accept both Hash and ActionController::Parameters
     unless load.is_a?(Hash) || load.is_a?(ActionController::Parameters)
-      return { success: false, error: 'load must be a hash' }
+      return { success: false, error: "load must be a hash" }
     end
 
     nil
@@ -173,7 +173,7 @@ class SyncTaskProcessor
   # @return [Redis] Redis client instance
   #
   def redis
-    @redis ||= Redis.new(url: ENV.fetch('REDIS_URL', 'redis://localhost:6379/1'))
+    @redis ||= Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
   end
 
   # Process product update event
@@ -186,10 +186,10 @@ class SyncTaskProcessor
     # Convert ActionController::Parameters to hash if needed
     load_hash = load.is_a?(ActionController::Parameters) ? load.to_unsafe_h : load
 
-    sku = key || load_hash[:sku] || load_hash['sku']
+    sku = key || load_hash[:sku] || load_hash["sku"]
 
     unless sku.present?
-      return { error: 'SKU is required for product_update' }
+      return { error: "SKU is required for product_update" }
     end
 
     product = company.products.find_by(sku: sku)
@@ -199,7 +199,7 @@ class SyncTaskProcessor
     end
 
     # Update product with allowed fields
-    update_params = load_hash.slice(:name, :ean, :product_status, :info, 'name', 'ean', 'product_status', 'info')
+    update_params = load_hash.slice(:name, :ean, :product_status, :info, "name", "ean", "product_status", "info")
 
     if product.update(update_params)
       { product_id: product.id, sku: product.sku, updated: true }
@@ -216,7 +216,7 @@ class SyncTaskProcessor
   def process_product_create(load)
     # This is a stub - actual implementation would create products
     # For now, return not implemented
-    { error: 'Product creation via sync is not yet implemented' }
+    { error: "Product creation via sync is not yet implemented" }
   end
 
   # Process inventory update event
@@ -229,15 +229,15 @@ class SyncTaskProcessor
     # Convert ActionController::Parameters to hash if needed
     load_hash = load.is_a?(ActionController::Parameters) ? load.to_unsafe_h : load
 
-    sku = key || load_hash[:sku] || load_hash['sku']
-    updates = load_hash[:updates] || load_hash['updates']
+    sku = key || load_hash[:sku] || load_hash["sku"]
+    updates = load_hash[:updates] || load_hash["updates"]
 
     unless sku.present?
-      return { error: 'SKU is required for inventory_update' }
+      return { error: "SKU is required for inventory_update" }
     end
 
     unless updates.present? && updates.is_a?(Array)
-      return { error: 'updates array is required for inventory_update' }
+      return { error: "updates array is required for inventory_update" }
     end
 
     product = company.products.find_by(sku: sku)
@@ -266,7 +266,7 @@ class SyncTaskProcessor
   def process_order_sync(load, key)
     # This is a stub - actual implementation would sync orders
     # For now, return not implemented
-    { error: 'Order sync is not yet implemented' }
+    { error: "Order sync is not yet implemented" }
   end
 
   # Process catalog sync event
@@ -278,7 +278,7 @@ class SyncTaskProcessor
   def process_catalog_sync(load, key)
     # This is a stub - actual implementation would sync catalogs
     # For now, return not implemented
-    { error: 'Catalog sync is not yet implemented' }
+    { error: "Catalog sync is not yet implemented" }
   end
 
   # Build success response
@@ -326,7 +326,7 @@ class SyncTaskProcessor
       event_id: event_id,
       event_type: event_type,
       duplicate: true,
-      message: 'Event already processed (idempotent)'
+      message: "Event already processed (idempotent)"
     }
   end
 end

@@ -9,6 +9,6 @@ class CreateProductLabels < ActiveRecord::Migration[8.0]
     end
 
     # Unique constraint to prevent duplicate product-label associations
-    add_index :product_labels, [:product_id, :label_id], unique: true
+    add_index :product_labels, [ :product_id, :label_id ], unique: true
   end
 end

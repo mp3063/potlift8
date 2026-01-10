@@ -41,7 +41,7 @@ class ProductAttributeValuesController < ApplicationController
     # Handle additional fields (e.g., unit for weight attributes)
     if params[:unit].present?
       @product_attribute_value.info ||= {}
-      @product_attribute_value.info['unit'] = params[:unit]
+      @product_attribute_value.info["unit"] = params[:unit]
     end
 
     if @product_attribute_value.save
@@ -54,10 +54,10 @@ class ProductAttributeValuesController < ApplicationController
           render turbo_stream: [
             turbo_stream.replace(
               "#{helpers.dom_id(@attribute, :value)}",
-              partial: 'products/attribute_value',
+              partial: "products/attribute_value",
               locals: { attribute: @attribute, value: @value, product: @product }
             ),
-            turbo_stream.update('flash', partial: 'shared/flash', locals: { flash: flash })
+            turbo_stream.update("flash", partial: "shared/flash", locals: { flash: flash })
           ]
         end
       end
@@ -68,7 +68,7 @@ class ProductAttributeValuesController < ApplicationController
         end
         format.turbo_stream do
           flash.now[:alert] = "Failed to update #{@attribute.name}: #{@product_attribute_value.errors.full_messages.join(', ')}"
-          render turbo_stream: turbo_stream.update('flash', partial: 'shared/flash', locals: { flash: flash }),
+          render turbo_stream: turbo_stream.update("flash", partial: "shared/flash", locals: { flash: flash }),
                  status: :unprocessable_entity
         end
       end
@@ -99,7 +99,7 @@ class ProductAttributeValuesController < ApplicationController
     return nil if value.blank?
 
     # Handle boolean pa_type specially
-    if @attribute.pa_type == 'patype_boolean'
+    if @attribute.pa_type == "patype_boolean"
       # Convert checkbox values to boolean string
       return ActiveModel::Type::Boolean.new.cast(value).to_s
     end
@@ -114,7 +114,7 @@ class ProductAttributeValuesController < ApplicationController
       value.to_s.strip
     when :view_format_selectable
       # Validate against allowed options
-      options = @attribute.info&.dig('options') || []
+      options = @attribute.info&.dig("options") || []
       if options.present? && !options.include?(value)
         return options.first
       end

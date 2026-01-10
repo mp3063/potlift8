@@ -6,11 +6,11 @@ module StoragesHelper
   # @return [String] HTML badge component
   def storage_type_badge(storage)
     variant = case storage.storage_type
-              when "regular" then :info
-              when "temporary" then :warning
-              when "incoming" then :gray
-              else :gray
-              end
+    when "regular" then :info
+    when "temporary" then :warning
+    when "incoming" then :gray
+    else :gray
+    end
 
     render Ui::BadgeComponent.new(variant: variant, size: :sm) do
       storage.storage_type.titleize
@@ -44,12 +44,12 @@ module StoragesHelper
   # @param product [Product] The product instance
   # @return [Hash] Hash with text and classes
   def inventory_value_display(inventory, product)
-    restock_level = product.info&.dig('restock_level') || 0
+    restock_level = product.info&.dig("restock_level") || 0
     is_low = inventory.value < restock_level
 
     {
       value: inventory.value,
-      classes: is_low ? 'text-red-600 font-medium' : 'text-gray-900 font-medium'
+      classes: is_low ? "text-red-600 font-medium" : "text-gray-900 font-medium"
     }
   end
 end

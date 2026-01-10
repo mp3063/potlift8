@@ -16,7 +16,7 @@ RSpec.describe Shared::SkeletonTableComponent, type: :component do
 
   it "renders custom columns" do
     render_inline(described_class.new(
-      columns: ['SKU', 'Name', 'Status']
+      columns: [ 'SKU', 'Name', 'Status' ]
     ))
 
     expect(page).to have_css('thead th', text: 'SKU')
@@ -54,7 +54,7 @@ RSpec.describe Shared::SkeletonTableComponent, type: :component do
   end
 
   it "renders different skeleton widths for different columns" do
-    render_inline(described_class.new(rows: 1, columns: ['A', 'B', 'C', 'D']))
+    render_inline(described_class.new(rows: 1, columns: [ 'A', 'B', 'C', 'D' ]))
 
     # Check that different width classes are used
     skeleton_divs = page.all('td div.bg-gray-200')

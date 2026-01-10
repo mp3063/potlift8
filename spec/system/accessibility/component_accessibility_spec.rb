@@ -118,7 +118,7 @@ RSpec.describe 'Component Accessibility', type: :system, js: true do
     end
 
     it 'all button variants have visible focus indicators' do
-      [:primary, :secondary, :danger, :ghost].each do |variant|
+      [ :primary, :secondary, :danger, :ghost ].each do |variant|
         render_erb_component(%(<%= render Ui::ButtonComponent.new(variant: :#{variant}).with_content("#{variant.to_s.capitalize} Button") %>))
 
         button = page.find('button')

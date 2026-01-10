@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-require 'oauth2'
-require 'jwt'
-require 'faraday'
-require 'openssl'
+require "oauth2"
+require "jwt"
+require "faraday"
+require "openssl"
 
 module Authlift
   # OAuth2 client for Authlift8 integration with comprehensive security features
@@ -44,10 +44,10 @@ module Authlift
     #
     # @raise [ConfigurationError] if required configuration is missing
     def initialize
-      @client_id = ENV.fetch('AUTHLIFT8_CLIENT_ID') { raise ConfigurationError, 'AUTHLIFT8_CLIENT_ID is required' }
-      @client_secret = ENV.fetch('AUTHLIFT8_CLIENT_SECRET') { raise ConfigurationError, 'AUTHLIFT8_CLIENT_SECRET is required' }
-      @site = ENV.fetch('AUTHLIFT8_SITE') { raise ConfigurationError, 'AUTHLIFT8_SITE is required' }
-      @redirect_uri = ENV.fetch('AUTHLIFT8_REDIRECT_URI') { raise ConfigurationError, 'AUTHLIFT8_REDIRECT_URI is required' }
+      @client_id = ENV.fetch("AUTHLIFT8_CLIENT_ID") { raise ConfigurationError, "AUTHLIFT8_CLIENT_ID is required" }
+      @client_secret = ENV.fetch("AUTHLIFT8_CLIENT_SECRET") { raise ConfigurationError, "AUTHLIFT8_CLIENT_SECRET is required" }
+      @site = ENV.fetch("AUTHLIFT8_SITE") { raise ConfigurationError, "AUTHLIFT8_SITE is required" }
+      @redirect_uri = ENV.fetch("AUTHLIFT8_REDIRECT_URI") { raise ConfigurationError, "AUTHLIFT8_REDIRECT_URI is required" }
 
       validate_configuration!
     end
@@ -62,9 +62,9 @@ module Authlift
     #   state = SecureRandom.hex(32)
     #   session[:oauth_state] = state
     #   redirect_to client.authorization_url(state: state)
-    def authorization_url(state:, scope: 'public')
-      raise ArgumentError, 'state cannot be blank' if state.blank?
-      raise ArgumentError, 'state must be at least 32 characters' if state.length < 32
+    def authorization_url(state:, scope: "public")
+      raise ArgumentError, "state cannot be blank" if state.blank?
+      raise ArgumentError, "state must be at least 32 characters" if state.length < 32
 
       oauth_client.auth_code.authorize_url(
         redirect_uri: redirect_uri,
@@ -150,7 +150,7 @@ module Authlift
     #   email = payload.dig('user', 'email')
     #   company_id = payload.dig('company', 'id')
     def decode_jwt(token, retry_on_failure: true)
-      raise ArgumentError, 'token cannot be blank' if token.blank?
+      raise ArgumentError, "token cannot be blank" if token.blank?
 
       public_key = fetch_public_key
 
@@ -160,7 +160,7 @@ module Authlift
         public_key,
         true, # Verify signature
         {
-          algorithm: 'RS256',
+          algorithm: "RS256",
           verify_expiration: true,
           verify_iat: true, # Verify issued at
           iss: site, # Verify issuer
@@ -173,12 +173,12 @@ module Authlift
 
       payload
     rescue JWT::ExpiredSignature
-      Rails.logger.warn('JWT token has expired')
-      raise TokenValidationError, 'Token has expired'
+      Rails.logger.warn("JWT token has expired")
+      raise TokenValidationError, "Token has expired"
     rescue JWT::VerificationError, JWT::DecodeError => e
       # If verification fails and we haven't retried yet, refresh public key and retry
       if retry_on_failure
-        Rails.logger.info('JWT verification failed, refreshing public key and retrying')
+        Rails.logger.info("JWT verification failed, refreshing public key and retrying")
         clear_public_key_cache!
         decode_jwt(token, retry_on_failure: false)
       else
@@ -197,7 +197,7 @@ module Authlift
     #   tokens = client.refresh_token(session[:refresh_token])
     #   session[:access_token] = tokens[:access_token]
     def refresh_token(refresh_token)
-      raise ArgumentError, 'refresh_token cannot be blank' if refresh_token.blank?
+      raise ArgumentError, "refresh_token cannot be blank" if refresh_token.blank?
 
       token = OAuth2::AccessToken.new(oauth_client, nil, refresh_token: refresh_token)
       new_token = token.refresh!
@@ -244,10 +244,10 @@ module Authlift
     # @example
     #   client.revoke_token(session[:access_token])
     def revoke_token(access_token)
-      raise ArgumentError, 'access_token cannot be blank' if access_token.blank?
+      raise ArgumentError, "access_token cannot be blank" if access_token.blank?
 
       response = Faraday.post("#{site}/oauth/revoke") do |req|
-        req.headers['Content-Type'] = 'application/x-www-form-urlencoded'
+        req.headers["Content-Type"] = "application/x-www-form-urlencoded"
         req.body = URI.encode_www_form({
           token: access_token,
           client_id: client_id,
@@ -264,7 +264,7 @@ module Authlift
         return false
       end
 
-      Rails.logger.info('Access token revoked successfully')
+      Rails.logger.info("Access token revoked successfully")
       true
     rescue Faraday::Error => e
       Rails.logger.error("Token revocation network error: #{e.message}")
@@ -287,11 +287,11 @@ module Authlift
         client_id,
         client_secret,
         site: site,
-        authorize_url: '/oauth/authorize',
-        token_url: '/oauth/token',
+        authorize_url: "/oauth/authorize",
+        token_url: "/oauth/token",
         connection_opts: {
           headers: {
-            'User-Agent' => 'Potlift8/1.0'
+            "User-Agent" => "Potlift8/1.0"
           },
           ssl: {
             verify: Rails.env.production? # Verify SSL in production
@@ -325,9 +325,9 @@ module Authlift
       end
 
       jwks = JSON.parse(response.body)
-      key_data = jwks.dig('keys', 0)
+      key_data = jwks.dig("keys", 0)
 
-      raise PublicKeyError, 'No keys found in JWKS' if key_data.nil?
+      raise PublicKeyError, "No keys found in JWKS" if key_data.nil?
 
       # Convert JWK to PEM format
       jwk = JWT::JWK.import(key_data)
@@ -347,11 +347,11 @@ module Authlift
     # @raise [AuthenticationError] if validation fails
     def validate_state!(state, expected_state)
       if state.blank? || expected_state.blank?
-        raise AuthenticationError, 'Missing state token - possible CSRF attack'
+        raise AuthenticationError, "Missing state token - possible CSRF attack"
       end
 
       unless ActiveSupport::SecurityUtils.secure_compare(state, expected_state)
-        raise AuthenticationError, 'State token mismatch - possible CSRF attack'
+        raise AuthenticationError, "State token mismatch - possible CSRF attack"
       end
     end
 
@@ -361,7 +361,7 @@ module Authlift
     # @raise [TokenValidationError] if validation fails
     def validate_jwt_claims!(payload)
       # Validate required claims
-      required_claims = ['sub', 'iat', 'exp']
+      required_claims = [ "sub", "iat", "exp" ]
       missing_claims = required_claims - payload.keys
 
       unless missing_claims.empty?
@@ -369,8 +369,8 @@ module Authlift
       end
 
       # Validate subject is not empty
-      if payload['sub'].blank?
-        raise TokenValidationError, 'Invalid subject claim'
+      if payload["sub"].blank?
+        raise TokenValidationError, "Invalid subject claim"
       end
     end
 
@@ -378,20 +378,20 @@ module Authlift
     #
     # @raise [ConfigurationError] if configuration is invalid
     def validate_configuration!
-      if site.blank? || !site.start_with?('http')
-        raise ConfigurationError, 'AUTHLIFT8_SITE must be a valid URL'
+      if site.blank? || !site.start_with?("http")
+        raise ConfigurationError, "AUTHLIFT8_SITE must be a valid URL"
       end
 
-      if redirect_uri.blank? || !redirect_uri.start_with?('http')
-        raise ConfigurationError, 'AUTHLIFT8_REDIRECT_URI must be a valid URL'
+      if redirect_uri.blank? || !redirect_uri.start_with?("http")
+        raise ConfigurationError, "AUTHLIFT8_REDIRECT_URI must be a valid URL"
       end
 
       if client_id.blank?
-        raise ConfigurationError, 'AUTHLIFT8_CLIENT_ID cannot be blank'
+        raise ConfigurationError, "AUTHLIFT8_CLIENT_ID cannot be blank"
       end
 
       if client_secret.blank?
-        raise ConfigurationError, 'AUTHLIFT8_CLIENT_SECRET cannot be blank'
+        raise ConfigurationError, "AUTHLIFT8_CLIENT_SECRET cannot be blank"
       end
     end
 

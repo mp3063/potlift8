@@ -20,7 +20,7 @@ RSpec.describe ProductValidator, type: :service do
       mandatory: true,
       product_attribute_scope: :product_scope,
       has_rules: true,
-      rules: ['positive', 'not_null']
+      rules: [ 'positive', 'not_null' ]
     )
   end
 
@@ -34,7 +34,7 @@ RSpec.describe ProductValidator, type: :service do
       mandatory: true,
       product_attribute_scope: :product_and_catalog_scope,
       has_rules: true,
-      rules: ['not_null']
+      rules: [ 'not_null' ]
     )
   end
 
@@ -48,7 +48,7 @@ RSpec.describe ProductValidator, type: :service do
       mandatory: false,
       product_attribute_scope: :product_scope,
       has_rules: true,
-      rules: ['positive', 'not_null']
+      rules: [ 'positive', 'not_null' ]
     )
   end
 

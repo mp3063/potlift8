@@ -40,7 +40,7 @@ class ProductSyncJob < ApplicationJob
 
     # Apply job deduplication to prevent duplicate syncs
     deduplicator = JobDeduplicator.new(
-      job_name: 'ProductSyncJob',
+      job_name: "ProductSyncJob",
       params: { product_id: product.id, catalog_id: catalog.id },
       window: deduplication_window
     )
@@ -63,7 +63,7 @@ class ProductSyncJob < ApplicationJob
     end
 
     # Check if catalog has sync paused
-    if catalog.info&.dig('sync_paused')
+    if catalog.info&.dig("sync_paused")
       Rails.logger.info(
         "Catalog #{catalog.id} (#{catalog.code}) has sync paused. Skipping sync for product #{product.sku}."
       )
@@ -125,7 +125,7 @@ class ProductSyncJob < ApplicationJob
   #
   def log_sync_metric(product, catalog, duration, success:, error: nil)
     metric_data = {
-      event: 'product_sync',
+      event: "product_sync",
       product_id: product.id,
       product_sku: product.sku,
       catalog_id: catalog.id,
@@ -154,6 +154,6 @@ class ProductSyncJob < ApplicationJob
   # @return [Integer] Deduplication window in seconds
   #
   def deduplication_window
-    ENV.fetch('JOB_DEDUP_WINDOW', '30').to_i
+    ENV.fetch("JOB_DEDUP_WINDOW", "30").to_i
   end
 end

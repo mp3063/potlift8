@@ -12,7 +12,7 @@ class CreateAttributeGroups < ActiveRecord::Migration[8.0]
     end
 
     add_index :attribute_groups, :company_id
-    add_index :attribute_groups, [:company_id, :code], unique: true,
+    add_index :attribute_groups, [ :company_id, :code ], unique: true,
       name: "index_attribute_groups_on_company_id_and_code"
     add_foreign_key :attribute_groups, :companies
   end

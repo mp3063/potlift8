@@ -13,8 +13,8 @@ class CreatePrices < ActiveRecord::Migration[8.0]
     end
 
     # Indexes for efficient queries
-    add_index :prices, [:product_id, :price_type]
-    add_index :prices, [:product_id, :customer_group_id], unique: true, where: 'customer_group_id IS NOT NULL'
-    add_index :prices, [:valid_from, :valid_to]
+    add_index :prices, [ :product_id, :price_type ]
+    add_index :prices, [ :product_id, :customer_group_id ], unique: true, where: 'customer_group_id IS NOT NULL'
+    add_index :prices, [ :valid_from, :valid_to ]
   end
 end

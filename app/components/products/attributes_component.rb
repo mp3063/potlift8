@@ -34,7 +34,7 @@ module Products
     def grouped_attributes
       # For now, group all attributes under a single "General" group
       # ProductAttribute doesn't have attribute_group association yet
-      [[nil, attributes]]
+      [ [ nil, attributes ] ]
     end
 
     # Checks if any attributes exist

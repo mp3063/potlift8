@@ -15,7 +15,7 @@
 #   end
 #
 class SessionVersionChecker
-  REDIS_NAMESPACE = 'session_version'
+  REDIS_NAMESPACE = "session_version"
 
   attr_reader :session
 
@@ -126,11 +126,11 @@ class SessionVersionChecker
   end
 
   def fetch_profile_from_authlift8
-    site = ENV.fetch('AUTHLIFT8_SITE', 'http://localhost:3231')
+    site = ENV.fetch("AUTHLIFT8_SITE", "http://localhost:3231")
 
     response = Faraday.get("#{site}/api/v1/users/profile") do |req|
-      req.headers['Authorization'] = "Bearer #{session[:access_token]}"
-      req.headers['Content-Type'] = 'application/json'
+      req.headers["Authorization"] = "Bearer #{session[:access_token]}"
+      req.headers["Content-Type"] = "application/json"
       req.options.timeout = 5
       req.options.open_timeout = 3
     end
@@ -147,22 +147,22 @@ class SessionVersionChecker
 
   def update_session_from_profile(profile)
     # Update user data
-    session[:email] = profile['email']
-    session[:user_name] = profile['full_name']
-    session[:locale] = profile['locale']
+    session[:email] = profile["email"]
+    session[:user_name] = profile["full_name"]
+    session[:locale] = profile["locale"]
 
     # Update company data
-    if profile['company']
-      session[:company_id] = profile['company']['id']
-      session[:company_code] = profile['company']['code']
-      session[:company_name] = profile['company']['name']
-      session[:customer_groups] = profile['company']['customer_groups'] || []
+    if profile["company"]
+      session[:company_id] = profile["company"]["id"]
+      session[:company_code] = profile["company"]["code"]
+      session[:company_name] = profile["company"]["name"]
+      session[:customer_groups] = profile["company"]["customer_groups"] || []
     end
 
     # Update membership data
-    if profile['membership']
-      session[:role] = profile['membership']['role']
-      session[:scopes] = profile['membership']['scopes']
+    if profile["membership"]
+      session[:role] = profile["membership"]["role"]
+      session[:scopes] = profile["membership"]["scopes"]
     end
 
     # Sync local User/Company records
@@ -174,20 +174,20 @@ class SessionVersionChecker
     if session[:user_id]
       user = User.find_by(id: session[:user_id])
       user&.update(
-        email: profile['email'],
-        name: profile['full_name']
+        email: profile["email"],
+        name: profile["full_name"]
       )
     end
 
     # Update Company record
-    if profile['company']
-      Company.from_authlift8(profile['company'])
+    if profile["company"]
+      Company.from_authlift8(profile["company"])
     end
   end
 
   def redis
     @redis ||= Redis.new(
-      url: ENV.fetch('REDIS_URL', 'redis://localhost:6379/0')
+      url: ENV.fetch("REDIS_URL", "redis://localhost:6379/0")
     )
   end
 end

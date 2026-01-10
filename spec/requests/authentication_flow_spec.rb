@@ -35,7 +35,7 @@ RSpec.describe 'Authentication Flow', type: :request do
         },
         'membership' => {
           'role' => 'admin',
-          'scopes' => ['read', 'write', 'delete']
+          'scopes' => [ 'read', 'write', 'delete' ]
         }
       }
     end
@@ -231,7 +231,7 @@ RSpec.describe 'Authentication Flow', type: :request do
         },
         'membership' => {
           'role' => 'admin',
-          'scopes' => ['read', 'write']
+          'scopes' => [ 'read', 'write' ]
         }
       }
     end
