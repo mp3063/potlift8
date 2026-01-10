@@ -1,0 +1,19 @@
+<%#
+  Turbo Stream for destroy action
+  Removes storage card or shows error flash if deletion failed
+%>
+
+<% if flash[:alert].present? %>
+  <%# Deletion failed (has inventory) - just show alert %>
+  <%= turbo_stream.update "flash" do %>
+    <%= render FlashComponent.new(flash: flash.to_h) %>
+  <% end %>
+<% else %>
+  <%# Deletion succeeded - remove the storage card %>
+  <%= turbo_stream.remove dom_id(@storage) %>
+
+  <%# Show success flash message %>
+  <%= turbo_stream.update "flash" do %>
+    <%= render FlashComponent.new(flash: flash.to_h) %>
+  <% end %>
+<% end %>

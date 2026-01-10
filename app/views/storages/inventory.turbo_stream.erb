@@ -1,0 +1,9 @@
+<%#
+  Turbo Stream for inventory action
+  Replaces the inventory table body when sorting/filtering
+%>
+<%= turbo_stream.replace "inventory-table-body" do %>
+  <tbody id="inventory-table-body" class="divide-y divide-gray-200 bg-white">
+    <%= render partial: "inventory_row", collection: @inventories, as: :inventory %>
+  </tbody>
+<% end %>

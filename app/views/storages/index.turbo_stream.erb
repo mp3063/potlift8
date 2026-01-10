@@ -1,0 +1,9 @@
+<%#
+  Turbo Stream for index action
+  Replaces the storages grid when sorting/filtering
+%>
+<%= turbo_stream.replace "storages-grid" do %>
+  <div id="storages-grid" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <%= render partial: "storage_card", collection: @storages, as: :storage %>
+  </div>
+<% end %>

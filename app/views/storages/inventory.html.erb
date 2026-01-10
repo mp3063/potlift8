@@ -92,74 +92,15 @@
               </th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-200 bg-white">
-            <% @inventories.each do |inventory| %>
-              <% product = inventory.product %>
-              <% is_low_stock = inventory.value < (product.info&.dig('restock_level') || 0) %>
-              <tr class="hover:bg-gray-50">
-                <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                  <%= link_to product.sku, product_path(product), class: "text-blue-600 hover:text-blue-700" %>
-                </td>
-                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-900">
-                  <%= product.name %>
-                </td>
-                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                  <%= render Ui::BadgeComponent.new(variant: :gray, size: :sm) do %>
-                    <%= product.product_type_before_type_cast == 1 ? 'Sellable' : product.product_type_before_type_cast == 2 ? 'Configurable' : 'Bundle' %>
-                  <% end %>
-                </td>
-                <td class="whitespace-nowrap px-3 py-4 text-sm text-right font-medium <%= is_low_stock ? 'text-red-600' : 'text-gray-900' %>">
-                  <%= number_with_delimiter(inventory.value) %>
-                </td>
-                <td class="whitespace-nowrap px-3 py-4 text-sm text-right text-gray-500">
-                  <%= number_with_delimiter(product.info&.dig('restock_level') || 0) %>
-                </td>
-                <td class="whitespace-nowrap px-3 py-4 text-sm text-right">
-                  <%= turbo_frame_tag dom_id(inventory, :eta_quantity) do %>
-                    <span class="text-gray-900">
-                      <%= number_with_delimiter(inventory.info&.dig('eta_quantity') || 0) %>
-                    </span>
-                  <% end %>
-                </td>
-                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-900">
-                  <%= turbo_frame_tag dom_id(inventory, :eta_date) do %>
-                    <% if inventory.info&.dig('eta_date').present? %>
-                      <%= Date.parse(inventory.info['eta_date']).strftime('%Y-%m-%d') rescue '-' %>
-                    <% else %>
-                      <span class="text-gray-500">-</span>
-                    <% end %>
-                  <% end %>
-                </td>
-                <td class="whitespace-nowrap px-3 py-4 text-sm text-right font-medium text-gray-900">
-                  <%= number_with_delimiter(inventory.value + (inventory.info&.dig('eta_quantity') || 0)) %>
-                </td>
-                <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                  <%= render Ui::ButtonComponent.new(
-                    variant: :ghost,
-                    size: :sm,
-                    data: {
-                      action: "click->inventory-table#openAdjustModal",
-                      product_id: product.id,
-                      product_sku: product.sku,
-                      product_name: product.name,
-                      inventory_id: inventory.id,
-                      current_value: inventory.value,
-                      eta_quantity: inventory.info&.dig('eta_quantity') || 0,
-                      eta_date: inventory.info&.dig('eta_date') || ''
-                    }
-                  ) do %>
-                    Adjust
-                  <% end %>
-                </td>
-              </tr>
-            <% end %>
+          <tbody id="inventory-table-body" class="divide-y divide-gray-200 bg-white">
+            <%= render partial: "inventory_row", collection: @inventories, as: :inventory %>
           </tbody>
         </table>
       </div>
     <% end %>
 
     <!-- Summary Stats -->
-    <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-3">
+    <div id="inventory-summary-stats" class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-3">
       <div class="bg-white overflow-hidden shadow rounded-lg">
         <div class="p-5">
           <div class="flex items-center">

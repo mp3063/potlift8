@@ -1,0 +1,14 @@
+<%#
+  Turbo Stream for update action
+  Replaces the storage card and shows flash message
+%>
+
+<%# Replace the storage card with updated content %>
+<%= turbo_stream.replace dom_id(@storage) do %>
+  <%= render "storage_card", storage: @storage %>
+<% end %>
+
+<%# Show success flash message %>
+<%= turbo_stream.update "flash" do %>
+  <%= render FlashComponent.new(flash: flash.to_h) %>
+<% end %>

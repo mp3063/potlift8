@@ -1,0 +1,17 @@
+<%#
+  Turbo Stream for create action
+  Appends new storage card to grid and shows flash message
+%>
+
+<%# Remove empty state if it exists (first storage being created) %>
+<%= turbo_stream.remove "storages-empty-state" %>
+
+<%# Append the new storage card to the grid %>
+<%= turbo_stream.append "storages-grid" do %>
+  <%= render "storage_card", storage: @storage %>
+<% end %>
+
+<%# Show success flash message %>
+<%= turbo_stream.update "flash" do %>
+  <%= render FlashComponent.new(flash: flash.to_h) %>
+<% end %>

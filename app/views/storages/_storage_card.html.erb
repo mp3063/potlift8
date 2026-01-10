@@ -1,0 +1,75 @@
+<%#
+  Storage card partial for grid display
+  Locals: storage (required)
+%>
+<div id="<%= dom_id(storage) %>">
+<%= render Ui::CardComponent.new(hover: true, padding: :none) do |card| %>
+  <div class="p-6">
+    <!-- Header with name and badges -->
+    <div class="flex items-start justify-between mb-4">
+      <div class="flex-1">
+        <h3 class="text-lg font-semibold text-gray-900">
+          <%= storage.name %>
+        </h3>
+        <p class="mt-1 text-sm text-gray-500">
+          <%= storage.code %>
+        </p>
+      </div>
+      <div class="flex flex-col items-end gap-1">
+        <%= render Ui::BadgeComponent.new(variant: :info, size: :sm) do %>
+          <%= storage.storage_type.titleize %>
+        <% end %>
+        <% if storage.storage_status == "deleted" %>
+          <%= render Ui::BadgeComponent.new(variant: :danger, size: :sm) do %>
+            Inactive
+          <% end %>
+        <% end %>
+        <% if storage.default %>
+          <%= render Ui::BadgeComponent.new(variant: :primary, size: :sm) do %>
+            Default
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+        <dt class="text-sm font-medium text-gray-500 truncate">
+          Total Units
+        </dt>
+        <dd class="mt-1 text-2xl font-semibold text-gray-900">
+          <%= number_with_delimiter(storage.total_inventory) %>
+        </dd>
+      </div>
+      <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+        <dt class="text-sm font-medium text-gray-500 truncate">
+          Products
+        </dt>
+        <dd class="mt-1 text-2xl font-semibold text-gray-900">
+          <%= number_with_delimiter(storage.product_count) %>
+        </dd>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex gap-2">
+      <%= link_to inventory_storage_path(storage),
+            class: "flex-1 inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" do %>
+        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        View Inventory
+      <% end %>
+      <%= link_to edit_storage_path(storage),
+            class: "inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500",
+            aria: { label: "Edit #{storage.name}" } do %>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+        <span class="sr-only">Edit</span>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+</div>
