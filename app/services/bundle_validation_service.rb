@@ -179,8 +179,8 @@ class BundleValidationService
       return
     end
 
-    # Count included variants
-    included_variants = variants.select { |v| v["included"] == true }
+    # Count included variants (handle both boolean true and string "true")
+    included_variants = variants.select { |v| variant_included?(v) }
 
     if included_variants.empty?
       @errors << "Configurable product '#{product.sku}' must have at least one variant selected"
@@ -189,7 +189,7 @@ class BundleValidationService
 
     # Validate each variant
     variants.each do |variant_data|
-      next unless variant_data["included"]
+      next unless variant_included?(variant_data)
 
       variant_id = variant_data["variant_id"]
       quantity = variant_data["quantity"].to_i
@@ -252,7 +252,7 @@ class BundleValidationService
     # Count only included variants that are not discontinued
     included_count = 0
     variants.each do |variant_data|
-      next unless variant_data["included"] == true
+      next unless variant_included?(variant_data)
 
       variant_id = variant_data["variant_id"]
       variant = load_product(variant_id)
@@ -264,6 +264,12 @@ class BundleValidationService
     end
 
     included_count
+  end
+
+  # Helper to check if variant is included (handles both boolean true and string "true")
+  def variant_included?(variant_data)
+    included = variant_data["included"]
+    included == true || included == "true"
   end
 
   def load_product(product_id)
