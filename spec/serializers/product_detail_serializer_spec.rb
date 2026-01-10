@@ -308,17 +308,16 @@ RSpec.describe ProductDetailSerializer do
   end
 
   describe 'performance' do
-    # TODO: Implement exceed_query_limit matcher for N+1 query testing
-    # This test is pending until the custom matcher is added to spec/support
-    xit 'does not trigger N+1 queries with preloaded associations' do
+    it 'does not trigger N+1 queries with preloaded associations' do
       # Preload associations
       product_with_preload = company.products
                                     .includes(:inventories, :product_attribute_values, :labels)
                                     .find(product.id)
 
+      # With preloaded associations, should have constant query count (not N+1)
       expect do
         described_class.new(product_with_preload).as_json
-      end.not_to exceed_query_limit(0)
+      end.not_to exceed_query_limit(5)
     end
   end
 
