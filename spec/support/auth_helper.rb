@@ -84,6 +84,66 @@ module AuthHelper
     expect(page).to have_current_path(root_path, wait: 5)
   end
 
+  # Authenticate user for request specs via POST to test endpoint
+  # This properly sets session through an actual HTTP request
+  #
+  # @param user [User] The user to authenticate
+  # @param options [Hash] Optional overrides for session values
+  # @option options [Integer] :company_id Override company ID
+  # @option options [String] :company_code Override company code
+  # @option options [String] :company_name Override company name
+  # @option options [String] :role User role (default: 'admin')
+  # @option options [Array<String>] :scopes Permission scopes
+  # @option options [String] :access_token Custom access token
+  # @option options [String] :refresh_token Custom refresh token
+  # @option options [Integer] :authenticated_at Timestamp when authenticated
+  # @option options [Integer] :expires_at Token expiration timestamp
+  #
+  # @example Basic usage
+  #   authenticate_user(user)
+  #
+  # @example With custom expiration
+  #   authenticate_user(user, expires_at: 2.minutes.from_now.to_i)
+  #
+  def authenticate_user(user, **options)
+    post '/test_login', params: {
+      user_id: user.id,
+      company_id: options[:company_id],
+      company_code: options[:company_code],
+      company_name: options[:company_name],
+      role: options[:role] || 'admin',
+      scopes: options[:scopes],
+      access_token: options[:access_token],
+      refresh_token: options[:refresh_token],
+      authenticated_at: options[:authenticated_at],
+      expires_at: options[:expires_at]
+    }.compact
+  end
+
+  # Authenticate with a token that will expire soon (for refresh tests)
+  # @param user [User] The user to authenticate
+  # @param expires_in [ActiveSupport::Duration] How long until token expires (default: 2 minutes)
+  # @param access_token [String] Access token to use (default: 'test_token_old_access_token')
+  # @param refresh_token [String] Refresh token to use (default: 'old_refresh_token')
+  def authenticate_with_expiring_token(user, expires_in: 2.minutes, access_token: 'test_token_old_access_token', refresh_token: 'old_refresh_token')
+    authenticate_user(user,
+      expires_at: expires_in.from_now.to_i,
+      authenticated_at: Time.now.to_i,
+      access_token: access_token,
+      refresh_token: refresh_token
+    )
+  end
+
+  # Authenticate with a session that has exceeded the 24-hour timeout
+  # @param user [User] The user to authenticate
+  # @param authenticated_hours_ago [Integer] Hours since authentication (default: 25)
+  def authenticate_with_expired_session(user, authenticated_hours_ago: 25)
+    authenticate_user(user,
+      authenticated_at: authenticated_hours_ago.hours.ago.to_i,
+      expires_at: 1.hour.from_now.to_i
+    )
+  end
+
   # Generate a mock JWT token with specified user data
   # This token will pass verification when Authlift::Client#verify_token is called
   #

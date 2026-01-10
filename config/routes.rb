@@ -6,6 +6,7 @@ Rails.application.routes.draw do
   if Rails.env.test?
     get 'test_login', to: 'test_sessions#create'
     post 'test_login', to: 'test_sessions#create'
+    delete 'test_logout', to: 'test_sessions#destroy'
   end
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
