@@ -267,9 +267,7 @@ RSpec.describe BundleComposerController, type: :controller do
     end
 
     context 'with configurable products' do
-      # Skip: Complex test with let block lazy loading issues
-      # Core functionality verified in other tests and manual testing
-      xit 'calculates correct combination count' do
+      it 'calculates correct combination count' do
         # Create products directly to avoid let block lazy loading issues
         test_configurable = create(:product, company: company, sku: 'TEST-CFG', name: 'Test Configurable', product_type: :configurable, configuration_type: :variant)
         test_variant1 = create(:product, company: company, sku: 'TEST-V1', name: 'Test Variant 1', product_type: :sellable)
@@ -298,9 +296,7 @@ RSpec.describe BundleComposerController, type: :controller do
         expect(json['combination_count']).to eq(2) # 1 sellable * 2 variants
       end
 
-      # Skip: Complex test with let block lazy loading issues
-      # Core functionality verified in other tests and manual testing
-      xit 'includes warning for many combinations' do
+      it 'includes warning for many combinations' do
         # Create configuration with many variants to trigger warning (> 100)
         # Need 2 configurables with enough variants to exceed 100 but not 200
         # 11 * 11 = 121 combinations (triggers warning but not error)
@@ -377,9 +373,7 @@ RSpec.describe BundleComposerController, type: :controller do
     end
 
     context 'with too many combinations' do
-      # Skip: Complex test with let block lazy loading issues
-      # Core functionality verified in other tests and manual testing
-      xit 'returns error when exceeding maximum' do
+      it 'returns error when exceeding maximum' do
         # Create configuration that would generate > 200 combinations
         # Need 2 configurables with enough variants to exceed 200
         # 15 * 15 = 225 combinations

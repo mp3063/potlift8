@@ -122,9 +122,7 @@ RSpec.describe StorageInventoriesController, type: :request do
     end
 
     context 'with turbo_stream format' do
-      # Note: Turbo stream template doesn't exist, controller will fall back to HTML or fail
-      # This test is skipped pending turbo_stream template creation
-      xit 'responds to turbo_stream' do
+      it 'responds to turbo_stream' do
         get new_storage_inventory_path(storage), headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
         expect(response.media_type).to eq('text/vnd.turbo-stream.html')
       end
@@ -337,15 +335,13 @@ RSpec.describe StorageInventoriesController, type: :request do
         }
       end
 
-      # Note: On success, the controller redirects, which uses text/html content type
-      it 'redirects on success even with turbo_stream request' do
+      it 'responds with turbo_stream on success' do
         post storage_inventories_path(storage), params: valid_params, headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
-        expect(response).to be_redirect
+        expect(response.media_type).to eq('text/vnd.turbo-stream.html')
+        expect(response).to have_http_status(:success)
       end
 
-      # Note: On failure, the controller renders :new template
-      # This test is skipped because it requires a turbo_stream template that may not exist
-      xit 'responds to turbo_stream on failure' do
+      it 'responds to turbo_stream on failure' do
         post storage_inventories_path(storage), params: { product_ids: [] }, headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
         expect(response.media_type).to eq('text/vnd.turbo-stream.html')
         expect(response).to have_http_status(:unprocessable_entity)
