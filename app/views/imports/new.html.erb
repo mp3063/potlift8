@@ -89,8 +89,8 @@
 
       <!-- Form Actions -->
       <div class="flex items-center justify-end gap-3 pt-4">
-        <%= link_to products_path do %>
-          <%= render Ui::ButtonComponent.new(variant: :secondary) { "Cancel" } %>
+        <%= render Ui::ButtonComponent.new(variant: :secondary, href: products_path) do %>
+          Cancel
         <% end %>
         <%= render Ui::ButtonComponent.new(type: "submit", variant: :primary) do %>
           <svg class="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
