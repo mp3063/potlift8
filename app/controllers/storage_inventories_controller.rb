@@ -92,6 +92,7 @@ class StorageInventoriesController < ApplicationController
         end
         format.turbo_stream do
           flash.now[:alert] = "Please select at least one product to add."
+          set_available_products_and_labels
           render :new, status: :unprocessable_entity
         end
       end
@@ -109,6 +110,7 @@ class StorageInventoriesController < ApplicationController
         end
         format.turbo_stream do
           flash.now[:alert] = "Some products could not be found or don't belong to your company."
+          set_available_products_and_labels
           render :new, status: :unprocessable_entity
         end
       end
@@ -139,11 +141,27 @@ class StorageInventoriesController < ApplicationController
     end
 
     if failed_products.any?
-      redirect_to inventory_storage_path(@storage),
-                  alert: "Added #{created_count} products. Failed to add: #{failed_products.join(', ')}"
+      respond_to do |format|
+        format.html do
+          redirect_to inventory_storage_path(@storage),
+                      alert: "Added #{created_count} products. Failed to add: #{failed_products.join(', ')}"
+        end
+        format.turbo_stream do
+          flash.now[:alert] = "Added #{created_count} products. Failed to add: #{failed_products.join(', ')}"
+          # Template will close modal and show flash
+        end
+      end
     else
-      redirect_to inventory_storage_path(@storage),
-                  notice: "Successfully added #{created_count} #{'product'.pluralize(created_count)} to #{@storage.name}."
+      respond_to do |format|
+        format.html do
+          redirect_to inventory_storage_path(@storage),
+                      notice: "Successfully added #{created_count} #{'product'.pluralize(created_count)} to #{@storage.name}."
+        end
+        format.turbo_stream do
+          flash.now[:notice] = "Successfully added #{created_count} #{'product'.pluralize(created_count)} to #{@storage.name}."
+          # Template will close modal and show flash
+        end
+      end
     end
   end
 
@@ -155,5 +173,16 @@ class StorageInventoriesController < ApplicationController
   # Raises ActiveRecord::RecordNotFound if storage not found or doesn't belong to company
   def set_storage
     @storage = current_potlift_company.storages.find_by!(code: params[:storage_code])
+  end
+
+  # Set available products and labels for rendering the new form
+  # Used by create action when re-rendering form after validation errors
+  def set_available_products_and_labels
+    @available_products = current_potlift_company.products
+                                                 .active_products
+                                                 .where.not(id: @storage.products.select(:id))
+                                                 .order(:sku)
+                                                 .limit(100)
+    @labels = current_potlift_company.labels.order(:name)
   end
 end

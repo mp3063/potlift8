@@ -1,0 +1,12 @@
+<%# Turbo Stream template for create action
+    On success: closes modal and shows flash message
+    On failure: re-renders form with errors (handled by rendering :new template)
+%>
+
+<%# Close the modal by clearing its content %>
+<%= turbo_stream.update "modal", "" %>
+
+<%# Show success flash message %>
+<%= turbo_stream.update "flash" do %>
+  <%= render FlashComponent.new(flash: flash) %>
+<% end %>
