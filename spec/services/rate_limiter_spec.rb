@@ -131,7 +131,7 @@ RSpec.describe RateLimiter, type: :service do
       rate_limiter.allowed?
       initial_ttl = rate_limiter.time_until_reset
 
-      sleep 1
+      sleep 1.5 # Use 1.5s to ensure at least 1 full second passes (Redis TTL is integer)
 
       new_ttl = rate_limiter.time_until_reset
       expect(new_ttl).to be < initial_ttl

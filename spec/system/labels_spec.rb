@@ -40,7 +40,8 @@ RSpec.describe 'Labels Management', type: :system, js: true do
       end
 
       it 'clicking New Label button navigates to new label form' do
-        click_link 'New Label'
+        # Use first since there are two visible New Label links (header and empty state)
+        first(:link, 'New Label').click
         # Modal opens with form inside turbo frame
         expect(page).to have_content('Name', wait: 5)
         expect(page).to have_content('Code', wait: 5)
@@ -455,6 +456,8 @@ RSpec.describe 'Labels Management', type: :system, js: true do
     it 'successfully updates label' do
       expect(page).to have_field('Name', wait: 5)
       fill_in 'Name', with: 'Updated Label'
+      # Clear the textarea first, then fill in new value (Capybara textarea behavior)
+      find_field('Description').native.clear
       fill_in 'Description', with: 'Updated description'
 
       click_button 'Update Label'

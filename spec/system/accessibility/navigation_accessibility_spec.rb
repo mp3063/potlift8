@@ -741,9 +741,8 @@ RSpec.describe 'Navigation Accessibility', type: :system, js: true do
       # Core functionality should work with standard keyboard navigation
       # Tab, Enter, Space, Escape, Arrow keys
 
-      # Navigate to products - use the nav bar link (first one visible on desktop)
-      if page.has_link?('Products', visible: true)
-        # Find the first Products link in the main nav (not mobile sidebar which is hidden)
+      # Navigate to products - use the nav bar link (only visible on desktop viewport)
+      if page.has_css?('nav a', text: 'Products', visible: true)
         link = page.find('nav a', text: 'Products', match: :first, visible: true)
         link.send_keys(:enter)
 
