@@ -221,6 +221,15 @@ class Catalog < ApplicationRecord
     info&.dig("active") != false
   end
 
+  # Get catalog active status (alias for forms)
+  # Rails form helpers call this method (without ?) for checkbox values
+  #
+  # @return [Boolean] true if active, defaults to true
+  #
+  def active
+    active?
+  end
+
   # Set catalog active status in info JSONB field
   #
   # @param value [Boolean] Active status
