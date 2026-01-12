@@ -181,7 +181,7 @@ RSpec.describe 'ProductAssets', type: :request do
 
       it 'redirects to product with success notice' do
         post product_product_assets_path(product), params: valid_params
-        expect(response).to redirect_to(product_path(product, anchor: 'assets'))
+        expect(response).to redirect_to(product_product_assets_path(product))
         follow_redirect!
         expect(response.body).to include('Asset created successfully')
       end
@@ -352,7 +352,7 @@ RSpec.describe 'ProductAssets', type: :request do
 
       it 'redirects to product with success notice' do
         post product_product_assets_path(product), params: valid_params
-        expect(response).to redirect_to(product_path(product, anchor: 'assets'))
+        expect(response).to redirect_to(product_product_assets_path(product))
         follow_redirect!
         expect(response.body).to include('Asset created successfully')
       end
@@ -497,7 +497,7 @@ RSpec.describe 'ProductAssets', type: :request do
 
     it 'redirects for non-existent asset' do
       get edit_product_product_asset_path(product, 999999)
-      expect(response).to redirect_to(product_path(product, anchor: 'assets'))
+      expect(response).to redirect_to(product_path(product, anchor: "assets"))
     end
   end
 
@@ -528,7 +528,7 @@ RSpec.describe 'ProductAssets', type: :request do
 
       it 'redirects to product with success notice' do
         patch product_product_asset_path(product, asset), params: update_params
-        expect(response).to redirect_to(product_path(product, anchor: 'assets'))
+        expect(response).to redirect_to(product_product_assets_path(product))
         follow_redirect!
         expect(response.body).to include('Asset updated successfully')
       end
@@ -635,7 +635,7 @@ RSpec.describe 'ProductAssets', type: :request do
 
     it 'redirects to product with success notice' do
       delete product_product_asset_path(product, asset)
-      expect(response).to redirect_to(product_path(product, anchor: 'assets'))
+      expect(response).to redirect_to(product_product_assets_path(product))
       follow_redirect!
       expect(response.body).to include('deleted successfully')
       expect(response.body).to include('Test Document')
@@ -661,14 +661,13 @@ RSpec.describe 'ProductAssets', type: :request do
 
     it 'redirects for non-existent asset' do
       delete product_product_asset_path(product, 999999)
-      expect(response).to redirect_to(product_path(product, anchor: 'assets'))
+      expect(response).to redirect_to(product_path(product, anchor: "assets"))
     end
 
     context 'with turbo_stream format' do
-      it 'responds with turbo stream' do
+      it 'redirects after successful delete' do
         delete product_product_asset_path(product, asset), headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
-        expect(response).to be_successful
-        expect(response.media_type).to eq('text/vnd.turbo-stream.html')
+        expect(response).to redirect_to(product_product_assets_path(product))
       end
     end
   end

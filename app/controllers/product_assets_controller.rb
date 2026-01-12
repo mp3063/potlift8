@@ -166,14 +166,8 @@ class ProductAssetsController < ApplicationController
       end
 
       respond_to do |format|
-        format.html { redirect_to product_path(@product, anchor: "assets"), notice: "Asset created successfully." }
-        format.turbo_stream do
-          flash.now[:notice] = "Asset created successfully."
-          render turbo_stream: [
-            turbo_stream.replace("product_assets", partial: "product_assets/list", locals: { product: @product, assets: @product.product_assets.non_images.ordered }),
-            turbo_stream.update("flash", partial: "shared/flash", locals: { flash: flash })
-          ]
-        end
+        format.html { redirect_to product_product_assets_path(@product), notice: "Asset created successfully." }
+        format.turbo_stream { redirect_to product_product_assets_path(@product), notice: "Asset created successfully." }
         format.json { render json: @asset, status: :created }
       end
     else
@@ -252,14 +246,8 @@ class ProductAssetsController < ApplicationController
 
     if @asset.update(asset_params)
       respond_to do |format|
-        format.html { redirect_to product_path(@product, anchor: "assets"), notice: "Asset updated successfully." }
-        format.turbo_stream do
-          flash.now[:notice] = "Asset updated successfully."
-          render turbo_stream: [
-            turbo_stream.replace("product_assets", partial: "product_assets/list", locals: { product: @product, assets: @product.product_assets.non_images.ordered }),
-            turbo_stream.update("flash", partial: "shared/flash", locals: { flash: flash })
-          ]
-        end
+        format.html { redirect_to product_product_assets_path(@product), notice: "Asset updated successfully." }
+        format.turbo_stream { redirect_to product_product_assets_path(@product), notice: "Asset updated successfully." }
         format.json { render json: @asset, status: :ok }
       end
     else
@@ -289,14 +277,8 @@ class ProductAssetsController < ApplicationController
     @asset.destroy
 
     respond_to do |format|
-      format.html { redirect_to product_path(@product, anchor: "assets"), notice: "#{asset_type.humanize} '#{asset_name}' deleted successfully." }
-      format.turbo_stream do
-        flash.now[:notice] = "#{asset_type.humanize} '#{asset_name}' deleted successfully."
-        render turbo_stream: [
-          turbo_stream.replace("product_assets", partial: "product_assets/list", locals: { product: @product, assets: @product.product_assets.non_images.ordered }),
-          turbo_stream.update("flash", partial: "shared/flash", locals: { flash: flash })
-        ]
-      end
+      format.html { redirect_to product_product_assets_path(@product), notice: "#{asset_type.humanize} '#{asset_name}' deleted successfully." }
+      format.turbo_stream { redirect_to product_product_assets_path(@product), notice: "#{asset_type.humanize} '#{asset_name}' deleted successfully." }
       format.json { head :no_content }
     end
   end
