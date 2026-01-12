@@ -72,23 +72,28 @@ Rails.application.routes.draw do
   get "search/recent", to: "search#recent", as: :search_recent
 
   # Resource routes
+  # Bulk operations for products (extracted from ProductsController for SRP)
+  scope :products do
+    scope :bulk, controller: :product_bulk_operations do
+      post :destroy, action: :destroy, as: :products_bulk_destroy
+      post :update_labels, action: :update_labels, as: :products_bulk_update_labels
+      get :labels_for_products, action: :labels_for_products, as: :products_bulk_labels_for_products
+    end
+  end
+
   resources :products do
     member do
       post :duplicate
-      post :add_label
-      delete :remove_label
       patch :toggle_active
-      post :add_to_catalog
-      delete :remove_from_catalog
       get :attribute_value
     end
     collection do
-      post :bulk_destroy
-      post :bulk_update_labels
       get :validate_sku
     end
 
     # Nested resources for product detail page
+    resources :labels, controller: :product_labels, only: [ :create, :destroy ]
+    resources :catalogs, controller: :product_catalogs, only: [ :create, :destroy ]
     resources :images, only: [ :create, :update, :destroy ], controller: "product_images" do
       collection do
         patch :reorder         # Reorder images via drag-and-drop

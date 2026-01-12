@@ -15,7 +15,7 @@
 # - Turbo Stream support for dynamic updates
 #
 class ProductsController < ApplicationController
-  before_action :set_product, only: [ :show, :edit, :update, :destroy, :duplicate, :add_label, :remove_label, :toggle_active, :add_to_catalog, :remove_from_catalog, :attribute_value ]
+  before_action :set_product, only: [ :show, :edit, :update, :destroy, :duplicate, :toggle_active, :attribute_value ]
 
   # GET /products
   # GET /products.turbo_stream
@@ -44,14 +44,20 @@ class ProductsController < ApplicationController
                                        .with_subproducts
                                        .includes(bundle_variants: [ :subproducts, { product_configurations_as_super: :subproduct } ])
 
-    # Load labels for filter dropdown and bulk label editor
-    load_filter_labels
+    # Use extracted services for filtering
+    @filter_service = ProductFilteringService.new(@products, params, current_potlift_company)
+    @products = @filter_service.call
+    @current_label = @filter_service.current_label
 
-    # Apply filtering
-    @products = apply_filters(@products)
+    # Load labels for filter dropdown
+    @available_labels = current_potlift_company.labels
+                                               .root_labels
+                                               .includes(:sublabels)
+                                               .order(:label_positions, :name)
+    @label_product_counts = LabelProductCountService.new(current_potlift_company).call
 
     # Apply sorting
-    @products = @products.order(sort_column => sort_direction)
+    @products = @products.order(@filter_service.sort_column => @filter_service.sort_direction)
 
     respond_to do |format|
       format.html do
@@ -307,112 +313,6 @@ class ProductsController < ApplicationController
     redirect_to products_path, alert: "Failed to duplicate product: #{e.message}"
   end
 
-  # POST /products/bulk_destroy
-  #
-  # Bulk deletes multiple products.
-  #
-  # Parameters:
-  # - product_ids: Array of product IDs to delete
-  #
-  def bulk_destroy
-    product_ids = params[:product_ids] || []
-
-    if product_ids.empty?
-      redirect_to products_path, alert: "No products selected."
-      return
-    end
-
-    # Eager load associations to prevent N+1 queries during destroy callbacks
-    products = current_potlift_company.products.where(id: product_ids).includes(:product_attribute_values, :labels, :inventories, :product_assets, :catalog_items, :product_configurations_as_super, :product_configurations_as_sub, images_attachments: :blob)
-
-    # Track success and failure individually
-    successful_count = 0
-    failed_products = []
-
-    products.each do |product|
-      if product.destroy
-        successful_count += 1
-      else
-        failed_products << "#{product.sku} (#{product.errors.full_messages.join(', ')})"
-      end
-    end
-
-    # Provide detailed feedback
-    if failed_products.any?
-      redirect_to products_path,
-                  alert: "#{successful_count} #{'product'.pluralize(successful_count)} deleted. Failed to delete: #{failed_products.join('; ')}"
-    else
-      redirect_to products_path,
-                  notice: "#{successful_count} #{'product'.pluralize(successful_count)} deleted successfully."
-    end
-  end
-
-  # POST /products/bulk_update_labels
-  #
-  # Bulk updates labels for multiple products.
-  #
-  # Parameters:
-  # - product_ids: Array of product IDs to update
-  # - label_ids: Array of label IDs to add or remove
-  # - action_type: "add" or "remove" (default: "add")
-  #
-  def bulk_update_labels
-    product_ids = params[:product_ids] || []
-    label_ids = (params[:label_ids] || []).compact.map(&:to_i)
-    action_type = params[:action_type] || "add"
-
-    if product_ids.empty?
-      redirect_to products_path, alert: "No products selected."
-      return
-    end
-
-    if label_ids.empty?
-      redirect_to products_path, alert: "No labels selected."
-      return
-    end
-
-    successful_count = 0
-    failed_products = []
-
-    # Wrap in transaction to ensure atomicity
-    ActiveRecord::Base.transaction do
-      current_potlift_company.products.where(id: product_ids).includes(:labels, :catalogs, :superproducts).find_each do |product|
-        begin
-          if action_type == "remove"
-            # Remove specified labels from product
-            product.label_ids = product.label_ids - label_ids
-          else
-            # Add specified labels to product (avoiding duplicates)
-            product.label_ids = (product.label_ids + label_ids).uniq
-          end
-
-          if product.save
-            successful_count += 1
-          else
-            failed_products << "#{product.sku} (#{product.errors.full_messages.join(', ')})"
-          end
-        rescue StandardError => e
-          failed_products << "#{product.sku} (#{e.message})"
-        end
-      end
-
-      # Rollback if any failures occurred
-      raise ActiveRecord::Rollback if failed_products.any?
-    end
-
-    # Provide detailed feedback
-    action_text = action_type == "remove" ? "removed from" : "added to"
-    if failed_products.any?
-      redirect_to products_path,
-                  alert: "Failed to update labels. Errors: #{failed_products.join('; ')}"
-    else
-      redirect_to products_path,
-                  notice: "Labels #{action_text} #{successful_count} #{'product'.pluralize(successful_count)} successfully."
-    end
-  rescue StandardError => e
-    redirect_to products_path, alert: "Failed to update labels: #{e.message}"
-  end
-
   # GET /products/validate_sku?sku=ABC123
   #
   # AJAX endpoint for validating SKU uniqueness.
@@ -443,98 +343,6 @@ class ProductsController < ApplicationController
     end
   end
 
-  # POST /products/:id/add_label
-  # POST /products/:id/add_label.turbo_stream
-  #
-  # Adds a label to the product.
-  #
-  # Parameters:
-  # - label_id: The ID of the label to add
-  #
-  def add_label
-    label_id = params[:label_id]
-
-    if label_id.blank?
-      respond_to do |format|
-        format.html { redirect_to @product, alert: "Please select a label." }
-        format.turbo_stream { flash.now[:alert] = "Please select a label." }
-        format.json { render json: { error: "Please select a label." }, status: :bad_request }
-      end
-      return
-    end
-
-    # Verify label belongs to current company
-    label = current_potlift_company.labels.find_by(id: label_id)
-
-    unless label
-      respond_to do |format|
-        format.html { redirect_to @product, alert: "Label not found." }
-        format.turbo_stream { flash.now[:alert] = "Label not found." }
-        format.json { render json: { error: "Label not found." }, status: :not_found }
-      end
-      return
-    end
-
-    # Add label if not already present
-    if @product.labels.include?(label)
-      respond_to do |format|
-        format.html { redirect_to @product, alert: "Label already assigned to this product." }
-        format.turbo_stream { flash.now[:alert] = "Label already assigned to this product." }
-        format.json { render json: { error: "Label already assigned to this product." }, status: :unprocessable_entity }
-      end
-      return
-    end
-
-    @product.labels << label
-
-    respond_to do |format|
-      format.html { redirect_to @product, notice: "Label '#{label.name}' added successfully." }
-      format.turbo_stream { flash.now[:notice] = "Label '#{label.name}' added successfully." }
-      format.json { render json: { success: true, message: "Label '#{label.name}' added successfully." }, status: :ok }
-    end
-  end
-
-  # DELETE /products/:id/remove_label
-  # DELETE /products/:id/remove_label.turbo_stream
-  #
-  # Removes a label from the product.
-  #
-  # Parameters:
-  # - label_id: The ID of the label to remove
-  #
-  def remove_label
-    label_id = params[:label_id]
-
-    if label_id.blank?
-      respond_to do |format|
-        format.html { redirect_to @product, alert: "Label ID is required." }
-        format.turbo_stream { flash.now[:alert] = "Label ID is required." }
-        format.json { render json: { error: "Label ID is required." }, status: :bad_request }
-      end
-      return
-    end
-
-    # Verify label belongs to product
-    label = @product.labels.find_by(id: label_id)
-
-    unless label
-      respond_to do |format|
-        format.html { redirect_to @product, alert: "Label not found on this product." }
-        format.turbo_stream { flash.now[:alert] = "Label not found on this product." }
-        format.json { render json: { error: "Label not found on this product." }, status: :not_found }
-      end
-      return
-    end
-
-    @product.labels.delete(label)
-
-    respond_to do |format|
-      format.html { redirect_to @product, notice: "Label '#{label.name}' removed successfully." }
-      format.turbo_stream { flash.now[:notice] = "Label '#{label.name}' removed successfully." }
-      format.json { render json: { success: true, message: "Label '#{label.name}' removed successfully." }, status: :ok }
-    end
-  end
-
   # PATCH /products/:id/toggle_active
   # PATCH /products/:id/toggle_active.turbo_stream
   #
@@ -553,6 +361,7 @@ class ProductsController < ApplicationController
         status_text = "activated"
       end
 
+      @product.reload
       respond_to do |format|
         format.html { redirect_to @product, notice: "Product #{status_text} successfully." }
         format.turbo_stream { flash.now[:notice] = "Product #{status_text} successfully." }
@@ -565,135 +374,17 @@ class ProductsController < ApplicationController
                         "Cannot activate product. Ensure all mandatory attributes are set and product structure is valid."
       end
 
+      @product.reload
       respond_to do |format|
         format.html { redirect_to @product, alert: error_message }
-        format.turbo_stream do
-          flash.now[:alert] = error_message
-          render :show, status: :unprocessable_entity
-        end
+        format.turbo_stream { flash.now[:alert] = error_message }
       end
     rescue ActiveRecord::RecordInvalid => e
       # Handle validation failures
+      @product.reload
       respond_to do |format|
         format.html { redirect_to @product, alert: "Failed to update product: #{e.message}" }
-        format.turbo_stream do
-          flash.now[:alert] = "Failed to update product: #{e.message}"
-          render :show, status: :unprocessable_entity
-        end
-      end
-    end
-  end
-
-  # POST /products/:id/add_to_catalog
-  # POST /products/:id/add_to_catalog.turbo_stream
-  #
-  # Adds the product to a catalog with optional configuration.
-  #
-  # Parameters:
-  # - catalog_id: The ID of the catalog to add the product to
-  # - active: Whether the product should be active in the catalog (default: true)
-  # - priority: The priority order in the catalog (default: 0)
-  #
-  def add_to_catalog
-    catalog_id = params[:catalog_id]
-    active = params[:active] == "1"
-    priority = params[:priority].to_i
-
-    if catalog_id.blank?
-      respond_to do |format|
-        format.html { redirect_to @product, alert: "Please select a catalog." }
-        format.turbo_stream { flash.now[:alert] = "Please select a catalog." }
-      end
-      return
-    end
-
-    # Verify catalog belongs to current company
-    catalog = current_potlift_company.catalogs.find_by(id: catalog_id)
-
-    unless catalog
-      respond_to do |format|
-        format.html { redirect_to @product, alert: "Catalog not found." }
-        format.turbo_stream { flash.now[:alert] = "Catalog not found." }
-      end
-      return
-    end
-
-    # Check if product is already in catalog
-    if @product.catalog_items.exists?(catalog_id: catalog.id)
-      respond_to do |format|
-        format.html { redirect_to @product, alert: "Product is already in #{catalog.name}." }
-        format.turbo_stream { flash.now[:alert] = "Product is already in #{catalog.name}." }
-      end
-      return
-    end
-
-    # Create catalog item
-    catalog_item = @product.catalog_items.build(
-      catalog: catalog,
-      catalog_item_state: active ? :active : :inactive,
-      priority: priority
-    )
-
-    if catalog_item.save
-      respond_to do |format|
-        format.html { redirect_to @product, notice: "Product added to #{catalog.name} successfully." }
-        format.turbo_stream { flash.now[:notice] = "Product added to #{catalog.name} successfully." }
-      end
-    else
-      respond_to do |format|
-        format.html { redirect_to @product, alert: "Failed to add product to catalog: #{catalog_item.errors.full_messages.join(', ')}" }
-        format.turbo_stream do
-          flash.now[:alert] = "Failed to add product to catalog: #{catalog_item.errors.full_messages.join(', ')}"
-          render :show, status: :unprocessable_entity
-        end
-      end
-    end
-  end
-
-  # DELETE /products/:id/remove_from_catalog
-  # DELETE /products/:id/remove_from_catalog.turbo_stream
-  #
-  # Removes the product from a catalog.
-  #
-  # Parameters:
-  # - catalog_id: The ID of the catalog to remove the product from
-  #
-  def remove_from_catalog
-    catalog_id = params[:catalog_id]
-
-    if catalog_id.blank?
-      respond_to do |format|
-        format.html { redirect_to @product, alert: "Catalog ID is required." }
-        format.turbo_stream { flash.now[:alert] = "Catalog ID is required." }
-      end
-      return
-    end
-
-    # Find the catalog item
-    catalog_item = @product.catalog_items.find_by(catalog_id: catalog_id)
-
-    unless catalog_item
-      respond_to do |format|
-        format.html { redirect_to @product, alert: "Product is not in this catalog." }
-        format.turbo_stream { flash.now[:alert] = "Product is not in this catalog." }
-      end
-      return
-    end
-
-    catalog_name = catalog_item.catalog.name
-
-    if catalog_item.destroy
-      respond_to do |format|
-        format.html { redirect_to @product, notice: "Product removed from #{catalog_name} successfully." }
-        format.turbo_stream { flash.now[:notice] = "Product removed from #{catalog_name} successfully." }
-      end
-    else
-      respond_to do |format|
-        format.html { redirect_to @product, alert: "Failed to remove product from catalog: #{catalog_item.errors.full_messages.join(', ')}" }
-        format.turbo_stream do
-          flash.now[:alert] = "Failed to remove product from catalog: #{catalog_item.errors.full_messages.join(', ')}"
-          render :show, status: :unprocessable_entity
-        end
+        format.turbo_stream { flash.now[:alert] = "Failed to update product: #{e.message}" }
       end
     end
   end
@@ -762,65 +453,6 @@ class ProductsController < ApplicationController
     end
   end
 
-  # Apply filters to products query
-  #
-  # @param products [ActiveRecord::Relation] The products relation
-  # @return [ActiveRecord::Relation] Filtered products relation
-  #
-  def apply_filters(products)
-    # Filter by product type
-    if params[:type].present? && Product.product_types.key?(params[:type])
-      products = products.where(product_type: params[:type])
-    end
-
-    # Filter by product status
-    if params[:status].present? && Product.product_statuses.key?(params[:status])
-      products = products.where(product_status: params[:status])
-    end
-
-    # Filter by label (includes sublabels for hierarchical filtering)
-    if params[:label_id].present?
-      begin
-        @current_label = current_potlift_company.labels.find(params[:label_id])
-        # Get all label IDs including descendants (sublabels)
-        label_ids = [ @current_label.id ] + @current_label.descendants.pluck(:id)
-        products = products.joins(:labels).where(labels: { id: label_ids }).distinct
-      rescue ActiveRecord::RecordNotFound
-        # Label not found or doesn't belong to company - ignore filter
-        @current_label = nil
-      end
-    end
-
-    # Search by name or SKU
-    if params[:q].present?
-      search_term = "%#{params[:q]}%"
-      # Qualify table name to avoid ambiguity when joining labels
-      products = products.where("products.name ILIKE ? OR products.sku ILIKE ?", search_term, search_term)
-    end
-
-    products
-  end
-
-  # Get sort column from params
-  # Defaults to created_at if invalid or not provided
-  #
-  # @return [String] The column to sort by
-  #
-  def sort_column
-    allowed_columns = %w[sku name created_at updated_at]
-    allowed_columns.include?(params[:sort]) ? params[:sort] : "created_at"
-  end
-
-  # Get sort direction from params
-  # Defaults to desc if invalid or not provided
-  #
-  # @return [String] The sort direction (asc or desc)
-  #
-  def sort_direction
-    allowed_directions = %w[asc desc]
-    allowed_directions.include?(params[:direction]) ? params[:direction] : "desc"
-  end
-
   # Send CSV export of products
   #
   # @param products [ActiveRecord::Relation] Products to export
@@ -832,96 +464,6 @@ class ProductsController < ApplicationController
               filename: "products_#{Time.current.strftime('%Y%m%d_%H%M%S')}.csv",
               type: "text/csv",
               disposition: "attachment"
-  end
-
-  # Load labels for filter dropdown with product counts
-  # Only loads root labels and their immediate children for performance
-  # Eager loads associations to prevent N+1 queries
-  #
-  def load_filter_labels
-    @available_labels = current_potlift_company.labels
-                                               .root_labels
-                                               .includes(:sublabels)
-                                               .order(:label_positions, :name)
-
-    # Optimized: Calculate product counts for all labels in a single query
-    # This eliminates N+1 queries by using GROUP BY instead of per-label queries
-    @label_product_counts = calculate_label_product_counts
-  end
-
-  # Calculate product counts for all labels efficiently (single GROUP BY query)
-  # Returns a hash of label_id => product_count (including descendant labels)
-  def calculate_label_product_counts
-    # Early return if no company context
-    return {} unless current_potlift_company
-
-    # Step 1: Load all labels and build hierarchical structure
-    all_labels = current_potlift_company.labels.to_a
-    descendant_map = build_descendant_map(all_labels)
-
-    # Step 2: Build a mapping of product_id => [label_ids] to track all label associations
-    # This allows us to efficiently check which products belong to which label hierarchies
-    product_label_map = {}
-    product_label_pairs = ProductLabel.where(product_id: current_potlift_company.products.select(:id))
-                                       .pluck(:product_id, :label_id)
-
-    product_label_pairs.each do |product_id, label_id|
-      product_label_map[product_id] ||= []
-      product_label_map[product_id] << label_id
-    end
-
-    # Step 3: Calculate cumulative counts for each label (including descendants)
-    # This is done in memory to avoid N database queries
-    label_counts = {}
-
-    all_labels.each do |label|
-      # Build set of label IDs to check (this label + all descendants)
-      label_ids_to_check = Set.new([ label.id ] + (descendant_map[label.id] || []))
-
-      # Count distinct products that are tagged with this label or any descendant
-      count = product_label_map.count do |_product_id, label_ids|
-        # Check if product has at least one label in our set
-        (label_ids.to_a & label_ids_to_check.to_a).any?
-      end
-
-      label_counts[label.id] = count
-    end
-
-    label_counts
-  end
-
-  # Build a map of label_id => [descendant_label_ids] for all labels
-  # This is more efficient than calling label.descendants N times
-  # @param labels [Array<Label>] All labels to process
-  # @return [Hash<Integer, Array<Integer>>] Map of label_id to descendant IDs
-  def build_descendant_map(labels)
-    # Create parent_id => children_ids mapping
-    children_map = labels.group_by(&:parent_label_id)
-                        .transform_values { |children| children.map(&:id) }
-
-    # Recursively collect all descendants for each label
-    descendant_map = {}
-
-    labels.each do |label|
-      descendant_map[label.id] = collect_descendants(label.id, children_map)
-    end
-
-    descendant_map
-  end
-
-  # Recursively collect all descendant IDs for a given label
-  # @param label_id [Integer] The label ID to find descendants for
-  # @param children_map [Hash] Map of parent_id => child_ids
-  # @return [Array<Integer>] All descendant label IDs
-  def collect_descendants(label_id, children_map)
-    children = children_map[label_id] || []
-    descendants = children.dup
-
-    children.each do |child_id|
-      descendants.concat(collect_descendants(child_id, children_map))
-    end
-
-    descendants
   end
 
   # Parse bundle configuration from JSON parameter
