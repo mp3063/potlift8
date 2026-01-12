@@ -26,7 +26,7 @@ RSpec.describe 'Products Bulk Operations', type: :request do
     context 'with valid product IDs' do
       it 'deletes multiple products successfully' do
         expect {
-          post bulk_destroy_products_path, params: { product_ids: [ product1.id, product2.id ] }
+          post products_bulk_destroy_path, params: { product_ids: [ product1.id, product2.id ] }
         }.to change(Product, :count).by(-2)
 
         expect(Product.exists?(product1.id)).to be false
@@ -35,7 +35,7 @@ RSpec.describe 'Products Bulk Operations', type: :request do
       end
 
       it 'redirects with success message' do
-        post bulk_destroy_products_path, params: { product_ids: [ product1.id, product2.id ] }
+        post products_bulk_destroy_path, params: { product_ids: [ product1.id, product2.id ] }
 
         expect(response).to redirect_to(products_path)
         follow_redirect!
@@ -45,7 +45,7 @@ RSpec.describe 'Products Bulk Operations', type: :request do
       it 'only deletes products from current company' do
         initial_count = Product.count
 
-        post bulk_destroy_products_path, params: {
+        post products_bulk_destroy_path, params: {
           product_ids: [ product1.id, other_company_product.id ]
         }
 
@@ -58,7 +58,7 @@ RSpec.describe 'Products Bulk Operations', type: :request do
 
     context 'with empty product_ids' do
       it 'does not delete any products and handles gracefully' do
-        post bulk_destroy_products_path, params: { product_ids: [] }
+        post products_bulk_destroy_path, params: { product_ids: [] }
 
         expect(response).to redirect_to(products_path)
         # The controller may handle this silently or with a message
@@ -66,7 +66,7 @@ RSpec.describe 'Products Bulk Operations', type: :request do
 
       it 'does not delete any products' do
         expect {
-          post bulk_destroy_products_path, params: { product_ids: [] }
+          post products_bulk_destroy_path, params: { product_ids: [] }
         }.not_to change(Product, :count)
       end
     end
@@ -74,7 +74,7 @@ RSpec.describe 'Products Bulk Operations', type: :request do
     context 'with invalid product IDs' do
       it 'ignores non-existent product IDs' do
         expect {
-          post bulk_destroy_products_path, params: { product_ids: [ 9999, product1.id ] }
+          post products_bulk_destroy_path, params: { product_ids: [ 9999, product1.id ] }
         }.to change(Product, :count).by(-1)
 
         expect(Product.exists?(product1.id)).to be false
@@ -95,7 +95,7 @@ RSpec.describe 'Products Bulk Operations', type: :request do
     describe 'adding labels (action_type: add)' do
       context 'to products without existing labels' do
         it 'adds labels to multiple products' do
-          post bulk_update_labels_products_path, params: {
+          post products_bulk_update_labels_path, params: {
             product_ids: [ product1.id, product2.id ],
             label_ids: [ label1.id, label2.id ],
             action_type: 'add'
@@ -110,7 +110,7 @@ RSpec.describe 'Products Bulk Operations', type: :request do
         end
 
         it 'redirects with success message' do
-          post bulk_update_labels_products_path, params: {
+          post products_bulk_update_labels_path, params: {
             product_ids: [ product1.id, product2.id ],
             label_ids: [ label1.id ],
             action_type: 'add'
@@ -129,7 +129,7 @@ RSpec.describe 'Products Bulk Operations', type: :request do
         end
 
         it 'adds new labels without removing existing ones' do
-          post bulk_update_labels_products_path, params: {
+          post products_bulk_update_labels_path, params: {
             product_ids: [ product1.id, product2.id ],
             label_ids: [ label3.id ],
             action_type: 'add'
@@ -143,7 +143,7 @@ RSpec.describe 'Products Bulk Operations', type: :request do
         end
 
         it 'does not duplicate labels if already present' do
-          post bulk_update_labels_products_path, params: {
+          post products_bulk_update_labels_path, params: {
             product_ids: [ product1.id ],
             label_ids: [ label1.id, label2.id ],
             action_type: 'add'
@@ -158,7 +158,7 @@ RSpec.describe 'Products Bulk Operations', type: :request do
 
       context 'with other company products' do
         it 'only adds labels to current company products' do
-          post bulk_update_labels_products_path, params: {
+          post products_bulk_update_labels_path, params: {
             product_ids: [ product1.id, other_company_product.id ],
             label_ids: [ label1.id ],
             action_type: 'add'
@@ -182,7 +182,7 @@ RSpec.describe 'Products Bulk Operations', type: :request do
 
       context 'from products with multiple labels' do
         it 'removes specified labels from multiple products' do
-          post bulk_update_labels_products_path, params: {
+          post products_bulk_update_labels_path, params: {
             product_ids: [ product1.id, product2.id ],
             label_ids: [ label1.id, label2.id ],
             action_type: 'remove'
@@ -198,7 +198,7 @@ RSpec.describe 'Products Bulk Operations', type: :request do
         end
 
         it 'redirects with success message' do
-          post bulk_update_labels_products_path, params: {
+          post products_bulk_update_labels_path, params: {
             product_ids: [ product1.id, product2.id ],
             label_ids: [ label1.id ],
             action_type: 'remove'
@@ -213,7 +213,7 @@ RSpec.describe 'Products Bulk Operations', type: :request do
       context 'when removing non-existent labels' do
         it 'does not raise an error' do
           expect {
-            post bulk_update_labels_products_path, params: {
+            post products_bulk_update_labels_path, params: {
               product_ids: [ product3.id ],
               label_ids: [ label2.id, label3.id ], # product3 only has label1
               action_type: 'remove'
@@ -227,7 +227,7 @@ RSpec.describe 'Products Bulk Operations', type: :request do
 
       context 'when removing all labels' do
         it 'leaves product with no labels' do
-          post bulk_update_labels_products_path, params: {
+          post products_bulk_update_labels_path, params: {
             product_ids: [ product2.id ],
             label_ids: [ label1.id, label2.id ],
             action_type: 'remove'
@@ -242,7 +242,7 @@ RSpec.describe 'Products Bulk Operations', type: :request do
     describe 'edge cases' do
       context 'with empty product_ids' do
         it 'handles empty product_ids appropriately' do
-          post bulk_update_labels_products_path, params: {
+          post products_bulk_update_labels_path, params: {
             product_ids: [],
             label_ids: [ label1.id ],
             action_type: 'add'
@@ -255,7 +255,7 @@ RSpec.describe 'Products Bulk Operations', type: :request do
 
       context 'with empty label_ids' do
         it 'handles empty label_ids appropriately' do
-          post bulk_update_labels_products_path, params: {
+          post products_bulk_update_labels_path, params: {
             product_ids: [ product1.id ],
             label_ids: [],
             action_type: 'add'
@@ -268,7 +268,7 @@ RSpec.describe 'Products Bulk Operations', type: :request do
 
       context 'with nil action_type (defaults to add)' do
         it 'defaults to adding labels' do
-          post bulk_update_labels_products_path, params: {
+          post products_bulk_update_labels_path, params: {
             product_ids: [ product1.id ],
             label_ids: [ label1.id ]
           }
@@ -280,7 +280,7 @@ RSpec.describe 'Products Bulk Operations', type: :request do
 
       context 'with invalid action_type' do
         it 'treats as add action' do
-          post bulk_update_labels_products_path, params: {
+          post products_bulk_update_labels_path, params: {
             product_ids: [ product1.id ],
             label_ids: [ label1.id ],
             action_type: 'invalid'
@@ -293,7 +293,7 @@ RSpec.describe 'Products Bulk Operations', type: :request do
 
       context 'with string product_ids' do
         it 'handles string IDs correctly' do
-          post bulk_update_labels_products_path, params: {
+          post products_bulk_update_labels_path, params: {
             product_ids: [ product1.id.to_s, product2.id.to_s ],
             label_ids: [ label1.id.to_s ],
             action_type: 'add'
@@ -321,7 +321,7 @@ RSpec.describe 'Products Bulk Operations', type: :request do
           initial_label_count_p1 = product1.labels.count
           initial_label_count_p2 = product2.labels.count
 
-          post bulk_update_labels_products_path, params: {
+          post products_bulk_update_labels_path, params: {
             product_ids: [ product1.id, product2.id ],
             label_ids: [ label1.id ],
             action_type: 'add'
@@ -336,7 +336,7 @@ RSpec.describe 'Products Bulk Operations', type: :request do
         end
 
         it 'redirects with error message' do
-          post bulk_update_labels_products_path, params: {
+          post products_bulk_update_labels_path, params: {
             product_ids: [ product1.id ],
             label_ids: [ label1.id ],
             action_type: 'add'
@@ -356,7 +356,7 @@ RSpec.describe 'Products Bulk Operations', type: :request do
         product_ids = products.map(&:id)
 
         expect {
-          post bulk_update_labels_products_path, params: {
+          post products_bulk_update_labels_path, params: {
             product_ids: product_ids,
             label_ids: [ label1.id, label2.id ],
             action_type: 'add'
@@ -367,6 +367,87 @@ RSpec.describe 'Products Bulk Operations', type: :request do
           product.reload
           expect(product.labels).to include(label1, label2)
         end
+      end
+    end
+  end
+
+  describe 'GET /products/bulk/labels_for_products' do
+    let!(:product1) { create(:product, company: company, sku: 'LFP-1') }
+    let!(:product2) { create(:product, company: company, sku: 'LFP-2') }
+    let!(:product3) { create(:product, company: company, sku: 'LFP-3') }
+
+    let!(:label1) { create(:label, company: company, code: 'LFP-LABEL-1', name: 'Label 1') }
+    let!(:label2) { create(:label, company: company, code: 'LFP-LABEL-2', name: 'Label 2') }
+    let!(:label3) { create(:label, company: company, code: 'LFP-LABEL-3', name: 'Label 3') }
+
+    before do
+      product1.labels << label1
+      product1.labels << label2
+      product2.labels << label2
+      # product3 has no labels
+    end
+
+    context 'with valid product IDs' do
+      it 'returns assigned_to_any with labels on any selected product' do
+        get products_bulk_labels_for_products_path, params: { product_ids: [ product1.id, product2.id ] }
+
+        expect(response).to have_http_status(:ok)
+        json = JSON.parse(response.body)
+        expect(json['assigned_to_any']).to contain_exactly(label1.id, label2.id)
+      end
+
+      it 'returns assigned_to_all with labels on all selected products' do
+        get products_bulk_labels_for_products_path, params: { product_ids: [ product1.id, product2.id ] }
+
+        expect(response).to have_http_status(:ok)
+        json = JSON.parse(response.body)
+        # Only label2 is on both products
+        expect(json['assigned_to_all']).to contain_exactly(label2.id)
+      end
+
+      it 'returns only labels for single product' do
+        get products_bulk_labels_for_products_path, params: { product_ids: [ product2.id ] }
+
+        expect(response).to have_http_status(:ok)
+        json = JSON.parse(response.body)
+        expect(json['assigned_to_any']).to contain_exactly(label2.id)
+        expect(json['assigned_to_all']).to contain_exactly(label2.id)
+      end
+
+      it 'returns empty arrays for product with no labels' do
+        get products_bulk_labels_for_products_path, params: { product_ids: [ product3.id ] }
+
+        expect(response).to have_http_status(:ok)
+        json = JSON.parse(response.body)
+        expect(json['assigned_to_any']).to be_empty
+        expect(json['assigned_to_all']).to be_empty
+      end
+    end
+
+    context 'with empty product_ids' do
+      it 'returns empty arrays' do
+        get products_bulk_labels_for_products_path, params: { product_ids: [] }
+
+        expect(response).to have_http_status(:ok)
+        json = JSON.parse(response.body)
+        expect(json['assigned_to_any']).to be_empty
+        expect(json['assigned_to_all']).to be_empty
+      end
+    end
+
+    context 'with products from another company' do
+      it 'ignores products from other companies' do
+        other_product = create(:product, company: other_company)
+        other_label = create(:label, company: other_company)
+        other_product.labels << other_label
+
+        get products_bulk_labels_for_products_path, params: { product_ids: [ product1.id, other_product.id ] }
+
+        expect(response).to have_http_status(:ok)
+        json = JSON.parse(response.body)
+        # Should only include labels from product1, not other_product
+        expect(json['assigned_to_any']).to contain_exactly(label1.id, label2.id)
+        expect(json['assigned_to_all']).to contain_exactly(label1.id, label2.id)
       end
     end
   end

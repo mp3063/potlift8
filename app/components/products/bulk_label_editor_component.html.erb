@@ -15,7 +15,7 @@
       <span class="ml-2">Edit Labels for Selected Products</span>
     <% end %>
 
-    <%= form_with url: bulk_update_labels_products_path, method: :post, data: { bulk_label_editor_target: "form" }, class: "space-y-6" do |f| %>
+    <%= form_with url: products_bulk_update_labels_path, method: :post, data: { bulk_label_editor_target: "form" }, class: "space-y-6" do |f| %>
       <!-- Hidden input for product IDs (populated by Stimulus controller) -->
       <div data-bulk-label-editor-target="productIds"></div>
 
@@ -30,13 +30,19 @@
             <label class="flex items-center cursor-pointer">
               <%= radio_button_tag :label_action, "add", true,
                   class: "h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-600",
-                  data: { bulk_label_editor_target: "actionType" } %>
+                  data: {
+                    bulk_label_editor_target: "actionType",
+                    action: "change->bulk-label-editor#handleActionTypeChange"
+                  } %>
               <span class="ml-2 text-sm font-medium text-gray-900">Add labels to products</span>
             </label>
             <label class="flex items-center cursor-pointer">
               <%= radio_button_tag :label_action, "remove", false,
                   class: "h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-600",
-                  data: { bulk_label_editor_target: "actionType" } %>
+                  data: {
+                    bulk_label_editor_target: "actionType",
+                    action: "change->bulk-label-editor#handleActionTypeChange"
+                  } %>
               <span class="ml-2 text-sm font-medium text-gray-900">Remove labels from products</span>
             </label>
           </div>
