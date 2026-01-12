@@ -1,0 +1,83 @@
+<%# Turbo stream response for index action - renders full page HTML for redirects from form submissions %>
+<%= turbo_stream.update "labels_content" do %>
+  <!-- Search Bar -->
+  <%= form_with url: labels_path, method: :get, class: "mb-6", data: { turbo_frame: "labels_content" } do |f| %>
+    <div class="flex gap-3">
+      <%= render Ui::SearchInputComponent.new(
+        name: :q,
+        value: params[:q],
+        placeholder: "Search labels by name or code...",
+        label: "Search labels by name or code"
+      ) %>
+      <%= render Ui::ButtonComponent.new(type: "submit", variant: :secondary) do %>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <span class="sr-only">Search labels</span>
+      <% end %>
+      <% if params[:q].present? %>
+        <%= link_to labels_path, class: "inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" do %>
+          Clear
+        <% end %>
+      <% end %>
+    </div>
+  <% end %>
+  <% if @labels.any? %>
+    <!-- Labels Tree View -->
+    <%= render Ui::CardComponent.new(padding: :none) do %>
+      <div class="divide-y divide-gray-200" data-controller="label-tree" id="root-labels-list">
+        <% @labels.each do |label| %>
+          <%= render "tree_node", label: label, level: 0 %>
+        <% end %>
+      </div>
+    <% end %>
+
+    <!-- Pagination -->
+    <% if @pagy %>
+      <div class="mt-6">
+        <%== pagy_nav(@pagy) if @pagy.pages > 1 %>
+      </div>
+    <% end %>
+  <% else %>
+    <!-- Empty State -->
+    <div class="text-center py-12">
+      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+      </svg>
+      <h3 class="mt-2 text-sm font-semibold text-gray-900">
+        <% if params[:q].present? %>
+          No labels found
+        <% else %>
+          No labels yet
+        <% end %>
+      </h3>
+      <p class="mt-1 text-sm text-gray-500">
+        <% if params[:q].present? %>
+          Try adjusting your search query or clear the filter.
+        <% else %>
+          Get started by creating your first label to organize your products.
+        <% end %>
+      </p>
+      <% unless params[:q].present? %>
+        <div class="mt-6">
+          <%= link_to new_label_path, data: { turbo_frame: "label_modal" }, class: "inline-flex items-center justify-center font-medium rounded-lg transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 focus:ring-blue-500 text-white" do %>
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            New Label
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+<% end %>
+
+<%# Clear the modal %>
+<%= turbo_stream.update "label_modal", "" %>
+
+<%# Show flash message if present %>
+<% if flash[:notice].present? %>
+  <%= turbo_stream.update "flash" do %>
+    <%= render FlashComponent.new(flash: flash) %>
+  <% end %>
+<% end %>

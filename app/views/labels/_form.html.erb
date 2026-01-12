@@ -7,7 +7,7 @@
   submit_text = is_new ? "Create Label" : "Update Label"
 %>
 
-<%= form_with(model: label, url: is_new ? labels_path : label_path(label), method: is_new ? :post : :patch, class: "contents") do |form| %>
+<%= form_with(model: label, url: is_new ? labels_path : label_path(label), method: is_new ? :post : :patch, class: "contents", data: { turbo: false }) do |form| %>
   <%= render Ui::ModalComponent.new(size: :lg, closable: true) do |modal| %>
     <% modal.with_header do %>
       <div>

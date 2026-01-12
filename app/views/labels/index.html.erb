@@ -18,30 +18,29 @@
 <% end %>
 
 <div class="space-y-6">
-  <!-- Search Bar -->
-  <%= form_with url: labels_path, method: :get, class: "mb-6", data: { turbo_frame: "labels_content" } do |f| %>
-    <div class="flex gap-3">
-      <%= render Ui::SearchInputComponent.new(
-        name: :q,
-        value: params[:q],
-        placeholder: "Search labels by name or code...",
-        label: "Search labels by name or code"
-      ) %>
-      <%= render Ui::ButtonComponent.new(type: "submit", variant: :secondary) do %>
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-        <span class="sr-only">Search labels</span>
-      <% end %>
-      <% if params[:q].present? %>
-        <%= link_to labels_path, class: "inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" do %>
-          Clear
-        <% end %>
-      <% end %>
-    </div>
-  <% end %>
-
   <%= turbo_frame_tag "labels_content" do %>
+    <!-- Search Bar -->
+    <%= form_with url: labels_path, method: :get, class: "mb-6", data: { turbo_frame: "labels_content" } do |f| %>
+      <div class="flex gap-3">
+        <%= render Ui::SearchInputComponent.new(
+          name: :q,
+          value: params[:q],
+          placeholder: "Search labels by name or code...",
+          label: "Search labels by name or code"
+        ) %>
+        <%= render Ui::ButtonComponent.new(type: "submit", variant: :secondary) do %>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <span class="sr-only">Search labels</span>
+        <% end %>
+        <% if params[:q].present? %>
+          <%= link_to labels_path, class: "inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" do %>
+            Clear
+          <% end %>
+        <% end %>
+      </div>
+    <% end %>
     <% if @labels.any? %>
       <!-- Labels Tree View -->
       <%= render Ui::CardComponent.new(padding: :none) do %>

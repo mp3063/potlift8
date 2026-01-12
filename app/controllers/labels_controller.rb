@@ -174,19 +174,16 @@ class LabelsController < ApplicationController
   #
   def update
     if @label.update(label_params)
-      # If parent changed, update all children's full_code and full_name
-      @label.update_label_and_children if @label.previous_changes.key?("parent_label_id")
+      # Cascade updates to children if parent changed OR if code/name changed (affects full_code/full_name)
+      needs_cascade = @label.previous_changes.key?("parent_label_id") ||
+                      @label.previous_changes.key?("code") ||
+                      @label.previous_changes.key?("name")
+      @label.sublabels.each(&:update_label_and_children) if needs_cascade && @label.sublabels.any?
 
-      respond_to do |format|
-        format.html do
-          redirect_to labels_path(parent_id: @label.parent_label_id),
-                      notice: "Label '#{@label.name}' updated successfully."
-        end
-        format.turbo_stream do
-          flash[:notice] = "Label '#{@label.name}' updated successfully."
-          render turbo_stream: turbo_stream.action(:redirect, labels_path(parent_id: @label.parent_label_id))
-        end
-      end
+      # Use see_other (303) status for turbo-compatible redirect after form submission
+      redirect_to labels_path(parent_id: @label.parent_label_id),
+                  notice: "Label '#{@label.name}' updated successfully.",
+                  status: :see_other
     else
       @parent_label = @label.parent_label if @label.parent_label_id.present?
       respond_to do |format|

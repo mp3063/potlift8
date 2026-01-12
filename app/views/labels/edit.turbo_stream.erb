@@ -1,3 +1,3 @@
-<%= turbo_stream.replace "label_modal" do %>
+<%= turbo_stream.update "label_modal" do %>
   <%= render "form", label: @label, parent_label: @parent_label %>
 <% end %>
