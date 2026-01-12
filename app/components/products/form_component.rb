@@ -125,17 +125,20 @@ module Products
       Product.configuration_types.map { |key, _value| [ key.humanize, key ] }
     end
 
-    # Available labels for the current company
+    # Available labels for the current company (excluding already selected)
     #
-    # Returns all labels ordered by hierarchy and position.
-    # Returns empty array if company is not present.
+    # Returns labels not already assigned to this product,
+    # ordered by hierarchy and position.
+    # Returns empty relation if company is not present.
     #
-    # @return [ActiveRecord::Relation] Labels for the company
+    # @return [ActiveRecord::Relation] Unselected labels for the company
     #
     def available_labels
       return Label.none unless company.present?
 
-      company.labels.order(:label_positions, :name)
+      company.labels
+             .where.not(id: product.label_ids)
+             .order(:label_positions, :name)
     end
 
     # Selected label IDs for the product
