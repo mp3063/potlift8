@@ -1,0 +1,9 @@
+<%= turbo_stream.replace "product-status-#{@product.id}" do %>
+  <%= turbo_frame_tag "product-status-#{@product.id}" do %>
+    <%= render Products::StatusCardComponent.new(product: @product) %>
+  <% end %>
+<% end %>
+
+<%= turbo_stream.update "flash" do %>
+  <%= render "shared/flash" %>
+<% end %>

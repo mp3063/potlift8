@@ -105,7 +105,9 @@
 
     <!-- Sidebar -->
     <div class="space-y-6">
-      <%= render Products::StatusCardComponent.new(product: @product) %>
+      <%= turbo_frame_tag "product-status-#{@product.id}" do %>
+        <%= render Products::StatusCardComponent.new(product: @product) %>
+      <% end %>
       <%= render Products::InventorySummaryComponent.new(product: @product) %>
       <%= render Products::ActivityTimelineComponent.new(product: @product) %>
     </div>
