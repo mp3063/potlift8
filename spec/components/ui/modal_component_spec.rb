@@ -8,7 +8,7 @@ RSpec.describe Ui::ModalComponent, type: :component do
         c.with_footer { "Footer content" }
       end
 
-      expect(page).to have_css('div[aria-role="dialog"][aria-modal="true"]')
+      expect(page).to have_css('div[role="dialog"][aria-modal="true"]')
       expect(page).to have_text("Confirm Action")
       expect(page).to have_text("Footer content")
     end
@@ -350,13 +350,13 @@ RSpec.describe Ui::ModalComponent, type: :component do
   end
 
   describe "accessibility" do
-    it "includes aria-role='dialog' on backdrop" do
+    it "includes role='dialog' on backdrop" do
       render_inline(described_class.new) do |c|
         c.with_header { "Modal" }
         "Content"
       end
 
-      expect(page).to have_css('div[aria-role="dialog"]')
+      expect(page).to have_css('div[role="dialog"]')
     end
 
     it "includes aria-modal='true' on backdrop" do
@@ -483,7 +483,7 @@ RSpec.describe Ui::ModalComponent, type: :component do
       expect(page).to have_css("button.btn-danger", text: "Confirm Delete")
 
       # Accessibility
-      expect(page).to have_css('div[aria-role="dialog"][aria-modal="true"]')
+      expect(page).to have_css('div[role="dialog"][aria-modal="true"]')
       expect(page).to have_css('div[aria-labelledby="delete-modal-title"]')
     end
 

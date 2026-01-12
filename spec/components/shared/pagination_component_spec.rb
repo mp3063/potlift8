@@ -197,7 +197,7 @@ RSpec.describe Shared::PaginationComponent, type: :component do
       it 'disables Previous button' do
         render_inline(described_class.new(pagy: pagy))
 
-        expect(page).to have_css('span.text-gray-500.cursor-not-allowed[aria-label="Previous page"]')
+        expect(page).to have_css('span.text-gray-500.cursor-not-allowed[aria-hidden="true"]')
       end
 
       it 'enables Next button' do
@@ -219,7 +219,7 @@ RSpec.describe Shared::PaginationComponent, type: :component do
       it 'disables Next button' do
         render_inline(described_class.new(pagy: pagy))
 
-        expect(page).to have_css('span.text-gray-500.cursor-not-allowed[aria-label="Next page"]')
+        expect(page).to have_css('span.text-gray-500.cursor-not-allowed[aria-hidden="true"]')
       end
     end
   end

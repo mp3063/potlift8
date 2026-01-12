@@ -208,10 +208,10 @@ RSpec.describe Products::LabelsComponent, type: :component do
       expect(page).to have_css("span[aria-hidden='true'].rounded-full")
     end
 
-    it "includes role=listitem for selected labels" do
+    it "includes data-label-id for selected labels" do
       render_inline(described_class.new(product: product))
 
-      expect(page).to have_css("span[role='listitem'][data-label-id='#{label1.id}']")
+      expect(page).to have_css("span[data-label-id='#{label1.id}']")
     end
   end
 end

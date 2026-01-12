@@ -15,7 +15,7 @@ RSpec.describe Search::ModalComponent, type: :component do
 
     it "renders modal backdrop with correct attributes" do
       expect(page).to have_css('[data-global-search-target="modal"]')
-      expect(page).to have_css('[aria-role="dialog"]')
+      expect(page).to have_css('[role="dialog"]')
       expect(page).to have_css('[aria-labelledby="search-modal-title"]')
     end
 
@@ -93,7 +93,7 @@ RSpec.describe Search::ModalComponent, type: :component do
     end
 
     it "has proper ARIA attributes for dialog" do
-      expect(page).to have_css('[aria-role="dialog"]')
+      expect(page).to have_css('[role="dialog"]')
       expect(page).to have_css('[aria-labelledby="search-modal-title"]')
     end
 
