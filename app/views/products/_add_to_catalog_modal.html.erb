@@ -3,7 +3,7 @@
     Add <%= product.name %> to Catalog
   <% end %>
 
-  <%= form_with model: product, url: add_to_catalog_product_path(product), method: :post, data: { turbo: true } do |f| %>
+  <%= form_with model: product, url: product_catalogs_path(product), method: :post, data: { turbo: true } do |f| %>
     <div class="space-y-4">
       <div>
         <label for="catalog_id" class="block text-sm font-medium text-gray-700">

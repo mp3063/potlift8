@@ -1,3 +1,4 @@
+<%= helpers.turbo_frame_tag "catalog-tabs-#{product.id}" do %>
 <div class="bg-white shadow rounded-lg" data-controller="catalog-tabs">
   <!-- Tab Navigation -->
   <div class="border-b border-gray-200">
@@ -84,3 +85,4 @@
     <%= render partial: 'products/add_to_catalog_modal', locals: { product: product, available_catalogs: available_catalogs } %>
   <% end %>
 </div>
+<% end %>

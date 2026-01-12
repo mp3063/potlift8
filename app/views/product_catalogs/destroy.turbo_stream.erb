@@ -1,0 +1,12 @@
+<%= turbo_stream.replace "catalog-tabs-#{@product.id}" do %>
+  <%= render Products::CatalogTabsComponent.new(
+    product: @product,
+    catalog_items: @catalog_items,
+    attribute_values: @attribute_values,
+    available_catalogs: @available_catalogs
+  ) %>
+<% end %>
+
+<%= turbo_stream.update "flash" do %>
+  <%= render "shared/flash" %>
+<% end %>
