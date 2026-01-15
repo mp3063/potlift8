@@ -2,7 +2,7 @@
 
 # ProductSyncService
 #
-# Handles synchronization of products to external systems (Shopify3, Bizcart).
+# Handles synchronization of products to external systems (Shopify8, Bizcart).
 # This service builds complete product payloads including:
 # - Product basic data (SKU, name, status, product type)
 # - Attribute data with catalog overrides
@@ -10,7 +10,7 @@
 # - Catalog-specific information
 #
 # Sync Targets:
-# - Shopify3: POST to ENV['SHOPIFY3_URL']/sync_tasks
+# - Shopify8: POST to ENV['SHOPIFY8_URL']/api/v1/sync_tasks
 # - Bizcart: POST to ENV['BIZCART_URL']/api/api/update_catalog
 #
 # Usage:
@@ -56,14 +56,22 @@ class ProductSyncService
     validate_prerequisites
     return failure_result("Validation failed: #{@errors.join(', ')}") if @errors.any?
 
+    # Eager load all associations for efficient payload building
+    eager_load_product_associations
+
     payload = build_payload
     target_url = determine_target_url
+    sync_target = @catalog.info&.dig("sync_target") || "shopify8"
 
     return failure_result("No sync target configured for catalog") if target_url.nil?
 
     Rails.logger.info("[ProductSyncService] Syncing product #{@product.sku} to #{target_url}")
 
-    response = send_to_target(target_url, payload)
+    # Wrap payload in target-specific format
+    wrapped_payload = wrap_payload_for_target(payload, sync_target)
+    api_token = get_api_token_for_target(sync_target)
+
+    response = send_to_target(target_url, wrapped_payload, api_token)
 
     if response.success?
       success_result(response.body)
@@ -87,13 +95,36 @@ class ProductSyncService
     {
       product: build_product_data,
       attributes: build_attributes_payload,
+      labels: build_labels_payload,
+      assets: build_assets_payload,
+      translations: build_translations_payload,
+      configurations: build_configurations_payload,
+      subproducts: build_subproducts_payload,
       inventory: build_inventory_payload,
       catalog: build_catalog_data,
       sync_metadata: build_sync_metadata
-    }
+    }.compact
   end
 
   private
+
+  # Eager load all product associations for efficient payload building
+  #
+  # Reloads the product with all necessary associations to prevent N+1 queries.
+  #
+  def eager_load_product_associations
+    @product = Product.includes(
+      :labels,
+      :translations,
+      { inventories: :storage },
+      { product_assets: { file_attachment: :blob } },
+      { product_attribute_values: :product_attribute },
+      { configurations: :configuration_values },
+      { product_configurations_as_super: {
+        subproduct: [ :translations, { inventories: :storage }, { product_attribute_values: :product_attribute } ]
+      } }
+    ).find(@product.id)
+  end
 
   # Validate prerequisites before syncing
   #
@@ -125,21 +156,200 @@ class ProductSyncService
     }
   end
 
-  # Build attributes payload with catalog overrides
+  # Build attributes payload with catalog overrides and localization
   #
   # If a catalog is present, uses catalog-level attribute overrides.
   # Otherwise, uses product-level attribute values.
+  # Also includes localized attribute values when present.
   #
-  # @return [Hash] Attribute code => value mapping
+  # @return [Hash] Attribute data with values and localized variants
   #
   def build_attributes_payload
-    return @product.attribute_values_hash unless @catalog.present?
+    base_attributes = if @catalog.present?
+      catalog_item = @catalog.catalog_items.find_by(product: @product)
+      catalog_item&.effective_attribute_values_hash || @product.attribute_values_hash
+    else
+      @product.attribute_values_hash
+    end
 
-    catalog_item = @catalog.catalog_items.find_by(product: @product)
-    return @product.attribute_values_hash unless catalog_item.present?
+    # Collect localized attribute values
+    localized_attributes = {}
+    @product.product_attribute_values.includes(:product_attribute).each do |av|
+      localized_value = av.info.to_h["localized_value"]
+      next unless localized_value.present?
 
-    # Get effective values (catalog overrides take precedence)
-    catalog_item.effective_attribute_values_hash
+      localized_attributes[av.product_attribute.code] = {
+        value: av.value,
+        localized_value: localized_value
+      }
+    end
+
+    if localized_attributes.present?
+      {
+        values: base_attributes,
+        localized: localized_attributes
+      }
+    else
+      base_attributes
+    end
+  end
+
+  # Build labels payload
+  #
+  # Labels include brand, category, campaign, featured, and template types.
+  # Each label includes localized values when available.
+  #
+  # @return [Array<Hash>] Array of label data
+  #
+  def build_labels_payload
+    @product.labels.includes(:parent_label).map do |label|
+      {
+        label_type: label.label_type,
+        code: label.code,
+        full_code: label.full_code,
+        name: label.name,
+        full_name: label.full_name,
+        localized_value: label.info.to_h["localized_value"],
+        localized_full_value: label.info.to_h["localized_full_value"]
+      }.compact
+    end
+  end
+
+  # Build assets payload
+  #
+  # Only includes images with public or catalog-only visibility.
+  # Generates signed URLs for Shopify8 to fetch.
+  #
+  # @return [Array<Hash>] Array of asset data with URLs
+  #
+  def build_assets_payload
+    @product.product_assets
+            .images
+            .visible
+            .ordered
+            .includes(file_attachment: :blob)
+            .map do |asset|
+      next unless asset.file.attached?
+
+      {
+        id: asset.id,
+        name: asset.name,
+        description: asset.asset_description,
+        priority: asset.asset_priority,
+        visibility: asset.asset_visibility,
+        url: generate_asset_url(asset),
+        content_type: asset.file.content_type
+      }
+    end.compact
+  end
+
+  # Build translations payload
+  #
+  # Organizes translations by locale, with keys for each translated field.
+  #
+  # @return [Hash] Locale => { key => value } structure
+  #
+  def build_translations_payload
+    translations_hash = {}
+
+    @product.translations.each do |translation|
+      translations_hash[translation.locale] ||= {}
+      translations_hash[translation.locale][translation.key] = translation.value
+    end
+
+    translations_hash.presence
+  end
+
+  # Build configurations payload (for configurable products only)
+  #
+  # Includes variant dimension definitions (Size, Color, etc.) and their values.
+  #
+  # @return [Array<Hash>, nil] Configuration dimensions or nil if not configurable
+  #
+  def build_configurations_payload
+    return nil unless @product.product_type_configurable?
+
+    @product.configurations
+            .includes(:configuration_values)
+            .order(:position)
+            .map do |config|
+      {
+        id: config.id,
+        code: config.code,
+        name: config.name,
+        position: config.position,
+        values: config.configuration_values.order(:position).map do |cv|
+          { id: cv.id, value: cv.value, position: cv.position }
+        end
+      }
+    end
+  end
+
+  # Build subproducts payload (for configurable and bundle products)
+  #
+  # For configurable products: includes variant data with variant_config
+  # For bundles: includes component products with quantities
+  #
+  # @return [Array<Hash>, nil] Subproduct data or nil if no subproducts
+  #
+  def build_subproducts_payload
+    return nil unless @product.product_type_configurable? || @product.product_type_bundle?
+
+    @product.product_configurations_as_super
+            .includes(subproduct: [ :translations, :inventories, { product_attribute_values: :product_attribute } ])
+            .map do |config|
+      subproduct = config.subproduct
+
+      {
+        quantity: config.quantity,
+        configuration_position: config.configuration_position,
+        variant_config: config.info.to_h["variant_config"],
+        configuration_details: config.info.to_h["configuration_details"],
+        product: {
+          id: subproduct.id,
+          sku: subproduct.sku,
+          ean: subproduct.ean,
+          name: subproduct.name,
+          product_type: subproduct.product_type,
+          product_status: subproduct.product_status
+        },
+        attributes: subproduct.attribute_values_hash,
+        inventory: {
+          total_saldo: subproduct.total_saldo,
+          total_max_sellable_saldo: subproduct.total_max_sellable_saldo,
+          single_inventory_with_eta: subproduct.single_inventory_with_eta
+        },
+        translations: build_subproduct_translations(subproduct)
+      }
+    end
+  end
+
+  # Build translations for a subproduct
+  #
+  # @param subproduct [Product] The subproduct to get translations for
+  # @return [Hash] Locale => { key => value } structure
+  #
+  def build_subproduct_translations(subproduct)
+    translations_hash = {}
+    subproduct.translations.each do |translation|
+      translations_hash[translation.locale] ||= {}
+      translations_hash[translation.locale][translation.key] = translation.value
+    end
+    translations_hash
+  end
+
+  # Generate a signed URL for an asset file
+  #
+  # @param asset [ProductAsset] The asset with attached file
+  # @return [String, nil] The signed URL or nil
+  #
+  def generate_asset_url(asset)
+    return nil unless asset.file.attached?
+
+    Rails.application.routes.url_helpers.rails_blob_url(
+      asset.file,
+      host: ENV.fetch("POTLIFT8_HOST", "http://localhost:3246")
+    )
   end
 
   # Build inventory payload
@@ -232,25 +442,25 @@ class ProductSyncService
     return nil unless @catalog.present?
 
     case @catalog.info&.dig("sync_target")
-    when "shopify3"
-      shopify3_url
+    when "shopify8"
+      shopify8_url
     when "bizcart"
       bizcart_url
     else
-      # Default to shopify3 if not specified
-      shopify3_url
+      # Default to shopify8 if not specified
+      shopify8_url
     end
   end
 
-  # Get Shopify3 sync URL
+  # Get Shopify8 sync URL
   #
-  # @return [String, nil] Shopify3 URL or nil if not configured
+  # @return [String, nil] Shopify8 URL or nil if not configured
   #
-  def shopify3_url
-    base_url = ENV["SHOPIFY3_URL"]
+  def shopify8_url
+    base_url = ENV["SHOPIFY8_URL"]
     return nil if base_url.blank?
 
-    "#{base_url}/sync_tasks"
+    "#{base_url}/api/v1/sync_tasks"
   end
 
   # Get Bizcart sync URL
@@ -264,13 +474,121 @@ class ProductSyncService
     "#{base_url}/api/api/update_catalog"
   end
 
+  # Wrap payload in target-specific format
+  #
+  # @param payload [Hash] Raw product payload
+  # @param sync_target [String] Target system (shopify8, bizcart)
+  # @return [Hash] Wrapped payload for target system
+  #
+  def wrap_payload_for_target(payload, sync_target)
+    case sync_target
+    when "shopify8"
+      # Shopify8 expects sync_task format with data in info.load
+      # The executor expects a flat structure with sku at the top level
+      load_data = build_shopify_load_data(payload)
+
+      {
+        sync_task: {
+          shop_id: @catalog.info&.dig("shop_id"),
+          event_type: "product_changed",
+          origin_event_id: "potlift8_#{@product.id}_#{Time.current.to_i}",
+          origin_target_id: @product.sku,
+          direction: "inbound",
+          info: { load: load_data }
+        }
+      }
+    when "bizcart"
+      # Bizcart uses raw payload format
+      payload
+    else
+      payload
+    end
+  end
+
+  # Build Shopify-compatible load data structure
+  #
+  # Shopify8's ProductChangedExecutor expects sku at top level
+  #
+  # @param payload [Hash] Raw payload from build_payload
+  # @return [Hash] Flattened structure for Shopify8
+  #
+  def build_shopify_load_data(payload)
+    product_data = payload[:product] || {}
+
+    {
+      # Core product fields at top level
+      "sku" => product_data[:sku],
+      "ean" => product_data[:ean],
+      "name" => product_data[:name],
+      "product_type" => product_data[:product_type],
+      "product_status" => product_data[:product_status],
+      "configuration_type" => product_data[:configuration_type],
+      "total_saldo" => product_data[:total_saldo],
+      "total_max_sellable_saldo" => product_data[:total_max_sellable_saldo],
+      # Nested data preserved
+      "attributes" => payload[:attributes],
+      "labels" => payload[:labels],
+      "assets" => payload[:assets],
+      "translations" => payload[:translations],
+      "configurations" => payload[:configurations],
+      "subproducts" => build_shopify_subproducts(payload[:subproducts]),
+      "inventory" => payload[:inventory],
+      "catalog" => payload[:catalog],
+      "sync_metadata" => payload[:sync_metadata]
+    }.compact
+  end
+
+  # Build subproducts array with sku at top level for each
+  #
+  # @param subproducts [Array, nil] Raw subproducts array
+  # @return [Array, nil] Transformed subproducts
+  #
+  def build_shopify_subproducts(subproducts)
+    return nil if subproducts.blank?
+
+    subproducts.map do |sub|
+      product_info = sub[:product] || {}
+      {
+        "sku" => product_info[:sku],
+        "ean" => product_info[:ean],
+        "name" => product_info[:name],
+        "product_type" => product_info[:product_type],
+        "product_status" => product_info[:product_status],
+        "quantity" => sub[:quantity],
+        "configuration_position" => sub[:configuration_position],
+        "variant_config" => sub[:variant_config],
+        "configuration_details" => sub[:configuration_details],
+        "attributes" => sub[:attributes],
+        "inventory" => sub[:inventory],
+        "translations" => sub[:translations]
+      }.compact
+    end
+  end
+
+  # Get API token for target system
+  #
+  # @param sync_target [String] Target system (shopify8, bizcart)
+  # @return [String, nil] API token for authentication
+  #
+  def get_api_token_for_target(sync_target)
+    case sync_target
+    when "shopify8"
+      @catalog.info&.dig("shopify_api_token") || ENV["SHOPIFY8_API_TOKEN"]
+    when "bizcart"
+      @catalog.info&.dig("bizcart_api_token") || ENV["BIZCART_API_TOKEN"]
+    else
+      nil
+    end
+  end
+
   # Send payload to target URL using Faraday with rate limiting
   #
   # @param url [String] Target URL
   # @param payload [Hash] Data to send
+  # @param api_token [String, nil] API token for authentication
   # @return [Faraday::Response] HTTP response
   #
-  def send_to_target(url, payload)
+  def send_to_target(url, payload, api_token = nil)
     # Apply rate limiting for this catalog
     rate_limiter = build_rate_limiter
 
@@ -290,6 +608,7 @@ class ProductSyncService
       response = connection.post do |req|
         req.headers["Content-Type"] = "application/json"
         req.headers["Accept"] = "application/json"
+        req.headers["Authorization"] = "Bearer #{api_token}" if api_token.present?
         req.body = payload
       end
 

@@ -3,17 +3,17 @@ require 'rails_helper'
 RSpec.describe ProductSyncService, type: :service do
   let(:company) { create(:company) }
   let(:product) { create(:product, :with_attributes, :with_inventory, company: company) }
-  let(:catalog) { create(:catalog, company: company, info: { 'sync_target' => 'shopify3' }) }
+  let(:catalog) { create(:catalog, company: company, info: { 'sync_target' => 'shopify8' }) }
   let(:service) { ProductSyncService.new(product, catalog) }
 
   before do
     # Set up environment variables
-    ENV['SHOPIFY3_URL'] = 'https://shopify3.example.com'
+    ENV['SHOPIFY8_URL'] = 'https://shopify8.example.com'
     ENV['BIZCART_URL'] = 'https://bizcart.example.com'
   end
 
   after do
-    ENV.delete('SHOPIFY3_URL')
+    ENV.delete('SHOPIFY8_URL')
     ENV.delete('BIZCART_URL')
   end
 
@@ -201,14 +201,14 @@ RSpec.describe ProductSyncService, type: :service do
   end
 
   describe '#determine_target_url' do
-    context 'when sync_target is shopify3' do
+    context 'when sync_target is shopify8' do
       before do
-        catalog.info['sync_target'] = 'shopify3'
+        catalog.info['sync_target'] = 'shopify8'
       end
 
-      it 'returns Shopify3 URL' do
+      it 'returns Shopify8 URL' do
         url = service.send(:determine_target_url)
-        expect(url).to eq('https://shopify3.example.com/sync_tasks')
+        expect(url).to eq('https://shopify8.example.com/api/v1/sync_tasks')
       end
     end
 
@@ -228,9 +228,9 @@ RSpec.describe ProductSyncService, type: :service do
         catalog.info.delete('sync_target')
       end
 
-      it 'defaults to Shopify3' do
+      it 'defaults to Shopify8' do
         url = service.send(:determine_target_url)
-        expect(url).to eq('https://shopify3.example.com/sync_tasks')
+        expect(url).to eq('https://shopify8.example.com/api/v1/sync_tasks')
       end
     end
 
@@ -245,7 +245,7 @@ RSpec.describe ProductSyncService, type: :service do
 
     context 'when environment variable is not set' do
       before do
-        ENV.delete('SHOPIFY3_URL')
+        ENV.delete('SHOPIFY8_URL')
       end
 
       it 'returns nil' do
@@ -307,7 +307,7 @@ RSpec.describe ProductSyncService, type: :service do
 
     context 'when target URL is not configured' do
       before do
-        ENV.delete('SHOPIFY3_URL')
+        ENV.delete('SHOPIFY8_URL')
       end
 
       it 'returns failure result' do
@@ -423,6 +423,582 @@ RSpec.describe ProductSyncService, type: :service do
     end
   end
 
+  describe '#build_labels_payload' do
+    let(:test_product) { create(:product, company: company) }
+    let(:test_service) { ProductSyncService.new(test_product, catalog) }
+
+    context 'when product has no labels' do
+      it 'returns empty array' do
+        labels = test_service.send(:build_labels_payload)
+        expect(labels).to eq([])
+      end
+    end
+
+    context 'when product has labels' do
+      let!(:category_label) { create(:label, company: company, label_type: 'category', code: 'electronics', name: 'Electronics') }
+      let!(:brand_label) { create(:label, company: company, label_type: 'brand', code: 'acme', name: 'ACME Corp') }
+
+      before do
+        create(:product_label, product: test_product, label: category_label)
+        create(:product_label, product: test_product, label: brand_label)
+      end
+
+      it 'returns array of label data' do
+        labels = test_service.send(:build_labels_payload)
+
+        expect(labels).to be_an(Array)
+        expect(labels.length).to eq(2)
+      end
+
+      it 'includes label type, code, and name' do
+        labels = test_service.send(:build_labels_payload)
+        category = labels.find { |l| l[:code] == 'electronics' }
+
+        expect(category).to include(
+          label_type: 'category',
+          code: 'electronics',
+          name: 'Electronics'
+        )
+      end
+
+      it 'includes full_code and full_name' do
+        labels = test_service.send(:build_labels_payload)
+        category = labels.find { |l| l[:code] == 'electronics' }
+
+        expect(category).to have_key(:full_code)
+        expect(category).to have_key(:full_name)
+      end
+    end
+
+    context 'when label has hierarchy' do
+      let!(:parent_label) { create(:label, company: company, label_type: 'category', code: 'electronics', name: 'Electronics') }
+      let!(:child_label) { create(:label, company: company, label_type: 'category', code: 'phones', name: 'Phones', parent_label: parent_label) }
+
+      before do
+        create(:product_label, product: test_product, label: child_label)
+      end
+
+      it 'includes full_code with hierarchy' do
+        labels = test_service.send(:build_labels_payload)
+        phone_label = labels.first
+
+        expect(phone_label[:full_code]).to eq('electronics-phones')
+        expect(phone_label[:full_name]).to eq('Electronics > Phones')
+      end
+    end
+
+    context 'when label has localized values' do
+      let!(:label_with_localization) do
+        create(:label, :with_localized_info, company: company, label_type: 'category', code: 'summer', name: 'Summer Collection')
+      end
+
+      before do
+        create(:product_label, product: test_product, label: label_with_localization)
+      end
+
+      it 'includes localized_value from info' do
+        labels = test_service.send(:build_labels_payload)
+        label_data = labels.first
+
+        expect(label_data[:localized_value]).to be_present
+        expect(label_data[:localized_value]).to be_a(Hash)
+      end
+    end
+  end
+
+  describe '#build_assets_payload' do
+    let(:test_product) { create(:product, company: company) }
+    let(:test_service) { ProductSyncService.new(test_product, catalog) }
+
+    context 'when product has no assets' do
+      it 'returns empty array' do
+        assets = test_service.send(:build_assets_payload)
+        expect(assets).to eq([])
+      end
+    end
+
+    context 'when product has image assets with files' do
+      let!(:primary_asset) do
+        asset = create(:product_asset, :image, :public_visibility, product: test_product, name: 'primary.jpg', asset_priority: 100)
+        # Attach a file for testing
+        asset.file.attach(
+          io: StringIO.new('fake image content'),
+          filename: 'primary.jpg',
+          content_type: 'image/jpeg'
+        )
+        asset
+      end
+
+      let!(:secondary_asset) do
+        asset = create(:product_asset, :image, :public_visibility, product: test_product, name: 'secondary.jpg', asset_priority: 50)
+        asset.file.attach(
+          io: StringIO.new('fake image content'),
+          filename: 'secondary.jpg',
+          content_type: 'image/jpeg'
+        )
+        asset
+      end
+
+      it 'returns array of asset data' do
+        assets = test_service.send(:build_assets_payload)
+
+        expect(assets).to be_an(Array)
+        expect(assets.length).to eq(2)
+      end
+
+      it 'includes asset id, name, and priority' do
+        assets = test_service.send(:build_assets_payload)
+        primary = assets.first
+
+        expect(primary).to include(
+          id: primary_asset.id,
+          name: 'primary.jpg',
+          priority: 100
+        )
+      end
+
+      it 'includes visibility and content_type' do
+        assets = test_service.send(:build_assets_payload)
+        primary = assets.first
+
+        expect(primary[:visibility]).to eq('public_visibility')
+        expect(primary[:content_type]).to eq('image/jpeg')
+      end
+
+      it 'includes URL' do
+        assets = test_service.send(:build_assets_payload)
+        primary = assets.first
+
+        expect(primary[:url]).to be_present
+      end
+
+      it 'orders by priority descending' do
+        assets = test_service.send(:build_assets_payload)
+
+        expect(assets.first[:priority]).to be >= assets.last[:priority]
+      end
+    end
+
+    context 'when product has private assets' do
+      let!(:private_asset) do
+        asset = create(:product_asset, :image, :private_visibility, product: test_product, name: 'private.jpg')
+        asset.file.attach(
+          io: StringIO.new('fake image content'),
+          filename: 'private.jpg',
+          content_type: 'image/jpeg'
+        )
+        asset
+      end
+
+      it 'excludes private assets' do
+        assets = test_service.send(:build_assets_payload)
+        expect(assets).to be_empty
+      end
+    end
+
+    context 'when product has catalog-only assets' do
+      let!(:catalog_asset) do
+        asset = create(:product_asset, :image, :catalog_only_visibility, product: test_product, name: 'catalog.jpg')
+        asset.file.attach(
+          io: StringIO.new('fake image content'),
+          filename: 'catalog.jpg',
+          content_type: 'image/jpeg'
+        )
+        asset
+      end
+
+      it 'includes catalog-only assets' do
+        assets = test_service.send(:build_assets_payload)
+        expect(assets.length).to eq(1)
+        expect(assets.first[:visibility]).to eq('catalog_only_visibility')
+      end
+    end
+
+    context 'when product has non-image assets' do
+      let!(:video_asset) do
+        asset = create(:product_asset, :video, :public_visibility, product: test_product)
+        asset.file.attach(
+          io: StringIO.new('fake video content'),
+          filename: 'video.mp4',
+          content_type: 'video/mp4'
+        )
+        asset
+      end
+
+      let!(:document_asset) do
+        asset = create(:product_asset, :document, :public_visibility, product: test_product)
+        asset.file.attach(
+          io: StringIO.new('fake pdf content'),
+          filename: 'manual.pdf',
+          content_type: 'application/pdf'
+        )
+        asset
+      end
+
+      it 'excludes non-image assets' do
+        assets = test_service.send(:build_assets_payload)
+        expect(assets).to be_empty
+      end
+    end
+
+    context 'when asset has no file attached' do
+      let!(:asset_no_file) { create(:product_asset, :image, :public_visibility, product: test_product, name: 'nofile.jpg') }
+
+      it 'excludes assets without files' do
+        assets = test_service.send(:build_assets_payload)
+        expect(assets).to be_empty
+      end
+    end
+  end
+
+  describe '#build_translations_payload' do
+    let(:test_product) { create(:product, company: company) }
+    let(:test_service) { ProductSyncService.new(test_product, catalog) }
+
+    context 'when product has no translations' do
+      it 'returns nil' do
+        translations = test_service.send(:build_translations_payload)
+        expect(translations).to be_nil
+      end
+    end
+
+    context 'when product has translations' do
+      before do
+        create(:translation, translatable: test_product, locale: 'en', key: 'name', value: 'English Name')
+        create(:translation, translatable: test_product, locale: 'en', key: 'description', value: 'English Description')
+        create(:translation, translatable: test_product, locale: 'de', key: 'name', value: 'German Name')
+      end
+
+      it 'returns hash organized by locale' do
+        translations = test_service.send(:build_translations_payload)
+
+        expect(translations).to be_a(Hash)
+        expect(translations.keys).to contain_exactly('en', 'de')
+      end
+
+      it 'groups keys under locale' do
+        translations = test_service.send(:build_translations_payload)
+
+        expect(translations['en']).to include(
+          'name' => 'English Name',
+          'description' => 'English Description'
+        )
+      end
+
+      it 'includes each locale separately' do
+        translations = test_service.send(:build_translations_payload)
+
+        expect(translations['de']).to eq({ 'name' => 'German Name' })
+      end
+    end
+
+    context 'with multiple locales and keys' do
+      before do
+        %w[en es fr de].each do |locale|
+          create(:translation, translatable: test_product, locale: locale, key: 'name', value: "Name in #{locale}")
+          create(:translation, translatable: test_product, locale: locale, key: 'short_description', value: "Short desc in #{locale}")
+        end
+      end
+
+      it 'includes all locales' do
+        translations = test_service.send(:build_translations_payload)
+        expect(translations.keys).to contain_exactly('en', 'es', 'fr', 'de')
+      end
+
+      it 'includes all keys for each locale' do
+        translations = test_service.send(:build_translations_payload)
+
+        %w[en es fr de].each do |locale|
+          expect(translations[locale].keys).to contain_exactly('name', 'short_description')
+        end
+      end
+    end
+  end
+
+  describe '#build_configurations_payload' do
+    let(:test_service) { ProductSyncService.new(product, catalog) }
+
+    context 'when product is not configurable' do
+      let(:product) { create(:product, :sellable, company: company) }
+
+      it 'returns nil' do
+        configurations = test_service.send(:build_configurations_payload)
+        expect(configurations).to be_nil
+      end
+    end
+
+    context 'when product is bundle' do
+      let(:product) { create(:product, :bundle, company: company) }
+
+      it 'returns nil' do
+        configurations = test_service.send(:build_configurations_payload)
+        expect(configurations).to be_nil
+      end
+    end
+
+    context 'when product is configurable' do
+      let(:product) { create(:product, :configurable_variant, company: company) }
+
+      context 'without configurations' do
+        it 'returns empty array' do
+          configurations = test_service.send(:build_configurations_payload)
+          expect(configurations).to eq([])
+        end
+      end
+
+      context 'with configurations' do
+        let!(:size_config) do
+          config = create(:configuration, product: product, company: company, code: 'size', name: 'Size', position: 1)
+          create(:configuration_value, configuration: config, value: 'Small', position: 1)
+          create(:configuration_value, configuration: config, value: 'Medium', position: 2)
+          create(:configuration_value, configuration: config, value: 'Large', position: 3)
+          config
+        end
+
+        let!(:color_config) do
+          config = create(:configuration, product: product, company: company, code: 'color', name: 'Color', position: 2)
+          create(:configuration_value, configuration: config, value: 'Red', position: 1)
+          create(:configuration_value, configuration: config, value: 'Blue', position: 2)
+          config
+        end
+
+        it 'returns array of configuration data' do
+          configurations = test_service.send(:build_configurations_payload)
+
+          expect(configurations).to be_an(Array)
+          expect(configurations.length).to eq(2)
+        end
+
+        it 'includes configuration id, code, and name' do
+          configurations = test_service.send(:build_configurations_payload)
+          size = configurations.first
+
+          expect(size).to include(
+            id: size_config.id,
+            code: 'size',
+            name: 'Size',
+            position: 1
+          )
+        end
+
+        it 'includes configuration values' do
+          configurations = test_service.send(:build_configurations_payload)
+          size = configurations.first
+
+          expect(size[:values]).to be_an(Array)
+          expect(size[:values].length).to eq(3)
+        end
+
+        it 'includes value id, value, and position' do
+          configurations = test_service.send(:build_configurations_payload)
+          size_values = configurations.first[:values]
+          small = size_values.find { |v| v[:value] == 'Small' }
+
+          expect(small).to include(
+            value: 'Small',
+            position: 1
+          )
+          expect(small[:id]).to be_present
+        end
+
+        it 'orders configurations by position' do
+          configurations = test_service.send(:build_configurations_payload)
+
+          expect(configurations.first[:code]).to eq('size')
+          expect(configurations.last[:code]).to eq('color')
+        end
+
+        it 'orders values by position within each configuration' do
+          configurations = test_service.send(:build_configurations_payload)
+          size_values = configurations.first[:values].map { |v| v[:value] }
+
+          expect(size_values).to eq(%w[Small Medium Large])
+        end
+      end
+    end
+  end
+
+  describe '#build_subproducts_payload' do
+    context 'when product is sellable' do
+      let(:product) { create(:product, :sellable, company: company) }
+      let(:test_service) { ProductSyncService.new(product, catalog) }
+
+      it 'returns nil' do
+        subproducts = test_service.send(:build_subproducts_payload)
+        expect(subproducts).to be_nil
+      end
+    end
+
+    context 'when product is configurable' do
+      let(:product) { create(:product, :configurable_variant, company: company) }
+      let(:test_service) { ProductSyncService.new(product, catalog) }
+
+      context 'without subproducts' do
+        it 'returns empty array' do
+          subproducts = test_service.send(:build_subproducts_payload)
+          expect(subproducts).to eq([])
+        end
+      end
+
+      context 'with variant subproducts' do
+        let(:variant1) { create(:product, :sellable, company: company, sku: 'VAR-S-RED', name: 'Variant Small Red') }
+        let(:variant2) { create(:product, :sellable, company: company, sku: 'VAR-M-BLUE', name: 'Variant Medium Blue') }
+
+        let!(:config1) do
+          create(:product_configuration,
+                 superproduct: product,
+                 subproduct: variant1,
+                 configuration_position: 1,
+                 info: { 'variant_config' => { 'size' => 'Small', 'color' => 'Red' } })
+        end
+
+        let!(:config2) do
+          create(:product_configuration,
+                 superproduct: product,
+                 subproduct: variant2,
+                 configuration_position: 2,
+                 info: { 'variant_config' => { 'size' => 'Medium', 'color' => 'Blue' } })
+        end
+
+        it 'returns array of subproduct data' do
+          subproducts = test_service.send(:build_subproducts_payload)
+
+          expect(subproducts).to be_an(Array)
+          expect(subproducts.length).to eq(2)
+        end
+
+        it 'includes quantity and configuration position' do
+          subproducts = test_service.send(:build_subproducts_payload)
+          first_variant = subproducts.first
+
+          expect(first_variant[:quantity]).to eq(1)
+          expect(first_variant[:configuration_position]).to eq(1)
+        end
+
+        it 'includes variant_config from info' do
+          subproducts = test_service.send(:build_subproducts_payload)
+          first_variant = subproducts.first
+
+          expect(first_variant[:variant_config]).to eq({ 'size' => 'Small', 'color' => 'Red' })
+        end
+
+        it 'includes product data' do
+          subproducts = test_service.send(:build_subproducts_payload)
+          first_variant = subproducts.first
+
+          expect(first_variant[:product]).to include(
+            id: variant1.id,
+            sku: 'VAR-S-RED',
+            name: 'Variant Small Red',
+            product_type: 'sellable'
+          )
+        end
+
+        it 'includes inventory data' do
+          storage = create(:storage, company: company)
+          create(:inventory, product: variant1, storage: storage, value: 50)
+
+          subproducts = test_service.send(:build_subproducts_payload)
+          first_variant = subproducts.first
+
+          expect(first_variant[:inventory]).to have_key(:total_saldo)
+          expect(first_variant[:inventory]).to have_key(:total_max_sellable_saldo)
+        end
+
+        it 'includes attributes' do
+          price_attr = create(:product_attribute, company: company, code: 'price')
+          create(:product_attribute_value, product: variant1, product_attribute: price_attr, value: '1999')
+
+          subproducts = test_service.send(:build_subproducts_payload)
+          first_variant = subproducts.first
+
+          expect(first_variant[:attributes]).to be_a(Hash)
+          expect(first_variant[:attributes]['price']).to eq('1999')
+        end
+      end
+
+      context 'with subproduct translations' do
+        let(:variant) { create(:product, :sellable, company: company, sku: 'VAR-001') }
+
+        let!(:config) do
+          create(:product_configuration, superproduct: product, subproduct: variant)
+        end
+
+        before do
+          create(:translation, translatable: variant, locale: 'en', key: 'name', value: 'English Variant')
+          create(:translation, translatable: variant, locale: 'de', key: 'name', value: 'German Variant')
+        end
+
+        it 'includes translations for subproduct' do
+          subproducts = test_service.send(:build_subproducts_payload)
+          first_variant = subproducts.first
+
+          expect(first_variant[:translations]).to be_a(Hash)
+          expect(first_variant[:translations]['en']).to include('name' => 'English Variant')
+          expect(first_variant[:translations]['de']).to include('name' => 'German Variant')
+        end
+      end
+    end
+
+    context 'when product is bundle' do
+      let(:product) { create(:product, :bundle, company: company) }
+      let(:test_service) { ProductSyncService.new(product, catalog) }
+
+      context 'with bundle components' do
+        let(:component1) { create(:product, :sellable, company: company, sku: 'COMP-001', name: 'Component 1') }
+        let(:component2) { create(:product, :sellable, company: company, sku: 'COMP-002', name: 'Component 2') }
+
+        let!(:bundle_config1) do
+          create(:product_configuration,
+                 superproduct: product,
+                 subproduct: component1,
+                 configuration_position: 1,
+                 info: { 'quantity' => 2, 'configuration_details' => { 'required' => true } })
+        end
+
+        let!(:bundle_config2) do
+          create(:product_configuration,
+                 superproduct: product,
+                 subproduct: component2,
+                 configuration_position: 2,
+                 info: { 'quantity' => 3 })
+        end
+
+        it 'returns array of component data' do
+          subproducts = test_service.send(:build_subproducts_payload)
+
+          expect(subproducts).to be_an(Array)
+          expect(subproducts.length).to eq(2)
+        end
+
+        it 'includes quantity from info' do
+          subproducts = test_service.send(:build_subproducts_payload)
+          first_component = subproducts.first
+
+          expect(first_component[:quantity]).to eq(2)
+        end
+
+        it 'includes configuration_details from info' do
+          subproducts = test_service.send(:build_subproducts_payload)
+          first_component = subproducts.first
+
+          expect(first_component[:configuration_details]).to eq({ 'required' => true })
+        end
+
+        it 'includes component product data' do
+          subproducts = test_service.send(:build_subproducts_payload)
+          first_component = subproducts.first
+
+          expect(first_component[:product]).to include(
+            sku: 'COMP-001',
+            name: 'Component 1',
+            product_type: 'sellable'
+          )
+        end
+      end
+    end
+  end
+
   # Integration tests
   describe 'integration scenarios' do
     let(:mock_response) { instance_double(Faraday::Response, success?: true, status: 200, body: { 'synced' => true }) }
@@ -482,11 +1058,11 @@ RSpec.describe ProductSyncService, type: :service do
     end
 
     context 'syncing to different targets' do
-      it 'syncs to Shopify3' do
-        catalog.info['sync_target'] = 'shopify3'
+      it 'syncs to Shopify8' do
+        catalog.info['sync_target'] = 'shopify8'
 
         expect_any_instance_of(ProductSyncService).to receive(:send_to_target)
-          .with('https://shopify3.example.com/sync_tasks', anything)
+          .with('https://shopify8.example.com/api/v1/sync_tasks', anything, anything)
           .and_return(mock_response)
 
         result = service.sync_to_external_system
@@ -498,7 +1074,7 @@ RSpec.describe ProductSyncService, type: :service do
         service = ProductSyncService.new(product, catalog)
 
         expect(service).to receive(:send_to_target)
-          .with('https://bizcart.example.com/api/api/update_catalog', anything)
+          .with('https://bizcart.example.com/api/api/update_catalog', anything, anything)
           .and_return(mock_response)
 
         result = service.sync_to_external_system
