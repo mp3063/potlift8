@@ -81,7 +81,7 @@
           <span class="sr-only">Edit</span>
         <% end %>
 
-        <%= link_to duplicate_product_path(product), data: { turbo_method: :post }, class: "text-gray-600 hover:text-gray-900 inline-flex items-center", title: "Duplicate #{product.name}" do %>
+        <%= link_to duplicate_product_path(product), data: { turbo_method: :post, turbo_frame: "_top" }, class: "text-gray-600 hover:text-gray-900 inline-flex items-center", title: "Duplicate #{product.name}" do %>
           <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path d="M7 3.5A1.5 1.5 0 018.5 2h3.879a1.5 1.5 0 011.06.44l3.122 3.12A1.5 1.5 0 0117 6.622V12.5a1.5 1.5 0 01-1.5 1.5h-1v-3.379a3 3 0 00-.879-2.121L10.5 5.379A3 3 0 008.379 4.5H7v-1z" />
             <path d="M4.5 6A1.5 1.5 0 003 7.5v9A1.5 1.5 0 004.5 18h7a1.5 1.5 0 001.5-1.5v-5.879a1.5 1.5 0 00-.44-1.06L9.44 6.439A1.5 1.5 0 008.378 6H4.5z" />
@@ -91,7 +91,7 @@
 
         <%= button_to product_path(product),
             method: :delete,
-            form: { data: { turbo_confirm: "Are you sure you want to delete #{product.name}?" } },
+            form: { data: { turbo_confirm: "Are you sure you want to delete #{product.name}?", turbo_frame: "_top" } },
             class: "text-red-600 hover:text-red-900 inline-flex items-center",
             title: "Delete #{product.name}" do %>
           <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">

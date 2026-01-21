@@ -299,7 +299,10 @@ class ProductsController < ApplicationController
   #
   def destroy
     @product.destroy
-    redirect_to products_path, notice: "Product deleted successfully.", status: :see_other
+    respond_to do |format|
+      format.html { redirect_to products_path, notice: "Product deleted successfully.", status: :see_other }
+      format.turbo_stream { render turbo_stream: turbo_stream.action(:refresh, "") }
+    end
   end
 
   # POST /products/:id/duplicate

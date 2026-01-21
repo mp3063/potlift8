@@ -38,11 +38,12 @@ export default class extends Controller {
 
     // Send request to backend
     try {
-      const response = await fetch(`/products/${productId}/add_label`, {
+      const response = await fetch(`/products/${productId}/labels`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': this.csrfToken
+          'X-CSRF-Token': this.csrfToken,
+          'Accept': 'application/json'
         },
         body: JSON.stringify({ label_id: labelId })
       })
@@ -94,7 +95,7 @@ export default class extends Controller {
 
     // Send request to backend
     try {
-      const url = `/products/${productId}/remove_label?label_id=${labelId}`
+      const url = `/products/${productId}/labels/${labelId}`
       console.log('DELETE request to:', url)
 
       const response = await fetch(url, {
