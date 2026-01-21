@@ -36,9 +36,10 @@ puts "\n🏢 Creating Company..."
 # Use OZZ company code to match Authlift8 company (ID: 10)
 # When you log in with superadmin@authlift.com and select OZZ company,
 # this will be the matching Potlift8 company
-company = Company.find_or_create_by!(code: 'OZZ') do |c|
-  c.name = 'Ozz Cannabis Co.'
-  c.info = {
+company = Company.find_or_initialize_by(code: 'OZZ')
+company.assign_attributes(
+  name: 'Ozz Cannabis Co.',
+  info: {
     'timezone' => 'America/Los_Angeles',
     'currency' => 'USD',
     'license_number' => 'CA-MC-2024-001',
@@ -47,9 +48,12 @@ company = Company.find_or_create_by!(code: 'OZZ') do |c|
       'theme' => 'light',
       'multi_currency' => true
     }
-  }
-  c.active = true
-end
+  },
+  active: true,
+  # API token for Shopify8 sync (must match Company.api_token in Shopify8)
+  api_token: 'b2b9c829eecd344d688a01b13035ce938823d8d5bcbb689501ebfc2502d4bbba'
+)
+company.save!
 
 puts "   ✓ Created company: #{company.name} (#{company.code})"
 
@@ -150,7 +154,10 @@ catalogs << FactoryBot.create(:catalog,
     'description' => 'Main European online catalog',
     'region' => 'EU',
     'tax_rate' => 0.21,
-    'shipping_regions' => [ 'DE', 'NL', 'FR', 'ES' ]
+    'shipping_regions' => [ 'DE', 'NL', 'FR', 'ES' ],
+    # Shopify8 sync configuration
+    'sync_target' => 'shopify8',
+    'shopify_api_token' => 'b2b9c829eecd344d688a01b13035ce938823d8d5bcbb689501ebfc2502d4bbba'
   }
 )
 

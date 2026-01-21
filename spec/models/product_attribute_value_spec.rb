@@ -136,24 +136,36 @@ RSpec.describe ProductAttributeValue, type: :model do
       end
     end
 
-    describe 'after_save :propagate_change' do
+    describe 'after_commit :propagate_change' do
+      let(:catalog) { create(:catalog, company: product.company) }
       let(:product) { create(:product) }
       let(:pav) { create(:product_attribute_value, product: product) }
 
-      it 'touches product when attribute value is saved' do
-        expect { pav.update(value: 'new value') }
-          .to change { product.reload.updated_at }
+      before do
+        create(:catalog_item, catalog: catalog, product: product)
+        pav # Create pav before clearing queue
+        ActiveJob::Base.queue_adapter.enqueued_jobs.clear # Clear jobs from setup
       end
-    end
 
-    describe 'after_destroy :propagate_change' do
-      let(:product) { create(:product) }
-      let(:pav) { create(:product_attribute_value, product: product) }
+      it 'enqueues ProductSyncJob when attribute value is updated' do
+        expect { pav.update(value: 'new value') }
+          .to have_enqueued_job(ProductSyncJob)
+          .with(product, catalog, kind_of(Time))
+      end
 
-      it 'touches product when attribute value is destroyed' do
-        pav # Create it first
+      it 'enqueues ProductSyncJob when attribute value is destroyed' do
         expect { pav.destroy }
-          .to change { product.reload.updated_at }
+          .to have_enqueued_job(ProductSyncJob)
+          .with(product, catalog, kind_of(Time))
+      end
+
+      it 'does not enqueue job when product has no catalogs' do
+        CatalogItem.where(product: product).destroy_all
+        product.reload
+        ActiveJob::Base.queue_adapter.enqueued_jobs.clear
+
+        expect { pav.update(value: 'another value') }
+          .not_to have_enqueued_job(ProductSyncJob)
       end
     end
   end

@@ -1,2 +1,2 @@
-web: bin/rails server -p 3246
+web: OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES SOLID_QUEUE_IN_PUMA=1 bin/rails server -p 3246
 css: bin/rails tailwindcss:watch

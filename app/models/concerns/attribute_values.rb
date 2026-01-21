@@ -177,8 +177,50 @@ module AttributeValues
 
   private
 
-  # Propagates changes to parent product (touches updated_at)
+  # Propagates attribute value changes to external systems
+  #
+  # This method does two things:
+  # 1. Touches the product to invalidate HTTP caches (ETags, fresh_when)
+  # 2. Directly enqueues ProductSyncJob for each catalog that has sync enabled
+  #
+  # We must enqueue sync jobs directly because ChangePropagator skips sync when
+  # only updated_at changed (to avoid unnecessary syncs from simple touches).
+  #
   def propagate_change
-    product.touch if product.present?
+    return unless product.present?
+
+    # Touch product to invalidate HTTP caches (ETags, fresh_when responses)
+    # Note: This will trigger ChangePropagator but it will skip since only updated_at changed
+    product.touch
+
+    timestamp = Time.current
+
+    # Get catalogs that need syncing
+    catalogs_to_sync = product.catalogs.to_a
+
+    if catalogs_to_sync.empty?
+      Rails.logger.debug(
+        "ProductAttributeValue change for Product #{product.id}: no catalogs to sync"
+      )
+      return
+    end
+
+    Rails.logger.info(
+      "ProductAttributeValue change for Product #{product.id} (#{product.sku}). " \
+      "Propagating to #{catalogs_to_sync.size} catalog(s)"
+    )
+
+    catalogs_to_sync.each do |catalog|
+      # Skip if catalog has sync paused
+      if catalog.info&.dig("sync_paused")
+        Rails.logger.debug(
+          "Catalog #{catalog.code} has sync paused. Skipping propagation."
+        )
+        next
+      end
+
+      # Enqueue sync job
+      ProductSyncJob.perform_later(product, catalog, timestamp)
+    end
   end
 end
