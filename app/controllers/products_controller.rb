@@ -65,7 +65,9 @@ class ProductsController < ApplicationController
       end
 
       format.turbo_stream do
-        @pagy, @products = pagy(@products, items: params[:per_page] || 25)
+        # Turbo may request turbo_stream format after redirects.
+        # Force a full page refresh instead of partial update.
+        render turbo_stream: turbo_stream.refresh
       end
 
       format.csv do
@@ -228,7 +230,7 @@ class ProductsController < ApplicationController
       else
                         "Product created successfully."
       end
-      redirect_to products_path, notice: notice_message
+      redirect_to products_path, notice: notice_message, status: :see_other
     else
       # Turbo will automatically handle re-rendering the form in place
       # when we respond with status :unprocessable_entity
@@ -282,7 +284,7 @@ class ProductsController < ApplicationController
       else
                         "Product updated successfully."
       end
-      redirect_to products_path, notice: notice_message
+      redirect_to products_path, notice: notice_message, status: :see_other
     else
       # Turbo will automatically handle re-rendering the form in place
       # when we respond with status :unprocessable_entity
@@ -297,7 +299,7 @@ class ProductsController < ApplicationController
   #
   def destroy
     @product.destroy
-    redirect_to products_path, notice: "Product deleted successfully."
+    redirect_to products_path, notice: "Product deleted successfully.", status: :see_other
   end
 
   # POST /products/:id/duplicate
@@ -308,9 +310,9 @@ class ProductsController < ApplicationController
   def duplicate
     new_product = @product.duplicate!
 
-    redirect_to edit_product_path(new_product), notice: "Product duplicated as #{new_product.sku}"
+    redirect_to edit_product_path(new_product), notice: "Product duplicated as #{new_product.sku}", status: :see_other
   rescue ActiveRecord::RecordInvalid => e
-    redirect_to products_path, alert: "Failed to duplicate product: #{e.message}"
+    redirect_to products_path, alert: "Failed to duplicate product: #{e.message}", status: :see_other
   end
 
   # GET /products/validate_sku?sku=ABC123
@@ -363,7 +365,7 @@ class ProductsController < ApplicationController
 
       @product.reload
       respond_to do |format|
-        format.html { redirect_to @product, notice: "Product #{status_text} successfully." }
+        format.html { redirect_to @product, notice: "Product #{status_text} successfully.", status: :see_other }
         format.turbo_stream { flash.now[:notice] = "Product #{status_text} successfully." }
       end
     rescue AASM::InvalidTransition => e
@@ -376,14 +378,14 @@ class ProductsController < ApplicationController
 
       @product.reload
       respond_to do |format|
-        format.html { redirect_to @product, alert: error_message }
+        format.html { redirect_to @product, alert: error_message, status: :see_other }
         format.turbo_stream { flash.now[:alert] = error_message }
       end
     rescue ActiveRecord::RecordInvalid => e
       # Handle validation failures
       @product.reload
       respond_to do |format|
-        format.html { redirect_to @product, alert: "Failed to update product: #{e.message}" }
+        format.html { redirect_to @product, alert: "Failed to update product: #{e.message}", status: :see_other }
         format.turbo_stream { flash.now[:alert] = "Failed to update product: #{e.message}" }
       end
     end
