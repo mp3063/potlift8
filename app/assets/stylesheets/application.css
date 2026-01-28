@@ -43,3 +43,19 @@ select:focus,
   outline: 2px solid #3b82f6; /* blue-500 */
   outline-offset: 2px;
 }
+
+/* Sortable.js visual feedback classes */
+.sortable-ghost {
+  opacity: 0.3;
+  background-color: #eff6ff;
+  border: 2px dashed #93c5fd;
+}
+
+.sortable-drag {
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  background-color: white;
+}
+
+.sortable-chosen {
+  background-color: #eff6ff;
+}

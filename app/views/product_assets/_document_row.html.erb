@@ -1,7 +1,15 @@
-<li class="px-6 py-4 hover:bg-gray-50 transition-colors duration-150" data-sortable-id="<%= document.id %>">
+<li class="px-6 py-4 hover:bg-gray-50 transition-colors duration-150" data-asset-id="<%= document.id %>">
   <div class="flex items-center gap-4">
+    <!-- Bulk Selection Checkbox -->
+    <input type="checkbox"
+           value="<%= document.id %>"
+           class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+           data-asset-manager-target="checkbox"
+           data-action="change->asset-manager#toggleSelection"
+           aria-label="Select <%= document.name %>">
+
     <!-- Drag Handle -->
-    <div class="cursor-move text-gray-400 hover:text-gray-600" data-sortable-handle aria-label="Drag to reorder">
+    <div class="drag-handle cursor-move text-gray-400 hover:text-gray-600" aria-label="Drag to reorder">
       <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
         <path d="M10 3a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM10 8.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM11.5 15.5a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z" />
       </svg>

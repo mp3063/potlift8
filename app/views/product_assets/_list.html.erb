@@ -5,14 +5,18 @@
 
 <div id="product_assets">
   <!-- Documents Tab Content -->
-  <div data-tabs-target="panel" data-panel-id="documents">
+  <div data-asset-manager-target="panel" data-tab-id="documents">
     <%= render Ui::CardComponent.new(padding: :none) do %>
       <% if documents.any? %>
-        <ul role="list" class="divide-y divide-gray-200" data-controller="sortable" data-sortable-url-value="<%= reorder_product_product_assets_path(product) %>">
-          <% documents.each do |document| %>
-            <%= render "document_row", document: document, product: product %>
-          <% end %>
-        </ul>
+        <div data-controller="asset-reorder"
+             data-asset-reorder-reorder-url-value="<%= reorder_product_product_assets_path(product) %>"
+             data-asset-reorder-handle-value=".drag-handle">
+          <ul role="list" class="divide-y divide-gray-200" data-asset-reorder-target="container">
+            <% documents.each do |document| %>
+              <%= render "document_row", document: document, product: product %>
+            <% end %>
+          </ul>
+        </div>
       <% else %>
         <div class="text-center py-12">
           <svg class="mx-auto h-12 w-12 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
@@ -26,14 +30,18 @@
   </div>
 
   <!-- Videos Tab Content -->
-  <div data-tabs-target="panel" data-panel-id="videos" class="hidden">
+  <div data-asset-manager-target="panel" data-tab-id="videos" class="hidden">
     <%= render Ui::CardComponent.new(padding: :none) do %>
       <% if videos.any? %>
-        <ul role="list" class="divide-y divide-gray-200" data-controller="sortable" data-sortable-url-value="<%= reorder_product_product_assets_path(product) %>">
-          <% videos.each do |video| %>
-            <%= render "video_row", video: video, product: product %>
-          <% end %>
-        </ul>
+        <div data-controller="asset-reorder"
+             data-asset-reorder-reorder-url-value="<%= reorder_product_product_assets_path(product) %>"
+             data-asset-reorder-handle-value=".drag-handle">
+          <ul role="list" class="divide-y divide-gray-200" data-asset-reorder-target="container">
+            <% videos.each do |video| %>
+              <%= render "video_row", video: video, product: product %>
+            <% end %>
+          </ul>
+        </div>
       <% else %>
         <div class="text-center py-12">
           <svg class="mx-auto h-12 w-12 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
@@ -47,14 +55,18 @@
   </div>
 
   <!-- Links Tab Content -->
-  <div data-tabs-target="panel" data-panel-id="links" class="hidden">
+  <div data-asset-manager-target="panel" data-tab-id="links" class="hidden">
     <%= render Ui::CardComponent.new(padding: :none) do %>
       <% if links.any? %>
-        <ul role="list" class="divide-y divide-gray-200" data-controller="sortable" data-sortable-url-value="<%= reorder_product_product_assets_path(product) %>">
-          <% links.each do |link| %>
-            <%= render "link_row", link: link, product: product %>
-          <% end %>
-        </ul>
+        <div data-controller="asset-reorder"
+             data-asset-reorder-reorder-url-value="<%= reorder_product_product_assets_path(product) %>"
+             data-asset-reorder-handle-value=".drag-handle">
+          <ul role="list" class="divide-y divide-gray-200" data-asset-reorder-target="container">
+            <% links.each do |link| %>
+              <%= render "link_row", link: link, product: product %>
+            <% end %>
+          </ul>
+        </div>
       <% else %>
         <div class="text-center py-12">
           <svg class="mx-auto h-12 w-12 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">

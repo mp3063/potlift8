@@ -233,38 +233,22 @@ export default class extends Controller {
    * @param {Object} blob - ActiveStorage blob object with signed_id
    */
   attachBlobToProduct(container, blob) {
-    const formAction = this.element.action
-    const csrfToken = document.querySelector("[name='csrf-token']").content
+    // Find or create a hidden input for the signed blob ID
+    let hiddenInput = this.element.querySelector('input[name="product_asset[signed_blob_id]"]')
+    if (!hiddenInput) {
+      hiddenInput = document.createElement("input")
+      hiddenInput.type = "hidden"
+      hiddenInput.name = "product_asset[signed_blob_id]"
+      this.element.appendChild(hiddenInput)
+    }
+    hiddenInput.value = blob.signed_id
 
-    fetch(formAction, {
-      method: "POST",
-      headers: {
-        "X-CSRF-Token": csrfToken,
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-      },
-      body: JSON.stringify({
-        signed_blob_id: blob.signed_id
-      })
-    })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      return response.json()
-    })
-    .then(() => {
-      this.handleUploadSuccess(container, blob)
-    })
-    .catch(error => {
-      console.error("Error attaching blob:", error)
-      this.handleUploadError(container, error, "Unknown file")
-    })
+    this.handleUploadSuccess(container, blob)
   }
 
   /**
    * Handle successful upload
-   * Completes progress bar and reloads page to show new asset
+   * Replaces dropzone with file confirmation showing filename
    *
    * @param {HTMLElement} container - Progress bar container
    * @param {Object} blob - ActiveStorage blob object
@@ -278,18 +262,74 @@ export default class extends Controller {
     progressBar.classList.remove("bg-blue-600")
     progressBar.classList.add("bg-green-600")
 
+    const progressText = container.querySelector("span:last-child")
+    progressText.textContent = "Ready"
+    progressText.classList.add("text-green-600")
+
     // Announce success to screen readers
-    container.setAttribute("aria-label", "Upload complete")
+    container.setAttribute("aria-label", "Upload complete — submit the form to save")
 
-    // Remove after a short delay and reload to show new asset
+    // After a brief delay, replace the dropzone with a file confirmation
     setTimeout(() => {
-      container.remove()
-
-      // If all uploads complete, reload page
-      if (this.progressContainerTarget.children.length === 0) {
-        window.location.reload()
+      if (container.parentNode) {
+        container.remove()
       }
-    }, 500)
+      this.showFileConfirmation(blob)
+    }, 1000)
+  }
+
+  /**
+   * Show file confirmation in the dropzone after successful upload
+   * Replaces the dropzone content with filename and success indicator
+   *
+   * @param {Object} blob - ActiveStorage blob object with filename
+   */
+  showFileConfirmation(blob) {
+    // Find the visible dropzone (the one in the currently shown section)
+    const dropzone = this.dropzoneTargets.find(dz => !dz.closest(".hidden"))
+    if (!dropzone) return
+
+    const filename = blob.filename || "Uploaded file"
+
+    // Update dropzone styling
+    dropzone.classList.remove("border-gray-300", "hover:border-gray-400")
+    dropzone.classList.add("border-green-400", "bg-green-50")
+
+    // Clear existing content
+    while (dropzone.firstChild) {
+      dropzone.removeChild(dropzone.firstChild)
+    }
+
+    // Build confirmation UI with safe DOM methods
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+    svg.setAttribute("class", "mx-auto h-10 w-10 text-green-500")
+    svg.setAttribute("fill", "none")
+    svg.setAttribute("viewBox", "0 0 24 24")
+    svg.setAttribute("stroke-width", "1.5")
+    svg.setAttribute("stroke", "currentColor")
+    svg.setAttribute("aria-hidden", "true")
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path")
+    path.setAttribute("stroke-linecap", "round")
+    path.setAttribute("stroke-linejoin", "round")
+    path.setAttribute("d", "M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z")
+    svg.appendChild(path)
+
+    const textContainer = document.createElement("div")
+    textContainer.className = "mt-2"
+
+    const filenameLine = document.createElement("p")
+    filenameLine.className = "text-sm font-medium text-green-700"
+    filenameLine.textContent = filename
+
+    const hintLine = document.createElement("p")
+    hintLine.className = "text-xs text-green-600 mt-1"
+    hintLine.textContent = "File ready \u2014 click Upload to save"
+
+    textContainer.appendChild(filenameLine)
+    textContainer.appendChild(hintLine)
+
+    dropzone.appendChild(svg)
+    dropzone.appendChild(textContainer)
   }
 
   /**

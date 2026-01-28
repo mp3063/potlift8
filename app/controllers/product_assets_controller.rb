@@ -116,7 +116,7 @@ class ProductAssetsController < ApplicationController
     end
 
     # Validate file presence for document types (always required)
-    if @asset.document? && file_param.blank?
+    if @asset.document? && file_param.blank? && signed_blob_id_param.blank?
       @asset.errors.add(:file, "is required for documents")
       respond_to do |format|
         format.html { render :new, status: :unprocessable_entity }
@@ -129,7 +129,7 @@ class ProductAssetsController < ApplicationController
     end
 
     # Validate that video has either file OR URL (at least one required)
-    if @asset.video? && file_param.blank? && url_param.blank?
+    if @asset.video? && file_param.blank? && url_param.blank? && signed_blob_id_param.blank?
       @asset.errors.add(:base, "Either a video file or video URL is required")
       respond_to do |format|
         format.html { render :new, status: :unprocessable_entity }
@@ -161,7 +161,9 @@ class ProductAssetsController < ApplicationController
 
     if @asset.save
       # Attach file after save (for video/document)
-      if file_param.present?
+      if signed_blob_id_param.present?
+        @asset.file.attach(signed_blob_id_param)
+      elsif file_param.present?
         @asset.file.attach(file_param)
       end
 
@@ -222,8 +224,12 @@ class ProductAssetsController < ApplicationController
       @asset.info["url"] = url_param
     end
 
+    # Handle signed blob ID from drag-and-drop upload
+    if signed_blob_id_param.present?
+      @asset.file.purge if @asset.file.attached?
+      @asset.file.attach(signed_blob_id_param)
     # Validate and attach new file if provided
-    if file_param.present?
+    elsif file_param.present?
       file = file_param
       validation_error = validate_file(file, @asset.product_asset_type)
 
@@ -331,6 +337,38 @@ class ProductAssetsController < ApplicationController
     end
   end
 
+  # DELETE /products/:product_id/product_assets/bulk_destroy
+  # DELETE /products/:product_id/product_assets/bulk_destroy.json
+  #
+  # Bulk deletes selected assets.
+  #
+  # Parameters:
+  # - asset_ids: Array of asset IDs to delete
+  #
+  def bulk_destroy
+    unless params[:asset_ids].is_a?(Array)
+      respond_to do |format|
+        format.json { render json: { error: "Invalid asset_ids parameter" }, status: :unprocessable_entity }
+      end
+      return
+    end
+
+    asset_ids = params[:asset_ids].map(&:to_i)
+    assets = @product.product_assets.non_images.where(id: asset_ids)
+    deleted_count = 0
+
+    assets.each do |asset|
+      asset.file.purge if asset.file.attached?
+      asset.destroy
+      deleted_count += 1
+    end
+
+    respond_to do |format|
+      format.json { render json: { success: true, deleted: deleted_count }, status: :ok }
+      format.html { redirect_to product_product_assets_path(@product), notice: "#{deleted_count} asset(s) deleted successfully." }
+    end
+  end
+
   private
 
   # Set the product from params
@@ -392,6 +430,11 @@ class ProductAssetsController < ApplicationController
   # Get file from params (can be in :asset or :product_asset namespace)
   def file_param
     params.dig(:asset, :file) || params.dig(:product_asset, :file)
+  end
+
+  # Get signed blob ID from params (from drag-and-drop upload via ActiveStorage)
+  def signed_blob_id_param
+    params.dig(:product_asset, :signed_blob_id) || params.dig(:asset, :signed_blob_id)
   end
 
   # Validate file based on asset type

@@ -1,6 +1,6 @@
 <%= form_with model: [product, product_asset],
               id: "asset_form",
-              data: { controller: "asset-form", turbo: true },
+              data: { controller: "asset-form asset-upload", turbo: true },
               html: { class: "space-y-6" } do |f| %>
 
   <!-- Asset Type Selector -->
@@ -53,11 +53,26 @@
       <span class="sr-only">(required)</span>
     <% end %>
     <div class="mt-1">
-      <%= f.file_field :file,
-          class: "block w-full text-sm text-gray-900 border border-gray-300 rounded-md cursor-pointer focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500",
-          accept: ".pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx",
-          data: { asset_form_target: "documentFile" } %>
-      <p class="mt-1 text-xs text-gray-500">PDF, DOC, DOCX, TXT, XLS, XLSX, PPT, PPTX (max 10MB)</p>
+      <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
+           data-asset-upload-target="dropzone"
+           data-action="drop->asset-upload#handleDrop dragover->asset-upload#handleDragOver dragleave->asset-upload#handleDragLeave">
+        <svg class="mx-auto h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+        </svg>
+        <div class="mt-2">
+          <label for="product_asset_file" class="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-500">
+            Click to upload
+          </label>
+          <span class="text-sm text-gray-500"> or drag and drop</span>
+        </div>
+        <%= f.file_field :file,
+            class: "sr-only",
+            accept: ".pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx",
+            data: { asset_form_target: "documentFile", asset_upload_target: "input", action: "change->asset-upload#handleFiles" } %>
+        <p class="mt-1 text-xs text-gray-500">PDF, DOC, DOCX, TXT, XLS, XLSX, PPT, PPTX (max 10MB)</p>
+      </div>
+      <div data-asset-upload-target="progressContainer" class="mt-3"></div>
+      <div data-asset-upload-target="errorContainer"></div>
     </div>
   </div>
 
@@ -65,14 +80,20 @@
   <div data-asset-form-target="videoFields" class="<%= 'hidden' unless product_asset.product_asset_type == 'video' %>">
     <div class="space-y-4">
       <!-- Video URL -->
-      <div>
+      <div data-controller="video-embed">
         <label for="product_asset_video_url" class="block text-sm font-medium text-gray-700">Video URL</label>
         <input type="url" name="product_asset[video_url]" id="product_asset_video_url"
             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
             placeholder="https://www.youtube.com/watch?v=..."
             value="<%= product_asset.info&.dig('url') if product_asset.video? %>"
-            data-asset-form-target="videoUrl">
+            data-asset-form-target="videoUrl"
+            data-video-embed-target="urlInput"
+            data-action="blur->video-embed#validateUrl input->video-embed#clearError">
         <p class="mt-1 text-xs text-gray-500">YouTube, Vimeo, or other video URL</p>
+        <div data-video-embed-target="preview" class="hidden mt-3"></div>
+        <div data-video-embed-target="errorMessage" class="hidden mt-2"></div>
+        <input type="hidden" name="product_asset[video_id]" data-video-embed-target="videoIdInput">
+        <input type="hidden" name="product_asset[video_platform]" data-video-embed-target="platformInput">
       </div>
 
       <!-- OR separator -->
@@ -89,11 +110,27 @@
       <div>
         <%= f.label :file, "Upload Video File", class: "block text-sm font-medium text-gray-700" %>
         <div class="mt-1">
-          <%= f.file_field :file,
-              class: "block w-full text-sm text-gray-900 border border-gray-300 rounded-md cursor-pointer focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500",
-              accept: "video/*",
-              data: { asset_form_target: "videoFile" } %>
-          <p class="mt-1 text-xs text-gray-500">MP4, MOV, AVI, WEBM (max 100MB)</p>
+          <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
+               data-asset-upload-target="dropzone"
+               data-action="drop->asset-upload#handleDrop dragover->asset-upload#handleDragOver dragleave->asset-upload#handleDragLeave">
+            <svg class="mx-auto h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+            </svg>
+            <div class="mt-2">
+              <label for="product_asset_video_file" class="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-500">
+                Click to upload
+              </label>
+              <span class="text-sm text-gray-500"> or drag and drop</span>
+            </div>
+            <%= f.file_field :file,
+                id: "product_asset_video_file",
+                class: "sr-only",
+                accept: "video/*",
+                data: { asset_form_target: "videoFile", asset_upload_target: "input", action: "change->asset-upload#handleFiles" } %>
+            <p class="mt-1 text-xs text-gray-500">MP4, MOV, AVI, WEBM (max 100MB)</p>
+          </div>
+          <div data-asset-upload-target="progressContainer" class="mt-3"></div>
+          <div data-asset-upload-target="errorContainer"></div>
         </div>
       </div>
     </div>

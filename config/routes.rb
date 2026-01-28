@@ -104,7 +104,8 @@ Rails.application.routes.draw do
     resources :inventories, only: [ :index, :update ], controller: "product_inventories"
     resources :product_assets, except: [ :show ] do
       collection do
-        post :reorder  # Reorder assets via drag-and-drop
+        match :reorder, via: [:post, :patch]  # Reorder assets via drag-and-drop (POST for legacy, PATCH for asset-reorder)
+        delete :bulk_destroy  # Bulk delete selected assets
       end
     end
 
