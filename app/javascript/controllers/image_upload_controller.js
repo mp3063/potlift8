@@ -242,7 +242,7 @@ export default class extends Controller {
       return response.json()
     })
     .then(() => {
-      this.handleUploadSuccess(container, blob)
+      this.handleUploadSuccess(container)
     })
     .catch(error => {
       console.error("Error attaching blob:", error)
@@ -255,9 +255,8 @@ export default class extends Controller {
    * Completes progress bar and reloads page to show new image
    *
    * @param {HTMLElement} container - Progress bar container
-   * @param {Object} blob - ActiveStorage blob object
    */
-  handleUploadSuccess(container, blob) {
+  handleUploadSuccess(container) {
     // Set to 100% complete
     this.updateProgressBar(container, 100)
 

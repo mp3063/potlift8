@@ -1,5 +1,4 @@
 import { Controller } from "@hotwired/stimulus"
-import Sortable from "sortablejs"
 
 /**
  * Label Tree Controller
@@ -45,7 +44,6 @@ export default class extends Controller {
    * - Load expanded state from localStorage
    */
   connect() {
-    // this.initSortable()  // Disable sortable for now
     this.loadExpandedState()
   }
 
@@ -55,36 +53,6 @@ export default class extends Controller {
   disconnect() {
     this.sortableInstances?.forEach(instance => instance.destroy())
     this.sortableInstances = []
-  }
-
-  /**
-   * Initialize SortableJS on all list targets
-   *
-   * Features:
-   * - Shared group allows dragging between levels
-   * - Animation for smooth transitions
-   * - Fallback ensures proper positioning
-   * - Swap threshold for better UX
-   */
-  initSortable() {
-    this.sortableInstances = []
-
-    this.listTargets.forEach(list => {
-      const sortable = Sortable.create(list, {
-        group: 'labels',
-        animation: 150,
-        fallbackOnBody: true,
-        swapThreshold: 0.65,
-        handle: '.drag-handle', // Optional: add handle class to drag icon
-        ghostClass: 'opacity-50',
-        dragClass: 'bg-blue-50',
-        onEnd: (event) => {
-          this.handleDrop(event)
-        }
-      })
-
-      this.sortableInstances.push(sortable)
-    })
   }
 
   /**

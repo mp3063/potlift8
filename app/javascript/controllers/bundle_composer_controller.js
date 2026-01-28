@@ -493,20 +493,16 @@ export default class extends Controller {
 
   /**
    * Toggle variant inclusion
-   *
-   * @param {Event} event - Change event from variant checkbox
    */
-  toggleVariant(event) {
+  toggleVariant() {
     // Update preview when variant selection changes
     this.updatePreview()
   }
 
   /**
    * Handle quantity changes
-   *
-   * @param {Event} event - Input event from quantity field
    */
-  quantityChanged(event) {
+  quantityChanged() {
     // Update preview when quantities change
     this.updatePreview()
   }
@@ -831,15 +827,8 @@ export default class extends Controller {
     const configJson = this.configurationTarget.value
     if (!configJson) return
 
-    try {
-      const configuration = JSON.parse(configJson)
-
-      // TODO: Implement restoration logic if needed for edit mode
-      // This would fetch product details and rebuild the UI
-
-    } catch (error) {
-      console.error("Failed to restore configuration:", error)
-    }
+    // TODO: Implement restoration logic if needed for edit mode
+    // This would parse configJson, fetch product details, and rebuild the UI
   }
 
   /**

@@ -188,6 +188,7 @@ module AttributeValues
   #
   def propagate_change
     return unless product.present?
+    return if product.destroyed?
 
     # Touch product to invalidate HTTP caches (ETags, fresh_when responses)
     # Note: This will trigger ChangePropagator but it will skip since only updated_at changed
