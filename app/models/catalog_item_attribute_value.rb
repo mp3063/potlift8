@@ -23,6 +23,9 @@ class CatalogItemAttributeValue < ApplicationRecord
   belongs_to :catalog_item, counter_cache: true
   belongs_to :product_attribute
 
+  # Callbacks
+  after_commit :enqueue_sync_job, on: [:create, :update, :destroy]
+
   # Validations
   validates :catalog_item_id, uniqueness: { scope: :product_attribute_id }
   validates :value, presence: true
@@ -88,5 +91,21 @@ class CatalogItemAttributeValue < ApplicationRecord
     unless product_attribute.catalog_scope? || product_attribute.product_and_catalog_scope?
       errors.add(:base, "Attribute '#{product_attribute.name}' doesn't allow catalog-level values")
     end
+  end
+
+  # Enqueue sync job when catalog-level attribute values change
+  # This ensures catalog-specific overrides (like price) are synced to external systems
+  #
+  def enqueue_sync_job
+    catalog_item = self.catalog_item
+    return unless catalog_item
+
+    catalog = catalog_item.catalog
+    return unless catalog&.info&.dig("sync_target").present?
+    return if catalog.info&.dig("sync_paused")
+
+    ProductSyncJob.perform_later(catalog_item.product, catalog, Time.current)
+  rescue StandardError => e
+    Rails.logger.error("[CatalogItemAttributeValue] Failed to enqueue sync: #{e.message}")
   end
 end
