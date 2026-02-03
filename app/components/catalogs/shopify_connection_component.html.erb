@@ -1,0 +1,269 @@
+<div id="shopify_connection">
+<%= render Ui::CardComponent.new do |card| %>
+  <% card.with_header do %>
+    <div class="flex items-center gap-2">
+      <!-- Shopify Icon -->
+      <svg class="h-5 w-5 text-green-600" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M15.337 3.415c-.073-.015-.147.003-.2.052-.053.049-.083.117-.086.19l-.116 1.765-1.262-.32c-.073-.018-.15.003-.208.056-.058.054-.089.13-.085.208l.21 3.88-1.79-.454c-.074-.019-.152.003-.21.058-.059.054-.089.132-.083.21l.303 3.81-1.71-.435c-.074-.019-.152.003-.21.058-.058.054-.088.131-.082.208l.21 2.9-.003.026c-.002.082.027.161.08.22.053.058.127.093.206.096l4.387.137c.077.002.152-.024.21-.074.059-.05.098-.12.11-.196l.847-4.803c.024-.135-.041-.27-.163-.34l-1.03-.593.206-3.167 1.13.287c.077.02.157-.001.217-.057.06-.055.092-.134.086-.214l-.21-3.182 1.064.27c.077.02.157-.002.217-.058.06-.056.092-.135.086-.215l-.116-1.767c-.006-.08-.046-.154-.11-.205-.063-.05-.146-.074-.226-.064l-1.54.156z"/>
+        <path d="M20.925 5.93c-.013-.12-.122-.21-.242-.21l-2.063.034c-.073-.003-.145.024-.2.074-.055.05-.09.118-.097.192l-.58 5.55c-.01.088.024.175.09.236.066.06.157.088.246.076l1.574-.242c.112-.017.197-.106.21-.218l.143-1.37 1.11.282c.078.02.158-.003.217-.06.06-.058.09-.138.083-.218l-.118-1.166 1.026.26c.078.02.158-.004.217-.062.06-.058.088-.14.08-.22l-.116-1.155.87.22c.114.03.234-.035.278-.148.044-.113-.006-.24-.114-.29l-1.3-.59.108-1.035c.008-.076-.018-.152-.07-.208z"/>
+      </svg>
+      <h3 class="text-base font-semibold leading-6 text-gray-900">Shopify Connection</h3>
+    </div>
+  <% end %>
+
+  <div data-controller="shopify-connection">
+    <% if connected? %>
+      <!-- Connected State - Display Mode -->
+      <div data-shopify-connection-target="display">
+        <% if details_error? %>
+          <!-- Error fetching details - show cached info -->
+          <div class="rounded-lg bg-yellow-50 border border-yellow-200 p-3 mb-4">
+            <div class="flex">
+              <svg class="h-5 w-5 text-yellow-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <p class="ml-3 text-sm text-yellow-700">
+                Unable to fetch shop details. Showing cached information.
+              </p>
+            </div>
+          </div>
+        <% end %>
+
+        <!-- Connection Status Badge -->
+        <div class="flex items-center justify-between mb-4">
+          <%= render Ui::BadgeComponent.new(variant: :success, dot: true) do %>
+            Connected
+          <% end %>
+        </div>
+
+        <!-- Shop Details -->
+        <dl class="space-y-3">
+          <!-- Store Domain -->
+          <div class="flex items-center justify-between">
+            <dt class="text-sm font-medium text-gray-500">Store</dt>
+            <dd class="text-sm text-gray-900 font-mono">
+              <% if store_domain.present? %>
+                <%= store_domain %>
+              <% else %>
+                <span class="text-gray-400">Unknown</span>
+              <% end %>
+            </dd>
+          </div>
+
+          <!-- API Key -->
+          <div class="flex items-center justify-between">
+            <dt class="text-sm font-medium text-gray-500">API Key</dt>
+            <dd class="text-sm text-gray-900 font-mono">
+              <%= api_key_hint %>
+            </dd>
+          </div>
+
+          <!-- API Secret -->
+          <div class="flex items-center justify-between">
+            <dt class="text-sm font-medium text-gray-500">API Secret</dt>
+            <dd class="text-sm">
+              <% if secret_status == "Configured" %>
+                <span class="text-green-600"><%= secret_status %></span>
+              <% else %>
+                <span class="text-red-600"><%= secret_status %></span>
+              <% end %>
+            </dd>
+          </div>
+
+          <!-- Location ID -->
+          <div class="flex items-center justify-between">
+            <dt class="text-sm font-medium text-gray-500">Location ID</dt>
+            <dd class="text-sm text-gray-900 font-mono">
+              <% if location_id.present? %>
+                <%= location_id %>
+              <% else %>
+                <span class="text-gray-400">Not set</span>
+              <% end %>
+            </dd>
+          </div>
+        </dl>
+
+        <!-- Actions -->
+        <div class="mt-6 flex flex-col gap-3">
+          <button type="button"
+                  class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                  data-action="click->shopify-connection#toggleEdit">
+            <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            Update Credentials
+          </button>
+
+          <%= button_to disconnect_path,
+              method: :delete,
+              class: "inline-flex items-center justify-center px-4 py-2 border border-red-300 text-sm font-medium rounded-lg shadow-sm text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200",
+              data: {
+                turbo_confirm: "Are you sure you want to disconnect this catalog from Shopify? Products will no longer sync."
+              } do %>
+            <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Disconnect
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Connected State - Edit Mode (hidden by default) -->
+      <div data-shopify-connection-target="form" class="hidden">
+        <!-- Connection Status Badge -->
+        <div class="flex items-center justify-between mb-4">
+          <%= render Ui::BadgeComponent.new(variant: :success, dot: true) do %>
+            Connected
+          <% end %>
+          <span class="text-sm text-gray-500">Updating credentials</span>
+        </div>
+
+        <!-- Update Form -->
+        <%= form_with url: connect_path, method: :post, class: "space-y-4" do |form| %>
+          <!-- Store URL -->
+          <div>
+            <%= form.label :shopify_domain, class: "block text-sm font-medium text-gray-700 mb-1" do %>
+              Store URL <span class="text-red-600" aria-hidden="true">*</span>
+            <% end %>
+            <%= form.text_field :shopify_domain,
+                required: true,
+                value: store_domain,
+                placeholder: "my-store.myshopify.com",
+                class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm font-mono",
+                aria_required: "true" %>
+          </div>
+
+          <!-- API Key -->
+          <div>
+            <%= form.label :shopify_api_key, class: "block text-sm font-medium text-gray-700 mb-1" do %>
+              API Key <span class="text-red-600" aria-hidden="true">*</span>
+            <% end %>
+            <%= form.text_field :shopify_api_key,
+                required: true,
+                placeholder: "Enter new API key (leave blank to keep current)",
+                class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm font-mono",
+                aria_required: "true",
+                autocomplete: "off" %>
+            <p class="mt-1 text-xs text-gray-500">
+              Current: <%= api_key_hint %>
+            </p>
+          </div>
+
+          <!-- API Secret -->
+          <div>
+            <%= form.label :shopify_password, class: "block text-sm font-medium text-gray-700 mb-1" do %>
+              API Secret <span class="text-red-600" aria-hidden="true">*</span>
+            <% end %>
+            <%= form.password_field :shopify_password,
+                required: true,
+                placeholder: "Enter new API secret",
+                class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm font-mono",
+                aria_required: "true",
+                autocomplete: "new-password" %>
+          </div>
+
+          <!-- Location ID (Optional) -->
+          <div>
+            <%= form.label :location_id, class: "block text-sm font-medium text-gray-700 mb-1" %>
+            <%= form.text_field :location_id,
+                value: location_id,
+                placeholder: "gid://shopify/Location/123456789",
+                class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm font-mono" %>
+            <p class="mt-1 text-xs text-gray-500">
+              Optional. Leave blank to use the primary location.
+            </p>
+          </div>
+
+          <!-- Form Actions -->
+          <div class="pt-2 flex gap-3">
+            <button type="button"
+                    class="flex-1 inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                    data-action="click->shopify-connection#toggleEdit">
+              Cancel
+            </button>
+            <%= form.submit "Update Connection",
+                class: "flex-1 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200",
+                data: { disable_with: "Updating...", shopify_connection_target: "submitButton" } %>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <!-- Disconnected State -->
+      <div>
+        <!-- Connection Status Badge -->
+        <div class="flex items-center justify-between mb-4">
+          <%= render Ui::BadgeComponent.new(variant: :gray, dot: true) do %>
+            Not Connected
+          <% end %>
+        </div>
+
+        <p class="text-sm text-gray-500 mb-6">
+          Connect this catalog to a Shopify store to sync products and inventory.
+        </p>
+
+        <!-- Connection Form -->
+        <%= form_with url: connect_path, method: :post, class: "space-y-4" do |form| %>
+          <!-- Store URL -->
+          <div>
+            <%= form.label :shopify_domain, class: "block text-sm font-medium text-gray-700 mb-1" do %>
+              Store URL <span class="text-red-600" aria-hidden="true">*</span>
+            <% end %>
+            <%= form.text_field :shopify_domain,
+                required: true,
+                placeholder: "my-store.myshopify.com",
+                class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm font-mono",
+                aria_required: "true" %>
+            <p class="mt-1 text-xs text-gray-500">
+              Your Shopify store domain (e.g., my-store.myshopify.com)
+            </p>
+          </div>
+
+          <!-- API Key -->
+          <div>
+            <%= form.label :shopify_api_key, class: "block text-sm font-medium text-gray-700 mb-1" do %>
+              API Key <span class="text-red-600" aria-hidden="true">*</span>
+            <% end %>
+            <%= form.text_field :shopify_api_key,
+                required: true,
+                placeholder: "Enter your Shopify Admin API key",
+                class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm font-mono",
+                aria_required: "true",
+                autocomplete: "off" %>
+          </div>
+
+          <!-- API Secret -->
+          <div>
+            <%= form.label :shopify_password, class: "block text-sm font-medium text-gray-700 mb-1" do %>
+              API Secret <span class="text-red-600" aria-hidden="true">*</span>
+            <% end %>
+            <%= form.password_field :shopify_password,
+                required: true,
+                placeholder: "Enter your Shopify Admin API secret",
+                class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm font-mono",
+                aria_required: "true",
+                autocomplete: "new-password" %>
+          </div>
+
+          <!-- Location ID (Optional) -->
+          <div>
+            <%= form.label :location_id, class: "block text-sm font-medium text-gray-700 mb-1" %>
+            <%= form.text_field :location_id,
+                placeholder: "gid://shopify/Location/123456789",
+                class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm font-mono" %>
+            <p class="mt-1 text-xs text-gray-500">
+              Optional. Leave blank to use the primary location.
+            </p>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="pt-2">
+            <%= form.submit "Connect to Shopify",
+                class: "w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200",
+                data: { disable_with: "Connecting...", shopify_connection_target: "submitButton" } %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+<% end %>
+</div>
