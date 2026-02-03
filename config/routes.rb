@@ -196,6 +196,9 @@ Rails.application.routes.draw do
     member do
       patch :reorder_items
       get :export
+      get :shopify_connection
+      post :connect_shopify
+      delete :disconnect_shopify
     end
 
     # Catalog Items (add/remove products from catalog)

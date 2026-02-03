@@ -1,0 +1,6 @@
+<%= turbo_stream.replace "shopify_connection" do %>
+  <%= render Catalogs::ShopifyConnectionComponent.new(
+    catalog: @catalog,
+    connection_service: @shopify_service
+  ) %>
+<% end %>

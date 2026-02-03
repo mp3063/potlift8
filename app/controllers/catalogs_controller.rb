@@ -15,7 +15,7 @@
 # - Uses catalog 'code' instead of 'id' for cleaner URLs
 #
 class CatalogsController < ApplicationController
-  before_action :set_catalog, only: [ :show, :edit, :update, :destroy, :items, :reorder_items, :export ]
+  before_action :set_catalog, only: [ :show, :edit, :update, :destroy, :items, :reorder_items, :export, :shopify_connection, :connect_shopify, :disconnect_shopify ]
 
   # GET /catalogs
   # GET /catalogs.turbo_stream
@@ -195,6 +195,81 @@ class CatalogsController < ApplicationController
     head :unprocessable_entity
   end
 
+  # GET /catalogs/:code/shopify_connection
+  # GET /catalogs/:code/shopify_connection.turbo_stream
+  #
+  # Shows Shopify connection form/status in a turbo frame.
+  # If connected, displays connection details; if not, shows connection form.
+  #
+  def shopify_connection
+    @shopify_service = ShopifyConnectionService.new(@catalog)
+    @connected = @shopify_service.connected?
+
+    if @connected
+      result = @shopify_service.shop_details
+      @shop_details = result.success? ? result.data : nil
+    end
+
+    respond_to do |format|
+      format.html # Uses default layout
+      format.turbo_stream
+    end
+  end
+
+  # POST /catalogs/:code/connect_shopify
+  # POST /catalogs/:code/connect_shopify.turbo_stream
+  #
+  # Creates or updates the Shopify connection for this catalog.
+  # Uses ShopifyConnectionService to manage the connection.
+  #
+  def connect_shopify
+    @shopify_service = ShopifyConnectionService.new(@catalog)
+    result = @shopify_service.connect(shopify_connection_params)
+
+    respond_to do |format|
+      if result.success?
+        format.html { redirect_to edit_catalog_path(@catalog), notice: "Successfully connected to Shopify store." }
+        format.turbo_stream do
+          flash.now[:notice] = "Successfully connected to Shopify store."
+          redirect_to edit_catalog_path(@catalog), notice: "Successfully connected to Shopify store."
+        end
+      else
+        format.html { redirect_to edit_catalog_path(@catalog), alert: result.error }
+        format.turbo_stream do
+          flash.now[:alert] = result.error
+          redirect_to edit_catalog_path(@catalog), alert: result.error
+        end
+      end
+    end
+  end
+
+  # DELETE /catalogs/:code/disconnect_shopify
+  # DELETE /catalogs/:code/disconnect_shopify.turbo_stream
+  #
+  # Removes the Shopify connection from this catalog.
+  # Uses ShopifyConnectionService to manage the disconnection.
+  #
+  def disconnect_shopify
+    @shopify_service = ShopifyConnectionService.new(@catalog)
+    result = @shopify_service.disconnect
+
+    respond_to do |format|
+      if result.success?
+        format.html { redirect_to edit_catalog_path(@catalog), notice: "Successfully disconnected from Shopify store." }
+        format.turbo_stream do
+          flash.now[:notice] = "Successfully disconnected from Shopify store."
+          redirect_to edit_catalog_path(@catalog), notice: "Successfully disconnected from Shopify store."
+        end
+      else
+        format.html { redirect_to edit_catalog_path(@catalog), alert: result.error }
+        format.turbo_stream do
+          flash.now[:alert] = result.error
+          redirect_to edit_catalog_path(@catalog), alert: result.error
+        end
+      end
+    end
+  end
+
   # GET /catalogs/:code/export
   # GET /catalogs/:code/export.json
   # GET /catalogs/:code/export.csv
@@ -270,6 +345,23 @@ class CatalogsController < ApplicationController
       :currency_code,
       :description,
       :active
+    )
+  end
+
+  # Strong parameters for Shopify connection
+  #
+  # Permitted parameters:
+  # - shopify_domain: The Shopify store domain (e.g., my-store.myshopify.com)
+  # - shopify_api_key: The Shopify API key
+  # - shopify_password: The Shopify API secret/password
+  # - location_id: The Shopify location ID (optional)
+  #
+  def shopify_connection_params
+    params.permit(
+      :shopify_domain,
+      :shopify_api_key,
+      :shopify_password,
+      :location_id
     )
   end
 

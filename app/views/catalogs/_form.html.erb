@@ -170,6 +170,14 @@
     </div>
   </div>
 
+  <!-- Shopify Connection (only on edit) -->
+  <% if catalog.persisted? %>
+    <%= render Catalogs::ShopifyConnectionComponent.new(
+      catalog: catalog,
+      connection_service: ShopifyConnectionService.new(catalog)
+    ) %>
+  <% end %>
+
   <!-- Form Actions -->
   <div class="flex items-center justify-end gap-3 pt-6 border-t border-gray-200">
     <%= link_to "Cancel",
