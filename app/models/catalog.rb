@@ -269,6 +269,52 @@ class Catalog < ApplicationRecord
     )
   end
 
+  # Shopify Connection Helper Methods
+  #
+  # These methods manage the shop_id reference stored in the info JSONB field.
+  # Actual Shopify credentials are stored securely in Shopify8 - we only store
+  # the shop_id here for reference.
+
+  # Get the Shopify8 shop_id for this catalog
+  #
+  # @return [Integer, nil] Shop ID or nil if not connected
+  #
+  def shop_id
+    info&.dig("shop_id")
+  end
+
+  # Set the Shopify8 shop_id for this catalog
+  #
+  # @param value [Integer, nil] Shop ID or nil to disconnect
+  #
+  def shop_id=(value)
+    self.info ||= {}
+    if value.present?
+      self.info["shop_id"] = value.to_i
+    else
+      self.info.delete("shop_id")
+    end
+  end
+
+  # Check if catalog is connected to a Shopify store
+  #
+  # @return [Boolean] true if connected to Shopify
+  #
+  def shopify_connected?
+    shop_id.present?
+  end
+
+  # Get the cached Shopify domain for display
+  #
+  # This is cached locally to avoid API calls just for display.
+  # Updated when connection is established or modified.
+  #
+  # @return [String, nil] Shopify domain or nil
+  #
+  def shopify_domain
+    info&.dig("shopify_domain_cache")
+  end
+
   private
 
   # Validates currency ratio compliance for non-EUR catalogs
