@@ -4,7 +4,7 @@ require 'rails_helper'
 
 RSpec.describe ShopifyConnectionService, type: :service do
   let(:company) { create(:company) }
-  let(:catalog) { create(:catalog, company: company, info: {}) }
+  let(:catalog) { create(:catalog, company: company, info: { 'shopify_api_token' => 'test_api_token' }) }
   let(:service) { described_class.new(catalog) }
 
   # Common connection params
@@ -130,6 +130,32 @@ RSpec.describe ShopifyConnectionService, type: :service do
 
         service.connect(shopify_domain: '', shopify_api_key: '', shopify_password: '')
       end
+
+      it 'returns error for invalid domain format' do
+        params = valid_params.merge(shopify_domain: 'invalid-domain.com')
+
+        result = service.connect(params)
+
+        expect(result.success?).to be false
+        expect(result.error).to include('must be in format: store-name.myshopify.com')
+      end
+    end
+
+    context 'when API token not configured' do
+      let(:catalog) { create(:catalog, company: company, info: {}) }
+
+      it 'returns error requiring API token configuration' do
+        result = service.connect(valid_params)
+
+        expect(result.success?).to be false
+        expect(result.error).to include('API token not configured')
+      end
+
+      it 'does not call the API client' do
+        expect(api_client).not_to receive(:create_shop)
+
+        service.connect(valid_params)
+      end
     end
 
     context 'when API returns error' do
@@ -157,6 +183,13 @@ RSpec.describe ShopifyConnectionService, type: :service do
 
     context 'when already connected (updates existing shop)' do
       let(:existing_shop_id) { 99 }
+      let(:existing_shop_data) do
+        {
+          id: existing_shop_id,
+          shopify_domain: 'old-store.myshopify.com',
+          location_id: 'gid://shopify/Location/12345'
+        }
+      end
       let(:updated_shop_data) do
         {
           id: existing_shop_id,
@@ -165,6 +198,9 @@ RSpec.describe ShopifyConnectionService, type: :service do
         }
       end
 
+      let(:verify_result) do
+        Shopify8ApiClient::Result.new(success: true, data: existing_shop_data)
+      end
       let(:update_result) do
         Shopify8ApiClient::Result.new(success: true, data: updated_shop_data)
       end
@@ -174,7 +210,14 @@ RSpec.describe ShopifyConnectionService, type: :service do
         catalog.info['shopify_domain_cache'] = 'old-store.myshopify.com'
         catalog.save!
 
+        allow(api_client).to receive(:get_shop).and_return(verify_result)
         allow(api_client).to receive(:update_shop).and_return(update_result)
+      end
+
+      it 'verifies shop exists before updating' do
+        expect(api_client).to receive(:get_shop).with(existing_shop_id)
+
+        service.connect(valid_params)
       end
 
       it 'calls update_shop instead of create_shop' do
@@ -201,6 +244,29 @@ RSpec.describe ShopifyConnectionService, type: :service do
         service.connect(valid_params)
 
         expect(catalog.reload.shop_id).to eq(existing_shop_id)
+      end
+
+      context 'when shop verification fails' do
+        let(:verify_error) do
+          Shopify8ApiClient::Result.new(success: false, error: 'Shop not found')
+        end
+
+        before do
+          allow(api_client).to receive(:get_shop).and_return(verify_error)
+        end
+
+        it 'returns error without updating' do
+          result = service.connect(valid_params)
+
+          expect(result.success?).to be false
+          expect(result.error).to include('Cannot access linked shop')
+        end
+
+        it 'does not call update_shop' do
+          expect(api_client).not_to receive(:update_shop)
+
+          service.connect(valid_params)
+        end
       end
     end
 
@@ -510,6 +576,8 @@ RSpec.describe ShopifyConnectionService, type: :service do
       end
 
       context 'without shopify_api_token in catalog info' do
+        let(:catalog) { create(:catalog, company: company, info: {}) }
+
         before do
           ENV['SHOPIFY8_API_TOKEN'] = 'env_token'
         end
@@ -518,9 +586,9 @@ RSpec.describe ShopifyConnectionService, type: :service do
           ENV.delete('SHOPIFY8_API_TOKEN')
         end
 
-        it 'falls back to ENV token' do
+        it 'does NOT fall back to ENV token (security)' do
           expect(Shopify8ApiClient).to receive(:new).with(
-            api_token: 'env_token'
+            api_token: nil
           )
 
           service.send(:api_client)

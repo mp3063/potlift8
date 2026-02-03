@@ -388,10 +388,16 @@ RSpec.describe 'Catalogs::ShopifyConnection', type: :request do
   describe 'integration with real ShopifyConnectionService' do
     # These tests use real service but stub the API client
     let(:connected_catalog) do
-      create(:catalog, company: company, code: 'CONNECTED', info: { 'shop_id' => 123, 'shopify_domain_cache' => 'test.myshopify.com' })
+      create(:catalog, company: company, code: 'CONNECTED', info: {
+        'shop_id' => 123,
+        'shopify_domain_cache' => 'test.myshopify.com',
+        'shopify_api_token' => 'test_api_token'
+      })
     end
     let(:disconnected_catalog) do
-      create(:catalog, company: company, code: 'DISCONNECTED')
+      create(:catalog, company: company, code: 'DISCONNECTED', info: {
+        'shopify_api_token' => 'test_api_token'
+      })
     end
 
     describe 'GET /catalogs/:code/shopify_connection' do

@@ -58,9 +58,16 @@ class ShopifyConnectionService
   #
   def connect(params)
     validate_params(params)
+    validate_api_token_configured
     return failure_result(@errors.join(", ")) if @errors.any?
 
     api_result = if connected?
+      # Verify existing shop is still accessible before updating
+      verify_result = api_client.get_shop(catalog.shop_id)
+      unless verify_result.success?
+        return failure_result("Cannot access linked shop. It may have been deleted or you may not have permission.")
+      end
+
       # Update existing shop
       api_client.update_shop(catalog.shop_id, params)
     else
@@ -147,6 +154,22 @@ class ShopifyConnectionService
     @errors << "Shopify domain is required" if params[:shopify_domain].blank?
     @errors << "API key is required" if params[:shopify_api_key].blank?
     @errors << "API secret is required" if params[:shopify_password].blank?
+
+    # Validate domain format
+    if params[:shopify_domain].present? && !params[:shopify_domain].to_s.match?(/\A[\w-]+\.myshopify\.com\z/i)
+      @errors << "Shopify domain must be in format: store-name.myshopify.com"
+    end
+  end
+
+  # Validate that API token is configured for this catalog
+  #
+  # Security: Requires explicit API token configuration per catalog.
+  # We don't fall back to ENV to prevent cross-catalog token sharing.
+  #
+  def validate_api_token_configured
+    if shopify_api_token.blank?
+      @errors << "Shopify8 API token not configured for this catalog. Please set shopify_api_token in catalog settings."
+    end
   end
 
   # Update catalog with shop reference
@@ -175,10 +198,13 @@ class ShopifyConnectionService
 
   # Get API token for Shopify8
   #
-  # @return [String] API token
+  # Security: Only uses catalog-specific token, no ENV fallback.
+  # This prevents cross-catalog token sharing.
+  #
+  # @return [String, nil] API token or nil if not configured
   #
   def shopify_api_token
-    catalog.info&.dig("shopify_api_token") || ENV.fetch("SHOPIFY8_API_TOKEN", nil)
+    catalog.info&.dig("shopify_api_token")
   end
 
   # Create failure result
