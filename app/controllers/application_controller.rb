@@ -5,6 +5,9 @@ class ApplicationController < ActionController::Base
   # Include Pagy backend for pagination
   include Pagy::Backend
 
+  # Pundit authorization — uses UserContext (user + role + scopes) for policy checks
+  include Pundit::Authorization
+
   # Make authentication helpers available in views
   helper_method :current_user, :current_company, :authenticated?, :current_user_name, :current_potlift_company, :current_customer_groups
 
@@ -16,7 +19,34 @@ class ApplicationController < ActionController::Base
   # Called after authentication is verified
   before_action :check_session_version
 
+  # Pundit safety net — raises if a controller action forgets to authorize.
+  # Controllers that don't need authorization (e.g. DashboardController) must
+  # call `skip_authorization` or skip these after_actions.
+  after_action :verify_authorized
+
+  # Handle authorization failures with a user-friendly response
+  rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
+
   private
+
+  # Override Pundit's default to pass UserContext instead of bare User.
+  # This gives policies access to role, scopes, and company.
+  def pundit_user
+    @pundit_user ||= UserContext.new(
+      current_user,
+      session[:role],
+      session[:scopes],
+      current_potlift_company
+    )
+  end
+
+  def user_not_authorized
+    respond_to do |format|
+      format.html { redirect_back(fallback_location: root_path, alert: "You are not authorized to perform this action.") }
+      format.turbo_stream { head :forbidden }
+      format.json { render json: { error: "forbidden" }, status: :forbidden }
+    end
+  end
 
   # Check if session data needs to be refreshed from Authlift8
   #
