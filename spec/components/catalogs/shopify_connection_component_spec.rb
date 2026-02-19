@@ -76,10 +76,10 @@ RSpec.describe Catalogs::ShopifyConnectionComponent, type: :component do
       expect(page).to have_text("gid://shopify/Location/123456789")
     end
 
-    it "shows Update Credentials link" do
+    it "shows Update Credentials button" do
       render_inline(described_class.new(catalog: catalog, connection_service: connection_service))
 
-      expect(page).to have_link("Update Credentials")
+      expect(page).to have_button("Update Credentials")
     end
 
     it "shows Disconnect button" do
@@ -191,10 +191,10 @@ RSpec.describe Catalogs::ShopifyConnectionComponent, type: :component do
       expect(page).to have_button("Disconnect")
     end
 
-    it "still shows Update Credentials link" do
+    it "still shows Update Credentials button" do
       render_inline(described_class.new(catalog: catalog, connection_service: connection_service))
 
-      expect(page).to have_link("Update Credentials")
+      expect(page).to have_button("Update Credentials")
     end
   end
 
