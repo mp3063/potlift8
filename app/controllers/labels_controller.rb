@@ -32,6 +32,8 @@ class LabelsController < ApplicationController
   # - q: Search query (matches name or code)
   #
   def index
+    authorize Label
+
     # Load labels based on parent context with eager loading
     if params[:parent_id].present?
       @parent_label = current_potlift_company.labels.find(params[:parent_id])
@@ -71,6 +73,7 @@ class LabelsController < ApplicationController
     @label = current_potlift_company.labels
                                     .includes(sublabels: [ :products, :sublabels ])
                                     .find_by!(full_code: params[:id])
+    authorize @label
 
     # Load sublabels
     @sublabels = @label.sublabels
@@ -83,6 +86,7 @@ class LabelsController < ApplicationController
     @label = current_potlift_company.labels
                                     .includes(sublabels: [ :products, :sublabels ])
                                     .find(params[:id])
+    authorize @label
     @sublabels = @label.sublabels
     @products = @label.products.includes(:labels, :inventories)
     @pagy, @products = pagy(@products, items: params[:per_page] || 25)
@@ -96,6 +100,8 @@ class LabelsController < ApplicationController
   # - parent_id: Parent label ID (optional, for creating sublabels)
   #
   def new
+    authorize Label
+
     @label = current_potlift_company.labels.build
 
     # Set parent label if provided
@@ -110,6 +116,8 @@ class LabelsController < ApplicationController
   # Renders form for editing an existing label.
   #
   def edit
+    authorize @label
+
     # Load parent label if exists
     @parent_label = @label.parent_label if @label.parent_label_id.present?
   end
@@ -120,6 +128,8 @@ class LabelsController < ApplicationController
   # Creates a new label.
   #
   def create
+    authorize Label
+
     @label = current_potlift_company.labels.build(label_params)
 
     # Save label and handle potential database constraint violations
@@ -173,6 +183,8 @@ class LabelsController < ApplicationController
   # Updates an existing label.
   #
   def update
+    authorize @label
+
     if @label.update(label_params)
       # Cascade updates to children if parent changed OR if code/name changed (affects full_code/full_name)
       needs_cascade = @label.previous_changes.key?("parent_label_id") ||
@@ -203,6 +215,8 @@ class LabelsController < ApplicationController
   # - Prevents deletion if label has associated products
   #
   def destroy
+    authorize @label
+
     # Check for sublabels
     if @label.sublabels.any?
       @error_message = "Cannot delete label '#{@label.name}' because it has #{@label.sublabels.count} sublabel(s). Please delete sublabels first."
@@ -283,6 +297,8 @@ class LabelsController < ApplicationController
   # - Error: 422 Unprocessable Entity with JSON { success: false, message: "..." }
   #
   def reorder
+    authorize Label
+
     order_array = params[:order]
     parent_id = params[:parent_id]
 

@@ -24,6 +24,8 @@ class CatalogItemAttributeValuesController < ApplicationController
   # - value: The override value
   #
   def create
+    authorize :catalog_item_attribute_value, :create?
+
     @product_attribute = current_potlift_company.product_attributes.find(params[:product_attribute_id])
 
     # Check if attribute allows catalog scope
@@ -75,6 +77,8 @@ class CatalogItemAttributeValuesController < ApplicationController
   # - value: The new override value
   #
   def update
+    authorize :catalog_item_attribute_value, :update?
+
     if @catalog_item_attribute_value.update(value: params[:value])
       # Reload associations for rendering
       @catalog_item = @catalog_item_attribute_value.catalog_item
@@ -102,6 +106,8 @@ class CatalogItemAttributeValuesController < ApplicationController
   # The product will fall back to using the product-level attribute value.
   #
   def destroy
+    authorize :catalog_item_attribute_value, :destroy?
+
     @catalog_item = @catalog_item_attribute_value.catalog_item
     @product = @catalog_item.product
     @product_attribute = @catalog_item_attribute_value.product_attribute

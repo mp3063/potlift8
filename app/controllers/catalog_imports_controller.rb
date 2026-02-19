@@ -24,6 +24,8 @@ class CatalogImportsController < ApplicationController
   # Shows import modal with file upload form and template download link.
   #
   def new
+    authorize :catalog_import, :new?
+
     respond_to do |format|
       format.html { render layout: false }
       format.turbo_stream
@@ -39,6 +41,8 @@ class CatalogImportsController < ApplicationController
   # - file: CSV file to import
   #
   def create
+    authorize :catalog_import, :create?
+
     unless params[:file].present?
       respond_to do |format|
         format.html { redirect_to catalog_items_path(@catalog), alert: "Please select a file to import." }
@@ -86,6 +90,8 @@ class CatalogImportsController < ApplicationController
   # Downloads CSV template for catalog imports.
   #
   def template
+    authorize :catalog_import, :template?
+
     require "csv"
 
     csv_data = CSV.generate(headers: true) do |csv|

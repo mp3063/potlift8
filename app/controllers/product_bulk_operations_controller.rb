@@ -13,6 +13,7 @@
 class ProductBulkOperationsController < ApplicationController
   # POST /products/bulk/destroy
   def destroy
+    authorize :product_bulk_operation, :destroy?
     product_ids = params[:product_ids] || []
 
     if product_ids.empty?
@@ -49,6 +50,7 @@ class ProductBulkOperationsController < ApplicationController
 
   # POST /products/bulk/update_labels
   def update_labels
+    authorize :product_bulk_operation, :update_labels?
     product_ids = params[:product_ids] || []
     label_ids = (params[:label_ids] || []).compact.map(&:to_i)
     action_type = params[:action_type] || "add"
@@ -108,6 +110,7 @@ class ProductBulkOperationsController < ApplicationController
   # - assigned_to_any: label IDs assigned to ANY selected product (for remove mode)
   # - assigned_to_all: label IDs assigned to ALL selected products (for add mode exclusion)
   def labels_for_products
+    authorize :product_bulk_operation, :labels_for_products?
     product_ids = params[:product_ids] || []
 
     if product_ids.empty?

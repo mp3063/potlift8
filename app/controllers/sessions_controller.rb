@@ -16,6 +16,7 @@ class SessionsController < ApplicationController
   # Skip authentication for OAuth flow
   skip_before_action :require_authentication, only: [ :new, :create ], raise: false
   skip_before_action :check_session_version, only: [ :new, :create ], raise: false
+  skip_after_action :verify_authorized
 
   # Protect against CSRF for state-changing actions
   protect_from_forgery except: :create # OAuth callback uses GET with state validation

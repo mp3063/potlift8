@@ -11,6 +11,8 @@ class CompaniesController < ApplicationController
   # This is a stub implementation. Full implementation will be added
   # when User model with company associations is created.
   def switch
+    authorize :company, :switch?
+
     # TODO: Implement company switching when User model is ready
     # Expected implementation:
     # 1. Verify user has access to requested company

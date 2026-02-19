@@ -8,6 +8,8 @@ class ConfigurationsController < ApplicationController
 
   # GET /products/:product_id/configurations
   def index
+    authorize Configuration
+
     @configurations = @product.configurations
                               .includes(:configuration_values)
                               .order(:position)
@@ -15,12 +17,16 @@ class ConfigurationsController < ApplicationController
 
   # GET /products/:product_id/configurations/new
   def new
+    authorize Configuration
+
     @configuration = @product.configurations.build
     @configuration.configuration_values.build # For nested form
   end
 
   # POST /products/:product_id/configurations
   def create
+    authorize Configuration
+
     @configuration = @product.configurations.build(configuration_params)
     @configuration.company = current_potlift_company
 
@@ -34,10 +40,13 @@ class ConfigurationsController < ApplicationController
 
   # GET /products/:product_id/configurations/:id/edit
   def edit
+    authorize @configuration
   end
 
   # PATCH/PUT /products/:product_id/configurations/:id
   def update
+    authorize @configuration
+
     if @configuration.update(configuration_params)
       redirect_to product_configurations_path(@product),
                   notice: "Configuration updated successfully."
@@ -48,6 +57,8 @@ class ConfigurationsController < ApplicationController
 
   # DELETE /products/:product_id/configurations/:id
   def destroy
+    authorize @configuration
+
     # Prevent deletion if variants exist
     if @product.product_configurations_as_super.any?
       redirect_to product_configurations_path(@product),

@@ -5,6 +5,8 @@
 # Displays the main dashboard/home page after user authentication
 #
 class DashboardController < ApplicationController
+  skip_after_action :verify_authorized
+
   # GET /
   # Dashboard home page
   def index

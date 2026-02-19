@@ -61,6 +61,8 @@ class ProductAssetsController < ApplicationController
   # Images are handled by ProductImagesController.
   #
   def index
+    authorize ProductAsset
+
     @assets = @product.product_assets.non_images.ordered.with_attached_file
     @documents = @assets.documents
     @videos = @assets.videos
@@ -75,6 +77,8 @@ class ProductAssetsController < ApplicationController
   # Supports all asset types: video, document, link.
   #
   def new
+    authorize ProductAsset
+
     @asset = @product.product_assets.build
     @product_asset = @asset  # View uses @product_asset
     # Default to public visibility and medium priority
@@ -100,6 +104,8 @@ class ProductAssetsController < ApplicationController
   # - asset[url]: URL (for link type, or video type as alternative to file)
   #
   def create
+    authorize ProductAsset
+
     @asset = @product.product_assets.build(asset_params)
     @product_asset = @asset  # View uses @product_asset
 
@@ -191,6 +197,8 @@ class ProductAssetsController < ApplicationController
   # Allows updating metadata and replacing files.
   #
   def edit
+    authorize @asset
+
     @product_asset = @asset  # View uses @product_asset
     # Populate URL field for link and video assets
     @asset_url = @asset.info&.dig("url") if @asset.link? || @asset.video?
@@ -210,6 +218,8 @@ class ProductAssetsController < ApplicationController
   # - asset[url]: Updated URL (for link type or video type)
   #
   def update
+    authorize @asset
+
     @product_asset = @asset  # View uses @product_asset
 
     # Handle link URL update
@@ -274,6 +284,8 @@ class ProductAssetsController < ApplicationController
   # Deletes an asset and its associated file (if any).
   #
   def destroy
+    authorize @asset
+
     asset_name = @asset.name
     asset_type = @asset.product_asset_type
 
@@ -299,6 +311,8 @@ class ProductAssetsController < ApplicationController
   # - asset_ids: Array of asset IDs in new order
   #
   def reorder
+    authorize ProductAsset
+
     unless params[:asset_ids].is_a?(Array)
       respond_to do |format|
         format.json { render json: { error: "Invalid asset_ids parameter" }, status: :unprocessable_entity }
@@ -346,6 +360,8 @@ class ProductAssetsController < ApplicationController
   # - asset_ids: Array of asset IDs to delete
   #
   def bulk_destroy
+    authorize ProductAsset
+
     unless params[:asset_ids].is_a?(Array)
       respond_to do |format|
         format.json { render json: { error: "Invalid asset_ids parameter" }, status: :unprocessable_entity }

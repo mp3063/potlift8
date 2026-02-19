@@ -23,6 +23,8 @@ class StoragesController < ApplicationController
   # - direction: Sort direction (asc, desc)
   #
   def index
+    authorize Storage
+
     # Eager load inventories and products to prevent N+1 queries
     # inventories.count and products.count queries are optimized
     @storages = current_potlift_company.storages
@@ -40,6 +42,8 @@ class StoragesController < ApplicationController
   # Redirects to the inventory action to show storage details.
   #
   def show
+    authorize @storage
+
     redirect_to inventory_storage_path(@storage)
   end
 
@@ -53,6 +57,8 @@ class StoragesController < ApplicationController
   # - direction: Sort direction (asc, desc)
   #
   def inventory
+    authorize @storage
+
     # Get all inventories for this storage with products
     # Only eager load what we need: product (for sku, name, product_type, info)
     @inventories = @storage.inventories
@@ -82,6 +88,8 @@ class StoragesController < ApplicationController
   # Renders form for creating a new storage location.
   #
   def new
+    authorize Storage
+
     @storage = current_potlift_company.storages.build
   end
 
@@ -90,6 +98,7 @@ class StoragesController < ApplicationController
   # Renders form for editing an existing storage location.
   #
   def edit
+    authorize @storage
   end
 
   # POST /storages
@@ -98,6 +107,8 @@ class StoragesController < ApplicationController
   # Creates a new storage location.
   #
   def create
+    authorize Storage
+
     @storage = current_potlift_company.storages.build(storage_params)
 
     if @storage.save
@@ -117,6 +128,8 @@ class StoragesController < ApplicationController
   # Updates an existing storage location.
   #
   def update
+    authorize @storage
+
     if @storage.update(storage_params)
       respond_to do |format|
         format.html { redirect_to storages_path, notice: "Storage location updated successfully." }
@@ -134,6 +147,8 @@ class StoragesController < ApplicationController
   # Prevents deletion if storage has inventory (saldo > 0).
   #
   def destroy
+    authorize @storage
+
     # Check if storage has any inventory
     if @storage.has_inventory?
       respond_to do |format|

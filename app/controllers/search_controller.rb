@@ -17,6 +17,8 @@
 # - GET /search/recent
 #
 class SearchController < ApplicationController
+  skip_after_action :verify_authorized
+
   # GET /search
   # Performs multi-scope search based on query and scope parameters
   #

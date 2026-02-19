@@ -25,6 +25,7 @@ class ProductLabelsController < ApplicationController
   # - label_id: The ID of the label to add
   #
   def create
+    authorize :product_label, :create?
     label_id = params[:label_id]
 
     if label_id.blank?
@@ -74,6 +75,7 @@ class ProductLabelsController < ApplicationController
   # - id: The ID of the label to remove
   #
   def destroy
+    authorize :product_label, :destroy?
     label = @product.labels.find_by(id: params[:id])
 
     unless label

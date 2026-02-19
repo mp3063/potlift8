@@ -18,6 +18,8 @@ class ProductAttributesController < ApplicationController
   # GET /product_attributes
   # Lists all attributes grouped by AttributeGroup
   def index
+    authorize ProductAttribute
+
     @attribute_groups = current_potlift_company.attribute_groups
       .includes(:product_attributes)
       .order(:position)
@@ -29,6 +31,8 @@ class ProductAttributesController < ApplicationController
 
   # GET /product_attributes/:code
   def show
+    authorize @product_attribute
+
     @attribute_values = @product_attribute.product_attribute_values
       .includes(:product)
       .order("products.name")
@@ -37,15 +41,20 @@ class ProductAttributesController < ApplicationController
 
   # GET /product_attributes/new
   def new
+    authorize ProductAttribute
+
     @product_attribute = current_potlift_company.product_attributes.build
   end
 
   # GET /product_attributes/:code/edit
   def edit
+    authorize @product_attribute
   end
 
   # POST /product_attributes
   def create
+    authorize ProductAttribute
+
     @product_attribute = current_potlift_company.product_attributes.build(product_attribute_params)
 
     if @product_attribute.save
@@ -57,6 +66,8 @@ class ProductAttributesController < ApplicationController
 
   # PATCH /product_attributes/:code
   def update
+    authorize @product_attribute
+
     if @product_attribute.update(product_attribute_params)
       redirect_to product_attributes_path, notice: "Attribute updated successfully."
     else
@@ -66,6 +77,8 @@ class ProductAttributesController < ApplicationController
 
   # DELETE /product_attributes/:code
   def destroy
+    authorize @product_attribute
+
     if @product_attribute.product_attribute_values.any?
       redirect_to product_attributes_path, alert: "Cannot delete attribute with existing values."
     else
@@ -77,6 +90,8 @@ class ProductAttributesController < ApplicationController
   # PATCH /product_attributes/reorder
   # Updates attribute positions within groups
   def reorder
+    authorize ProductAttribute
+
     params[:order].each_with_index do |id, index|
       attribute = current_potlift_company.product_attributes.find(id)
       attribute.update_column(:attribute_position, index + 1)
@@ -88,6 +103,8 @@ class ProductAttributesController < ApplicationController
   # GET /product_attributes/validate_code
   # JSON endpoint for inline code validation
   def validate_code
+    authorize ProductAttribute
+
     code = params[:code].to_s.strip
     attribute_id = params[:id]
 

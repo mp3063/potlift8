@@ -26,6 +26,7 @@ class ProductAttributeValuesController < ApplicationController
   # - unit: Optional unit for weight/dimension attributes
   #
   def update
+    authorize :product_attribute_value, :update?
     value = params[:value]
 
     # Handle different attribute types

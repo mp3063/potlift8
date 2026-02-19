@@ -23,6 +23,7 @@ class CatalogsController < ApplicationController
   # Lists all catalogs for the current company.
   #
   def index
+    authorize Catalog
     @catalogs = current_potlift_company.catalogs
                                        .includes(:catalog_items, :products)
                                        .order(created_at: :desc)
@@ -33,6 +34,7 @@ class CatalogsController < ApplicationController
   # Shows catalog details (redirects to items action).
   #
   def show
+    authorize @catalog
     redirect_to catalog_items_path(@catalog)
   end
 
@@ -53,6 +55,7 @@ class CatalogsController < ApplicationController
   # - Cache per page and search query
   #
   def items
+    authorize @catalog
     @catalog_items = @catalog.catalog_items
                              .includes(:catalog_item_attribute_values, product: [ :labels, :inventories, :product_attribute_values ])
                              .by_priority
@@ -87,6 +90,7 @@ class CatalogsController < ApplicationController
   # Renders form for creating a new catalog.
   #
   def new
+    authorize Catalog
     @catalog = current_potlift_company.catalogs.build
   end
 
@@ -95,6 +99,7 @@ class CatalogsController < ApplicationController
   # Renders form for editing an existing catalog.
   #
   def edit
+    authorize @catalog
   end
 
   # POST /catalogs
@@ -103,6 +108,7 @@ class CatalogsController < ApplicationController
   # Creates a new catalog.
   #
   def create
+    authorize Catalog
     @catalog = current_potlift_company.catalogs.build(catalog_params)
 
     if @catalog.save
@@ -127,6 +133,7 @@ class CatalogsController < ApplicationController
   # Updates an existing catalog.
   #
   def update
+    authorize @catalog
     if @catalog.update(catalog_params)
       respond_to do |format|
         format.html { redirect_to catalogs_path, notice: "Catalog updated successfully." }
@@ -148,6 +155,7 @@ class CatalogsController < ApplicationController
   # Destroys a catalog and all associated catalog items.
   #
   def destroy
+    authorize @catalog
     @catalog.destroy
 
     respond_to do |format|
@@ -171,6 +179,7 @@ class CatalogsController < ApplicationController
   # - 422 Unprocessable Entity if order parameter is missing or invalid
   #
   def reorder_items
+    authorize @catalog
     order = params[:order]
 
     if order.blank? || !order.is_a?(Array)
@@ -202,6 +211,7 @@ class CatalogsController < ApplicationController
   # If connected, displays connection details; if not, shows connection form.
   #
   def shopify_connection
+    authorize @catalog
     @shopify_service = ShopifyConnectionService.new(@catalog)
     @connected = @shopify_service.connected?
 
@@ -223,6 +233,7 @@ class CatalogsController < ApplicationController
   # Uses ShopifyConnectionService to manage the connection.
   #
   def connect_shopify
+    authorize @catalog
     @shopify_service = ShopifyConnectionService.new(@catalog)
     result = @shopify_service.connect(shopify_connection_params)
 
@@ -250,6 +261,7 @@ class CatalogsController < ApplicationController
   # Uses ShopifyConnectionService to manage the disconnection.
   #
   def disconnect_shopify
+    authorize @catalog
     @shopify_service = ShopifyConnectionService.new(@catalog)
     result = @shopify_service.disconnect
 
@@ -277,6 +289,7 @@ class CatalogsController < ApplicationController
   # Exports catalog data in JSON or CSV format.
   #
   def export
+    authorize @catalog
     @catalog_items = @catalog.catalog_items
                              .includes(product: [ :labels, :product_attribute_values ])
                              .by_priority

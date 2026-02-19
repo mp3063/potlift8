@@ -9,6 +9,8 @@ class BundleProductsController < ApplicationController
 
   # GET /products/:product_id/bundle_products
   def index
+    authorize :bundle_product, :index?
+
     # Load ProductConfigurations as "bundle_products"
     @bundle_products = @product.product_configurations_as_super
                                .includes(subproduct: :inventories)
@@ -23,6 +25,8 @@ class BundleProductsController < ApplicationController
 
   # POST /products/:product_id/bundle_products
   def create
+    authorize :bundle_product, :create?
+
     @bundle_product = @product.product_configurations_as_super.build(bundle_product_params)
 
     if @bundle_product.save
@@ -40,6 +44,8 @@ class BundleProductsController < ApplicationController
 
   # PATCH/PUT /products/:product_id/bundle_products/:id
   def update
+    authorize :bundle_product, :update?
+
     if @bundle_product.update(bundle_product_params)
       respond_to do |format|
         format.html {
@@ -55,6 +61,8 @@ class BundleProductsController < ApplicationController
 
   # DELETE /products/:product_id/bundle_products/:id
   def destroy
+    authorize :bundle_product, :destroy?
+
     @bundle_product.destroy
     redirect_to product_bundle_products_path(@product),
                 notice: "Product removed from bundle."
@@ -62,6 +70,8 @@ class BundleProductsController < ApplicationController
 
   # POST /products/:product_id/bundle_products/reorder
   def reorder
+    authorize :bundle_product, :reorder?
+
     params[:order].each_with_index do |id, index|
       ProductConfiguration.find(id).update(configuration_position: index + 1)
     end

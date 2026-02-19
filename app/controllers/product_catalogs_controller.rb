@@ -27,6 +27,7 @@ class ProductCatalogsController < ApplicationController
   # - priority: The priority of the catalog item (optional, defaults to 0)
   #
   def create
+    authorize :product_catalog, :create?
     catalog_id = params[:catalog_id]
     active = params[:active] == "1"
     priority = params[:priority].to_i
@@ -98,6 +99,7 @@ class ProductCatalogsController < ApplicationController
   # - id: The ID of the catalog to remove the product from
   #
   def destroy
+    authorize :product_catalog, :destroy?
     # Support lookup by both catalog ID and code (since Catalog uses code in to_param)
     catalog = current_potlift_company.catalogs.find_by(id: params[:id]) ||
               current_potlift_company.catalogs.find_by(code: params[:id])

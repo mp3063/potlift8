@@ -33,6 +33,8 @@ class ProductsController < ApplicationController
   # - q: Search query (matches name or SKU)
   #
   def index
+    authorize Product
+
     # Use optimized scope with eager loading to prevent N+1 queries
     # .with_labels_only is faster than .with_search_associations for listing pages
     # .with_subproducts is needed for expandable row functionality (configurable products)
@@ -93,6 +95,8 @@ class ProductsController < ApplicationController
   # - Cache invalidation: Automatic on product/association updates
   #
   def show
+    authorize @product
+
     # Load product with eager loading to prevent N+1 queries
     # Associations loaded based on actual view access patterns:
     #
@@ -176,6 +180,7 @@ class ProductsController < ApplicationController
   # Renders form for creating a new product.
   #
   def new
+    authorize Product
     @product = current_potlift_company.products.build
   end
 
@@ -184,6 +189,7 @@ class ProductsController < ApplicationController
   # Renders form for editing an existing product.
   #
   def edit
+    authorize @product
   end
 
   # POST /products
@@ -196,6 +202,7 @@ class ProductsController < ApplicationController
   # automatically generates bundle variants using BundleVariantGeneratorService.
   #
   def create
+    authorize Product
     @product = current_potlift_company.products.build(product_params)
 
     # Handle restock_level in info JSONB column
@@ -250,6 +257,8 @@ class ProductsController < ApplicationController
   # Old variants are soft-deleted and new ones are created.
   #
   def update
+    authorize @product
+
     # Handle restock_level in info JSONB column before update
     handle_info_fields(@product)
 
@@ -298,6 +307,7 @@ class ProductsController < ApplicationController
   # Destroys a product.
   #
   def destroy
+    authorize @product
     @product.destroy
     respond_to do |format|
       format.html { redirect_to products_path, notice: "Product deleted successfully.", status: :see_other }
@@ -311,6 +321,7 @@ class ProductsController < ApplicationController
   # Redirects to edit page for the new product.
   #
   def duplicate
+    authorize @product
     new_product = @product.duplicate!
 
     redirect_to edit_product_path(new_product), notice: "Product duplicated as #{new_product.sku}", status: :see_other
@@ -327,6 +338,7 @@ class ProductsController < ApplicationController
   # - { valid: false, message: "..." } if SKU is taken
   #
   def validate_sku
+    authorize Product
     sku = params[:sku]
 
     if sku.blank?
@@ -355,6 +367,7 @@ class ProductsController < ApplicationController
   # If active, disables the product. If not active, activates the product.
   #
   def toggle_active
+    authorize @product
     begin
       if @product.active?
         # Deactivate by disabling the product
@@ -404,6 +417,7 @@ class ProductsController < ApplicationController
   # - JSON: { value: "attribute_value" } or { value: nil }
   #
   def attribute_value
+    authorize @product
     code = params[:code]
 
     if code.blank?

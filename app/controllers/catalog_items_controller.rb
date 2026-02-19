@@ -24,6 +24,8 @@ class CatalogItemsController < ApplicationController
   # - page: Page number for pagination
   #
   def new
+    authorize CatalogItem
+
     # Get products not currently in this catalog
     existing_product_ids = @catalog.catalog_items.pluck(:product_id)
     @products = current_potlift_company.products
@@ -65,6 +67,8 @@ class CatalogItemsController < ApplicationController
   # - catalog_item_state: Initial state for added items (default: active)
   #
   def create
+    authorize CatalogItem
+
     product_ids = Array(params[:product_ids]).compact_blank
 
     if product_ids.blank?
@@ -119,6 +123,8 @@ class CatalogItemsController < ApplicationController
   # - id: Product ID (not catalog_item ID)
   #
   def destroy
+    authorize CatalogItem
+
     product = current_potlift_company.products.find(params[:id])
     catalog_item = @catalog.catalog_items.find_by(product: product)
 

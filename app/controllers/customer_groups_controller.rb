@@ -20,6 +20,8 @@ class CustomerGroupsController < ApplicationController
   # GET /customer_groups
   #
   def index
+    authorize CustomerGroup
+
     @pagy, @customer_groups = pagy(
       current_potlift_company.customer_groups.order(:name),
       items: 20
@@ -31,6 +33,8 @@ class CustomerGroupsController < ApplicationController
   # GET /customer_groups/:id
   #
   def show
+    authorize @customer_group
+
     @products_count = @customer_group.prices.count
   end
 
@@ -39,6 +43,8 @@ class CustomerGroupsController < ApplicationController
   # GET /customer_groups/new
   #
   def new
+    authorize CustomerGroup
+
     @customer_group = current_potlift_company.customer_groups.build
   end
 
@@ -47,6 +53,8 @@ class CustomerGroupsController < ApplicationController
   # POST /customer_groups
   #
   def create
+    authorize CustomerGroup
+
     @customer_group = current_potlift_company.customer_groups.build(customer_group_params)
 
     if @customer_group.save
@@ -62,6 +70,7 @@ class CustomerGroupsController < ApplicationController
   # GET /customer_groups/:id/edit
   #
   def edit
+    authorize @customer_group
   end
 
   # Update customer group
@@ -69,6 +78,8 @@ class CustomerGroupsController < ApplicationController
   # PATCH /customer_groups/:id
   #
   def update
+    authorize @customer_group
+
     if @customer_group.update(customer_group_params)
       redirect_to customer_groups_path,
                   notice: "Customer group updated successfully."
@@ -82,6 +93,8 @@ class CustomerGroupsController < ApplicationController
   # DELETE /customer_groups/:id
   #
   def destroy
+    authorize @customer_group
+
     if @customer_group.prices.any?
       redirect_to customer_groups_path,
                   alert: "Cannot delete customer group with existing prices."

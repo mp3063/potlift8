@@ -18,6 +18,7 @@ class ImportsController < ApplicationController
   # GET /imports/new?type=products
   #
   def new
+    authorize :import, :new?
     @import_type = params[:type] || "products"
   end
 
@@ -29,6 +30,8 @@ class ImportsController < ApplicationController
   #   - import_type: 'products' or 'catalog_items'
   #
   def create
+    authorize :import, :create?
+
     unless params[:file].present?
       redirect_to new_import_path, alert: "Please select a file to import."
       return
@@ -65,6 +68,8 @@ class ImportsController < ApplicationController
   # GET /imports
   #
   def index
+    authorize :import, :index?
+
     # For now, we'll use Redis to track recent imports
     # In production, you might want to create an Import model
     @imports = fetch_recent_imports
@@ -75,6 +80,8 @@ class ImportsController < ApplicationController
   # GET /imports/template/:type
   #
   def download_template
+    authorize :import, :download_template?
+
     type = params[:type] || "products"
 
     csv_data = case type
@@ -99,6 +106,8 @@ class ImportsController < ApplicationController
   # GET /imports/:id/progress.json
   #
   def progress
+    authorize :import, :progress?
+
     @job_id = params[:id]
     progress_key = "import_progress:#{@job_id}"
 
@@ -150,6 +159,8 @@ class ImportsController < ApplicationController
   # GET /imports/:id/errors
   #
   def download_errors
+    authorize :import, :download_errors?
+
     @job_id = params[:id]
     progress_key = "import_progress:#{@job_id}"
 

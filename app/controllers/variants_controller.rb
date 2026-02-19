@@ -9,6 +9,8 @@ class VariantsController < ApplicationController
 
   # GET /products/:product_id/variants
   def index
+    authorize :variant, :index?
+
     # Load ProductConfigurations as "variants"
     @variants = @product.product_configurations_as_super
                         .includes(subproduct: :inventories)
@@ -19,6 +21,8 @@ class VariantsController < ApplicationController
 
   # GET /products/:product_id/variants/new
   def new
+    authorize :variant, :new?
+
     # Build new variant through ProductConfiguration
     @variant_product = @product.company.products.build(product_type: :sellable)
     @configurations = @product.configurations.includes(:configuration_values).order(:position)
@@ -26,6 +30,8 @@ class VariantsController < ApplicationController
 
   # POST /products/:product_id/variants
   def create
+    authorize :variant, :create?
+
     @variant_product = @product.company.products.build(variant_product_params)
     @variant_product.product_type = :sellable
 
@@ -50,6 +56,8 @@ class VariantsController < ApplicationController
 
   # POST /products/:product_id/variants/generate
   def generate
+    authorize :variant, :generate?
+
     # Generate all variant combinations
     service = VariantGeneratorService.new(@product)
     count = service.generate!
@@ -65,12 +73,16 @@ class VariantsController < ApplicationController
 
   # GET /products/:product_id/variants/:id/edit
   def edit
+    authorize :variant, :edit?
+
     @variant_product = @variant.subproduct
     @configurations = @product.configurations.includes(:configuration_values).order(:position)
   end
 
   # PATCH/PUT /products/:product_id/variants/:id
   def update
+    authorize :variant, :update?
+
     ActiveRecord::Base.transaction do
       @variant.subproduct.update!(variant_product_params)
 
@@ -90,6 +102,8 @@ class VariantsController < ApplicationController
 
   # DELETE /products/:product_id/variants/:id
   def destroy
+    authorize :variant, :destroy?
+
     @variant.subproduct.destroy # Cascades to ProductConfiguration
     redirect_to product_variants_path(@product),
                 notice: "Variant deleted successfully."
@@ -97,6 +111,8 @@ class VariantsController < ApplicationController
 
   # POST /products/:product_id/variants/reorder
   def reorder
+    authorize :variant, :reorder?
+
     params[:order].each_with_index do |id, index|
       ProductConfiguration.find(id).update(configuration_position: index + 1)
     end

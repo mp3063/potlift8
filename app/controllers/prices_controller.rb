@@ -21,6 +21,7 @@ class PricesController < ApplicationController
   # GET /products/:product_id/prices
   #
   def index
+    authorize Price, :index?
     @base_price = @product.prices.base_prices.first
     @special_prices = @product.prices.special_prices.order(:valid_from)
     @group_prices = @product.prices.group_prices.includes(:customer_group)
@@ -32,6 +33,7 @@ class PricesController < ApplicationController
   # GET /products/:product_id/prices/new?price_type=base
   #
   def new
+    authorize Price, :new?
     @price = @product.prices.build(
       price_type: params[:price_type] || "base",
       currency: "EUR"
@@ -43,6 +45,7 @@ class PricesController < ApplicationController
   # POST /products/:product_id/prices
   #
   def create
+    authorize Price, :create?
     @price = @product.prices.build(price_params)
 
     if @price.save
@@ -58,6 +61,7 @@ class PricesController < ApplicationController
   # GET /products/:product_id/prices/:id/edit
   #
   def edit
+    authorize @price
   end
 
   # Update price
@@ -65,6 +69,7 @@ class PricesController < ApplicationController
   # PATCH /products/:product_id/prices/:id
   #
   def update
+    authorize @price
     if @price.update(price_params)
       redirect_to product_prices_path(@product),
                   notice: "Price updated successfully."
@@ -78,6 +83,7 @@ class PricesController < ApplicationController
   # DELETE /products/:product_id/prices/:id
   #
   def destroy
+    authorize @price
     @price.destroy
     redirect_to product_prices_path(@product),
                 notice: "Price deleted successfully."

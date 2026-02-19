@@ -8,6 +8,7 @@ class RelatedProductsController < ApplicationController
 
   # GET /products/:product_id/related_products
   def index
+    authorize :related_product, :index?
     @related_products_by_type = RelatedProduct.relation_types.keys.index_with do |relation_type|
       @product.related_products
               .where(relation_type: relation_type)
@@ -23,6 +24,7 @@ class RelatedProductsController < ApplicationController
 
   # POST /products/:product_id/related_products
   def create
+    authorize :related_product, :create?
     @related_product = @product.related_products.build(related_product_params)
 
     if @related_product.save
@@ -36,6 +38,7 @@ class RelatedProductsController < ApplicationController
 
   # DELETE /products/:product_id/related_products/:id
   def destroy
+    authorize :related_product, :destroy?
     @related_product.destroy
     redirect_to product_related_products_path(@product),
                 notice: "Related product removed."
@@ -43,6 +46,7 @@ class RelatedProductsController < ApplicationController
 
   # POST /products/:product_id/related_products/reorder
   def reorder
+    authorize :related_product, :reorder?
     params[:order].each_with_index do |id, index|
       RelatedProduct.find(id).update(position: index + 1)
     end

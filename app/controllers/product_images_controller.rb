@@ -41,6 +41,7 @@ class ProductImagesController < ApplicationController
   # - signed_blob_id: ActiveStorage signed blob ID (for direct upload)
   #
   def create
+    authorize :product_image, :create?
     # Handle ActiveStorage Direct Upload (signed_blob_id)
     if params[:signed_blob_id].present?
       handle_direct_upload
@@ -114,6 +115,7 @@ class ProductImagesController < ApplicationController
   # - image_ids: Array of image attachment IDs in new order
   #
   def reorder
+    authorize :product_image, :reorder?
     unless params[:image_ids].is_a?(Array)
       respond_to do |format|
         format.json { render json: { error: "Invalid image_ids parameter" }, status: :unprocessable_entity }
@@ -178,6 +180,7 @@ class ProductImagesController < ApplicationController
   # Updates image metadata (alt text, caption, description).
   #
   def update
+    authorize :product_image, :update?
     # ActiveStorage attachments don't have direct metadata fields
     # We'll store metadata in the blob's metadata hash
     metadata = {}
@@ -206,6 +209,7 @@ class ProductImagesController < ApplicationController
   # Deletes an image from the product.
   #
   def destroy
+    authorize :product_image, :destroy?
     filename = @image.filename.to_s
     @image.purge
 
@@ -231,6 +235,7 @@ class ProductImagesController < ApplicationController
   # - image_ids: Array of image attachment IDs to delete
   #
   def bulk_destroy
+    authorize :product_image, :bulk_destroy?
     unless params[:image_ids].is_a?(Array)
       respond_to do |format|
         format.json { render json: { error: "Invalid image_ids parameter" }, status: :unprocessable_entity }

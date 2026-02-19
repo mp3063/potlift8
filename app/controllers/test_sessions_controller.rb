@@ -10,6 +10,7 @@
 class TestSessionsController < ApplicationController
   skip_before_action :require_authentication
   skip_before_action :check_session_version
+  skip_after_action :verify_authorized
   skip_forgery_protection # Allow test requests without CSRF token
 
   # GET/POST /test_login

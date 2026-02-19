@@ -18,6 +18,7 @@ class ProductVersionsController < ApplicationController
   # GET /products/:product_id/versions
   #
   def index
+    authorize :product_version, :index?
     @pagy, @versions = pagy(
       @product.versions.order(created_at: :desc),
       items: 20
@@ -29,6 +30,7 @@ class ProductVersionsController < ApplicationController
   # GET /products/:product_id/versions/:id
   #
   def show
+    authorize :product_version, :show?
     @previous_version = @product.versions
                                 .where("id < ?", @version.id)
                                 .order(id: :desc)
@@ -42,6 +44,7 @@ class ProductVersionsController < ApplicationController
   # GET /products/:product_id/versions/compare?version1_id=1&version2_id=2
   #
   def compare
+    authorize :product_version, :compare?
     @version1 = @product.versions.find(params[:version1_id])
     @version2 = @product.versions.find(params[:version2_id])
 
@@ -53,6 +56,7 @@ class ProductVersionsController < ApplicationController
   # POST /products/:product_id/versions/:id/revert
   #
   def revert
+    authorize :product_version, :revert?
     reified_product = @version.reify
 
     unless reified_product

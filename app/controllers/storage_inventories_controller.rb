@@ -30,6 +30,8 @@ class StorageInventoriesController < ApplicationController
   # - label_id: Filter by label
   #
   def new
+    authorize :storage_inventory, :new?
+
     # Get all active products not already in this storage
     @available_products = current_potlift_company.products
                                                  .active_products
@@ -82,6 +84,8 @@ class StorageInventoriesController < ApplicationController
   # - quantities: Hash of product_id => initial_quantity
   #
   def create
+    authorize :storage_inventory, :create?
+
     product_ids = params[:product_ids].to_a.reject(&:blank?)
 
     if product_ids.empty?

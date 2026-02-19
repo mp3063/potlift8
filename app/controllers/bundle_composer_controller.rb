@@ -46,6 +46,7 @@ class BundleComposerController < ApplicationController
   # - Limited to 20 results
   #
   def search
+    authorize :bundle_composer, :search?
     query = params[:q].to_s.strip
 
     # Return empty if no query
@@ -99,6 +100,7 @@ class BundleComposerController < ApplicationController
   # - ActiveRecord::RecordNotFound if product not found or belongs to another company
   #
   def product_details
+    authorize :bundle_composer, :product_details?
     @product = current_potlift_company.products.find(params[:id])
 
     # Load variants for configurable products
@@ -169,6 +171,7 @@ class BundleComposerController < ApplicationController
   # - Products must exist and not be discontinued
   #
   def preview
+    authorize :bundle_composer, :preview?
     configuration = params[:configuration]
 
     # Validate configuration presence

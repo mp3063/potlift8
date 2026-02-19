@@ -10,6 +10,7 @@ class ProductInventoriesController < ApplicationController
   # GET /products/:product_id/inventories
   # Display all inventory records for a product across storage locations
   def index
+    authorize :product_inventory, :index?
     @inventories = @product.inventories
       .includes(:storage)
       .order("storages.storage_position ASC, storages.name ASC")
@@ -19,6 +20,7 @@ class ProductInventoriesController < ApplicationController
   # PATCH/PUT /products/:product_id/inventories/:id
   # Update inventory value for a specific storage location
   def update
+    authorize @inventory
     # Build the update parameters
     update_params = { value: inventory_params[:value] }
 
