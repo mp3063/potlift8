@@ -14,6 +14,9 @@ RSpec.describe "Product Bulk Operations", type: :request do
     )
     allow_any_instance_of(ApplicationController).to receive(:current_potlift_company).and_return(company)
     allow_any_instance_of(ApplicationController).to receive(:authenticated?).and_return(true)
+    allow_any_instance_of(ApplicationController).to receive(:pundit_user).and_return(
+      UserContext.new(nil, "admin", ["read", "write"], company)
+    )
   end
 
   describe "POST /products/bulk/destroy" do

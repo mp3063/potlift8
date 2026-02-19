@@ -25,6 +25,9 @@ RSpec.describe StorageInventoriesController, type: :request do
       'email' => 'test@example.com',
       'name' => 'Test User'
     })
+    allow_any_instance_of(ApplicationController).to receive(:pundit_user).and_return(
+      UserContext.new(nil, "admin", ["read", "write"], company)
+    )
   end
 
   describe 'GET #new' do

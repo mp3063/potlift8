@@ -33,6 +33,9 @@ RSpec.describe BundleComposerController, type: :controller do
     # Mock authentication
     allow(controller).to receive(:current_potlift_company).and_return(company)
     allow(controller).to receive(:authenticated?).and_return(true)
+    allow(controller).to receive(:pundit_user).and_return(
+      UserContext.new(nil, "admin", %w[read write], company)
+    )
   end
 
   describe 'GET #search' do

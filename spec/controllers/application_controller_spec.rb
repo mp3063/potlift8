@@ -4,6 +4,8 @@ require 'rails_helper'
 
 # Test controller to test ApplicationController functionality
 class TestController < ApplicationController
+  skip_after_action :verify_authorized
+
   def index
     render plain: 'OK'
   end

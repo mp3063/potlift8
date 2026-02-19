@@ -29,6 +29,9 @@ RSpec.describe 'Product Filtering', type: :system do
       { id: company.id, code: company.code, name: company.name }
     )
     allow_any_instance_of(ApplicationController).to receive(:current_potlift_company).and_return(company)
+    allow_any_instance_of(ApplicationController).to receive(:pundit_user).and_return(
+      UserContext.new(nil, "admin", ["read", "write"], company)
+    )
   end
 
   let!(:label_electronics) { create(:label, company: company, name: 'Electronics', code: 'electronics') }

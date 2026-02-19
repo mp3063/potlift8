@@ -66,6 +66,9 @@ RSpec.describe '/products/:product_id/images', type: :request do
       name: company.name
     })
     allow_any_instance_of(ApplicationController).to receive(:current_potlift_company).and_return(company)
+    allow_any_instance_of(ApplicationController).to receive(:pundit_user).and_return(
+      UserContext.new(nil, "admin", ["read", "write"], company)
+    )
   end
 
   describe 'POST /products/:product_id/images' do

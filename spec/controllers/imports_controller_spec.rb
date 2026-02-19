@@ -13,6 +13,9 @@ RSpec.describe ImportsController, type: :request do
     allow_any_instance_of(ApplicationController).to receive(:current_company).and_return({ id: company.id, code: company.code, name: company.name })
     allow_any_instance_of(ApplicationController).to receive(:current_potlift_company).and_return(company)
     allow_any_instance_of(ApplicationController).to receive(:authenticated?).and_return(true)
+    allow_any_instance_of(ApplicationController).to receive(:pundit_user).and_return(
+      UserContext.new(nil, "admin", ["read", "write"], company)
+    )
   end
 
   describe 'GET /imports' do
