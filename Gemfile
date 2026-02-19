@@ -34,6 +34,8 @@ gem "faraday", "~> 2.7"
 gem "dotenv-rails", groups: [ :development, :test ]
 # State machine for product lifecycle management
 gem "aasm", "~> 5.5"
+# Authorization framework for role-based access control
+gem "pundit", "~> 2.4"
 # List ordering for models (used by AttributeGroup and ProductAttribute)
 gem "acts_as_list", "~> 1.2"
 
