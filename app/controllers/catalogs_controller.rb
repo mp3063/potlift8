@@ -299,11 +299,17 @@ class CatalogsController < ApplicationController
   #
   def sync_all
     authorize @catalog
+    product_count = @catalog.catalog_items.count
     @catalog.batch_sync_all_products
     @catalog.catalog_items.update_all(sync_status: CatalogItem.sync_statuses[:pending])
 
-    redirect_to catalog_items_path(@catalog),
-      notice: "Sync started for all #{@catalog.catalog_items.count} products."
+    respond_to do |format|
+      format.turbo_stream do
+        flash.now[:notice] = "Sync started for all #{product_count} products."
+        render turbo_stream: turbo_stream.update("flash", partial: "shared/flash", locals: { flash: flash })
+      end
+      format.html { redirect_to catalog_items_path(@catalog), notice: "Sync started for all #{product_count} products." }
+    end
   end
 
   # POST /catalogs/:code/toggle_sync_pause
@@ -318,8 +324,18 @@ class CatalogsController < ApplicationController
     @catalog.save!
 
     status = @catalog.info["sync_paused"] ? "paused" : "resumed"
-    redirect_to catalog_items_path(@catalog),
-      notice: "Auto-sync #{status} for #{@catalog.name}."
+
+    respond_to do |format|
+      format.turbo_stream do
+        @sync_counts = compute_sync_counts(@catalog)
+        flash.now[:notice] = "Auto-sync #{status} for #{@catalog.name}."
+        render turbo_stream: [
+          turbo_stream.update("flash", partial: "shared/flash", locals: { flash: flash }),
+          turbo_stream.replace("sync_summary_#{@catalog.id}", partial: "catalogs/sync_summary_card", locals: { catalog: @catalog, sync_counts: @sync_counts })
+        ]
+      end
+      format.html { redirect_to catalog_items_path(@catalog), notice: "Auto-sync #{status} for #{@catalog.name}." }
+    end
   end
 
   # POST /catalogs/:code/sync_product/:product_id
@@ -334,8 +350,13 @@ class CatalogsController < ApplicationController
     catalog_item.update!(sync_status: :pending)
     ProductSyncJob.perform_later(product, @catalog, Time.current)
 
-    redirect_to catalog_items_path(@catalog),
-      notice: "Sync started for #{product.name}."
+    respond_to do |format|
+      format.turbo_stream do
+        flash.now[:notice] = "Sync started for #{product.name}."
+        render turbo_stream: turbo_stream.update("flash", partial: "shared/flash", locals: { flash: flash })
+      end
+      format.html { redirect_to catalog_items_path(@catalog), notice: "Sync started for #{product.name}." }
+    end
   end
 
   # GET /catalogs/:code/export
@@ -387,6 +408,17 @@ class CatalogsController < ApplicationController
   end
 
   private
+
+  # Compute sync status counts for a catalog's items
+  def compute_sync_counts(catalog)
+    items = catalog.catalog_items
+    {
+      synced: items.sync_synced.where("last_synced_at > ?", 1.hour.ago).count,
+      outdated: items.sync_synced.where("last_synced_at <= ?", 1.hour.ago).count,
+      failed: items.sync_failed.count,
+      never: items.sync_never_synced.count
+    }
+  end
 
   # Set the catalog for show, edit, update, destroy, items, reorder_items, export actions
   # Uses catalog 'code' as URL parameter instead of 'id'

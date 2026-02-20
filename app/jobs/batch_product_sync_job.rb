@@ -29,6 +29,8 @@
 # - Failure handling: Graceful (logs but continues)
 #
 class BatchProductSyncJob < ApplicationJob
+  include SyncErrorSanitizer
+
   queue_as :low_priority
 
   # Batch size for find_each iteration
@@ -138,19 +140,24 @@ class BatchProductSyncJob < ApplicationJob
       return { status: :skipped, reason: "sync_locked" }
     end
 
+    catalog_item = catalog.catalog_items.find_by(product: product)
+
     # Perform the sync
     service = ProductSyncService.new(product, catalog)
     result = service.sync_to_external_system
 
     if result.success?
+      catalog_item&.update!(sync_status: :synced, last_synced_at: Time.current, last_sync_error: nil)
       { status: :success }
     else
+      catalog_item&.update!(sync_status: :failed, last_sync_error: sanitize_sync_error(result.error))
       {
         status: :failure,
         error: "Product #{product.id} (#{product.sku}): #{result.error}"
       }
     end
   rescue StandardError => e
+    catalog_item&.update!(sync_status: :failed, last_sync_error: sanitize_sync_error(e))
     {
       status: :failure,
       error: "Product #{product.id} (#{product.sku}): #{e.message}"

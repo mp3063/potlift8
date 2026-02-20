@@ -20,6 +20,8 @@
 # - info: Catalog-specific metadata and settings
 #
 class CatalogItem < ApplicationRecord
+  include SyncBroadcastable
+
   # Associations
   belongs_to :catalog, counter_cache: :catalog_items_count
   belongs_to :product

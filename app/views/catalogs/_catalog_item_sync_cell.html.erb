@@ -1,0 +1,15 @@
+<div id="catalog_item_<%= catalog_item.id %>_sync">
+  <div class="flex items-center gap-2">
+    <%= sync_status_badge_for(catalog_item) %>
+    <% if catalog_item.last_synced_at %>
+      <span class="text-xs text-gray-400 hidden sm:inline" title="<%= catalog_item.last_synced_at.strftime('%B %d, %Y at %I:%M %p') %>">
+        <%= time_ago_in_words(catalog_item.last_synced_at) %>
+      </span>
+    <% end %>
+  </div>
+  <% if catalog_item.sync_failed? && catalog_item.last_sync_error.present? %>
+    <p class="text-xs text-red-500 mt-1 max-w-[200px] truncate" title="<%= catalog_item.last_sync_error %>">
+      <%= catalog_item.last_sync_error %>
+    </p>
+  <% end %>
+</div>

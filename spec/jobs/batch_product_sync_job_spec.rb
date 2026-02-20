@@ -52,10 +52,11 @@ RSpec.describe BatchProductSyncJob, type: :job do
     end
 
     it 'uses eager loading for efficiency' do
-      # Expect single query for products with associations
+      # Products are eager-loaded with associations. Per product: find_by + update! + broadcast count queries.
+      # 5 products × ~10 queries each + setup queries = ~50-60 total
       expect {
         described_class.perform_now(product_ids, catalog.id)
-      }.to make_database_queries(count: 5..10) # Reasonable query count with eager loading
+      }.to make_database_queries(count: 10..70) # Eager loading + per-item sync_status updates + broadcast counts
     end
 
     context 'when catalog has sync paused' do

@@ -669,4 +669,94 @@ RSpec.describe '/catalogs', type: :request do
       expect(response.media_type).to eq('text/vnd.turbo-stream.html')
     end
   end
+
+  describe 'sync actions with turbo_stream' do
+    let(:catalog) { create(:catalog, company: company) }
+    let(:product) { create(:product, company: company) }
+    let!(:catalog_item) { create(:catalog_item, catalog: catalog, product: product) }
+
+    before do
+      allow(catalog).to receive(:shopify_connected?).and_return(true)
+      allow_any_instance_of(Catalog).to receive(:batch_sync_all_products)
+    end
+
+    describe 'POST /catalogs/:code/sync_product' do
+      it 'responds with turbo_stream format' do
+        post sync_product_catalog_path(catalog.code, product.id), as: :turbo_stream
+        expect(response).to be_successful
+        expect(response.media_type).to eq('text/vnd.turbo-stream.html')
+      end
+
+      it 'sets catalog_item to pending status' do
+        post sync_product_catalog_path(catalog.code, product.id), as: :turbo_stream
+        expect(catalog_item.reload.sync_status).to eq('pending')
+      end
+
+      it 'enqueues ProductSyncJob' do
+        expect {
+          post sync_product_catalog_path(catalog.code, product.id), as: :turbo_stream
+        }.to have_enqueued_job(ProductSyncJob)
+      end
+
+      it 'includes flash update in turbo_stream response' do
+        post sync_product_catalog_path(catalog.code, product.id), as: :turbo_stream
+        expect(response.body).to include('turbo-stream')
+        expect(response.body).to include('flash')
+      end
+
+      it 'falls back to redirect for HTML format' do
+        post sync_product_catalog_path(catalog.code, product.id)
+        expect(response).to redirect_to(catalog_items_path(catalog))
+      end
+    end
+
+    describe 'POST /catalogs/:code/sync_all' do
+      it 'responds with turbo_stream format' do
+        post sync_all_catalog_path(catalog.code), as: :turbo_stream
+        expect(response).to be_successful
+        expect(response.media_type).to eq('text/vnd.turbo-stream.html')
+      end
+
+      it 'sets all catalog_items to pending' do
+        post sync_all_catalog_path(catalog.code), as: :turbo_stream
+        expect(catalog_item.reload.sync_status).to eq('pending')
+      end
+
+      it 'includes flash update in turbo_stream response' do
+        post sync_all_catalog_path(catalog.code), as: :turbo_stream
+        expect(response.body).to include('turbo-stream')
+        expect(response.body).to include('flash')
+      end
+
+      it 'falls back to redirect for HTML format' do
+        post sync_all_catalog_path(catalog.code)
+        expect(response).to redirect_to(catalog_items_path(catalog))
+      end
+    end
+
+    describe 'POST /catalogs/:code/toggle_sync_pause' do
+      it 'responds with turbo_stream format' do
+        post toggle_sync_pause_catalog_path(catalog.code), as: :turbo_stream
+        expect(response).to be_successful
+        expect(response.media_type).to eq('text/vnd.turbo-stream.html')
+      end
+
+      it 'toggles sync_paused flag' do
+        post toggle_sync_pause_catalog_path(catalog.code), as: :turbo_stream
+        expect(catalog.reload.info['sync_paused']).to be true
+      end
+
+      it 'includes flash and summary card updates in turbo_stream response' do
+        post toggle_sync_pause_catalog_path(catalog.code), as: :turbo_stream
+        expect(response.body).to include('turbo-stream')
+        expect(response.body).to include('flash')
+        expect(response.body).to include("sync_summary_#{catalog.id}")
+      end
+
+      it 'falls back to redirect for HTML format' do
+        post toggle_sync_pause_catalog_path(catalog.code)
+        expect(response).to redirect_to(catalog_items_path(catalog))
+      end
+    end
+  end
 end
