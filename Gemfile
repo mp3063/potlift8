@@ -38,6 +38,8 @@ gem "dotenv-rails", groups: [ :development, :test ]
 gem "aasm", "~> 5.5"
 # Authorization framework for role-based access control
 gem "pundit", "~> 2.4"
+# Request throttling and IP blocking for API protection
+gem "rack-attack", "~> 6.7"
 # List ordering for models (used by AttributeGroup and ProductAttribute)
 gem "acts_as_list", "~> 1.2"
 
