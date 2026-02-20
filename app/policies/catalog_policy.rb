@@ -28,4 +28,8 @@ class CatalogPolicy < ApplicationPolicy
   def sync_product?
     user_context.can_write?
   end
+
+  def toggle_sync_pause?
+    user_context.can_write?
+  end
 end

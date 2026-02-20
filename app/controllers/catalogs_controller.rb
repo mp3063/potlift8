@@ -15,7 +15,7 @@
 # - Uses catalog 'code' instead of 'id' for cleaner URLs
 #
 class CatalogsController < ApplicationController
-  before_action :set_catalog, only: [ :show, :edit, :update, :destroy, :items, :reorder_items, :export, :shopify_connection, :connect_shopify, :disconnect_shopify, :sync_all, :sync_product ]
+  before_action :set_catalog, only: [ :show, :edit, :update, :destroy, :items, :reorder_items, :export, :shopify_connection, :connect_shopify, :disconnect_shopify, :sync_all, :sync_product, :toggle_sync_pause ]
 
   # GET /catalogs
   # GET /catalogs.turbo_stream
@@ -304,6 +304,22 @@ class CatalogsController < ApplicationController
 
     redirect_to catalog_items_path(@catalog),
       notice: "Sync started for all #{@catalog.catalog_items.count} products."
+  end
+
+  # POST /catalogs/:code/toggle_sync_pause
+  #
+  # Toggles the sync_paused flag for this catalog.
+  # When paused, auto-sync via ChangePropagator is skipped.
+  #
+  def toggle_sync_pause
+    authorize @catalog
+    @catalog.info ||= {}
+    @catalog.info["sync_paused"] = !@catalog.info["sync_paused"]
+    @catalog.save!
+
+    status = @catalog.info["sync_paused"] ? "paused" : "resumed"
+    redirect_to catalog_items_path(@catalog),
+      notice: "Auto-sync #{status} for #{@catalog.name}."
   end
 
   # POST /catalogs/:code/sync_product/:product_id
