@@ -15,7 +15,7 @@
 # - Uses catalog 'code' instead of 'id' for cleaner URLs
 #
 class CatalogsController < ApplicationController
-  before_action :set_catalog, only: [ :show, :edit, :update, :destroy, :items, :reorder_items, :export, :shopify_connection, :connect_shopify, :disconnect_shopify ]
+  before_action :set_catalog, only: [ :show, :edit, :update, :destroy, :items, :reorder_items, :export, :shopify_connection, :connect_shopify, :disconnect_shopify, :sync_all, :sync_product ]
 
   # GET /catalogs
   # GET /catalogs.turbo_stream
@@ -65,6 +65,16 @@ class CatalogsController < ApplicationController
       search_term = "%#{params[:q]}%"
       @catalog_items = @catalog_items.joins(:product)
                                      .where("products.name ILIKE ? OR products.sku ILIKE ?", search_term, search_term)
+    end
+
+    if @catalog.shopify_connected?
+      all_items = @catalog.catalog_items
+      @sync_counts = {
+        synced: all_items.sync_synced.where("last_synced_at > ?", 1.hour.ago).count,
+        outdated: all_items.sync_synced.where("last_synced_at <= ?", 1.hour.ago).count,
+        failed: all_items.sync_failed.count,
+        never: all_items.sync_never_synced.count
+      }
     end
 
     respond_to do |format|
@@ -280,6 +290,36 @@ class CatalogsController < ApplicationController
         end
       end
     end
+  end
+
+  # POST /catalogs/:code/sync_all
+  #
+  # Triggers a batch sync of all products in this catalog to Shopify.
+  # Marks all catalog items as pending and enqueues a BatchProductSyncJob.
+  #
+  def sync_all
+    authorize @catalog
+    @catalog.batch_sync_all_products
+    @catalog.catalog_items.update_all(sync_status: CatalogItem.sync_statuses[:pending])
+
+    redirect_to catalog_items_path(@catalog),
+      notice: "Sync started for all #{@catalog.catalog_items.count} products."
+  end
+
+  # POST /catalogs/:code/sync_product/:product_id
+  #
+  # Triggers a sync of a single product in this catalog to Shopify.
+  #
+  def sync_product
+    authorize @catalog
+    product = @catalog.products.find(params[:product_id])
+    catalog_item = @catalog.catalog_items.find_by!(product: product)
+
+    catalog_item.update!(sync_status: :pending)
+    ProductSyncJob.perform_later(product, @catalog, Time.current)
+
+    redirect_to catalog_items_path(@catalog),
+      notice: "Sync started for #{product.name}."
   end
 
   # GET /catalogs/:code/export

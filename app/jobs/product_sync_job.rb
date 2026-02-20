@@ -100,6 +100,10 @@ class ProductSyncJob < ApplicationJob
 
     duration = (Time.current - start_time).round(2)
 
+    # Record successful sync on catalog_item
+    catalog_item = CatalogItem.find_by(catalog: catalog, product: product)
+    catalog_item&.update!(sync_status: :synced, last_synced_at: Time.current, last_sync_error: nil)
+
     Rails.logger.info(
       "Product sync completed: Product #{product.id} (#{product.sku}) " \
       "to Catalog #{catalog.code} in #{duration}s. " \
@@ -110,6 +114,10 @@ class ProductSyncJob < ApplicationJob
     log_sync_metric(product, catalog, duration, success: true)
   rescue StandardError => e
     duration = (Time.current - start_time).round(2)
+
+    # Record failed sync on catalog_item
+    catalog_item = CatalogItem.find_by(catalog: catalog, product: product)
+    catalog_item&.update!(sync_status: :failed, last_sync_error: e.message.truncate(255))
 
     log_sync_metric(product, catalog, duration, success: false, error: e)
     raise e

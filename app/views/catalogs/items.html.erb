@@ -88,6 +88,55 @@
   </div>
 <% end %>
 
+<% if @catalog.shopify_connected? && @sync_counts %>
+  <div class="mb-6 bg-white shadow-sm rounded-lg border border-gray-200 p-4">
+    <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <svg class="h-6 w-6 text-green-600 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M15.337 3.415c-.25-.163-.565-.108-.752.126l-2.064 2.626c-.022.028-.053.04-.077.063l-.012-.003-1.014-3.04c-.085-.256-.35-.417-.614-.376C8.397 3.198 6.5 5.2 6.5 7.63c0 .147.03.286.042.43l-3.72 1.14c-.211.065-.323.188-.34.374-.017.187.07.33.26.44l3.684 2.126-.092.085c-1.57 1.47-2.584 3.556-2.584 5.862 0 .093.013.182.017.274a.425.425 0 00.128.276c.076.072.178.113.284.113h.068l3.458-.46c.56 1.37 1.52 2.55 2.71 3.42l-.4 2.35c-.04.22.09.43.3.49.06.02.12.02.18.02.16 0 .31-.09.38-.24l1.38-2.72c.62.17 1.27.28 1.94.28s1.32-.11 1.94-.28l1.38 2.72c.07.15.22.24.38.24.06 0 .12-.01.18-.02.21-.06.34-.27.3-.49l-.4-2.35c1.19-.87 2.15-2.05 2.71-3.42l3.46.46h.07c.11 0 .21-.04.28-.11a.425.425 0 00.13-.28c0-.09.02-.18.02-.27 0-2.31-1.01-4.39-2.58-5.86l-.1-.09 3.69-2.13c.19-.11.27-.25.26-.44-.02-.19-.13-.31-.34-.37l-3.72-1.14c.01-.15.04-.29.04-.43 0-2.27-1.66-4.18-3.87-4.72z"/>
+        </svg>
+        <div>
+          <h3 class="text-sm font-semibold text-gray-900">Shopify Sync</h3>
+          <p class="text-xs text-gray-500">
+            Connected to <span class="font-mono"><%= @catalog.shopify_domain || "Shopify" %></span>
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-6 text-sm">
+        <div class="text-center">
+          <div class="text-lg font-semibold text-green-600"><%= @sync_counts[:synced] %></div>
+          <div class="text-xs text-gray-500">Synced</div>
+        </div>
+        <div class="text-center">
+          <div class="text-lg font-semibold text-yellow-600"><%= @sync_counts[:outdated] %></div>
+          <div class="text-xs text-gray-500">Outdated</div>
+        </div>
+        <div class="text-center">
+          <div class="text-lg font-semibold text-red-600"><%= @sync_counts[:failed] %></div>
+          <div class="text-xs text-gray-500">Failed</div>
+        </div>
+        <div class="text-center">
+          <div class="text-lg font-semibold text-gray-400"><%= @sync_counts[:never] %></div>
+          <div class="text-xs text-gray-500">Never synced</div>
+        </div>
+      </div>
+
+      <div>
+        <%= button_to sync_all_catalog_path(@catalog.code),
+            method: :post,
+            class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200",
+            data: { turbo_confirm: "Sync all #{@catalog.catalog_items.count} products to Shopify?", disable_with: "Syncing..." } do %>
+          <svg class="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Sync All
+        <% end %>
+      </div>
+    </div>
+  </div>
+<% end %>
+
 <% if @catalog_items.any? %>
   <!-- Search Bar -->
   <div class="mb-6">
@@ -132,6 +181,11 @@
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               State
             </th>
+            <% if @catalog.shopify_connected? %>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Shopify
+              </th>
+            <% end %>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Overrides
             </th>
@@ -189,6 +243,23 @@
                   </span>
                 <% end %>
               </td>
+              <% if @catalog.shopify_connected? %>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center gap-2">
+                    <%= sync_status_badge_for(catalog_item) %>
+                    <% if catalog_item.last_synced_at %>
+                      <span class="text-xs text-gray-400 hidden sm:inline" title="<%= catalog_item.last_synced_at.strftime('%B %d, %Y at %I:%M %p') %>">
+                        <%= time_ago_in_words(catalog_item.last_synced_at) %>
+                      </span>
+                    <% end %>
+                  </div>
+                  <% if catalog_item.sync_failed? && catalog_item.last_sync_error.present? %>
+                    <p class="text-xs text-red-500 mt-1 max-w-[200px] truncate" title="<%= catalog_item.last_sync_error %>">
+                      <%= catalog_item.last_sync_error %>
+                    </p>
+                  <% end %>
+                </td>
+              <% end %>
               <td class="px-6 py-4 whitespace-nowrap">
                 <% override_count = catalog_item.catalog_item_attribute_values.count %>
                 <% if override_count > 0 %>
@@ -201,6 +272,17 @@
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <div class="flex items-center justify-end gap-3">
+                  <% if @catalog.shopify_connected? %>
+                    <%= button_to sync_product_catalog_path(@catalog.code, catalog_item.product.id),
+                        method: :post,
+                        class: "text-green-600 hover:text-green-900 transition-colors duration-150",
+                        title: "Sync to Shopify",
+                        data: { disable_with: "..." } do %>
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                    <% end %>
+                  <% end %>
                   <%= link_to edit_product_path(catalog_item.product), class: "text-blue-600 hover:text-blue-900 transition-colors duration-150", title: "Edit product" do %>
                     Edit
                   <% end %>

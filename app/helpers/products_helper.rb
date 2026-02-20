@@ -51,4 +51,34 @@ module ProductsHelper
       end
     end
   end
+
+  # Renders a badge for catalog item sync status
+  # @param catalog_item [CatalogItem] The catalog item
+  # @return [String] HTML badge component
+  def sync_status_badge_for(catalog_item)
+    case catalog_item.sync_status
+    when "synced"
+      if catalog_item.last_synced_at && catalog_item.last_synced_at > 1.hour.ago
+        render Ui::BadgeComponent.new(variant: :success, dot: true) do
+          "Synced"
+        end
+      else
+        render Ui::BadgeComponent.new(variant: :warning) do
+          "Outdated"
+        end
+      end
+    when "pending"
+      render Ui::BadgeComponent.new(variant: :info, dot: true) do
+        "Pending"
+      end
+    when "failed"
+      render Ui::BadgeComponent.new(variant: :danger, dot: true) do
+        "Failed"
+      end
+    else
+      render Ui::BadgeComponent.new(variant: :gray) do
+        "Not synced"
+      end
+    end
+  end
 end

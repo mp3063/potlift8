@@ -199,6 +199,8 @@ Rails.application.routes.draw do
       get :shopify_connection
       post :connect_shopify
       delete :disconnect_shopify
+      post :sync_all
+      post "sync_product/:product_id", action: :sync_product, as: :sync_product
     end
 
     # Catalog Items (add/remove products from catalog)

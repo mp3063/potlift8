@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_20_124040) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_20_135016) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -88,10 +88,15 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_20_124040) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "catalog_item_attribute_values_count", default: 0, null: false
+    t.integer "sync_status", default: 0, null: false
+    t.datetime "last_synced_at"
+    t.string "last_sync_error"
     t.index ["catalog_id", "priority"], name: "index_catalog_items_on_catalog_priority", comment: "Optimizes ordered catalog product retrieval"
     t.index ["catalog_id", "product_id"], name: "index_catalog_items_on_catalog_id_and_product_id", unique: true
     t.index ["catalog_item_state"], name: "index_catalog_items_on_catalog_item_state"
+    t.index ["last_synced_at"], name: "index_catalog_items_on_last_synced_at"
     t.index ["priority"], name: "index_catalog_items_on_priority"
+    t.index ["sync_status"], name: "index_catalog_items_on_sync_status"
   end
 
   create_table "catalogs", force: :cascade do |t|

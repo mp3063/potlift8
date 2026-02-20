@@ -32,6 +32,13 @@ class CatalogItem < ApplicationRecord
     active: 1
   }
 
+  enum :sync_status, {
+    never_synced: 0,
+    synced: 1,
+    pending: 2,
+    failed: 3
+  }, prefix: :sync
+
   # Validations
   validates :catalog_id, uniqueness: { scope: :product_id }
 

@@ -20,4 +20,12 @@ class CatalogPolicy < ApplicationPolicy
   def disconnect_shopify?
     user_context.admin?
   end
+
+  def sync_all?
+    user_context.can_write?
+  end
+
+  def sync_product?
+    user_context.can_write?
+  end
 end
