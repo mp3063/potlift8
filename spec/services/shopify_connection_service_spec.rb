@@ -346,7 +346,7 @@ RSpec.describe ShopifyConnectionService, type: :service do
 
         allow(catalog).to receive(:save).and_return(false)
         allow(catalog).to receive(:errors).and_return(
-          double(full_messages: ['Code is invalid'])
+          double(full_messages: [ 'Code is invalid' ])
         )
       end
 

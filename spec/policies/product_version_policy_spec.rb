@@ -7,9 +7,9 @@ RSpec.describe ProductVersionPolicy do
   let(:user) { create(:user, company: company) }
   let(:product) { create(:product, company: company) }
 
-  let(:admin_ctx) { UserContext.new(user, "admin", ["read", "write"], company) }
-  let(:member_ctx) { UserContext.new(user, "member", ["read", "write"], company) }
-  let(:viewer_ctx) { UserContext.new(user, "viewer", ["read"], company) }
+  let(:admin_ctx) { UserContext.new(user, "admin", [ "read", "write" ], company) }
+  let(:member_ctx) { UserContext.new(user, "member", [ "read", "write" ], company) }
+  let(:viewer_ctx) { UserContext.new(user, "viewer", [ "read" ], company) }
 
   # Use the product as a stand-in record since ProductVersion may not have a factory
   let(:record) { product }

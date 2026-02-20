@@ -30,7 +30,7 @@ RSpec.describe 'Authorization integration', type: :request do
     end
 
     context 'as viewer' do
-      before { authenticate_user(user, role: 'viewer', scopes: ['read']) }
+      before { authenticate_user(user, role: 'viewer', scopes: [ 'read' ]) }
 
       it 'allows viewing products index' do
         get products_path
@@ -188,7 +188,7 @@ RSpec.describe 'Authorization integration', type: :request do
     end
 
     context 'as viewer' do
-      before { authenticate_user(user, role: 'viewer', scopes: ['read']) }
+      before { authenticate_user(user, role: 'viewer', scopes: [ 'read' ]) }
 
       it 'allows viewing catalogs index' do
         get catalogs_path
@@ -268,7 +268,7 @@ RSpec.describe 'Authorization integration', type: :request do
     end
 
     context 'connect_shopify / disconnect_shopify — as viewer' do
-      before { authenticate_user(user, role: 'viewer', scopes: ['read']) }
+      before { authenticate_user(user, role: 'viewer', scopes: [ 'read' ]) }
 
       let(:mock_service) { instance_double(ShopifyConnectionService) }
 
@@ -368,7 +368,7 @@ RSpec.describe 'Authorization integration', type: :request do
     end
 
     context 'as viewer' do
-      before { authenticate_user(user, role: 'viewer', scopes: ['read']) }
+      before { authenticate_user(user, role: 'viewer', scopes: [ 'read' ]) }
 
       it 'allows viewing labels index' do
         get labels_path
@@ -477,7 +477,7 @@ RSpec.describe 'Authorization integration', type: :request do
     end
 
     context 'as viewer' do
-      before { authenticate_user(user, role: 'viewer', scopes: ['read']) }
+      before { authenticate_user(user, role: 'viewer', scopes: [ 'read' ]) }
 
       it 'allows viewing storages index' do
         get storages_path
@@ -577,7 +577,7 @@ RSpec.describe 'Authorization integration', type: :request do
   # ---------------------------------------------------------------------------
   describe 'ImportsController authorization' do
     context 'as viewer' do
-      before { authenticate_user(user, role: 'viewer', scopes: ['read']) }
+      before { authenticate_user(user, role: 'viewer', scopes: [ 'read' ]) }
 
       it 'allows viewing imports index' do
         get imports_path
@@ -619,7 +619,7 @@ RSpec.describe 'Authorization integration', type: :request do
     let!(:product) { create(:product, company: company) }
 
     context 'as viewer with turbo_stream request' do
-      before { authenticate_user(user, role: 'viewer', scopes: ['read']) }
+      before { authenticate_user(user, role: 'viewer', scopes: [ 'read' ]) }
 
       it 'returns 403 forbidden for turbo_stream format' do
         delete product_path(product), headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
@@ -628,7 +628,7 @@ RSpec.describe 'Authorization integration', type: :request do
     end
 
     context 'as viewer with JSON request' do
-      before { authenticate_user(user, role: 'viewer', scopes: ['read']) }
+      before { authenticate_user(user, role: 'viewer', scopes: [ 'read' ]) }
 
       it 'returns 403 forbidden with error JSON' do
         delete product_path(product), as: :json

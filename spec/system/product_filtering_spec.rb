@@ -30,7 +30,7 @@ RSpec.describe 'Product Filtering', type: :system do
     )
     allow_any_instance_of(ApplicationController).to receive(:current_potlift_company).and_return(company)
     allow_any_instance_of(ApplicationController).to receive(:pundit_user).and_return(
-      UserContext.new(nil, "admin", ["read", "write"], company)
+      UserContext.new(nil, "admin", [ "read", "write" ], company)
     )
   end
 

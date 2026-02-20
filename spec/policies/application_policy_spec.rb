@@ -7,9 +7,9 @@ RSpec.describe ApplicationPolicy do
   let(:user) { create(:user, company: company) }
   let(:record) { create(:product, company: company) }
 
-  let(:admin_ctx) { UserContext.new(user, "admin", ["read", "write"], company) }
-  let(:member_ctx) { UserContext.new(user, "member", ["read", "write"], company) }
-  let(:viewer_ctx) { UserContext.new(user, "viewer", ["read"], company) }
+  let(:admin_ctx) { UserContext.new(user, "admin", [ "read", "write" ], company) }
+  let(:member_ctx) { UserContext.new(user, "member", [ "read", "write" ], company) }
+  let(:viewer_ctx) { UserContext.new(user, "viewer", [ "read" ], company) }
 
   subject { described_class.new(context, record) }
 

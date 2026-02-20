@@ -12,7 +12,7 @@ RSpec.describe "Product Labels", type: :request do
     authenticate_user(user)
     allow_any_instance_of(ApplicationController).to receive(:current_potlift_company).and_return(company)
     allow_any_instance_of(ApplicationController).to receive(:pundit_user).and_return(
-      UserContext.new(nil, "admin", ["read", "write"], company)
+      UserContext.new(nil, "admin", [ "read", "write" ], company)
     )
   end
 

@@ -15,7 +15,7 @@ module ProductBatchSync
     return [] if catalog_ids.empty?
 
     jobs = catalog_ids.map do |catalog_id|
-      BatchProductSyncJob.set(queue: queue).perform_later([id], catalog_id)
+      BatchProductSyncJob.set(queue: queue).perform_later([ id ], catalog_id)
     end
 
     Rails.logger.info(

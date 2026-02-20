@@ -45,5 +45,5 @@ class ProductAttributeValue < ApplicationRecord
 
   # Callbacks
   before_save :check_readiness
-  after_commit :propagate_change, on: [:create, :update, :destroy]
+  after_commit :propagate_change, on: [ :create, :update, :destroy ]
 end

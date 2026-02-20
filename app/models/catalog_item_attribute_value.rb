@@ -24,7 +24,7 @@ class CatalogItemAttributeValue < ApplicationRecord
   belongs_to :product_attribute
 
   # Callbacks
-  after_commit :enqueue_sync_job, on: [:create, :update, :destroy]
+  after_commit :enqueue_sync_job, on: [ :create, :update, :destroy ]
 
   # Validations
   validates :catalog_item_id, uniqueness: { scope: :product_attribute_id }

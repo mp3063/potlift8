@@ -26,7 +26,7 @@ RSpec.describe StorageInventoriesController, type: :request do
       'name' => 'Test User'
     })
     allow_any_instance_of(ApplicationController).to receive(:pundit_user).and_return(
-      UserContext.new(nil, "admin", ["read", "write"], company)
+      UserContext.new(nil, "admin", [ "read", "write" ], company)
     )
   end
 

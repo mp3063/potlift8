@@ -38,7 +38,7 @@ RSpec.describe ProductBatchSync do
   describe ".batch_sync_to_catalog" do
     it "enqueues BatchProductSyncJob with product ids" do
       expect {
-        Product.batch_sync_to_catalog([product.id], catalog.id)
+        Product.batch_sync_to_catalog([ product.id ], catalog.id)
       }.to have_enqueued_job(BatchProductSyncJob)
     end
   end
