@@ -190,6 +190,7 @@ class ProductsController < ApplicationController
   #
   def edit
     authorize @product
+    @product.bundle_template if @product.product_type_bundle?
   end
 
   # POST /products

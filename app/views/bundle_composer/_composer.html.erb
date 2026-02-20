@@ -1,5 +1,7 @@
+<% config_json = (local_assigns[:existing_configuration].presence || {}).to_json %>
+<% is_bundle_edit = local_assigns[:existing_configuration]&.dig("components")&.any? %>
 <div id="bundle-composer"
-     class="hidden mt-6 border rounded-lg p-4 bg-gray-50"
+     class="<%= is_bundle_edit ? '' : 'hidden' %> mt-6 border rounded-lg p-4 bg-gray-50"
      data-bundle-composer-max-configurables-value="3"
      data-bundle-composer-max-sellables-value="10"
      data-bundle-composer-max-combinations-value="200"
@@ -65,5 +67,15 @@
   </div>
 
   <!-- Hidden configuration field -->
-  <%= hidden_field_tag :bundle_configuration, '{}', data: { bundle_composer_target: 'configuration' } %>
+  <%= hidden_field_tag :bundle_configuration, config_json, data: { bundle_composer_target: 'configuration' } %>
+
+  <% if is_bundle_edit %>
+    <div class="mt-4 pt-4 border-t">
+      <label class="flex items-center gap-2 text-sm">
+        <%= check_box_tag :regenerate, "true", false, class: "rounded border-gray-300 text-blue-600 focus:ring-blue-500" %>
+        <span class="font-medium text-gray-700">Regenerate bundle variants</span>
+      </label>
+      <p class="text-xs text-gray-500 mt-1 ml-6">Check this to regenerate all bundle variants based on the updated configuration. Old variants will be soft-deleted.</p>
+    </div>
+  <% end %>
 </div>

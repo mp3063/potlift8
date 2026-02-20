@@ -68,7 +68,7 @@
       </div>
 
       <!-- Bundle Composer -->
-      <%= render 'bundle_composer/composer' %>
+      <%= render 'bundle_composer/composer', existing_configuration: product.bundle_template&.configuration %>
 
       <!-- Configuration Type select (shown only for configurable products) -->
       <div data-product-form-target="configurationTypeContainer" class="<%= product.product_type_configurable? ? '' : 'hidden' %>">
