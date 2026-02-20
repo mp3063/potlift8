@@ -37,6 +37,9 @@ class Price < ApplicationRecord
             uniqueness: { scope: [ :product_id, :price_type ], allow_nil: true },
             if: :customer_group_id?
 
+  # Validate customer group belongs to same company as product
+  validate :customer_group_belongs_to_same_company, if: :customer_group_id?
+
   # Validate date range for special prices
   validate :valid_date_range, if: -> { price_type == "special" }
 
@@ -70,6 +73,14 @@ class Price < ApplicationRecord
   end
 
   private
+
+  def customer_group_belongs_to_same_company
+    return unless customer_group && product
+
+    unless customer_group.company_id == product.company_id
+      errors.add(:customer_group_id, "must belong to the same company")
+    end
+  end
 
   # Validate that valid_from is before valid_to for special prices
   def valid_date_range

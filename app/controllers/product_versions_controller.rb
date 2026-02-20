@@ -45,10 +45,11 @@ class ProductVersionsController < ApplicationController
   #
   def compare
     authorize :product_version, :compare?
-    @version1 = @product.versions.find(params[:version1_id])
-    @version2 = @product.versions.find(params[:version2_id])
+    @versions = @product.versions.order(created_at: :desc)
+    @from_version = @product.versions.find(params[:version1_id])
+    @to_version = @product.versions.find(params[:version2_id])
 
-    @changes = calculate_changes(@version1, @version2)
+    @changes = calculate_changes(@from_version, @to_version)
   end
 
   # Revert product to a specific version
@@ -108,11 +109,7 @@ class ProductVersionsController < ApplicationController
 
       next if old_value == new_value
 
-      changes[attr] = {
-        old: old_value,
-        new: new_value,
-        changed: true
-      }
+      changes[attr] = [ old_value, new_value ]
     end
 
     changes

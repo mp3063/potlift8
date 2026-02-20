@@ -109,9 +109,9 @@
     <!-- Attribute Changes -->
     <h2 class="text-lg font-semibold text-gray-900 mb-4">Attribute Changes</h2>
 
-    <% if @comparison.any? %>
+    <% if @changes.any? %>
       <div class="space-y-4">
-        <% @comparison.each do |attribute_name, (old_value, new_value)| %>
+        <% @changes.each do |attribute_name, (old_value, new_value)| %>
           <%= render DiffViewComponent.new(
             old_value: old_value,
             new_value: new_value,

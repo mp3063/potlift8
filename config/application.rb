@@ -39,6 +39,15 @@ module Potlift8
     # Configure ActiveStorage to use vips for image processing
     config.active_storage.variant_processor = :vips
 
+    # Allow PaperTrail YAML deserialization of common Rails types
+    config.active_record.yaml_column_permitted_classes = [
+      ActiveSupport::TimeWithZone,
+      ActiveSupport::TimeZone,
+      Time,
+      Date,
+      BigDecimal
+    ]
+
     # Don't generate system test files.
     config.generators.system_tests = nil
   end

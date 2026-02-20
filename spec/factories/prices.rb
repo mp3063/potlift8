@@ -18,7 +18,7 @@ FactoryBot.define do
 
     trait :group do
       price_type { 'group' }
-      association :customer_group
+      customer_group { association :customer_group, company: product.company }
     end
 
     trait :expired do

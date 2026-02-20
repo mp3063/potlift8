@@ -24,7 +24,7 @@ class PricesController < ApplicationController
     authorize Price, :index?
     @base_price = @product.prices.base_prices.first
     @special_prices = @product.prices.special_prices.order(:valid_from)
-    @group_prices = @product.prices.group_prices.includes(:customer_group)
+    @customer_group_prices = @product.prices.group_prices.includes(:customer_group)
                             .order("customer_groups.name")
   end
 

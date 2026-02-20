@@ -119,14 +119,14 @@
   <% end %>
 
   <!-- Customer Group Price Fields -->
-  <% if params[:price_type] == 'customer_group' || @price.price_type == 'customer_group' %>
+  <% if params[:price_type] == 'group' || @price.price_type == 'group' %>
     <div>
       <label for="price-customer-group" class="block text-sm font-medium text-gray-700">
         Customer Group <span class="text-red-600" aria-hidden="true">*</span>
         <span class="sr-only">(required)</span>
       </label>
       <%= f.collection_select :customer_group_id,
-        @customer_groups || CustomerGroup.all,
+        @customer_groups,
         :id,
         :name,
         { prompt: "Select a customer group" },
@@ -140,19 +140,8 @@
     </div>
 
     <div>
-      <label for="price-discount" class="block text-sm font-medium text-gray-700">
-        Discount Percentage
-      </label>
-      <%= f.number_field :discount_percent,
-        id: 'price-discount',
-        step: 0.01,
-        min: 0,
-        max: 100,
-        class: "mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
-        placeholder: "0.00"
-      %>
-      <p class="mt-2 text-sm text-gray-500">
-        Optional: Set a discount percentage (0-100%)
+      <p class="text-sm text-gray-500">
+        Discount percentage is managed on the Customer Group record.
       </p>
     </div>
   <% end %>

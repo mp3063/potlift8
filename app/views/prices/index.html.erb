@@ -172,7 +172,7 @@
     <% end %>
 
     <% card.with_action do %>
-      <%= link_to new_product_price_path(@product, price_type: 'customer_group') do %>
+      <%= link_to new_product_price_path(@product, price_type: 'group') do %>
         <%= render Ui::ButtonComponent.new(variant: :primary, size: :sm) do %>
           <svg class="h-4 w-4 mr-1.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -211,9 +211,9 @@
                   <%= number_to_currency(price.value, unit: price.currency.upcase) %>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  <% if price.discount_percent.present? %>
+                  <% if price.customer_group&.discount_percent.present? %>
                     <%= render Ui::BadgeComponent.new(variant: :success) do %>
-                      <%= number_to_percentage(price.discount_percent, precision: 0) %> off
+                      <%= number_to_percentage(price.customer_group.discount_percent, precision: 0) %> off
                     <% end %>
                   <% else %>
                     -
