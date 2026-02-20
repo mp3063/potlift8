@@ -269,14 +269,46 @@ RSpec.describe Company, type: :model do
     end
   end
 
-  # Association preparation tests (commented out for now)
-  # Uncomment these when associations are implemented
-  # describe 'associations' do
-  #   it { is_expected.to have_many(:products).dependent(:destroy) }
-  #   it { is_expected.to have_many(:catalogs).dependent(:destroy) }
-  #   it { is_expected.to have_many(:storages).dependent(:destroy) }
-  #   it { is_expected.to have_many(:labels).dependent(:destroy) }
-  #   it { is_expected.to have_many(:product_attributes).dependent(:destroy) }
-  #   it { is_expected.to have_many(:company_states).dependent(:destroy) }
-  # end
+  describe 'API token security' do
+    it 'generates api_token and digest on create' do
+      company = create(:company)
+      expect(company.api_token).to be_present
+      expect(company.api_token_digest).to be_present
+    end
+
+    it 'stores a digest that differs from the raw token' do
+      company = create(:company)
+      expect(company.api_token_digest).not_to eq(company.api_token)
+      expect(company.api_token_digest).to eq(::OpenSSL::Digest::SHA256.hexdigest(company.api_token))
+    end
+
+    it 'authenticates via digest lookup' do
+      company = create(:company)
+      found = Company.authenticate_by_api_token(company.api_token)
+      expect(found).to eq(company)
+    end
+
+    it 'returns nil for invalid tokens' do
+      create(:company)
+      expect(Company.authenticate_by_api_token('bogus_token')).to be_nil
+    end
+
+    it 'returns nil for blank tokens' do
+      expect(Company.authenticate_by_api_token(nil)).to be_nil
+      expect(Company.authenticate_by_api_token('')).to be_nil
+    end
+
+    it 'regenerates token and updates digest' do
+      company = create(:company)
+      old_token = company.api_token
+      old_digest = company.api_token_digest
+
+      new_token = company.regenerate_api_token!
+
+      expect(new_token).not_to eq(old_token)
+      company.reload
+      expect(company.api_token_digest).not_to eq(old_digest)
+      expect(Company.authenticate_by_api_token(new_token)).to eq(company)
+    end
+  end
 end

@@ -23,7 +23,6 @@
 # for automatic scoping of queries to current company context.
 #
 class Company < ApplicationRecord
-  # Callbacks
   before_create :generate_api_token
 
   # Validations
@@ -95,25 +94,30 @@ class Company < ApplicationRecord
     company
   end
 
-  # Regenerate the API token
-  #
-  # @return [String] The new API token
-  #
+  # Authenticate a raw API token by hashing it and looking up the digest.
+  def self.authenticate_by_api_token(raw_token)
+    return nil if raw_token.blank?
+    digest = ::OpenSSL::Digest::SHA256.hexdigest(raw_token)
+    find_by(api_token_digest: digest)
+  end
+
   def regenerate_api_token!
-    update!(api_token: generate_api_token)
+    raw_token = SecureRandom.hex(32)
+    update!(
+      api_token: raw_token,
+      api_token_digest: ::OpenSSL::Digest::SHA256.hexdigest(raw_token)
+    )
     api_token
   end
 
   private
 
-  # Generate a secure random API token
-  #
-  # @return [String] A 32-character hex token
-  #
   def generate_api_token
-    self.api_token = loop do
+    raw_token = loop do
       token = SecureRandom.hex(32)
       break token unless Company.exists?(api_token: token)
     end
+    self.api_token = raw_token
+    self.api_token_digest = ::OpenSSL::Digest::SHA256.hexdigest(raw_token)
   end
 end

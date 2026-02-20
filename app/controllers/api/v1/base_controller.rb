@@ -55,7 +55,8 @@ module Api
           return
         end
 
-        @current_company = Company.find_by(api_token: token, active: true)
+        @current_company = Company.authenticate_by_api_token(token)
+        @current_company = nil if @current_company && !@current_company.active?
 
         unless @current_company
           render_unauthorized("Invalid or inactive API token")

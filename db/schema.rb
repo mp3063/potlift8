@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_30_190228) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_20_124040) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -123,7 +123,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_30_190228) do
     t.datetime "updated_at", null: false
     t.integer "authlift_id"
     t.string "api_token"
+    t.string "api_token_digest"
     t.index ["api_token"], name: "index_companies_on_api_token", unique: true
+    t.index ["api_token_digest"], name: "index_companies_on_api_token_digest", unique: true
     t.index ["authlift_id"], name: "index_companies_on_authlift_id", unique: true
     t.index ["code"], name: "index_companies_on_code", unique: true
   end
