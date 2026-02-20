@@ -24,6 +24,8 @@
 #   @param timestamp [Time] The timestamp when sync was triggered
 #
 class ProductSyncJob < ApplicationJob
+  include SyncErrorSanitizer
+
   queue_as :default
 
   # Perform product synchronization with deduplication
@@ -115,9 +117,9 @@ class ProductSyncJob < ApplicationJob
   rescue StandardError => e
     duration = (Time.current - start_time).round(2)
 
-    # Record failed sync on catalog_item
+    # Record failed sync on catalog_item (sanitized for broadcast safety)
     catalog_item = CatalogItem.find_by(catalog: catalog, product: product)
-    catalog_item&.update!(sync_status: :failed, last_sync_error: e.message.truncate(255))
+    catalog_item&.update!(sync_status: :failed, last_sync_error: sanitize_sync_error(e))
 
     log_sync_metric(product, catalog, duration, success: false, error: e)
     raise e
