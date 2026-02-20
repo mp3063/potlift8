@@ -43,10 +43,10 @@ class UserContext
   end
 
   def can_write?
-    scopes.include?("write")
+    admin? || scopes.include?("write") || scopes.any? { |s| s.end_with?(":write") }
   end
 
   def can_read?
-    scopes.include?("read")
+    admin? || member? || scopes.include?("read") || scopes.any? { |s| s.end_with?(":read") }
   end
 end

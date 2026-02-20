@@ -112,8 +112,8 @@ RSpec.describe UserContext do
       expect(ctx.can_read?).to be false
     end
 
-    it "returns false when scopes only include write" do
-      ctx = described_class.new(user, "member", [ "write" ], company)
+    it "returns false when viewer scopes only include write" do
+      ctx = described_class.new(user, "viewer", [ "write" ], company)
       expect(ctx.can_read?).to be false
     end
   end
