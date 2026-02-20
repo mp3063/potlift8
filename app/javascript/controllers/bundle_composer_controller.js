@@ -85,7 +85,7 @@ export default class extends Controller {
     this.previewDebounce = null
 
     // Check if we have existing configuration to restore
-    this.restoreExistingConfiguration()
+    this.restoreExistingConfiguration().catch(e => console.error("Restore failed:", e))
   }
 
   /**
@@ -140,7 +140,7 @@ export default class extends Controller {
 
     // Debounce search to avoid excessive requests (300ms)
     this.searchDebounce = setTimeout(() => {
-      this.performSearch(query)
+      this.performSearch(query).catch(e => console.error("Search failed:", e))
     }, 300)
   }
 
@@ -159,7 +159,9 @@ export default class extends Controller {
       })
 
       if (!response.ok) {
-        throw new Error("Search failed")
+        console.error("Search error:", response.statusText)
+        this.showError("Failed to search products")
+        return
       }
 
       const data = await response.json()
@@ -256,7 +258,9 @@ export default class extends Controller {
       })
 
       if (!response.ok) {
-        throw new Error("Failed to fetch product details")
+        console.error("Add product error:", response.statusText)
+        this.showError("Failed to add product")
+        return
       }
 
       const productData = await response.json()
@@ -579,7 +583,7 @@ export default class extends Controller {
 
     // Debounce preview update to avoid excessive requests (500ms)
     this.previewDebounce = setTimeout(() => {
-      this.performPreviewUpdate()
+      this.performPreviewUpdate().catch(e => console.error("Preview update failed:", e))
     }, 500)
   }
 
@@ -614,7 +618,10 @@ export default class extends Controller {
       })
 
       if (!response.ok) {
-        throw new Error("Preview failed")
+        console.error("Preview error:", response.statusText)
+        this.showError("Failed to generate preview")
+        this.disableSubmit("Preview generation failed")
+        return
       }
 
       const data = await response.json()
@@ -820,15 +827,109 @@ export default class extends Controller {
 
   /**
    * Restore existing configuration (for edit mode)
+   *
+   * Parses the existing bundle configuration from the hidden field,
+   * fetches product details for each component, renders product cards,
+   * restores variant checkbox states and quantities, and triggers preview.
    */
-  restoreExistingConfiguration() {
+  async restoreExistingConfiguration() {
     if (!this.hasConfigurationTarget) return
 
     const configJson = this.configurationTarget.value
-    if (!configJson) return
+    if (!configJson || configJson === '{}') return
 
-    // TODO: Implement restoration logic if needed for edit mode
-    // This would parse configJson, fetch product details, and rebuild the UI
+    let config
+    try {
+      config = JSON.parse(configJson)
+    } catch (e) {
+      console.error("Failed to parse bundle configuration:", e)
+      return
+    }
+
+    const components = config.components
+    if (!components || components.length === 0) return
+
+    // Remove empty state placeholder
+    if (this.hasSelectedProductsTarget) {
+      const emptyState = this.selectedProductsTarget.querySelector('[data-empty-state]')
+      if (emptyState) emptyState.remove()
+    }
+
+    // Fetch product details and render cards for each component
+    const fetchPromises = components.map(async (component) => {
+      try {
+        const response = await fetch(`/bundle_composer/product/${component.product_id}`, {
+          headers: {
+            'Accept': 'application/json',
+            'X-CSRF-Token': this.csrfToken
+          }
+        })
+
+        if (!response.ok) {
+          console.warn(`Product ${component.product_id} not found, skipping`)
+          return null
+        }
+
+        const productData = await response.json()
+        return { component, productData }
+      } catch (error) {
+        console.warn(`Failed to fetch product ${component.product_id}:`, error)
+        return null
+      }
+    })
+
+    const results = await Promise.all(fetchPromises)
+
+    results.forEach(result => {
+      if (!result) return
+
+      const { component, productData } = result
+      const productId = component.product_id.toString()
+      const productType = component.product_type
+      const productName = productData.name || 'Unknown'
+      const productSku = productData.sku || ''
+
+      // Add to selectedProducts map
+      this.selectedProducts.set(productId, {
+        type: productType,
+        name: productName,
+        sku: productSku,
+        data: productData
+      })
+
+      // Render the product card
+      this.renderProductCard(productId, productType, productName, productSku, productData)
+
+      // Restore variant states for configurable products
+      if (productType === 'configurable' && component.variants) {
+        const card = this.selectedProductsTarget.querySelector(`[data-product-card][data-product-id="${productId}"]`)
+        if (card) {
+          component.variants.forEach(variantConfig => {
+            const row = card.querySelector(`[data-variant-row][data-variant-id="${variantConfig.variant_id}"]`)
+            if (!row) return
+
+            const checkbox = row.querySelector('[data-variant-checkbox]')
+            if (checkbox) checkbox.checked = variantConfig.included
+
+            const quantityInput = row.querySelector('[data-variant-quantity]')
+            if (quantityInput) quantityInput.value = variantConfig.quantity || 1
+          })
+        }
+      }
+
+      // Restore quantity for sellable products
+      if (productType === 'sellable' && component.quantity) {
+        const card = this.selectedProductsTarget.querySelector(`[data-product-card][data-product-id="${productId}"]`)
+        if (card) {
+          const quantityInput = card.querySelector('[data-quantity-input]')
+          if (quantityInput) quantityInput.value = component.quantity
+        }
+      }
+    })
+
+    // Update counts and trigger preview
+    this.updateProductCount()
+    this.updatePreview()
   }
 
   /**
