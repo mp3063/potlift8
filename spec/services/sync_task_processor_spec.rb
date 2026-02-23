@@ -48,7 +48,8 @@ RSpec.describe SyncTaskProcessor do
         'product_create',
         'inventory_update',
         'order_sync',
-        'catalog_sync'
+        'catalog_sync',
+        'shopify_product_deleted'
       )
     end
   end
@@ -608,6 +609,140 @@ RSpec.describe SyncTaskProcessor do
         other_redis_key = "sync_task:processed:#{other_company.id}:evt_scoped_001"
         other_result = redis.exists?(other_redis_key)
         expect(other_result.is_a?(Integer) ? other_result : (other_result ? 1 : 0)).to eq(0)
+      end
+    end
+
+    context 'with shopify_product_deleted event' do
+      let(:catalog) { create(:catalog, company: company) }
+      let!(:catalog_item) do
+        create(:catalog_item,
+               catalog: catalog,
+               product: product,
+               sync_status: :synced,
+               last_synced_at: 1.hour.ago,
+               last_sync_error: nil)
+      end
+
+      let(:params) do
+        {
+          origin_event_id: 'evt_shopify_del_001',
+          direction: 'inbound',
+          event_type: 'shopify_product_deleted',
+          key: product.sku,
+          load: {
+            'data' => { 'sku' => product.sku }
+          }
+        }
+      end
+
+      it 'returns success response' do
+        result = service.process(**params)
+
+        expect(result[:success]).to be true
+        expect(result[:result][:product_id]).to eq(product.id)
+        expect(result[:result][:sku]).to eq(product.sku)
+        expect(result[:result][:catalog_items_reset]).to eq(1)
+      end
+
+      it 'resets catalog item sync_status to never_synced' do
+        service.process(**params)
+
+        catalog_item.reload
+        expect(catalog_item.sync_status).to eq('never_synced')
+      end
+
+      it 'clears last_synced_at' do
+        service.process(**params)
+
+        catalog_item.reload
+        expect(catalog_item.last_synced_at).to be_nil
+      end
+
+      it 'sets last_sync_error to deletion message' do
+        service.process(**params)
+
+        catalog_item.reload
+        expect(catalog_item.last_sync_error).to eq('Product deleted from Shopify')
+      end
+
+      it 'resets multiple catalog items for the same product' do
+        catalog2 = create(:catalog, company: company)
+        catalog_item2 = create(:catalog_item,
+                               catalog: catalog2,
+                               product: product,
+                               sync_status: :synced,
+                               last_synced_at: 2.hours.ago)
+
+        result = service.process(**params)
+
+        expect(result[:result][:catalog_items_reset]).to eq(2)
+
+        [catalog_item, catalog_item2].each do |ci|
+          ci.reload
+          expect(ci.sync_status).to eq('never_synced')
+          expect(ci.last_synced_at).to be_nil
+        end
+      end
+
+      it 'extracts SKU from key parameter' do
+        params.delete(:load)
+        params[:load] = {}
+
+        result = service.process(**params)
+
+        expect(result[:success]).to be true
+      end
+
+      it 'extracts SKU from load.data.sku when key is nil' do
+        params.delete(:key)
+
+        result = service.process(**params)
+
+        expect(result[:success]).to be true
+      end
+
+      it 'extracts SKU from top-level load.sku' do
+        params.delete(:key)
+        params[:load] = { 'sku' => product.sku }
+
+        result = service.process(**params)
+
+        expect(result[:success]).to be true
+      end
+
+      it 'returns error when SKU is missing' do
+        params.delete(:key)
+        params[:load] = {}
+
+        result = service.process(**params)
+
+        expect(result[:success]).to be false
+        expect(result[:error]).to include('SKU is required')
+      end
+
+      it 'returns error when product is not found' do
+        params[:key] = 'NONEXISTENT-SKU'
+        params[:load] = { 'sku' => 'NONEXISTENT-SKU' }
+
+        result = service.process(**params)
+
+        expect(result[:success]).to be false
+        expect(result[:error]).to include('Product not found')
+      end
+
+      it 'does not affect catalog items of other products' do
+        other_product = create(:product, company: company, sku: 'OTHER-SKU')
+        other_item = create(:catalog_item,
+                           catalog: catalog,
+                           product: other_product,
+                           sync_status: :synced,
+                           last_synced_at: 1.hour.ago)
+
+        service.process(**params)
+
+        other_item.reload
+        expect(other_item.sync_status).to eq('synced')
+        expect(other_item.last_synced_at).to be_present
       end
     end
 

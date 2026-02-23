@@ -47,6 +47,7 @@ class SyncTaskProcessor
     inventory_update
     order_sync
     catalog_sync
+    shopify_product_deleted
   ].freeze
 
   # Sync directions
@@ -89,6 +90,8 @@ class SyncTaskProcessor
                process_order_sync(load, key)
     when "catalog_sync"
                process_catalog_sync(load, key)
+    when "shopify_product_deleted"
+               process_shopify_product_deleted(load, key)
     else
                { error: "Unsupported event type: #{event_type}" }
     end
@@ -279,6 +282,42 @@ class SyncTaskProcessor
     # This is a stub - actual implementation would sync catalogs
     # For now, return not implemented
     { error: "Catalog sync is not yet implemented" }
+  end
+
+  # Process shopify_product_deleted event
+  #
+  # Resets sync status on all CatalogItems for the deleted product.
+  #
+  # @param load [Hash] Payload with SKU in data.sku or top-level sku
+  # @param key [String] Product SKU
+  # @return [Hash] Result
+  #
+  def process_shopify_product_deleted(load, key)
+    load_hash = load.is_a?(ActionController::Parameters) ? load.to_unsafe_h : load
+
+    sku = key || load_hash.dig("data", "sku") || load_hash["sku"] || load_hash[:sku]
+
+    unless sku.present?
+      return { error: "SKU is required for shopify_product_deleted" }
+    end
+
+    product = company.products.find_by(sku: sku)
+
+    unless product
+      return { error: "Product not found: #{sku}" }
+    end
+
+    reset_count = 0
+    product.catalog_items.find_each do |catalog_item|
+      catalog_item.update!(
+        sync_status: :never_synced,
+        last_synced_at: nil,
+        last_sync_error: "Product deleted from Shopify"
+      )
+      reset_count += 1
+    end
+
+    { product_id: product.id, sku: product.sku, catalog_items_reset: reset_count }
   end
 
   # Build success response
