@@ -16,6 +16,32 @@ module Products
       shopify_data.present? && shopify_data[:last_payload].present?
     end
 
+    def shopify_product_status
+      @shopify_data&.dig(:shopify_product, :status)
+    end
+
+    def shopify_product_data
+      @shopify_data&.dig(:shopify_product, :shopify_data)
+    end
+
+    def shopify_variant_weights
+      return [] unless shopify_product_data
+
+      edges = shopify_product_data.dig(:variants, :edges) || shopify_product_data.dig("variants", "edges") || []
+      edges.filter_map do |edge|
+        node = edge[:node] || edge["node"]
+        next unless node
+
+        weight_data = node.dig(:inventoryItem, :measurement, :weight) ||
+                      node.dig("inventoryItem", "measurement", "weight")
+        {
+          sku: node[:sku] || node["sku"],
+          weight: weight_data && (weight_data[:value] || weight_data["value"]),
+          unit: weight_data && (weight_data[:unit] || weight_data["unit"])
+        }
+      end
+    end
+
     def last_synced_at
       return nil unless shopify_data&.dig(:last_synced_at)
 

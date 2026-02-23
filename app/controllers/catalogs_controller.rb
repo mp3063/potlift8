@@ -460,11 +460,21 @@ class CatalogsController < ApplicationController
     last_task = result.data.is_a?(Array) ? result.data.first : result.data.dig(:sync_tasks)&.first
     return nil unless last_task
 
+    # Fetch cached Shopify product data if shop is connected
+    shopify_product = nil
+    if @catalog.shop_id.present?
+      product_result = client.fetch(
+        "/api/v1/products/#{CGI.escape(sku)}?shop_id=#{@catalog.shop_id}"
+      )
+      shopify_product = product_result.data if product_result.success?
+    end
+
     {
       last_synced_at: last_task[:updated_at],
       last_payload: last_task.dig(:info, :load),
       sync_task_id: last_task[:id],
-      sync_status: last_task[:status]
+      sync_status: last_task[:status],
+      shopify_product: shopify_product
     }
   rescue StandardError => e
     Rails.logger.warn("[SyncPreview] Failed to fetch Shopify comparison: #{e.message}")
