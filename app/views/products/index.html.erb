@@ -88,7 +88,7 @@
             <div class="py-1">
               <% if @available_labels.any? %>
                 <% @available_labels.each do |label| %>
-                  <%= link_to products_path(label_id: label.id, q: params[:q], type: params[:type]),
+                  <%= link_to products_path(label_id: label.id, q: params[:q], type: params[:type], catalog: params[:catalog]),
                       class: "flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900",
                       role: "menuitem" do %>
                     <span class="font-medium"><%= label.name %></span>
@@ -97,7 +97,7 @@
 
                   <% if label.sublabels.any? %>
                     <% label.sublabels.each do |sublabel| %>
-                      <%= link_to products_path(label_id: sublabel.id, q: params[:q], type: params[:type]),
+                      <%= link_to products_path(label_id: sublabel.id, q: params[:q], type: params[:type], catalog: params[:catalog]),
                           class: "flex items-center justify-between px-4 py-2 pl-8 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900",
                           role: "menuitem" do %>
                         <span><%= sublabel.name %></span>
@@ -113,31 +113,103 @@
           </div>
         </div>
 
+        <!-- Catalog filter dropdown -->
+        <div class="mt-4 sm:mt-0 relative" data-controller="dropdown">
+          <button
+            type="button"
+            data-action="click->dropdown#toggle"
+            data-dropdown-target="button"
+            aria-expanded="false"
+            aria-haspopup="true"
+            class="inline-flex w-full justify-between gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+            <span>Filter by Catalog</span>
+            <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+            </svg>
+          </button>
+
+          <div
+            data-dropdown-target="menu"
+            class="hidden absolute right-0 z-10 mt-2 w-72 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none max-h-96 overflow-y-auto transition-all duration-200 starting:opacity-0 starting:scale-95"
+            role="menu"
+            aria-orientation="vertical">
+            <div class="py-1">
+              <%= link_to products_path(catalog: "none", q: params[:q], type: params[:type], label_id: params[:label_id]),
+                  class: "flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 border-b border-gray-100",
+                  role: "menuitem" do %>
+                <span class="font-medium text-amber-700">Not in any catalog</span>
+              <% end %>
+
+              <%= link_to products_path(catalog: "shopify", q: params[:q], type: params[:type], label_id: params[:label_id]),
+                  class: "flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 border-b border-gray-100",
+                  role: "menuitem" do %>
+                <span class="font-medium text-green-700">In Shopify-connected catalog</span>
+              <% end %>
+
+              <% @available_catalogs.each do |catalog| %>
+                <%= link_to products_path(catalog: catalog.code, q: params[:q], type: params[:type], label_id: params[:label_id]),
+                    class: "flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900",
+                    role: "menuitem" do %>
+                  <span>
+                    <span class="font-medium"><%= catalog.name %></span>
+                    <span class="text-gray-400 ml-1"><%= catalog.code %></span>
+                  </span>
+                  <div class="flex items-center gap-1.5">
+                    <% if catalog.shopify_connected? %>
+                      <svg class="h-3.5 w-3.5 text-green-500" viewBox="0 0 20 20" fill="currentColor" aria-label="Shopify connected">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
+                      </svg>
+                    <% end %>
+                    <span class="text-gray-500">(<%= catalog.catalog_items_count %>)</span>
+                  </div>
+                <% end %>
+              <% end %>
+            </div>
+          </div>
+        </div>
+
         <div class="mt-4 sm:mt-0 flex gap-x-2">
           <%= f.submit "Search", class: "rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" %>
-          <% if params[:q].present? || params[:type].present? || params[:label_id].present? %>
+          <% if params[:q].present? || params[:type].present? || params[:label_id].present? || params[:catalog].present? %>
             <%= link_to "Clear", products_path, class: "rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" %>
           <% end %>
         </div>
       </div>
 
       <!-- Active filters display -->
-      <% if @current_label.present? %>
+      <% if @current_label.present? || params[:catalog].present? %>
         <div class="flex flex-wrap gap-2 items-center">
           <span class="text-sm text-gray-700">Active filters:</span>
-          <span class="inline-flex items-center gap-x-1.5 rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
-            <svg class="h-2 w-2 fill-blue-500" viewBox="0 0 6 6" aria-hidden="true">
-              <circle cx="3" cy="3" r="3" />
-            </svg>
-            <%= @current_label.full_name %>
-            <%= link_to products_path(q: params[:q], type: params[:type]),
-                class: "ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 focus:ring-offset-blue-100",
-                aria: { label: "Remove label filter" } do %>
-              <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+          <% if @current_label.present? %>
+            <span class="inline-flex items-center gap-x-1.5 rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
+              <svg class="h-2 w-2 fill-blue-500" viewBox="0 0 6 6" aria-hidden="true">
+                <circle cx="3" cy="3" r="3" />
               </svg>
-            <% end %>
-          </span>
+              <%= @current_label.full_name %>
+              <%= link_to products_path(q: params[:q], type: params[:type], catalog: params[:catalog]),
+                  class: "ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 focus:ring-offset-blue-100",
+                  aria: { label: "Remove label filter" } do %>
+                <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                </svg>
+              <% end %>
+            </span>
+          <% end %>
+          <% if params[:catalog].present? %>
+            <span class="inline-flex items-center gap-x-1.5 rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800">
+              <svg class="h-2 w-2 fill-green-500" viewBox="0 0 6 6" aria-hidden="true">
+                <circle cx="3" cy="3" r="3" />
+              </svg>
+              Catalog: <%= catalog_filter_label(params[:catalog]) %>
+              <%= link_to products_path(q: params[:q], type: params[:type], label_id: params[:label_id]),
+                  class: "ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2 focus:ring-offset-green-100",
+                  aria: { label: "Remove catalog filter" } do %>
+                <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                </svg>
+              <% end %>
+            </span>
+          <% end %>
         </div>
       <% end %>
     <% end %>
@@ -199,7 +271,7 @@
     current_sort: params[:sort],
     current_direction: params[:direction],
     search_query: params[:q],
-    has_filters: params[:type].present? || params[:label_id].present?
+    has_filters: params[:type].present? || params[:label_id].present? || params[:catalog].present?
   ) %>
 
   <!-- Bulk Label Editor Modal -->

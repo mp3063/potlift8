@@ -81,9 +81,9 @@ RSpec.describe 'Performance Integration', type: :request do
 
         expect(response).to have_http_status(:success)
 
-        # Should use eager loading (with_inventory, with_labels, etc.)
+        # Should use eager loading (with_inventory, with_labels, catalog_items, etc.)
         # Expected: Minimal queries regardless of product count
-        expect(queries).to be <= 20
+        expect(queries).to be <= 22
       end
 
       it "maintains query count when filtering" do

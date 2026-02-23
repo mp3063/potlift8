@@ -18,6 +18,7 @@ class ProductFilteringService
     products = filter_by_status(products)
     products = filter_by_label(products)
     products = filter_by_search(products)
+    products = filter_by_catalog(products)
 
     products
   end
@@ -54,6 +55,23 @@ class ProductFilteringService
     rescue ActiveRecord::RecordNotFound
       @current_label = nil
       products
+    end
+  end
+
+  def filter_by_catalog(products)
+    return products unless @params[:catalog].present?
+
+    case @params[:catalog]
+    when "none"
+      products.left_joins(:catalog_items).where(catalog_items: { id: nil })
+    when "shopify"
+      products.joins(catalog_items: :catalog)
+              .where("catalogs.info->>'shop_id' IS NOT NULL")
+              .distinct
+    else
+      products.joins(catalog_items: :catalog)
+              .where(catalogs: { code: @params[:catalog] })
+              .distinct
     end
   end
 

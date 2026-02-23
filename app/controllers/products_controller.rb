@@ -45,6 +45,7 @@ class ProductsController < ApplicationController
                                        .with_labels_only
                                        .with_subproducts
                                        .includes(bundle_variants: [ :subproducts, { product_configurations_as_super: :subproduct } ])
+                                       .includes(catalog_items: :catalog)
 
     # Use extracted services for filtering
     @filter_service = ProductFilteringService.new(@products, params, current_potlift_company)
@@ -57,6 +58,9 @@ class ProductsController < ApplicationController
                                                .includes(:sublabels)
                                                .order(:label_positions, :name)
     @label_product_counts = LabelProductCountService.new(current_potlift_company).call
+
+    # Load catalogs for filter dropdown
+    @available_catalogs = current_potlift_company.catalogs.order(:name)
 
     # Apply sorting
     @products = @products.order(@filter_service.sort_column => @filter_service.sort_direction)

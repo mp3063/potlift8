@@ -55,6 +55,17 @@ module ProductsHelper
   # Renders a badge for catalog item sync status
   # @param catalog_item [CatalogItem] The catalog item
   # @return [String] HTML badge component
+  def catalog_filter_label(catalog_param)
+    case catalog_param
+    when "none"
+      "Not in any catalog"
+    when "shopify"
+      "Shopify-connected"
+    else
+      catalog_param
+    end
+  end
+
   def sync_status_badge_for(catalog_item)
     case catalog_item.sync_status
     when "synced"
