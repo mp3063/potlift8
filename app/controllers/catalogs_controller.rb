@@ -83,7 +83,7 @@ class CatalogsController < ApplicationController
 
         # HTTP caching with ETag (per page and search query)
         fresh_when(
-          etag: [ @catalog, @catalog_items.maximum(:updated_at), params[:page], params[:q] ],
+          etag: [ @catalog, @catalog_items.maximum(:updated_at), params[:page], params[:q], form_authenticity_token ],
           last_modified: [ @catalog.updated_at, @catalog_items.maximum(:updated_at) ].compact.max,
           public: false
         )
