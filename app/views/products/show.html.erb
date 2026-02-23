@@ -109,6 +109,31 @@
         <%= render Products::StatusCardComponent.new(product: @product) %>
       <% end %>
       <%= render Products::InventorySummaryComponent.new(product: @product) %>
+
+      <%# Shopify Sync Preview Card %>
+      <% shopify_catalogs = @product.catalog_items.includes(:catalog)
+           .select { |ci| ci.catalog.shopify_connected? } %>
+      <% if shopify_catalogs.any? %>
+        <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-4">
+          <h3 class="text-sm font-medium text-gray-900 mb-3">Shopify Sync Preview</h3>
+          <div class="space-y-2">
+            <% shopify_catalogs.each do |ci| %>
+              <%= link_to sync_preview_catalog_path(ci.catalog.code, product_id: @product.id),
+                  data: { turbo_frame: "sync-preview-drawer" },
+                  class: "flex items-center justify-between p-2 rounded hover:bg-gray-50
+                         transition-colors group" do %>
+                <span class="text-sm text-gray-700"><%= ci.catalog.name %></span>
+                <span class="text-xs text-gray-400 group-hover:text-indigo-600">
+                  Preview &rarr;
+                </span>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+
+      <turbo-frame id="sync-preview-drawer"></turbo-frame>
+
       <%= render Products::ActivityTimelineComponent.new(product: @product) %>
     </div>
   </div>

@@ -98,6 +98,15 @@ class Shopify8ApiClient
     get("/api/v1/shops")
   end
 
+  # Fetch data from an arbitrary API path
+  #
+  # @param path [String] API path (e.g., "/api/v1/sync_tasks?limit=1")
+  # @return [Result] Result with response data or error
+  #
+  def fetch(path)
+    get(path)
+  end
+
   private
 
   # Perform a GET request

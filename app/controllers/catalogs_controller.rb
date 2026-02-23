@@ -15,7 +15,7 @@
 # - Uses catalog 'code' instead of 'id' for cleaner URLs
 #
 class CatalogsController < ApplicationController
-  before_action :set_catalog, only: [ :show, :edit, :update, :destroy, :items, :reorder_items, :export, :shopify_connection, :connect_shopify, :disconnect_shopify, :sync_all, :sync_product, :toggle_sync_pause ]
+  before_action :set_catalog, only: [ :show, :edit, :update, :destroy, :items, :reorder_items, :export, :shopify_connection, :connect_shopify, :disconnect_shopify, :sync_all, :sync_product, :toggle_sync_pause, :sync_preview ]
 
   # GET /catalogs
   # GET /catalogs.turbo_stream
@@ -359,6 +359,33 @@ class CatalogsController < ApplicationController
     end
   end
 
+  # GET /catalogs/:code/sync_preview?product_id=123
+  #
+  # Returns the sync payload preview for a product in this catalog,
+  # plus comparison data from Shopify8 if connected.
+  #
+  def sync_preview
+    authorize @catalog
+
+    @product = current_potlift_company.products
+                 .includes(:labels, :translations,
+                           inventories: :storage,
+                           product_attribute_values: :product_attribute,
+                           configurations: :configuration_values,
+                           product_configurations_as_super: { subproduct: [ :translations, inventories: :storage ] })
+                 .find(params[:product_id])
+
+    @catalog_item = @catalog.catalog_items.find_by!(product: @product)
+
+    service = ProductSyncService.new(@product, @catalog)
+    @payload = service.build_payload
+
+    @shopify_data = nil
+    if @catalog.shopify_connected?
+      @shopify_data = fetch_shopify_comparison(@product.sku)
+    end
+  end
+
   # GET /catalogs/:code/export
   # GET /catalogs/:code/export.json
   # GET /catalogs/:code/export.csv
@@ -418,6 +445,30 @@ class CatalogsController < ApplicationController
       failed: items.sync_failed.count,
       never: items.sync_never_synced.count
     }
+  end
+
+  def fetch_shopify_comparison(sku)
+    api_token = @catalog.info&.dig("shopify_api_token") || ENV["SHOPIFY8_API_TOKEN"]
+    return nil unless api_token.present?
+
+    client = Shopify8ApiClient.new(api_token: api_token)
+    result = client.fetch(
+      "/api/v1/sync_tasks?origin_target_id=#{CGI.escape(sku)}&status=executed&event_type=product_changed&limit=1"
+    )
+    return nil unless result.success?
+
+    last_task = result.data.is_a?(Array) ? result.data.first : result.data.dig(:sync_tasks)&.first
+    return nil unless last_task
+
+    {
+      last_synced_at: last_task[:updated_at],
+      last_payload: last_task.dig(:info, :load),
+      sync_task_id: last_task[:id],
+      sync_status: last_task[:status]
+    }
+  rescue StandardError => e
+    Rails.logger.warn("[SyncPreview] Failed to fetch Shopify comparison: #{e.message}")
+    nil
   end
 
   # Set the catalog for show, edit, update, destroy, items, reorder_items, export actions

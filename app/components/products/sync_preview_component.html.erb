@@ -1,0 +1,165 @@
+<div data-controller="sync-preview"
+     data-action="keydown.esc->sync-preview#close"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="sync-preview-title">
+
+  <%# Backdrop %>
+  <div class="fixed inset-0 bg-gray-900 opacity-50 z-40"
+       data-action="click->sync-preview#close"
+       aria-hidden="true"></div>
+
+  <%# Drawer Panel — inline max-width because Tailwind JIT may not compile arbitrary sm:w-[540px] %>
+  <div class="fixed inset-y-0 right-0 z-50 w-full bg-white shadow-xl
+              border-l border-gray-200 overflow-y-auto"
+       style="max-width: 540px;">
+
+    <%# Header %>
+    <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-10">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 id="sync-preview-title" class="text-lg font-semibold text-gray-900">
+            Sync Data Preview
+          </h2>
+          <p class="mt-1 text-sm text-gray-500">
+            <%= product.sku %> &rarr; <%= catalog.name %>
+          </p>
+        </div>
+        <button data-action="click->sync-preview#close"
+                class="text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500
+                       rounded-lg p-1 transition-colors"
+                aria-label="Close preview">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <% if has_shopify_comparison? %>
+        <div class="mt-3" aria-live="polite">
+          <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
+                       bg-green-100 text-green-800 border border-green-200">
+            <span class="inline-block h-1.5 w-1.5 rounded-full bg-green-500 mr-1.5"></span>
+            Last synced <%= time_ago_in_words(last_synced_at) %> ago
+          </span>
+        </div>
+      <% elsif catalog.shopify_connected? %>
+        <div class="mt-3" aria-live="polite">
+          <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
+                       bg-yellow-100 text-yellow-800 border border-yellow-200">
+            <span class="inline-block h-1.5 w-1.5 rounded-full bg-yellow-500 mr-1.5"></span>
+            Never synced to Shopify
+          </span>
+        </div>
+      <% end %>
+    </div>
+
+    <%# Payload Sections %>
+    <div class="px-6 py-5 space-y-4">
+      <% payload_sections.each_with_index do |section, idx| %>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+          <details class="group" <%= "open" if idx < 3 %>>
+            <summary class="flex items-center justify-between px-4 py-3 cursor-pointer
+                           bg-gray-50 hover:bg-gray-100 rounded-t-lg transition-colors duration-150
+                           select-none outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset
+                           group-not-open:rounded-b-lg">
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-semibold text-gray-900"><%= section[:title] %></span>
+                <% diff = diff_section(section[:key]) %>
+                <% if diff && diff[:status] == :match %>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs
+                               font-medium bg-green-100 text-green-800 border border-green-200">
+                    In sync
+                  </span>
+                <% elsif diff && diff[:status] == :changed %>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs
+                               font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+                    <%= diff[:changes].size %> difference<%= "s" if diff[:changes].size != 1 %>
+                  </span>
+                <% end %>
+              </div>
+              <svg class="h-5 w-5 text-gray-400 group-open:rotate-180 transition-transform duration-200"
+                   fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+
+            <div class="px-4 py-3 border-t border-gray-200">
+              <% data = payload[section[:key]] %>
+              <% if data.is_a?(Hash) %>
+                <table class="w-full">
+                  <tbody class="divide-y divide-gray-100">
+                    <% data.each do |key, value| %>
+                      <tr>
+                        <td class="py-2.5 pr-4 text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap align-top" style="width: 140px;"><%= key %></td>
+                        <td class="py-2.5 text-sm text-gray-900 break-words align-top">
+                          <% section_diff = diff_section(section[:key]) %>
+                          <% changed = section_diff&.dig(:changes)&.find { |c| c[:field] == key.to_s } %>
+                          <% if changed %>
+                            <div class="space-y-1.5">
+                              <div class="bg-green-50 px-3 py-1.5 rounded-md border border-green-200 text-sm">
+                                <span class="text-green-600 font-medium">Potlift:</span>
+                                <span class="text-green-800 ml-1"><%= format_value(value) %></span>
+                              </div>
+                              <div class="bg-yellow-50 px-3 py-1.5 rounded-md border border-yellow-200 text-sm">
+                                <span class="text-yellow-600 font-medium">Shopify:</span>
+                                <span class="text-yellow-800 ml-1"><%= format_value(changed[:shopify]) %></span>
+                              </div>
+                            </div>
+                          <% else %>
+                            <%= format_value(value) %>
+                          <% end %>
+                        </td>
+                      </tr>
+                    <% end %>
+                  </tbody>
+                </table>
+              <% elsif data.is_a?(Array) %>
+                <p class="text-sm text-gray-500 mb-3">
+                  <%= data.size %> item<%= "s" if data.size != 1 %>
+                </p>
+                <div class="space-y-2">
+                  <% data.each do |item| %>
+                    <div class="p-3 bg-gray-50 rounded-lg border border-gray-100 text-sm">
+                      <% if item.is_a?(Hash) %>
+                        <table class="w-full">
+                          <tbody>
+                            <% item.each do |k, v| %>
+                              <tr>
+                                <td class="py-0.5 pr-3 text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap align-top" style="width: 120px;"><%= k %></td>
+                                <td class="py-0.5 text-sm text-gray-900"><%= format_value(v) %></td>
+                              </tr>
+                            <% end %>
+                          </tbody>
+                        </table>
+                      <% else %>
+                        <%= item %>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
+              <% else %>
+                <span class="text-sm text-gray-700"><%= data %></span>
+              <% end %>
+            </div>
+          </details>
+        </div>
+      <% end %>
+    </div>
+
+    <%# Footer with raw JSON toggle %>
+    <div class="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-3 rounded-b-lg">
+      <details class="group">
+        <summary class="cursor-pointer text-sm text-gray-500 hover:text-gray-700 select-none
+                        outline-none focus:ring-2 focus:ring-blue-500 rounded transition-colors duration-150">
+          <span class="group-open:hidden">Show raw JSON payload</span>
+          <span class="hidden group-open:inline">Hide raw JSON payload</span>
+        </summary>
+        <pre class="mt-3 p-4 bg-gray-900 text-green-400 rounded-lg overflow-x-auto
+                    text-xs max-h-72 overflow-y-auto font-mono leading-relaxed"><%= JSON.pretty_generate(payload) %></pre>
+      </details>
+    </div>
+  </div>
+</div>

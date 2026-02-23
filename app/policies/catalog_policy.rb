@@ -13,6 +13,10 @@ class CatalogPolicy < ApplicationPolicy
     true
   end
 
+  def sync_preview?
+    true
+  end
+
   def connect_shopify?
     user_context.admin?
   end

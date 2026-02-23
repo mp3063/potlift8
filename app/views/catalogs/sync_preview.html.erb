@@ -1,0 +1,9 @@
+<turbo-frame id="sync-preview-drawer">
+  <%= render Products::SyncPreviewComponent.new(
+    product: @product,
+    catalog: @catalog,
+    catalog_item: @catalog_item,
+    payload: @payload,
+    shopify_data: @shopify_data
+  ) %>
+</turbo-frame>

@@ -201,6 +201,7 @@ Rails.application.routes.draw do
       delete :disconnect_shopify
       post :sync_all
       post :toggle_sync_pause
+      get :sync_preview
       post "sync_product/:product_id", action: :sync_product, as: :sync_product
     end
 
