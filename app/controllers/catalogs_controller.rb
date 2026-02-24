@@ -15,7 +15,7 @@
 # - Uses catalog 'code' instead of 'id' for cleaner URLs
 #
 class CatalogsController < ApplicationController
-  before_action :set_catalog, only: [ :show, :edit, :update, :destroy, :items, :reorder_items, :export, :shopify_connection, :connect_shopify, :disconnect_shopify, :sync_all, :sync_product, :toggle_sync_pause, :sync_preview ]
+  before_action :set_catalog, only: [ :show, :edit, :update, :destroy, :items, :reorder_items, :export, :shopify_connection, :connect_shopify, :disconnect_shopify, :sync_all, :sync_product, :toggle_sync_pause, :sync_preview, :sync_status, :sync_alerts ]
 
   # GET /catalogs
   # GET /catalogs.turbo_stream
@@ -386,6 +386,62 @@ class CatalogsController < ApplicationController
     end
   end
 
+  # GET /catalogs/:code/sync_status
+  #
+  # Returns sync pipeline status for the Ecosystem Hub via Turbo Frame.
+  # Fetches recent sync tasks and failed count from Shopify8 API.
+  #
+  def sync_status
+    authorize @catalog
+    @recent_tasks = []
+    @failed_count = 0
+    @summary = {}
+
+    if @catalog.shopify_connected?
+      client = build_shopify8_client
+      if client
+        tasks_result = client.get_sync_tasks(shop_id: @catalog.shop_id, limit: 5)
+        @recent_tasks = tasks_result.success? ? (tasks_result.data[:sync_tasks] || []) : []
+
+        summary_result = client.get_sync_task_summary(shop_id: @catalog.shop_id)
+        if summary_result.success?
+          @summary = summary_result.data
+          @failed_count = @summary[:failed] || 0
+        end
+      end
+    end
+
+    render partial: "catalogs/sync_status", locals: {
+      catalog: @catalog,
+      recent_tasks: @recent_tasks,
+      failed_count: @failed_count,
+      summary: @summary
+    }
+  end
+
+  # GET /catalogs/:code/sync_alerts
+  #
+  # Returns a sync error alert banner for the catalog items page via Turbo Frame.
+  # Only shows content when there are failed sync tasks.
+  #
+  def sync_alerts
+    authorize @catalog
+    @failed_count = 0
+
+    if @catalog.shopify_connected?
+      client = build_shopify8_client
+      if client
+        result = client.get_sync_tasks(shop_id: @catalog.shop_id, status: "failed", limit: 1)
+        @failed_count = result.success? ? (result.data[:total] || 0) : 0
+      end
+    end
+
+    render partial: "catalogs/sync_alerts", locals: {
+      catalog: @catalog,
+      failed_count: @failed_count
+    }
+  end
+
   # GET /catalogs/:code/export
   # GET /catalogs/:code/export.json
   # GET /catalogs/:code/export.csv
@@ -435,6 +491,16 @@ class CatalogsController < ApplicationController
   end
 
   private
+
+  # Build Shopify8 API client for the current catalog
+  #
+  # @return [Shopify8ApiClient, nil] Client or nil if no API token configured
+  def build_shopify8_client
+    api_token = @catalog.info&.dig("shopify_api_token") || ENV["SHOPIFY8_API_TOKEN"]
+    return nil unless api_token.present?
+
+    Shopify8ApiClient.new(api_token: api_token)
+  end
 
   # Compute sync status counts for a catalog's items
   def compute_sync_counts(catalog)

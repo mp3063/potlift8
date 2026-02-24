@@ -17,6 +17,14 @@ class CatalogPolicy < ApplicationPolicy
     true
   end
 
+  def sync_status?
+    true
+  end
+
+  def sync_alerts?
+    true
+  end
+
   def connect_shopify?
     user_context.admin?
   end

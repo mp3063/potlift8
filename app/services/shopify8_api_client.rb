@@ -107,6 +107,38 @@ class Shopify8ApiClient
     get(path)
   end
 
+  # Get recent sync tasks for a shop
+  #
+  # @param shop_id [Integer] The Shopify8 shop ID
+  # @param limit [Integer] Maximum number of tasks to return (default: 5)
+  # @param status [String, nil] Filter by status (submitted/processing/executed/failed)
+  # @return [Result] Result with sync_tasks array and total count
+  #
+  def get_sync_tasks(shop_id:, limit: 5, status: nil)
+    params = "shop_id=#{shop_id}&limit=#{limit}"
+    params += "&status=#{status}" if status.present?
+    get("/api/v1/sync_tasks?#{params}")
+  end
+
+  # Get sync task counts by status for a shop
+  #
+  # Fetches recent tasks and aggregates counts client-side
+  # to avoid multiple HTTP requests.
+  #
+  # @param shop_id [Integer] The Shopify8 shop ID
+  # @return [Result] Result with status counts hash
+  #
+  def get_sync_task_summary(shop_id:)
+    result = get("/api/v1/sync_tasks?shop_id=#{shop_id}&limit=100")
+    return result unless result.success?
+
+    tasks = result.data[:sync_tasks] || []
+    counts = { submitted: 0, processing: 0, executed: 0, failed: 0 }
+    tasks.each { |t| counts[t[:status]&.to_sym] = (counts[t[:status]&.to_sym] || 0) + 1 }
+
+    Result.new(success: true, data: counts.merge(total: result.data[:total] || tasks.size))
+  end
+
   private
 
   # Perform a GET request

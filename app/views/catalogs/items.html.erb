@@ -92,6 +92,13 @@
   <%= turbo_stream_from @catalog, "sync_status" %>
 <% end %>
 
+<% if @catalog.shopify_connected? %>
+  <%= turbo_frame_tag "sync-alerts-#{@catalog.code}",
+      src: sync_alerts_catalog_path(@catalog),
+      loading: :lazy do %>
+  <% end %>
+<% end %>
+
 <% if @catalog.shopify_connected? && @sync_counts %>
   <%= render partial: "catalogs/sync_summary_card", locals: { catalog: @catalog, sync_counts: @sync_counts } %>
 <% end %>
