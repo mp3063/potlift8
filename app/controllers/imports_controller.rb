@@ -109,7 +109,7 @@ class ImportsController < ApplicationController
     authorize :import, :progress?
 
     @job_id = params[:id]
-    progress_key = "import_progress:#{@job_id}"
+    progress_key = "import_progress:#{current_potlift_company.id}:#{@job_id}"
 
     redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
     progress_data = redis.get(progress_key)
@@ -162,7 +162,7 @@ class ImportsController < ApplicationController
     authorize :import, :download_errors?
 
     @job_id = params[:id]
-    progress_key = "import_progress:#{@job_id}"
+    progress_key = "import_progress:#{current_potlift_company.id}:#{@job_id}"
 
     redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
     progress_data = redis.get(progress_key)
@@ -224,15 +224,15 @@ class ImportsController < ApplicationController
   def fetch_recent_imports
     redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
 
-    # Get all import progress keys (last 50)
-    keys = redis.keys("import_progress:*").last(50)
+    # Get import progress keys scoped to current company (last 50)
+    keys = redis.keys("import_progress:#{current_potlift_company.id}:*").last(50)
 
     keys.map do |key|
       data = redis.get(key)
       next unless data
 
       parsed = JSON.parse(data)
-      parsed["id"] = key.sub("import_progress:", "")
+      parsed["id"] = key.split(":").last
       parsed
     end.compact.reverse # Most recent first
   rescue Redis::BaseError => e

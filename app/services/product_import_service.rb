@@ -25,10 +25,11 @@ class ProductImportService
 
   attr_reader :company, :file_content, :user, :errors, :imported_count, :updated_count
 
-  def initialize(company, file_content, user)
+  def initialize(company, file_content, user, on_progress: nil)
     @company = company
     @file_content = file_content
     @user = user
+    @on_progress = on_progress
     @errors = []
     @imported_count = 0
     @updated_count = 0
@@ -40,9 +41,13 @@ class ProductImportService
   #
   def import!
     rows = parse_csv
+    total = rows.size
+    processed = 0
 
     rows.each_slice(BATCH_SIZE) do |batch|
       process_batch(batch)
+      processed += batch.size
+      @on_progress&.call(processed, total)
     end
 
     {
@@ -109,7 +114,12 @@ class ProductImportService
 
     # Handle active status
     if row[:active].present?
-      product.active = parse_boolean(row[:active])
+      parsed = parse_boolean(row[:active])
+      if parsed.nil?
+        @errors << { row: index + 2, error: "Unrecognized active value: '#{row[:active]}'. Use true/false/yes/no/1/0" }
+      else
+        product.active = parsed
+      end
     end
 
     if product.save

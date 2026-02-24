@@ -30,7 +30,7 @@ RSpec.describe ProductImportJob, type: :job do
   end
 
   describe '#perform' do
-    let(:progress_key) { "import_progress:#{job_id}" }
+    let(:progress_key) { "import_progress:#{company.id}:#{job_id}" }
 
     before do
       # Mock job_id method to return predictable value
@@ -52,7 +52,7 @@ RSpec.describe ProductImportJob, type: :job do
       end
 
       it 'calls ProductImportService with correct parameters' do
-        expect(ProductImportService).to receive(:new).with(company, file_content, user)
+        expect(ProductImportService).to receive(:new).with(company, file_content, user, on_progress: kind_of(Proc))
 
         described_class.perform_now(company.id, file_content, user.id)
       end
@@ -60,7 +60,7 @@ RSpec.describe ProductImportJob, type: :job do
       it 'sets initial progress in Redis' do
         expect(mock_redis).to receive(:setex).with(
           progress_key,
-          3600,
+          604800,
           { status: 'processing', progress: 0 }.to_json
         )
 
@@ -68,21 +68,28 @@ RSpec.describe ProductImportJob, type: :job do
       end
 
       it 'updates progress to completed in Redis' do
-        completed_data = {
-          status: 'completed',
-          progress: 100,
-          imported_count: 2,
-          updated_count: 0,
-          errors: []
-        }.to_json
+        freeze_time do
+          completed_data = {
+            status: 'completed',
+            progress: 100,
+            imported_count: 2,
+            updated_count: 0,
+            errors: [],
+            total_rows: 2,
+            success_count: 2,
+            failed_count: 0,
+            started_at: Time.current.iso8601,
+            import_type: 'products'
+          }.to_json
 
-        expect(mock_redis).to receive(:setex).with(
-          progress_key,
-          3600,
-          completed_data
-        )
+          expect(mock_redis).to receive(:setex).with(
+            progress_key,
+            604800,
+            completed_data
+          )
 
-        described_class.perform_now(company.id, file_content, user.id)
+          described_class.perform_now(company.id, file_content, user.id)
+        end
       end
 
       it 'logs import completion' do
@@ -111,21 +118,28 @@ RSpec.describe ProductImportJob, type: :job do
       end
 
       it 'includes errors in completed progress' do
-        completed_data = {
-          status: 'completed',
-          progress: 100,
-          imported_count: 1,
-          updated_count: 0,
-          errors: [ { row: 2, error: 'SKU cannot be blank' } ]
-        }.to_json
+        freeze_time do
+          completed_data = {
+            status: 'completed',
+            progress: 100,
+            imported_count: 1,
+            updated_count: 0,
+            errors: [ { row: 2, error: 'SKU cannot be blank' } ],
+            total_rows: 2,
+            success_count: 1,
+            failed_count: 1,
+            started_at: Time.current.iso8601,
+            import_type: 'products'
+          }.to_json
 
-        expect(mock_redis).to receive(:setex).with(
-          progress_key,
-          3600,
-          completed_data
-        )
+          expect(mock_redis).to receive(:setex).with(
+            progress_key,
+            604800,
+            completed_data
+          )
 
-        described_class.perform_now(company.id, file_content, user.id)
+          described_class.perform_now(company.id, file_content, user.id)
+        end
       end
 
       it 'still completes successfully' do
@@ -144,20 +158,24 @@ RSpec.describe ProductImportJob, type: :job do
       end
 
       it 'sets failed status in Redis' do
-        failed_data = {
-          status: 'failed',
-          error: error_message
-        }.to_json
+        freeze_time do
+          failed_data = {
+            status: 'failed',
+            error: error_message,
+            started_at: Time.current.iso8601,
+            import_type: 'products'
+          }.to_json
 
-        expect(mock_redis).to receive(:setex).with(
-          progress_key,
-          3600,
-          failed_data
-        )
+          expect(mock_redis).to receive(:setex).with(
+            progress_key,
+            604800,
+            failed_data
+          )
 
-        expect {
-          described_class.perform_now(company.id, file_content, user.id)
-        }.to raise_error(StandardError)
+          expect {
+            described_class.perform_now(company.id, file_content, user.id)
+          }.to raise_error(StandardError)
+        end
       end
 
       it 'logs error details' do
@@ -220,21 +238,28 @@ RSpec.describe ProductImportJob, type: :job do
       end
 
       it 'updates progress with zero counts' do
-        completed_data = {
-          status: 'completed',
-          progress: 100,
-          imported_count: 0,
-          updated_count: 0,
-          errors: []
-        }.to_json
+        freeze_time do
+          completed_data = {
+            status: 'completed',
+            progress: 100,
+            imported_count: 0,
+            updated_count: 0,
+            errors: [],
+            total_rows: 0,
+            success_count: 0,
+            failed_count: 0,
+            started_at: Time.current.iso8601,
+            import_type: 'products'
+          }.to_json
 
-        expect(mock_redis).to receive(:setex).with(
-          progress_key,
-          3600,
-          completed_data
-        )
+          expect(mock_redis).to receive(:setex).with(
+            progress_key,
+            604800,
+            completed_data
+          )
 
-        described_class.perform_now(company.id, empty_content, user.id)
+          described_class.perform_now(company.id, empty_content, user.id)
+        end
       end
     end
 
@@ -250,35 +275,53 @@ RSpec.describe ProductImportJob, type: :job do
       end
 
       it 'updates Redis with completed status containing errors' do
-        setex_calls = []
-        allow(mock_redis).to receive(:setex) do |key, ttl, json|
-          setex_calls << { key: key, ttl: ttl, json: json }
-          'OK'
+        freeze_time do
+          setex_calls = []
+          allow(mock_redis).to receive(:setex) do |key, ttl, json|
+            setex_calls << { key: key, ttl: ttl, json: json }
+            'OK'
+          end
+
+          described_class.perform_now(company.id, malformed_content, user.id)
+
+          # Last call should be completed with errors from the service
+          last_call = setex_calls.last
+          data = JSON.parse(last_call[:json])
+          expect(data['status']).to eq('completed')
+          expect(data['errors']).to be_present
+          expect(data['total_rows']).to be_present
+          expect(data['success_count']).to be_present
+          expect(data['failed_count']).to be_present
+          expect(data['started_at']).to eq(Time.current.iso8601)
+          expect(data['import_type']).to eq('products')
+          expect(last_call[:ttl]).to eq(604800)
         end
+      end
+    end
 
-        described_class.perform_now(company.id, malformed_content, user.id)
+    context 'with progress callback' do
+      it 'passes on_progress callback to service' do
+        expect(ProductImportService).to receive(:new)
+          .with(company, file_content, user, on_progress: kind_of(Proc))
+          .and_return(instance_double(ProductImportService, import!: { imported_count: 2, updated_count: 0, errors: [] }))
 
-        # Last call should be completed with errors from the service
-        last_call = setex_calls.last
-        data = JSON.parse(last_call[:json])
-        expect(data['status']).to eq('completed')
-        expect(data['errors']).to be_present
+        described_class.perform_now(company.id, file_content, user.id)
       end
     end
   end
 
   describe 'progress tracking' do
-    let(:progress_key) { "import_progress:#{job_id}" }
+    let(:progress_key) { "import_progress:#{company.id}:#{job_id}" }
 
     before do
       allow_any_instance_of(ProductImportJob).to receive(:job_id).and_return(job_id)
     end
 
-    it 'uses 1 hour TTL for progress data' do
+    it 'uses 7 day TTL for progress data' do
       mock_service = instance_double(ProductImportService, import!: { imported_count: 0, updated_count: 0, errors: [] })
       allow(ProductImportService).to receive(:new).and_return(mock_service)
 
-      expect(mock_redis).to receive(:setex).with(progress_key, 3600, anything).at_least(:once)
+      expect(mock_redis).to receive(:setex).with(progress_key, 604800, anything).at_least(:once)
 
       described_class.perform_now(company.id, file_content, user.id)
     end
@@ -287,7 +330,7 @@ RSpec.describe ProductImportJob, type: :job do
       mock_service = instance_double(ProductImportService, import!: { imported_count: 2, updated_count: 0, errors: [] })
       allow(ProductImportService).to receive(:new).and_return(mock_service)
 
-      expect(mock_redis).to receive(:setex).with(progress_key, 3600, kind_of(String)).at_least(:once) do |_key, _ttl, json|
+      expect(mock_redis).to receive(:setex).with(progress_key, 604800, kind_of(String)).at_least(:once) do |_key, _ttl, json|
         expect { JSON.parse(json) }.not_to raise_error
       end
 
@@ -316,7 +359,7 @@ RSpec.describe ProductImportJob, type: :job do
 
   describe 'integration with ProductImportService' do
     it 'passes correct parameters to service' do
-      expect(ProductImportService).to receive(:new).with(company, file_content, user).and_call_original
+      expect(ProductImportService).to receive(:new).with(company, file_content, user, on_progress: kind_of(Proc)).and_call_original
 
       allow_any_instance_of(ProductImportService).to receive(:import!)
         .and_return({ imported_count: 2, updated_count: 0, errors: [] })
@@ -392,7 +435,7 @@ RSpec.describe ProductImportJob, type: :job do
     it 'passes large CSV to service' do
       mock_service = instance_double(ProductImportService)
       expect(ProductImportService).to receive(:new)
-        .with(company, large_csv, user)
+        .with(company, large_csv, user, on_progress: kind_of(Proc))
         .and_return(mock_service)
 
       allow(mock_service).to receive(:import!).and_return({

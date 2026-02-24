@@ -38,8 +38,8 @@ RSpec.describe ImportsController, type: :request do
       end
 
       before do
-        allow(redis).to receive(:keys).with('import_progress:*').and_return([ 'import_progress:job-123' ])
-        allow(redis).to receive(:get).with('import_progress:job-123').and_return(import_data)
+        allow(redis).to receive(:keys).with("import_progress:#{company.id}:*").and_return(["import_progress:#{company.id}:job-123"])
+        allow(redis).to receive(:get).with("import_progress:#{company.id}:job-123").and_return(import_data)
       end
 
       it 'returns success status' do
@@ -63,6 +63,30 @@ RSpec.describe ImportsController, type: :request do
         get imports_path
         expect(response).to have_http_status(:success)
         expect(response.body).to include('No imports yet')
+      end
+    end
+
+    context 'with cross-tenant isolation' do
+      let(:other_company) { create(:company) }
+
+      before do
+        # Company-scoped key pattern should only match current company
+        allow(redis).to receive(:keys)
+          .with("import_progress:#{company.id}:*")
+          .and_return(["import_progress:#{company.id}:job-own"])
+        allow(redis).to receive(:get)
+          .with("import_progress:#{company.id}:job-own")
+          .and_return({ 'status' => 'completed', 'import_type' => 'products' }.to_json)
+      end
+
+      it 'only returns imports for the current company' do
+        get imports_path
+        expect(response.body).to include('job-own')
+      end
+
+      it 'does not query other companies imports' do
+        expect(redis).not_to receive(:keys).with("import_progress:#{other_company.id}:*")
+        get imports_path
       end
     end
   end
@@ -233,7 +257,7 @@ RSpec.describe ImportsController, type: :request do
 
     context 'with existing progress data' do
       before do
-        allow(redis).to receive(:get).with("import_progress:#{job_id}").and_return(progress_data)
+        allow(redis).to receive(:get).with("import_progress:#{company.id}:#{job_id}").and_return(progress_data)
       end
 
       it 'renders progress page' do
@@ -256,7 +280,7 @@ RSpec.describe ImportsController, type: :request do
 
     context 'without progress data' do
       before do
-        allow(redis).to receive(:get).with("import_progress:#{job_id}").and_return(nil)
+        allow(redis).to receive(:get).with("import_progress:#{company.id}:#{job_id}").and_return(nil)
       end
 
       it 'shows pending status' do
@@ -303,7 +327,7 @@ RSpec.describe ImportsController, type: :request do
       end
 
       before do
-        allow(redis).to receive(:get).with("import_progress:#{job_id}").and_return(progress_data)
+        allow(redis).to receive(:get).with("import_progress:#{company.id}:#{job_id}").and_return(progress_data)
       end
 
       it 'downloads CSV file' do
@@ -346,7 +370,7 @@ RSpec.describe ImportsController, type: :request do
       end
 
       before do
-        allow(redis).to receive(:get).with("import_progress:#{job_id}").and_return(progress_data)
+        allow(redis).to receive(:get).with("import_progress:#{company.id}:#{job_id}").and_return(progress_data)
       end
 
       it 'redirects to imports index' do
@@ -362,7 +386,7 @@ RSpec.describe ImportsController, type: :request do
 
     context 'with missing progress data' do
       before do
-        allow(redis).to receive(:get).with("import_progress:#{job_id}").and_return(nil)
+        allow(redis).to receive(:get).with("import_progress:#{company.id}:#{job_id}").and_return(nil)
       end
 
       it 'redirects to imports index' do
@@ -403,7 +427,7 @@ RSpec.describe ImportsController, type: :request do
       end
 
       before do
-        allow(redis).to receive(:get).with("import_progress:#{job_id}").and_return(progress_data)
+        allow(redis).to receive(:get).with("import_progress:#{company.id}:#{job_id}").and_return(progress_data)
       end
 
       it 'handles alternate error format' do
@@ -424,7 +448,7 @@ RSpec.describe ImportsController, type: :request do
       end
 
       before do
-        allow(redis).to receive(:get).with("import_progress:#{job_id}").and_return(progress_data)
+        allow(redis).to receive(:get).with("import_progress:#{company.id}:#{job_id}").and_return(progress_data)
       end
 
       it 'handles missing fields gracefully' do

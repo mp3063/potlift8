@@ -308,6 +308,88 @@ RSpec.describe ProductImportService do
         expect(result[:errors].first[:error]).to eq('SKU is required')
       end
     end
+
+    context 'with on_progress callback' do
+      let(:csv_content) do
+        # 100 rows = 1 batch = 1 callback
+        rows = (1..100).map { |i| "SKU#{i},Product #{i},Description #{i},true" }
+        "sku,name,description,active\n" + rows.join("\n")
+      end
+
+      it 'calls the callback after each batch with processed and total counts' do
+        progress_calls = []
+        service = described_class.new(company, csv_content, user, on_progress: ->(processed, total) {
+          progress_calls << [processed, total]
+        })
+        service.import!
+
+        expect(progress_calls).to eq([[100, 100]])
+      end
+
+      it 'calls the callback multiple times for multiple batches' do
+        # 250 rows = 3 batches (100, 100, 50)
+        rows = (1..250).map { |i| "SKU#{i},Product #{i},Description #{i},true" }
+        large_csv = "sku,name,description,active\n" + rows.join("\n")
+
+        progress_calls = []
+        service = described_class.new(company, large_csv, user, on_progress: ->(processed, total) {
+          progress_calls << [processed, total]
+        })
+        service.import!
+
+        expect(progress_calls).to eq([[100, 250], [200, 250], [250, 250]])
+      end
+
+      it 'works without a callback (default nil)' do
+        service = described_class.new(company, csv_content, user)
+        expect { service.import! }.not_to raise_error
+      end
+    end
+
+    context 'with unrecognized boolean values' do
+      let(:csv_content) do
+        <<~CSV
+          sku,name,active
+          SKU1,Product 1,Y
+          SKU2,Product 2,TRUE
+          SKU3,Product 3,maybe
+          SKU4,Product 4,true
+        CSV
+      end
+
+      it 'reports errors for unrecognized active values' do
+        result = service.import!
+
+        error_rows = result[:errors].map { |e| e[:row] }
+        expect(error_rows).to include(2) # "Y" is unrecognized
+        expect(error_rows).to include(4) # "maybe" is unrecognized
+      end
+
+      it 'does not report errors for recognized active values' do
+        result = service.import!
+
+        error_messages = result[:errors].map { |e| e[:error] }
+        # "TRUE" (no space) matches /^(true|yes|1)$/i — so no error
+        expect(error_messages).not_to include(match(/TRUE/))
+        # "true" is recognized
+        expect(error_messages).not_to include(match(/'true'/))
+      end
+
+      it 'still creates the product even with unrecognized active value' do
+        service.import!
+
+        expect(company.products.find_by(sku: 'SKU1')).to be_present
+        expect(company.products.find_by(sku: 'SKU3')).to be_present
+      end
+
+      it 'includes helpful message in error' do
+        result = service.import!
+
+        error = result[:errors].find { |e| e[:row] == 2 }
+        expect(error[:error]).to include("Unrecognized active value")
+        expect(error[:error]).to include("true/false/yes/no/1/0")
+      end
+    end
   end
 
   describe 'private methods' do
