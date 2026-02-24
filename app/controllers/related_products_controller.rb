@@ -48,7 +48,7 @@ class RelatedProductsController < ApplicationController
   def reorder
     authorize :related_product, :reorder?
     params[:order].each_with_index do |id, index|
-      RelatedProduct.find(id).update(position: index + 1)
+      @product.related_products.find(id).update(position: index + 1)
     end
 
     head :ok

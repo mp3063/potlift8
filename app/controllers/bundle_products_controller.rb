@@ -73,7 +73,7 @@ class BundleProductsController < ApplicationController
     authorize :bundle_product, :reorder?
 
     params[:order].each_with_index do |id, index|
-      ProductConfiguration.find(id).update(configuration_position: index + 1)
+      @product.product_configurations_as_super.find(id).update(configuration_position: index + 1)
     end
 
     head :ok
