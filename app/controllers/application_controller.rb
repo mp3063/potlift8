@@ -18,6 +18,7 @@ class ApplicationController < ActionController::Base
   # Check if session data needs refresh from Authlift8
   # Called after authentication is verified
   before_action :check_session_version
+  before_action :set_paper_trail_whodunnit
 
   # Pundit safety net — raises if a controller action forgets to authorize.
   # Controllers that don't need authorization (e.g. DashboardController) must
@@ -31,6 +32,10 @@ class ApplicationController < ActionController::Base
 
   # Override Pundit's default to pass UserContext instead of bare User.
   # This gives policies access to role, scopes, and company.
+  def user_for_paper_trail
+    current_user&.name || current_user&.email || "System"
+  end
+
   def pundit_user
     @pundit_user ||= UserContext.new(
       current_user,

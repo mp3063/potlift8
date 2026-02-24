@@ -3,9 +3,8 @@
 module Products
   # Product activity timeline component for sidebar
   #
-  # Displays recent activity list in timeline-style format with icon indicators
-  # and timestamps. Currently shows placeholder content, designed for integration
-  # with audit/activity log system (e.g., PaperTrail, Audited).
+  # Displays the last 5 PaperTrail version entries in timeline format with
+  # icon indicators, user attribution, and human-readable change descriptions.
   #
   # @example Render activity timeline
   #   <%= render Products::ActivityTimelineComponent.new(product: @product) %>
@@ -23,28 +22,64 @@ module Products
 
     private
 
-    # Returns recent activities for the product
+    # Returns recent activities from PaperTrail version history
     #
-    # TODO: This would come from an audit/activity log system like PaperTrail
-    # Currently returns placeholder activities for UI demonstration
-    #
-    # @return [Array<Hash>] Array of activity hashes with type, description, timestamp
+    # @return [Array<Hash>] Array of activity hashes with type, description, timestamp, user
     def recent_activities
-      # Placeholder activities - replace with actual audit log when implemented
-      [
-        {
-          type: :update,
-          description: "Product updated",
-          timestamp: product.updated_at,
-          user: "System"
-        },
-        {
-          type: :create,
-          description: "Product created",
-          timestamp: product.created_at,
-          user: "System"
-        }
-      ]
+      @recent_activities ||= begin
+        versions = product.versions.order(id: :desc).limit(5)
+
+        activities = versions.map do |version|
+          changed_fields = begin
+            version.changeset&.keys&.reject { |k| k.in?(%w[updated_at created_at]) } || []
+          rescue StandardError
+            []
+          end
+
+          {
+            type: version_event_type(version.event),
+            description: version_description(version.event, changed_fields),
+            user: version.whodunnit || "System",
+            timestamp: version.created_at
+          }
+        end
+
+        if activities.empty?
+          activities << {
+            type: :create,
+            description: "Product created",
+            user: "System",
+            timestamp: product.created_at
+          }
+        end
+
+        activities
+      end
+    end
+
+    def version_event_type(event)
+      case event
+      when "create" then :create
+      when "destroy" then :delete
+      else :update
+      end
+    end
+
+    def version_description(event, changed_fields)
+      case event
+      when "create"
+        "Product created"
+      when "destroy"
+        "Product deleted"
+      else
+        if changed_fields.any?
+          field_names = changed_fields.first(3).map { |f| f.humanize.downcase }
+          suffix = changed_fields.size > 3 ? " and #{changed_fields.size - 3} more" : ""
+          "Updated #{field_names.to_sentence}#{suffix}"
+        else
+          "Product updated"
+        end
+      end
     end
 
     # Returns icon SVG path for activity type

@@ -111,7 +111,7 @@
     <div class="px-4 py-5 sm:p-6">
       <h2 class="text-lg font-medium leading-6 text-gray-900">Quick Actions</h2>
       <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <%= link_to products_path, class: "relative block p-4 border border-gray-300 rounded-lg hover:border-gray-400" do %>
+        <%= link_to new_product_path, class: "relative block p-4 border border-gray-300 rounded-lg hover:border-gray-400" do %>
           <div class="flex items-center">
             <svg class="h-6 w-6 text-gray-400 mr-3" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -129,7 +129,7 @@
           </div>
         <% end %>
 
-        <%= link_to storages_path, class: "relative block p-4 border border-gray-300 rounded-lg hover:border-gray-400" do %>
+        <%= link_to new_storage_path, class: "relative block p-4 border border-gray-300 rounded-lg hover:border-gray-400" do %>
           <div class="flex items-center">
             <svg class="h-6 w-6 text-gray-400 mr-3" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />

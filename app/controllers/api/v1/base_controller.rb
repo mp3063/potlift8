@@ -47,6 +47,10 @@ module Api
       #
       # @raise [ActionController::RoutingError] if authentication fails
       #
+      def user_for_paper_trail
+        "API (#{@current_company&.name || 'Unknown'})"
+      end
+
       def authenticate_api_request!
         token = extract_token_from_header
 
