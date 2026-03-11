@@ -367,11 +367,39 @@ def build_attribute_entry(product_attribute, value)
 end
 ```
 
-**Note:** `CatalogItem#effective_product_attribute_values` is a new method that returns the merged set of ProductAttributeValue records with catalog overrides applied, preserving the `product_attribute` association for mapping lookup. This replaces the flat `effective_attribute_values_hash`.
+**New method required:** `CatalogItem#effective_product_attribute_values` returns the merged set of attribute values with catalog overrides, preserving the `product_attribute` association for mapping lookup. Add to `app/models/catalog_item.rb`:
+
+```ruby
+# Returns product attribute values with catalog overrides merged in.
+# Unlike effective_attribute_values_hash (which returns flat {code => value}),
+# this returns an array of duck-typed objects with .product_attribute, .value, .info
+# so build_attribute_entry can access the ProductAttribute record for mapping.
+#
+# Catalog-level overrides take precedence over product-level values.
+# Only attributes with product_and_catalog_scope or catalog_scope can be overridden.
+def effective_product_attribute_values
+  product_values = product.product_attribute_values.includes(:product_attribute).index_by { |pav| pav.product_attribute_id }
+  catalog_overrides = catalog_item_attribute_values.includes(:product_attribute).index_by { |ciav| ciav.product_attribute_id }
+
+  # Merge: catalog overrides replace product values for matching attribute IDs
+  merged = product_values.merge(catalog_overrides)
+  merged.values
+end
+```
 
 #### Subproduct (variant) attribute enrichment
 
-The `build_subproducts_payload` must also use `build_attribute_entry` for variant-level attributes (price, ean per variant). The same pattern applies:
+The `build_subproducts_payload` (line 295-325 in `app/services/product_sync_service.rb`) currently calls `subproduct.attribute_values_hash` which returns a flat hash. Replace with enriched version. Change line 316 from:
+
+```ruby
+# BEFORE (line 316):
+attributes: subproduct.attribute_values_hash,
+
+# AFTER:
+attributes: build_subproduct_attributes(subproduct),
+```
+
+Add this private method to ProductSyncService:
 
 ```ruby
 def build_subproduct_attributes(subproduct)
@@ -386,45 +414,146 @@ end
 
 ### 6. Shopify8 Sync Changes
 
-#### ProductSchema::Build
+All changes in `/Users/sin/RubymineProjects/Ozz-Rails-8/Shopify8/app/services/shopify/product_schema/build.rb`.
 
-Replace hardcoded `attribute_by_code` calls with mapping-driven logic:
+#### Phase 1: Dual-format attribute accessor (deploy first)
+
+Add a helper that reads attribute values from both old (flat string) and new (enriched hash) payload formats. This makes Shopify8 backward-compatible during the transition.
 
 ```ruby
-def price_value(attributes)
-  find_by_shopify_field(attributes, "price")&.dig("value")
+# Reads an attribute value regardless of payload format.
+# Old format: attrs["price"] => "1999"
+# New format: attrs["price"] => { "value" => "1999", "shopify_field" => "price" }
+def attr_value(attrs, code)
+  val = attrs[code]
+  return nil if val.nil?
+  val.is_a?(Hash) ? val["value"] : val
 end
 
-def barcode_value(attributes)
-  find_by_shopify_field(attributes, "barcode")&.dig("value") ||
-    find_by_custom_handler(attributes, "barcode_fallback")&.dig("value")
+# Find attribute entry by shopify_field mapping (new format only)
+def find_by_shopify_field(attrs, field_name)
+  return nil unless attrs.is_a?(Hash)
+  attrs.values.find { |v| v.is_a?(Hash) && v["shopify_field"] == field_name }
 end
 
-def vendor_value(attributes)
-  find_by_shopify_field(attributes, "vendor")&.dig("value")
-end
-
-# Generic metafield builder
-def build_metafields_from_attributes(attributes)
-  attributes.select { |_code, attr| attr["shopify_metafield"].present? }
-            .map do |_code, attr|
-              meta = attr["shopify_metafield"]
-              {
-                namespace: meta["namespace"],
-                key: meta["key"],
-                value: attr["value"].to_s,
-                type: meta["type"]
-              }
-            end
+# Find attribute entry by custom_handler mapping (new format only)
+def find_by_custom_handler(attrs, handler_name)
+  return nil unless attrs.is_a?(Hash)
+  attrs.values.find { |v| v.is_a?(Hash) && v["custom_handler"] == handler_name }
 end
 ```
 
-**Special cases that remain hardcoded:**
-- `special_price` — date-range logic (check from/until before setting compareAtPrice)
-- `vat_group` — maps to Shopify tags, not a field or metafield
-- `secondary_sku` — barcode fallback logic (try ean first)
+#### Phase 1: Update existing methods to use dual-format accessor
 
-Everything else becomes generic mapping.
+These changes make existing methods work with both old and new payload formats:
+
+```ruby
+# localized_attribute (line 73-76) — update to handle enriched format
+def localized_attribute(code)
+  localized = load.dig("attributes", "localized", code, "localized_value", @shop_language)
+  return localized if localized.present?
+  attrs = load.dig("attributes", "values") || load["attributes"] || {}
+  attr_value(attrs, code)
+end
+
+# extract_vendor (line 80-86) — update to use attr_value
+def extract_vendor
+  labels = load["labels"] || []
+  brand = labels.find { |l| l["label_type"] == "brand" }
+  return localized_label_name(brand) if brand
+
+  attrs = load.dig("attributes", "values") || load["attributes"] || {}
+  attr_value(attrs, "brand")
+end
+
+# extract_compare_at_price (line 118-126) — update to use attr_value
+def extract_compare_at_price(attributes)
+  special_price = attr_value(attributes, "special_price")
+  regular_price = attr_value(attributes, "price")
+  return nil if special_price.blank? || special_price == regular_price
+  price_from_cents(regular_price)
+end
+
+# build_single_variant (line 176-196) — update to use attr_value
+def build_single_variant
+  attrs = load.dig("attributes", "values") || load["attributes"] || {}
+  existing = find_existing_variant(product_field("sku"))
+
+  variant = {
+    sku: product_field("sku"),
+    price: price_from_cents(attr_value(attrs, "price")),
+    compareAtPrice: extract_compare_at_price(attrs),
+    barcode: attr_value(attrs, "ean") || product_field("ean"),
+    taxable: true
+  }
+
+  # ... existing/new variant logic unchanged ...
+  variant.compact
+end
+
+# build_variant_from_subproduct (line 140-174) — update to use attr_value
+def build_variant_from_subproduct(subproduct, index)
+  attrs = subproduct["attributes"] || {}
+  # ... rest uses attr_value(attrs, "price"), attr_value(attrs, "ean"), etc.
+end
+
+# build_metafields (line 233-275) — update sizechart/description access
+def build_metafields
+  metafields = []
+  attrs = load.dig("attributes", "values") || load["attributes"] || {}
+
+  # Origin SKU (always)
+  metafields << { namespace: "global", key: "origin_sku", value: product_field("sku"), type: "single_line_text_field" }
+
+  # Detailed description — from localized_attribute (unchanged logic)
+  if (desc = localized_attribute("description_html")).present?
+    metafields << { namespace: "global", key: "detailed_description_html", value: desc, type: "multi_line_text_field" }
+  end
+
+  # Size chart — use attr_value for dual-format
+  if (sizechart = attr_value(attrs, "sizechart")).present?
+    metafields << { namespace: "global", key: "sizechart", value: sizechart, type: "single_line_text_field" }
+  end
+
+  # ... label, bundle composition unchanged ...
+  metafields
+end
+```
+
+#### Phase 3: Generic metafield builder (after Potlift8 deploys enriched format)
+
+Once all payloads use the new format, add generic metafield building from attribute mapping:
+
+```ruby
+# Builds metafields from any attributes that have shopify_metafield mapping.
+# This handles both system metafield attributes AND user-opted custom attributes.
+def build_metafields_from_attributes(attrs)
+  return [] unless attrs.is_a?(Hash)
+
+  attrs.select { |_code, v| v.is_a?(Hash) && v["shopify_metafield"].present? }
+       .map do |_code, attr|
+         meta = attr["shopify_metafield"]
+         {
+           namespace: meta["namespace"],
+           key: meta["key"],
+           value: attr["value"].to_s,
+           type: meta["type"]
+         }
+       end
+end
+```
+
+Then update `build_metafields` to use it:
+```ruby
+# Replace hardcoded detailed_description and sizechart blocks with:
+metafields.concat(build_metafields_from_attributes(attrs))
+```
+
+**Special cases that remain hardcoded (all phases):**
+- `special_price` — date-range logic (check from/until before setting compareAtPrice)
+- `vat_group` — maps to Shopify tags via `build_tags`, not a field or metafield
+- `secondary_sku` — barcode fallback logic (try ean first, fall back to secondary_sku)
+- `description_html` vs `detailed_description` — currently `localized_attribute("description_html")` populates BOTH the product body (`descriptionHtml`) and the metafield (`detailed_description_html`). After migration: `description_html` attribute (with `shopify_field: :descriptionHtml`) feeds the product body. `detailed_description` attribute (with `shopify_metafield`) feeds the metafield. These are two separate attributes.
 
 ### 7. Seeds & Backfill
 
@@ -541,48 +670,205 @@ def provision_system_attributes
 end
 ```
 
-### 8. UI Changes
+### 8. Controller Changes
 
-#### Product Attributes Index
+**File:** `app/controllers/product_attributes_controller.rb`
 
-- System attributes show a lock icon or "System" badge
-- System attributes cannot be deleted (no delete button)
-- System attributes still draggable for reordering
+#### Strong params defense-in-depth
 
-#### Product Attribute Edit Form
+Add system field stripping in `product_attribute_params` (line 140-177). Even though model validations prevent system field changes, the controller should strip them as defense-in-depth:
 
-- System attributes: code, type, and format fields are disabled/read-only
-- System attributes: show info text "This is a system attribute required for Shopify sync. Code, type, and format cannot be changed."
-- Non-system attributes: new "Shopify Sync" section with toggle + metafield fields
+```ruby
+def product_attribute_params
+  permitted = params.require(:product_attribute).permit(
+    :name, :code, :view_format, :attribute_group_id, :mandatory,
+    :help_text, :default_value, :pa_type, :description,
+    :product_attribute_scope, :options,
+    # New Shopify sync fields (custom attributes only)
+    :shopify_metafield_namespace, :shopify_metafield_key, :shopify_metafield_type,
+    options: []
+  )
 
-#### Product Attribute New Form
+  # Strip immutable fields for system attributes
+  if @product_attribute&.system?
+    permitted.delete(:code)
+    permitted.delete(:pa_type)
+    permitted.delete(:view_format)
+    permitted.delete(:shopify_metafield_namespace)
+    permitted.delete(:shopify_metafield_key)
+    permitted.delete(:shopify_metafield_type)
+  end
 
-- No changes to creation flow for custom attributes
-- System attributes are never created via the form (only via registry)
+  # ... existing options JSON parsing logic unchanged ...
+end
+```
+
+#### Destroy action (line 79-88)
+
+Add system check before the existing "has values?" check:
+
+```ruby
+def destroy
+  authorize @product_attribute
+
+  if @product_attribute.system?
+    redirect_to product_attributes_path, alert: "System attributes cannot be deleted."
+    return
+  end
+
+  if @product_attribute.product_attribute_values.any?
+    redirect_to product_attributes_path, alert: "Cannot delete attribute with existing values."
+  else
+    @product_attribute.destroy
+    redirect_to product_attributes_path, notice: "Attribute deleted successfully."
+  end
+end
+```
+
+### 9. UI Changes
+
+#### Product Attributes Index (`app/views/product_attributes/index.html.erb`)
+
+- System attributes show a `Ui::BadgeComponent.new(variant: :info) { "System" }` badge next to name
+- System attributes: hide delete button (line ~69 in attribute row)
+- System attributes still draggable for reordering within groups
+
+#### Product Attribute Form (`app/views/product_attributes/_form.html.erb`)
+
+**System attribute locked fields (lines 62-141):**
+
+Wrap code, pa_type, view_format fields with conditional `disabled`:
+
+```erb
+<%# Code field (line ~40) %>
+<%= form.text_field :code, disabled: @product_attribute.system?, ... %>
+
+<%# Attribute Type select (line ~62) %>
+<%= form.select :pa_type, ..., {}, { disabled: @product_attribute.system? } %>
+
+<%# View Format select (line ~88) %>
+<%= form.select :view_format, ..., {}, { disabled: @product_attribute.system? } %>
+```
+
+Add system info banner at top of form when editing system attribute:
+
+```erb
+<% if @product_attribute.system? %>
+  <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+    <p class="text-sm text-blue-800">
+      This is a system attribute required for Shopify sync. Code, type, and format cannot be changed.
+    </p>
+  </div>
+<% end %>
+```
+
+**Shopify Sync section (add after line ~214, end of form):**
+
+Only shown for NON-system attributes:
+
+```erb
+<% unless @product_attribute.system? %>
+  <div class="border-t pt-6 mt-6" data-controller="shopify-sync-toggle">
+    <h3 class="text-lg font-medium mb-4">Shopify Sync</h3>
+
+    <label class="flex items-center gap-2 mb-4">
+      <%= check_box_tag :sync_to_shopify,
+            "1",
+            @product_attribute.shopify_metafield_namespace.present?,
+            data: { action: "shopify-sync-toggle#toggle", shopify_sync_toggle_target: "checkbox" } %>
+      <span class="text-sm font-medium">Sync to Shopify as metafield</span>
+    </label>
+
+    <div data-shopify-sync-toggle-target="fields"
+         class="<%= 'hidden' unless @product_attribute.shopify_metafield_namespace.present? %> space-y-4 ml-6">
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Namespace</label>
+        <%= form.text_field :shopify_metafield_namespace,
+              value: @product_attribute.shopify_metafield_namespace || "custom",
+              class: "form-input w-full" %>
+        <p class="text-xs text-gray-500 mt-1">Default: "custom". Use "global" for store-wide fields.</p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Key</label>
+        <%= form.text_field :shopify_metafield_key,
+              value: @product_attribute.shopify_metafield_key || @product_attribute.code,
+              class: "form-input w-full" %>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Metafield Type</label>
+        <%= form.select :shopify_metafield_type,
+              ProductAttribute::SHOPIFY_METAFIELD_TYPE_MAP.values.uniq,
+              { selected: @product_attribute.shopify_metafield_type ||
+                          ProductAttribute::SHOPIFY_METAFIELD_TYPE_MAP[@product_attribute.pa_type] },
+              { class: "form-select w-full" } %>
+      </div>
+    </div>
+  </div>
+<% end %>
+```
+
+**Stimulus controller** (`app/javascript/controllers/shopify_sync_toggle_controller.js`):
+
+```javascript
+import { Controller } from "@hotwired/stimulus"
+
+export default class extends Controller {
+  static targets = ["checkbox", "fields"]
+
+  toggle() {
+    this.fieldsTarget.classList.toggle("hidden", !this.checkboxTarget.checked)
+    if (!this.checkboxTarget.checked) {
+      // Clear metafield fields when unchecked
+      this.fieldsTarget.querySelectorAll("input, select").forEach(el => {
+        if (el.type !== "checkbox") el.value = ""
+      })
+    }
+  }
+}
+```
+
+**Metafield type map constant** (add to `app/models/product_attribute.rb`):
+
+```ruby
+SHOPIFY_METAFIELD_TYPE_MAP = {
+  "patype_text" => "single_line_text_field",
+  "patype_number" => "number_decimal",
+  "patype_boolean" => "boolean",
+  "patype_select" => "single_line_text_field",
+  "patype_multiselect" => "list.single_line_text_field",
+  "patype_date" => "date",
+  "patype_rich_text" => "multi_line_text_field",
+  "patype_custom" => "json"
+}.freeze
+```
 
 ## Files to Modify
 
 ### Potlift8
 
-| File | Change |
-|------|--------|
-| `app/models/concerns/system_attributes.rb` | **New** — Registry constant and `ensure_system_attributes!` |
-| `app/models/product_attribute.rb` | Add system validations, include SystemAttributes |
-| `app/models/company.rb` | Add `after_create :provision_system_attributes` |
-| `db/migrate/XXXX_add_system_and_shopify_metafield_to_product_attributes.rb` | **New** — 4 columns |
-| `db/seeds.rb` | Replace cannabis attributes with `ensure_system_attributes!` call |
-| `lib/tasks/product_attributes.rake` | **New** — Backfill rake task |
-| `app/services/product_sync_service.rb` | Enrich attribute payload with mapping info |
-| `app/controllers/product_attributes_controller.rb` | Disable fields for system attributes |
-| `app/views/product_attributes/_form.html.erb` | Conditional disabled fields + Shopify sync section |
-| `app/views/product_attributes/index.html.erb` | System badge, hide delete for system |
+| File | Change | Lines Affected |
+|------|--------|----------------|
+| `app/models/concerns/system_attributes.rb` | **New** — Registry constant, groups, `ensure_system_attributes!`, helpers | — |
+| `app/models/product_attribute.rb` | Include SystemAttributes, add `SHOPIFY_METAFIELD_TYPE_MAP`, system validations, destroy prevention | After existing validations |
+| `app/models/company.rb` | Add `after_create :provision_system_attributes` | After existing callbacks |
+| `app/models/catalog_item.rb` | Add `effective_product_attribute_values` method | After line 126 |
+| `db/migrate/XXXX_add_system_and_shopify_metafield_to_product_attributes.rb` | **New** — 4 columns + index | — |
+| `db/seeds.rb` | Replace cannabis attributes (lines ~209-387) with `ensure_system_attributes!` call | Lines 209-387 |
+| `lib/tasks/product_attributes.rake` | **New** — Backfill rake task | — |
+| `app/services/product_sync_service.rb` | Rewrite `build_attributes_payload` (lines 167-195), add `build_attribute_entry`, `build_subproduct_attributes`, update line 316 | Lines 167-195, 316 |
+| `app/controllers/product_attributes_controller.rb` | Add metafield params, system field stripping, system destroy check | Lines 79-88, 140-177 |
+| `app/views/product_attributes/_form.html.erb` | Disabled fields for system, system info banner, Shopify sync section | Lines 40, 62, 88, after 214 |
+| `app/views/product_attributes/index.html.erb` | System badge, hide delete for system | Line ~69 |
+| `app/javascript/controllers/shopify_sync_toggle_controller.js` | **New** — Toggle Shopify sync fields visibility | — |
 
 ### Shopify8
 
-| File | Change |
-|------|--------|
-| `app/services/shopify/product_schema/build.rb` | Replace hardcoded attribute lookups with mapping-driven logic |
-| `app/services/executors/product_changed_executor.rb` | Use new metafield builder for custom attribute metafields |
+| File | Change | Lines Affected |
+|------|--------|----------------|
+| `app/services/shopify/product_schema/build.rb` | Add `attr_value`, `find_by_shopify_field`, `find_by_custom_handler` helpers; update `localized_attribute`, `extract_vendor`, `extract_compare_at_price`, `build_single_variant`, `build_variant_from_subproduct`, `build_metafields`; add `build_metafields_from_attributes` | Lines 62-86, 118-126, 140-196, 233-275 |
 
 ## Testing Strategy
 
