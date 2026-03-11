@@ -118,15 +118,28 @@
           <h3 class="text-sm font-medium text-gray-900 mb-3">Shopify Sync Preview</h3>
           <div class="space-y-2">
             <% shopify_catalogs.each do |ci| %>
-              <%= link_to sync_preview_catalog_path(ci.catalog.code, product_id: @product.id),
-                  data: { turbo_frame: "sync-preview-drawer" },
-                  class: "flex items-center justify-between p-2 rounded hover:bg-gray-50
-                         transition-colors group" do %>
+              <div class="flex items-center justify-between p-2 rounded hover:bg-gray-50 transition-colors">
                 <span class="text-sm text-gray-700"><%= ci.catalog.name %></span>
-                <span class="text-xs text-gray-400 group-hover:text-indigo-600">
-                  Preview &rarr;
-                </span>
-              <% end %>
+                <div class="flex items-center gap-2">
+                  <div id="sync-btn-<%= ci.catalog.code %>">
+                    <%= button_to sync_product_catalog_path(ci.catalog.code, product_id: @product.id),
+                        method: :post,
+                        class: "inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-indigo-600
+                               bg-indigo-50 rounded hover:bg-indigo-100 transition-colors",
+                        data: { turbo_submits_with: "Syncing..." } do %>
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+                      </svg>
+                      Sync
+                    <% end %>
+                  </div>
+                  <%= link_to sync_preview_catalog_path(ci.catalog.code, product_id: @product.id),
+                      data: { turbo_frame: "sync-preview-drawer" },
+                      class: "text-xs text-gray-400 hover:text-indigo-600 transition-colors" do %>
+                    Preview &rarr;
+                  <% end %>
+                </div>
+              </div>
             <% end %>
           </div>
         </div>
