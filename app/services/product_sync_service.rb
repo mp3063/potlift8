@@ -251,6 +251,14 @@ class ProductSyncService
   # @return [Array<Hash>] Array of asset data with URLs
   #
   def build_assets_payload
+    assets = build_product_assets_payload
+    return assets if assets.present?
+
+    # Fall back to Active Storage images directly attached to the product
+    build_active_storage_images_payload
+  end
+
+  def build_product_assets_payload
     @product.product_assets
             .images
             .visible
@@ -269,6 +277,22 @@ class ProductSyncService
         content_type: asset.file.content_type
       }
     end.compact
+  end
+
+  def build_active_storage_images_payload
+    return [] unless @product.images.attached?
+
+    @product.images.each_with_index.map do |image, index|
+      {
+        name: image.filename.to_s,
+        priority: @product.images.count - index,
+        url: Rails.application.routes.url_helpers.rails_blob_url(
+          image,
+          host: ENV.fetch("POTLIFT8_HOST", "http://localhost:3246")
+        ),
+        content_type: image.content_type
+      }
+    end
   end
 
   # Build translations payload
