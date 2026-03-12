@@ -8,7 +8,7 @@ class ConfigurationsController < ApplicationController
 
   # GET /products/:product_id/configurations
   def index
-    authorize Configuration
+    authorize ::Configuration
 
     @configurations = @product.configurations
                               .includes(:configuration_values)
@@ -17,7 +17,7 @@ class ConfigurationsController < ApplicationController
 
   # GET /products/:product_id/configurations/new
   def new
-    authorize Configuration
+    authorize ::Configuration
 
     @configuration = @product.configurations.build
     @configuration.configuration_values.build # For nested form
@@ -25,7 +25,7 @@ class ConfigurationsController < ApplicationController
 
   # POST /products/:product_id/configurations
   def create
-    authorize Configuration
+    authorize ::Configuration
 
     @configuration = @product.configurations.build(configuration_params)
     @configuration.company = current_potlift_company
