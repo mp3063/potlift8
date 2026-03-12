@@ -104,7 +104,7 @@ class ProductSyncJob < ApplicationJob
 
     # Record successful sync on catalog_item
     catalog_item = CatalogItem.find_by(catalog: catalog, product: product)
-    catalog_item&.update!(sync_status: :synced, last_synced_at: Time.current, last_sync_error: nil)
+    catalog_item&.update!(sync_status: :pending, last_sync_error: nil)
 
     Rails.logger.info(
       "Product sync completed: Product #{product.id} (#{product.sku}) " \

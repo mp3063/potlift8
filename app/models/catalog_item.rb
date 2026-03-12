@@ -112,6 +112,18 @@ class CatalogItem < ApplicationRecord
   #   catalog_item.effective_attribute_values_hash
   #   # => { 'price' => '1999', 'weight' => '500', 'description' => 'Special text' }
   #
+  # Returns product attribute values with catalog overrides merged in.
+  # Unlike effective_attribute_values_hash (which returns flat {code => value}),
+  # this returns an array of duck-typed objects with .product_attribute, .value, .info
+  # so build_attribute_entry can access the ProductAttribute record for mapping.
+  def effective_product_attribute_values
+    product_values = product.product_attribute_values.includes(:product_attribute).index_by(&:product_attribute_id)
+    catalog_overrides = catalog_item_attribute_values.includes(:product_attribute).index_by(&:product_attribute_id)
+
+    merged = product_values.merge(catalog_overrides)
+    merged.values
+  end
+
   def effective_attribute_values_hash
     # Start with product attributes
     result = product.attribute_values_hash.dup

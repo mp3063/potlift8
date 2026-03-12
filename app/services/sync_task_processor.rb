@@ -48,6 +48,8 @@ class SyncTaskProcessor
     order_sync
     catalog_sync
     shopify_product_deleted
+    shopify_sync_confirmed
+    shopify_sync_failed
   ].freeze
 
   # Sync directions
@@ -92,6 +94,10 @@ class SyncTaskProcessor
                process_catalog_sync(load, key)
     when "shopify_product_deleted"
                process_shopify_product_deleted(load, key)
+    when "shopify_sync_confirmed"
+               process_shopify_sync_confirmed(load, key)
+    when "shopify_sync_failed"
+               process_shopify_sync_failed(load, key)
     else
                { error: "Unsupported event type: #{event_type}" }
     end
@@ -318,6 +324,45 @@ class SyncTaskProcessor
     end
 
     { product_id: product.id, sku: product.sku, catalog_items_reset: reset_count }
+  end
+
+  def process_shopify_sync_confirmed(load, key)
+    update_sync_status_from_callback(load, key, :synced)
+  end
+
+  def process_shopify_sync_failed(load, key)
+    update_sync_status_from_callback(load, key, :failed)
+  end
+
+  def update_sync_status_from_callback(load, key, status)
+    load_hash = load.is_a?(ActionController::Parameters) ? load.to_unsafe_h : load
+    data = load_hash["data"] || load_hash
+
+    sku = key || data["sku"]
+    catalog_code = data["catalog_code"]
+
+    return { error: "SKU is required" } unless sku.present?
+    return { error: "catalog_code is required" } unless catalog_code.present?
+
+    product = company.products.find_by(sku: sku)
+    return { error: "Product not found: #{sku}" } unless product
+
+    catalog = company.catalogs.find_by(code: catalog_code)
+    return { error: "Catalog not found: #{catalog_code}" } unless catalog
+
+    catalog_item = CatalogItem.find_by(catalog: catalog, product: product)
+    return { error: "CatalogItem not found for #{sku} in #{catalog_code}" } unless catalog_item
+
+    attrs = { sync_status: status }
+    if status == :synced
+      attrs[:last_synced_at] = Time.current
+      attrs[:last_sync_error] = nil
+    else
+      attrs[:last_sync_error] = data["error"]&.truncate(255)
+    end
+
+    catalog_item.update!(attrs)
+    { product_id: product.id, sku: sku, catalog_code: catalog_code, sync_status: status.to_s }
   end
 
   # Build success response

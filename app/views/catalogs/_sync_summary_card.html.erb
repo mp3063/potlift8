@@ -32,6 +32,12 @@
           <div class="text-lg font-semibold text-yellow-600"><%= sync_counts[:outdated] %></div>
           <div class="text-xs text-gray-500">Outdated</div>
         </div>
+        <% if sync_counts[:pending] && sync_counts[:pending] > 0 %>
+          <div class="text-center">
+            <div class="text-lg font-semibold text-amber-500"><%= sync_counts[:pending] %></div>
+            <div class="text-xs text-gray-500">Pending</div>
+          </div>
+        <% end %>
         <div class="text-center">
           <div class="text-lg font-semibold text-red-600"><%= sync_counts[:failed] %></div>
           <div class="text-xs text-gray-500">Failed</div>

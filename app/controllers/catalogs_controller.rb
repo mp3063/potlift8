@@ -68,13 +68,7 @@ class CatalogsController < ApplicationController
     end
 
     if @catalog.shopify_connected?
-      all_items = @catalog.catalog_items
-      @sync_counts = {
-        synced: all_items.sync_synced.where("last_synced_at > ?", 1.hour.ago).count,
-        outdated: all_items.sync_synced.where("last_synced_at <= ?", 1.hour.ago).count,
-        failed: all_items.sync_failed.count,
-        never: all_items.sync_never_synced.count
-      }
+      @sync_counts = compute_sync_counts(@catalog)
     end
 
     respond_to do |format|
@@ -515,6 +509,7 @@ class CatalogsController < ApplicationController
     {
       synced: items.sync_synced.where("last_synced_at > ?", 1.hour.ago).count,
       outdated: items.sync_synced.where("last_synced_at <= ?", 1.hour.ago).count,
+      pending: items.sync_pending.count,
       failed: items.sync_failed.count,
       never: items.sync_never_synced.count
     }

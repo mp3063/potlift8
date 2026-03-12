@@ -157,7 +157,8 @@ catalogs << FactoryBot.create(:catalog,
     'shipping_regions' => [ 'DE', 'NL', 'FR', 'ES' ],
     # Shopify8 sync configuration
     'sync_target' => 'shopify8',
-    'shopify_api_token' => 'b2b9c829eecd344d688a01b13035ce938823d8d5bcbb689501ebfc2502d4bbba'
+    'shopify_api_token' => 'b2b9c829eecd344d688a01b13035ce938823d8d5bcbb689501ebfc2502d4bbba',
+    'shop_id' => 2
   }
 )
 
@@ -206,184 +207,84 @@ puts "   ✓ Created #{catalogs.count} catalogs"
 catalogs.each { |c| puts "      - #{c.name} (#{c.code}, #{c.currency_code.upcase})" }
 
 # ============================================================================
-# 4. CREATE PRODUCT ATTRIBUTES
+# 4. CREATE PRODUCT ATTRIBUTES (System + Custom)
 # ============================================================================
 puts "\n📋 Creating Product Attributes..."
 
+# System attributes are created automatically by Company after_create callback.
+# Ensure they exist (idempotent) and collect references for seeding values below.
+ProductAttribute.ensure_system_attributes!(company)
+
 attributes = {}
+company.product_attributes.find_each { |pa| attributes[pa.code.to_sym] = pa }
 
-# Pricing Group
-pricing_group = FactoryBot.create(:attribute_group,
-  company: company,
-  code: 'pricing',
-  name: 'Pricing Information'
-)
+# Cannabis-Specific Custom Attributes (company-specific, not system)
+cannabis_group = company.attribute_groups.find_or_create_by!(code: 'cannabis') do |g|
+  g.name = 'Cannabis Properties'
+  g.position = 5
+end
 
-attributes[:price] = FactoryBot.create(:product_attribute,
-  company: company,
-  code: 'price',
-  name: 'Price',
-  pa_type: :patype_number,
-  view_format: :view_format_price,
-  product_attribute_scope: :product_and_catalog_scope,
-  mandatory: true,
-  has_rules: true,
-  rules: [ 'positive', 'not_null' ],
-  attribute_group: pricing_group,
-  attribute_position: 1
-)
+attributes[:thc_percentage] = company.product_attributes.find_or_create_by!(code: 'thc_percentage') do |pa|
+  pa.name = 'THC %'
+  pa.pa_type = :patype_number
+  pa.view_format = :view_format_general
+  pa.product_attribute_scope = :product_scope
+  pa.mandatory = false
+  pa.attribute_group = cannabis_group
+  pa.attribute_position = 1
+  pa.info = { 'unit' => '%', 'max' => 35, 'min' => 0 }
+end
 
-attributes[:cost] = FactoryBot.create(:product_attribute,
-  company: company,
-  code: 'cost',
-  name: 'Cost Price',
-  pa_type: :patype_number,
-  view_format: :view_format_price,
-  product_attribute_scope: :product_scope,
-  mandatory: false,
-  has_rules: true,
-  rules: [ 'positive' ],
-  attribute_group: pricing_group,
-  attribute_position: 2
-)
+attributes[:cbd_percentage] = company.product_attributes.find_or_create_by!(code: 'cbd_percentage') do |pa|
+  pa.name = 'CBD %'
+  pa.pa_type = :patype_number
+  pa.view_format = :view_format_general
+  pa.product_attribute_scope = :product_scope
+  pa.mandatory = false
+  pa.attribute_group = cannabis_group
+  pa.attribute_position = 2
+  pa.info = { 'unit' => '%', 'max' => 25, 'min' => 0 }
+end
 
-# Product Details Group
-details_group = FactoryBot.create(:attribute_group,
-  company: company,
-  code: 'details',
-  name: 'Product Details'
-)
+attributes[:strain_type] = company.product_attributes.find_or_create_by!(code: 'strain_type') do |pa|
+  pa.name = 'Strain Type'
+  pa.pa_type = :patype_select
+  pa.view_format = :view_format_selectable
+  pa.product_attribute_scope = :product_scope
+  pa.mandatory = false
+  pa.attribute_group = cannabis_group
+  pa.attribute_position = 3
+  pa.info = { 'options' => [ 'Indica', 'Sativa', 'Hybrid', 'CBD-Dominant' ] }
+end
 
-attributes[:description] = FactoryBot.create(:product_attribute,
-  company: company,
-  code: 'description',
-  name: 'Description',
-  pa_type: :patype_rich_text,
-  view_format: :view_format_html,
-  product_attribute_scope: :product_and_catalog_scope,
-  mandatory: true,
-  attribute_group: details_group,
-  attribute_position: 1
-)
+attributes[:terpene_profile] = company.product_attributes.find_or_create_by!(code: 'terpene_profile') do |pa|
+  pa.name = 'Dominant Terpenes'
+  pa.pa_type = :patype_multiselect
+  pa.view_format = :view_format_selectable
+  pa.product_attribute_scope = :product_scope
+  pa.mandatory = false
+  pa.attribute_group = cannabis_group
+  pa.attribute_position = 4
+  pa.info = { 'options' => [ 'Myrcene', 'Limonene', 'Caryophyllene', 'Pinene', 'Linalool', 'Humulene' ] }
+end
 
-attributes[:short_description] = FactoryBot.create(:product_attribute,
-  company: company,
-  code: 'short_description',
-  name: 'Short Description',
-  pa_type: :patype_text,
-  view_format: :view_format_general,
-  product_attribute_scope: :product_and_catalog_scope,
-  mandatory: false,
-  attribute_group: details_group,
-  attribute_position: 2
-)
+attributes[:package_size] = company.product_attributes.find_or_create_by!(code: 'package_size') do |pa|
+  pa.name = 'Package Size'
+  pa.pa_type = :patype_select
+  pa.view_format = :view_format_selectable
+  pa.product_attribute_scope = :product_scope
+  pa.mandatory = false
+  pa.attribute_group = company.attribute_groups.find_by(code: 'physical')
+  pa.attribute_position = 3
+  pa.info = { 'options' => [ '1g', '3.5g', '7g', '14g', '28g', '100mg', '250mg', '500mg' ] }
+end
 
-# Cannabis-Specific Attributes Group
-cannabis_group = FactoryBot.create(:attribute_group,
-  company: company,
-  code: 'cannabis',
-  name: 'Cannabis Properties'
-)
+# Map old seed attribute names to system attribute codes
+attributes[:cost] = attributes[:purchase_price]
+attributes[:description] = attributes[:description_html]
 
-attributes[:thc_percentage] = FactoryBot.create(:product_attribute,
-  company: company,
-  code: 'thc_percentage',
-  name: 'THC %',
-  pa_type: :patype_number,
-  view_format: :view_format_general,
-  product_attribute_scope: :product_scope,
-  mandatory: false,
-  has_rules: false,
-  rules: [],
-  attribute_group: cannabis_group,
-  attribute_position: 1,
-  info: { 'unit' => '%', 'max' => 35, 'min' => 0 }
-)
-
-attributes[:cbd_percentage] = FactoryBot.create(:product_attribute,
-  company: company,
-  code: 'cbd_percentage',
-  name: 'CBD %',
-  pa_type: :patype_number,
-  view_format: :view_format_general,
-  product_attribute_scope: :product_scope,
-  mandatory: false,
-  has_rules: false,
-  rules: [],
-  attribute_group: cannabis_group,
-  attribute_position: 2,
-  info: { 'unit' => '%', 'max' => 25, 'min' => 0 }
-)
-
-attributes[:strain_type] = FactoryBot.create(:product_attribute,
-  company: company,
-  code: 'strain_type',
-  name: 'Strain Type',
-  pa_type: :patype_select,
-  view_format: :view_format_selectable,
-  product_attribute_scope: :product_scope,
-  mandatory: false,
-  attribute_group: cannabis_group,
-  attribute_position: 3,
-  info: {
-    'options' => [ 'Indica', 'Sativa', 'Hybrid', 'CBD-Dominant' ]
-  }
-)
-
-attributes[:terpene_profile] = FactoryBot.create(:product_attribute,
-  company: company,
-  code: 'terpene_profile',
-  name: 'Dominant Terpenes',
-  pa_type: :patype_multiselect,
-  view_format: :view_format_selectable,
-  product_attribute_scope: :product_scope,
-  mandatory: false,
-  attribute_group: cannabis_group,
-  attribute_position: 4,
-  info: {
-    'options' => [ 'Myrcene', 'Limonene', 'Caryophyllene', 'Pinene', 'Linalool', 'Humulene' ]
-  }
-)
-
-# Physical Properties Group
-physical_group = FactoryBot.create(:attribute_group,
-  company: company,
-  code: 'physical',
-  name: 'Physical Properties'
-)
-
-attributes[:weight] = FactoryBot.create(:product_attribute,
-  company: company,
-  code: 'weight',
-  name: 'Weight',
-  pa_type: :patype_number,
-  view_format: :view_format_weight,
-  product_attribute_scope: :product_scope,
-  mandatory: false,
-  has_rules: false,
-  rules: [],
-  attribute_group: physical_group,
-  attribute_position: 1,
-  info: { 'unit' => 'g', 'min' => 0.1 }
-)
-
-attributes[:package_size] = FactoryBot.create(:product_attribute,
-  company: company,
-  code: 'package_size',
-  name: 'Package Size',
-  pa_type: :patype_select,
-  view_format: :view_format_selectable,
-  product_attribute_scope: :product_scope,
-  mandatory: false,
-  attribute_group: physical_group,
-  attribute_position: 2,
-  info: {
-    'options' => [ '1g', '3.5g', '7g', '14g', '28g', '100mg', '250mg', '500mg' ]
-  }
-)
-
-puts "   ✓ Created #{attributes.count} product attributes"
-attributes.each { |key, attr| puts "      - #{attr.name} (#{attr.code})" }
+puts "   ✓ Created #{attributes.count} product attributes (#{company.product_attributes.where(system: true).count} system)"
+attributes.each { |key, attr| puts "      - #{attr.name} (#{attr.code})#{attr.system? ? ' [system]' : ''}" }
 
 # ============================================================================
 # 5. CREATE LABEL HIERARCHY (Categories)

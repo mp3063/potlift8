@@ -165,33 +165,61 @@ class ProductSyncService
   # @return [Hash] Attribute data with values and localized variants
   #
   def build_attributes_payload
-    base_attributes = if @catalog.present?
+    values = {}
+    localized = {}
+
+    # Use catalog overrides when available, fall back to product values
+    attribute_values = if @catalog.present?
       catalog_item = @catalog.catalog_items.find_by(product: @product)
-      catalog_item&.effective_attribute_values_hash || @product.attribute_values_hash
+      catalog_item&.effective_product_attribute_values || @product.product_attribute_values.includes(:product_attribute)
     else
-      @product.attribute_values_hash
+      @product.product_attribute_values.includes(:product_attribute)
     end
 
-    # Collect localized attribute values
-    localized_attributes = {}
-    @product.product_attribute_values.includes(:product_attribute).each do |av|
-      localized_value = av.info.to_h["localized_value"]
-      next unless localized_value.present?
+    attribute_values.each do |pav|
+      pa = pav.product_attribute
+      code = pa.code
+      values[code] = build_attribute_entry(pa, pav.value.presence || pav.info.to_h.dig("value"))
 
-      localized_attributes[av.product_attribute.code] = {
-        value: av.value,
-        localized_value: localized_value
+      localized_value = pav.info.to_h["localized_value"]
+      if localized_value.present?
+        localized[code] = {
+          value: pav.value,
+          localized_value: localized_value
+        }
+      end
+    end
+
+    { values: values, localized: localized }
+  end
+
+  def build_attribute_entry(product_attribute, value)
+    entry = { value: value }
+    code_sym = product_attribute.code.to_sym
+    registry = SystemAttributes::SYSTEM_ATTRIBUTES[code_sym]
+
+    # Native Shopify field mapping (from registry constant)
+    if registry&.dig(:shopify_field)
+      entry[:shopify_field] = registry[:shopify_field].to_s
+    end
+
+    # Custom handler mapping (special_price, vat_tag, barcode_fallback)
+    if registry&.dig(:custom_handler)
+      entry[:custom_handler] = registry[:custom_handler].to_s
+    end
+
+    # Metafield mapping (from registry or user-configured columns)
+    if product_attribute.shopify_metafield_namespace.present?
+      entry[:shopify_metafield] = {
+        namespace: product_attribute.shopify_metafield_namespace,
+        key: product_attribute.shopify_metafield_key,
+        type: product_attribute.shopify_metafield_type
       }
     end
 
-    if localized_attributes.present?
-      {
-        values: base_attributes,
-        localized: localized_attributes
-      }
-    else
-      base_attributes
-    end
+    entry[:system] = true if product_attribute.system?
+    entry[:unit] = product_attribute.info["unit"] if product_attribute.info&.key?("unit")
+    entry
   end
 
   # Build labels payload
@@ -313,7 +341,7 @@ class ProductSyncService
           product_type: subproduct.product_type,
           product_status: subproduct.product_status
         },
-        attributes: subproduct.attribute_values_hash,
+        attributes: build_subproduct_attributes(subproduct),
         inventory: {
           total_saldo: subproduct.total_saldo,
           total_max_sellable_saldo: subproduct.total_max_sellable_saldo,
@@ -322,6 +350,20 @@ class ProductSyncService
         translations: build_subproduct_translations(subproduct)
       }
     end
+  end
+
+  # Build enriched attributes for a subproduct (variant)
+  #
+  # @param subproduct [Product] The subproduct to get attributes for
+  # @return [Hash] Enriched attribute entries with mapping info
+  #
+  def build_subproduct_attributes(subproduct)
+    values = {}
+    subproduct.product_attribute_values.includes(:product_attribute).each do |pav|
+      pa = pav.product_attribute
+      values[pa.code] = build_attribute_entry(pa, pav.value.presence || pav.info.to_h.dig("value"))
+    end
+    values
   end
 
   # Build translations for a subproduct

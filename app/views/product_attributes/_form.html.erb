@@ -25,6 +25,14 @@
         </div>
       <% end %>
 
+      <% if @product_attribute.system? %>
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <p class="text-sm text-blue-800">
+            This is a system attribute required for Shopify sync. Code, type, and format cannot be changed.
+          </p>
+        </div>
+      <% end %>
+
       <div>
         <h3 class="text-lg font-medium leading-6 text-gray-900">Basic Information</h3>
         <p class="mt-1 text-sm text-gray-500">Define the attribute's basic properties.</p>
@@ -48,6 +56,7 @@
           <%= form.text_field :code,
               class: "mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm #{@product_attribute.errors[:code].any? ? 'border-red-300' : ''}",
               placeholder: "e.g., weight",
+              disabled: @product_attribute.system?,
               data: {
                 attribute_form_target: "code",
                 action: "blur->attribute-form#validateCode",
@@ -77,6 +86,7 @@
               ),
               { prompt: "Select type..." },
               class: "mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+              disabled: @product_attribute.system?,
               data: {
                 attribute_form_target: "paType",
                 action: "change->attribute-form#handleTypeChange"
@@ -107,6 +117,7 @@
               ),
               { prompt: "Select format..." },
               class: "mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+              disabled: @product_attribute.system?,
               data: {
                 attribute_form_target: "viewFormat",
                 action: "change->attribute-form#handleFormatChange"
@@ -212,6 +223,53 @@
             placeholder: "Default value (optional)" %>
       </div>
     </div>
+    <!-- Shopify Sync (custom attributes only) -->
+    <% unless @product_attribute.system? || @product_attribute.new_record? %>
+      <div class="pt-8 border-t" data-controller="shopify-sync-toggle">
+        <div>
+          <h3 class="text-lg font-medium leading-6 text-gray-900">Shopify Sync</h3>
+          <p class="mt-1 text-sm text-gray-500">Optionally sync this attribute as a Shopify metafield.</p>
+        </div>
+
+        <div class="mt-6">
+          <label class="flex items-center gap-2 mb-4">
+            <%= check_box_tag :sync_to_shopify,
+                  "1",
+                  @product_attribute.shopify_metafield_namespace.present?,
+                  data: { action: "shopify-sync-toggle#toggle", shopify_sync_toggle_target: "checkbox" } %>
+            <span class="text-sm font-medium text-gray-700">Sync to Shopify as metafield</span>
+          </label>
+
+          <div data-shopify-sync-toggle-target="fields"
+               class="<%= 'hidden' unless @product_attribute.shopify_metafield_namespace.present? %> space-y-4 ml-6">
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Namespace</label>
+              <%= form.text_field :shopify_metafield_namespace,
+                    value: @product_attribute.shopify_metafield_namespace || "custom",
+                    class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" %>
+              <p class="text-xs text-gray-500 mt-1">Default: "custom". Use "global" for store-wide fields.</p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Key</label>
+              <%= form.text_field :shopify_metafield_key,
+                    value: @product_attribute.shopify_metafield_key || @product_attribute.code,
+                    class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" %>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Metafield Type</label>
+              <%= form.select :shopify_metafield_type,
+                    ProductAttribute::SHOPIFY_METAFIELD_TYPE_MAP.values.uniq,
+                    { selected: @product_attribute.shopify_metafield_type ||
+                                ProductAttribute::SHOPIFY_METAFIELD_TYPE_MAP[@product_attribute.pa_type] },
+                    class: "block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" %>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
   </div>
 
   <div class="pt-5">

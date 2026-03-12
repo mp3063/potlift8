@@ -79,6 +79,11 @@ class ProductAttributesController < ApplicationController
   def destroy
     authorize @product_attribute
 
+    if @product_attribute.system?
+      redirect_to product_attributes_path, alert: "System attributes cannot be deleted."
+      return
+    end
+
     if @product_attribute.product_attribute_values.any?
       redirect_to product_attributes_path, alert: "Cannot delete attribute with existing values."
     else
@@ -150,8 +155,21 @@ class ProductAttributesController < ApplicationController
       :description,
       :product_attribute_scope,
       :options,    # For JSON string from form
+      :shopify_metafield_namespace,
+      :shopify_metafield_key,
+      :shopify_metafield_type,
       options: []  # For array from tests
     )
+
+    # Strip immutable fields for system attributes
+    if @product_attribute&.system?
+      permitted.delete(:code)
+      permitted.delete(:pa_type)
+      permitted.delete(:view_format)
+      permitted.delete(:shopify_metafield_namespace)
+      permitted.delete(:shopify_metafield_key)
+      permitted.delete(:shopify_metafield_type)
+    end
 
     # Handle options - parse JSON string and store in info jsonb field
     if permitted[:options].present?

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_24_140540) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_11_225612) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -308,8 +308,13 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_140540) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "attribute_group_id"
+    t.boolean "system", default: false, null: false
+    t.string "shopify_metafield_namespace"
+    t.string "shopify_metafield_key"
+    t.string "shopify_metafield_type"
     t.index ["attribute_group_id"], name: "index_product_attributes_on_attribute_group_id"
     t.index ["company_id", "code"], name: "index_product_attributes_on_company_id_and_code", unique: true
+    t.index ["company_id", "system"], name: "index_product_attributes_on_company_id_and_system"
     t.index ["company_id"], name: "index_product_attributes_on_company_id"
     t.index ["name"], name: "index_product_attributes_on_name_trgm", opclass: :gin_trgm_ops, using: :gin, comment: "Trigram index for fast ILIKE searches on attribute names"
   end

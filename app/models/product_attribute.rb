@@ -45,6 +45,18 @@
 #
 class ProductAttribute < ApplicationRecord
   include RulesService
+  include SystemAttributes
+
+  SHOPIFY_METAFIELD_TYPE_MAP = {
+    "patype_text" => "single_line_text_field",
+    "patype_number" => "number_decimal",
+    "patype_boolean" => "boolean",
+    "patype_select" => "single_line_text_field",
+    "patype_multiselect" => "list.single_line_text_field",
+    "patype_date" => "date",
+    "patype_rich_text" => "multi_line_text_field",
+    "patype_custom" => "json"
+  }.freeze
 
   # Associations
   belongs_to :company
@@ -69,6 +81,9 @@ class ProductAttribute < ApplicationRecord
   validates :name, presence: true
   validates :pa_type, presence: true
   validates :company, presence: true
+  validate :immutable_system_fields, if: :system?
+
+  before_destroy :prevent_system_destroy
 
   # Callbacks
   before_save :check_for_rules
@@ -228,6 +243,21 @@ class ProductAttribute < ApplicationRecord
   end
 
   private
+
+  def immutable_system_fields
+    if persisted?
+      errors.add(:code, "cannot be changed for system attributes") if code_changed?
+      errors.add(:pa_type, "cannot be changed for system attributes") if pa_type_changed?
+      errors.add(:view_format, "cannot be changed for system attributes") if view_format_changed?
+    end
+  end
+
+  def prevent_system_destroy
+    if system?
+      errors.add(:base, "System attributes cannot be deleted")
+      throw(:abort)
+    end
+  end
 
   # Propagates attribute changes to associated products
   # Touches all products that use this attribute

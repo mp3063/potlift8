@@ -24,6 +24,7 @@
 #
 class Company < ApplicationRecord
   before_create :generate_api_token
+  after_create :provision_system_attributes
 
   # Validations
   validates :code, presence: true, uniqueness: { case_sensitive: false }
@@ -111,6 +112,10 @@ class Company < ApplicationRecord
   end
 
   private
+
+  def provision_system_attributes
+    ProductAttribute.ensure_system_attributes!(self)
+  end
 
   def generate_api_token
     raw_token = loop do
