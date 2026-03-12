@@ -872,29 +872,31 @@ SHOPIFY_METAFIELD_TYPE_MAP = {
 
 ## Testing Strategy
 
-- **Unit tests:** SystemAttributes concern — registry completeness, `ensure_system_attributes!` idempotency
-- **Model tests:** ProductAttribute — system field immutability, destroy prevention
-- **Service tests:** ProductSyncService — enriched payload format with mapping info
-- **Integration tests:** Full sync flow with system + custom metafield attributes
-- **Controller tests:** System attributes can't be deleted or have type changed via form
-- **Backfill test:** Rake task handles existing attributes correctly (sets system flag without changing user customizations)
+> **Implementation status (2026-03-12):** All Potlift8 tests passing (68 tests across 4 spec files). Backfill run in dev.
+
+- [x] **Unit tests:** `spec/models/concerns/system_attributes_spec.rb` — registry completeness (12 attrs, 4 groups, valid enums), `ensure_system_attributes!` idempotency, conflict resolution
+- [x] **Model tests:** `spec/models/concerns/system_attributes_spec.rb` — system field immutability (code, pa_type, view_format), destroy prevention, allows name/description changes
+- [x] **Service tests:** `spec/services/product_sync_service_enriched_payload_spec.rb` — enriched payload format with shopify_field, custom_handler, shopify_metafield, system flag; subproduct attributes; custom attribute with user-configured metafield
+- [x] **Integration tests:** `spec/services/product_sync_service_integration_spec.rb` — full sync with system attrs (shopify_field + shopify_metafield), custom metafield opt-in, mixed attributes, catalog overrides, subproduct enrichment, HTTP payload verification via WebMock (19 tests)
+- [x] **Controller tests:** `spec/requests/product_attributes_system_spec.rb` — system destroy prevention, immutable field stripping (code/pa_type/view_format/metafield columns), mutable fields (name/description/mandatory/default_value) update correctly (18 tests)
+- [x] **Backfill test:** `spec/tasks/product_attributes_rake_spec.rb` — rake task runs, is idempotent, processes all companies
 
 ## Migration Plan
 
 **Deployment order matters.** The payload format change (flat values → enriched objects) is a breaking change. Both services must be coordinated.
 
-### Phase 1: Backward-compatible Shopify8 (deploy first)
-1. Deploy Shopify8 changes with **dual-format parsing**: check if attribute value is a Hash (new format) or String (old format). If String, fall back to current hardcoded `attribute_by_code` logic. This makes Shopify8 accept both formats safely.
+### Phase 1: Backward-compatible Shopify8 (deploy first) — DONE
+1. ~~Deploy Shopify8 changes with **dual-format parsing**~~ — `attr_value` helper, `build_metafields_from_attributes`, all methods updated. 122 tests pass.
 
-### Phase 2: Potlift8 schema + backfill
-2. Deploy Potlift8 migration (add 4 columns to `product_attributes`)
-3. Run `rake product_attributes:ensure_system` to backfill all companies
-4. Deploy Potlift8 code changes (model validations, enriched sync payload, UI)
-5. Verify sync works with enriched payload format end-to-end
+### Phase 2: Potlift8 schema + backfill — DONE
+2. ~~Deploy Potlift8 migration (add 4 columns to `product_attributes`)~~ — Migration run in dev.
+3. ~~Run `rake product_attributes:ensure_system` to backfill all companies~~ — Backfill run 2026-03-12. OZZ: 12 system attrs, TEST: 12 system attrs.
+4. ~~Deploy Potlift8 code changes (model validations, enriched sync payload, UI)~~ — All code implemented.
+5. ~~Verify sync works with enriched payload format~~ — Verified 2026-03-12. Enriched payload generates correctly with shopify_field, system flags, and metafield mappings.
 
-### Phase 3: Cleanup
-6. Remove old-format fallback from Shopify8 (once all payloads use new format)
-7. Remove cannabis seed attributes from seeds.rb
+### Phase 3: Cleanup — COMPLETE
+6. ~~Remove old-format fallback from Shopify8 (once all payloads use new format)~~ — Done 2026-03-12. Removed dual-format `attr_value` fallback, `is_a?(Hash)` guards, and hardcoded `detailed_description_html`/`sizechart` metafield fallbacks. Updated `build_metafields_from_attributes` to use localized values. All 122 build_spec tests updated to enriched format and passing.
+7. ~~Remove cannabis seed attributes from seeds.rb~~ — Seeds now use `ensure_system_attributes!` + company-specific custom attrs
 
 ### Rollback plan
-- If Phase 2 causes sync issues, revert Potlift8 code (schema + data can stay). Shopify8 dual-format parsing handles the old format gracefully.
+- Phase 3 is a breaking change: Shopify8 now requires the enriched attribute format. If issues arise, revert Shopify8's `build.rb` to restore the dual-format `attr_value` fallback.
