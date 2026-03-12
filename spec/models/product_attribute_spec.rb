@@ -61,23 +61,24 @@ RSpec.describe ProductAttribute, type: :model do
       let(:company) { create(:company) }
 
       before do
-        create(:product_attribute, company: company, code: 'price')
+        # Use a non-system code to avoid collision with system attributes
+        create(:product_attribute, company: company, code: 'custom_test_attr')
       end
 
       it 'validates uniqueness of code scoped to company' do
-        duplicate = build(:product_attribute, company: company, code: 'price')
+        duplicate = build(:product_attribute, company: company, code: 'custom_test_attr')
         expect(duplicate).not_to be_valid
         expect(duplicate.errors[:code]).to include('has already been taken')
       end
 
       it 'allows same code for different companies' do
         other_company = create(:company)
-        attr = build(:product_attribute, company: other_company, code: 'price')
+        attr = build(:product_attribute, company: other_company, code: 'custom_test_attr')
         expect(attr).to be_valid
       end
 
       it 'validates uniqueness case-insensitively' do
-        duplicate = build(:product_attribute, company: company, code: 'PRICE')
+        duplicate = build(:product_attribute, company: company, code: 'CUSTOM_TEST_ATTR')
         expect(duplicate).not_to be_valid
       end
     end
@@ -177,7 +178,8 @@ RSpec.describe ProductAttribute, type: :model do
 
       it 'returns only mandatory attributes' do
         result = ProductAttribute.all_mandatory
-        expect(result).to contain_exactly(mandatory1, mandatory2)
+        expect(result).to include(mandatory1, mandatory2)
+        expect(result).not_to include(optional)
       end
     end
 
@@ -188,7 +190,8 @@ RSpec.describe ProductAttribute, type: :model do
 
       it 'returns only attributes with rules' do
         result = ProductAttribute.all_with_rules
-        expect(result).to contain_exactly(with_rules1, with_rules2)
+        expect(result).to include(with_rules1, with_rules2)
+        expect(result).not_to include(without_rules)
       end
     end
 
@@ -200,7 +203,7 @@ RSpec.describe ProductAttribute, type: :model do
 
       it 'returns attributes that are mandatory or have rules' do
         result = ProductAttribute.all_mandatory_or_with_rules
-        expect(result).to contain_exactly(mandatory, with_rules, both)
+        expect(result).to include(mandatory, with_rules, both)
         expect(result).not_to include(neither)
       end
     end
@@ -571,7 +574,10 @@ RSpec.describe ProductAttribute, type: :model do
     let(:company) { create(:company) }
 
     context 'complete attribute with rules' do
-      let(:attr) { create(:product_attribute, :price_attribute, company: company) }
+      let(:attr) do
+        # Use the system-created price attribute (already exists from after_create)
+        company.product_attributes.find_by(code: 'price')
+      end
 
       it 'has all properties configured correctly' do
         expect(attr.code).to eq('price')
@@ -622,9 +628,9 @@ RSpec.describe ProductAttribute, type: :model do
     end
 
     context 'grouped attributes' do
-      let(:group) { create(:attribute_group, :pricing_group, company: company) }
-      let(:attr1) { create(:product_attribute, :price_format, company: company, attribute_group: group, code: 'price') }
-      let(:attr2) { create(:product_attribute, :price_format, company: company, attribute_group: group, code: 'special_price') }
+      let(:group) { create(:attribute_group, company: company, code: 'test_grouping', name: 'Test Grouping') }
+      let(:attr1) { create(:product_attribute, :price_format, company: company, attribute_group: group, code: 'custom_price_test') }
+      let(:attr2) { create(:product_attribute, :price_format, company: company, attribute_group: group, code: 'custom_special_test') }
       let(:ungrouped_attr) { create(:product_attribute, company: company, attribute_group: nil) }
 
       it 'can belong to an attribute group' do

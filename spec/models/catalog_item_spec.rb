@@ -143,20 +143,17 @@ RSpec.describe CatalogItem, type: :model do
     let(:catalog_item) { create(:catalog_item, catalog: catalog, product: product) }
 
     let(:price_attr) do
-      create(:product_attribute,
-            company: company,
-            code: 'price',
-            pa_type: :patype_number,
-            view_format: :view_format_price,
-            product_attribute_scope: :product_and_catalog_scope)
+      # Use existing system attribute created by after_create callback
+      company.product_attributes.find_by(code: 'price')
     end
 
     let(:description_attr) do
-      create(:product_attribute,
-            company: company,
-            code: 'description',
-            pa_type: :patype_text,
-            product_attribute_scope: :product_scope)
+      company.product_attributes.find_by(code: 'description_html') ||
+        create(:product_attribute,
+              company: company,
+              code: 'test_description',
+              pa_type: :patype_text,
+              product_attribute_scope: :product_scope)
     end
 
     context 'when catalog override exists' do
@@ -208,10 +205,8 @@ RSpec.describe CatalogItem, type: :model do
     end
 
     let(:product_and_catalog_scoped_attr) do
-      create(:product_attribute,
-            company: company,
-            code: 'price',
-            product_attribute_scope: :product_and_catalog_scope)
+      # Use existing system attribute (created by after_create callback)
+      company.product_attributes.find_by(code: 'price')
     end
 
     let(:product_only_attr) do
@@ -336,17 +331,11 @@ RSpec.describe CatalogItem, type: :model do
 
     describe '#effective_attribute_values_hash' do
       let(:price_attr) do
-        create(:product_attribute,
-              company: company,
-              code: 'price',
-              product_attribute_scope: :product_and_catalog_scope)
+        company.product_attributes.find_by(code: 'price')
       end
 
       let(:weight_attr) do
-        create(:product_attribute,
-              company: company,
-              code: 'weight',
-              product_attribute_scope: :product_scope)
+        company.product_attributes.find_by(code: 'weight')
       end
 
       before do
@@ -365,10 +354,7 @@ RSpec.describe CatalogItem, type: :model do
     describe '#has_attribute_overrides?' do
       context 'with overrides' do
         let(:attr) do
-          create(:product_attribute,
-                company: company,
-                code: 'price',
-                product_attribute_scope: :catalog_scope)
+          company.product_attributes.find_by(code: 'price')
         end
 
         before do
@@ -431,10 +417,7 @@ RSpec.describe CatalogItem, type: :model do
       let(:catalog_item) { create(:catalog_item, catalog: catalog, product: product) }
 
       let(:price_attr) do
-        create(:product_attribute,
-              company: company,
-              code: 'price',
-              product_attribute_scope: :product_and_catalog_scope)
+        company.product_attributes.find_by(code: 'price')
       end
 
       it 'correctly prioritizes catalog values over product values' do

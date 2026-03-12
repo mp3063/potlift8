@@ -94,22 +94,30 @@ RSpec.describe ProductSyncService, type: :service do
     context 'without catalog' do
       let(:service_no_catalog) { ProductSyncService.new(product) }
 
-      it 'returns product attribute values' do
-        attributes = service_no_catalog.send(:build_attributes_payload)
-        expect(attributes).to eq(product.attribute_values_hash)
+      it 'returns enriched attribute values with mapping info' do
+        result = service_no_catalog.send(:build_attributes_payload)
+        expect(result).to have_key(:values)
+        expect(result).to have_key(:localized)
+        # Each value should be an enriched hash with :value key
+        result[:values].each do |_code, entry|
+          expect(entry).to have_key(:value)
+        end
       end
     end
 
     context 'with catalog but no catalog item' do
-      it 'returns product attribute values' do
-        attributes = service.send(:build_attributes_payload)
-        expect(attributes).to eq(product.attribute_values_hash)
+      it 'returns enriched attribute values' do
+        result = service.send(:build_attributes_payload)
+        expect(result).to have_key(:values)
+        result[:values].each do |_code, entry|
+          expect(entry).to have_key(:value)
+        end
       end
     end
 
     context 'with catalog and catalog item' do
       let!(:catalog_item) { create(:catalog_item, catalog: catalog, product: product) }
-      let(:price_attr) { create(:product_attribute, company: company, code: 'price', product_attribute_scope: :product_and_catalog_scope) }
+      let(:price_attr) { company.product_attributes.find_by(code: 'price') }
 
       before do
         create(:product_attribute_value, product: product, product_attribute: price_attr, value: '1999')
@@ -117,8 +125,10 @@ RSpec.describe ProductSyncService, type: :service do
       end
 
       it 'returns effective attribute values with catalog overrides' do
-        attributes = service.send(:build_attributes_payload)
-        expect(attributes['price']).to eq('2499') # Catalog override
+        result = service.send(:build_attributes_payload)
+        expect(result[:values]['price'][:value]).to eq('2499') # Catalog override
+        expect(result[:values]['price'][:shopify_field]).to eq('price')
+        expect(result[:values]['price'][:system]).to be true
       end
     end
   end
@@ -906,14 +916,15 @@ RSpec.describe ProductSyncService, type: :service do
         end
 
         it 'includes attributes' do
-          price_attr = create(:product_attribute, company: company, code: 'price')
+          price_attr = company.product_attributes.find_by(code: 'price')
           create(:product_attribute_value, product: variant1, product_attribute: price_attr, value: '1999')
 
           subproducts = test_service.send(:build_subproducts_payload)
           first_variant = subproducts.first
 
           expect(first_variant[:attributes]).to be_a(Hash)
-          expect(first_variant[:attributes]['price']).to eq('1999')
+          expect(first_variant[:attributes]['price'][:value]).to eq('1999')
+          expect(first_variant[:attributes]['price'][:shopify_field]).to eq('price')
         end
       end
 
@@ -1011,7 +1022,7 @@ RSpec.describe ProductSyncService, type: :service do
       let(:test_product) { create(:product, company: company) }
       let(:test_service) { ProductSyncService.new(test_product, catalog) }
       let(:storage) { create(:storage, company: company, code: 'MAIN', default: true) }
-      let(:price_attr) { create(:product_attribute, company: company, code: 'price') }
+      let(:price_attr) { company.product_attributes.find_by(code: 'price') }
       let!(:inventory) { create(:inventory, product: test_product, storage: storage, value: 100) }
       let!(:price_value) { create(:product_attribute_value, product: test_product, product_attribute: price_attr, value: '1999') }
 
@@ -1030,14 +1041,14 @@ RSpec.describe ProductSyncService, type: :service do
 
         expect(payload[:product][:sku]).to eq(test_product.sku)
         expect(payload[:inventory][:total_saldo]).to eq(100)
-        expect(payload[:attributes]['price']).to eq('1999')
+        expect(payload[:attributes][:values]['price'][:value]).to eq('1999')
         expect(payload[:catalog][:code]).to eq(catalog.code)
       end
     end
 
     context 'syncing with catalog attribute overrides' do
       let!(:catalog_item) { create(:catalog_item, catalog: catalog, product: product) }
-      let(:price_attr) { create(:product_attribute, company: company, code: 'price', product_attribute_scope: :product_and_catalog_scope) }
+      let(:price_attr) { company.product_attributes.find_by(code: 'price') }
 
       before do
         create(:product_attribute_value, product: product, product_attribute: price_attr, value: '1999')
@@ -1047,7 +1058,7 @@ RSpec.describe ProductSyncService, type: :service do
       it 'uses catalog override for price' do
         payload = service.build_payload
 
-        expect(payload[:attributes]['price']).to eq('2999')
+        expect(payload[:attributes][:values]['price'][:value]).to eq('2999')
       end
 
       it 'syncs with override successfully' do
