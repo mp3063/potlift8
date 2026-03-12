@@ -53,7 +53,7 @@
       </div>
 
       <!-- Product Selection Form -->
-      <%= form_with url: storage_inventories_path(@storage), method: :post, html: { id: "add-products-form" }, data: { product_selector_target: "form" } do |f| %>
+      <%= form_with url: storage_inventories_path(@storage), method: :post, html: { id: "add-products-form" }, data: { product_selector_target: "form", turbo: false } do |f| %>
         <% if @available_products.any? %>
           <!-- Selection Controls -->
           <div class="mb-4 flex items-center justify-between bg-gray-50 p-3 rounded-lg">

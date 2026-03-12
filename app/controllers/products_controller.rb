@@ -70,12 +70,6 @@ class ProductsController < ApplicationController
         @pagy, @products = pagy(@products, items: params[:per_page] || 25)
       end
 
-      format.turbo_stream do
-        # Turbo may request turbo_stream format after redirects.
-        # Force a full page refresh instead of partial update.
-        render turbo_stream: turbo_stream.refresh
-      end
-
       format.csv do
         # For CSV export, we don't paginate - export all filtered results
         # Use readonly for better performance on read-only operations

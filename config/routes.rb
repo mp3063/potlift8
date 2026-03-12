@@ -167,7 +167,7 @@ Rails.application.routes.draw do
     end
 
     # Storage inventory management - add products to storage
-    resources :inventories, only: [ :new, :create ], controller: "storage_inventories"
+    resources :inventories, only: [ :new, :create, :destroy ], controller: "storage_inventories"
   end
 
   resources :product_attributes do

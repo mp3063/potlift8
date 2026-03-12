@@ -58,6 +58,7 @@ class StoragesController < ApplicationController
   #
   def inventory
     authorize @storage
+    response.headers["Cache-Control"] = "no-cache, no-store"
 
     # Get all inventories for this storage with products
     # Only eager load what we need: product (for sku, name, product_type, info)

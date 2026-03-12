@@ -1,3 +1,6 @@
+<% content_for :head do %>
+  <meta name="turbo-cache-control" content="no-cache">
+<% end %>
 <div class="px-4 sm:px-6 lg:px-8">
   <!-- Breadcrumb Navigation -->
   <nav class="flex mb-4" aria-label="Breadcrumb">
@@ -49,10 +52,18 @@
         Inventory for this storage location
       </p>
     </div>
-    <div class="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
+    <div class="mt-4 sm:ml-16 sm:mt-0 sm:flex-none flex items-center gap-4">
       <div class="text-sm text-gray-500 text-right">
         Click "Adjust" on any product to modify inventory
       </div>
+      <%= link_to new_storage_inventory_path(@storage),
+            class: "inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500",
+            data: { turbo_frame: "modal" } do %>
+        <svg class="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+        </svg>
+        Add Products
+      <% end %>
     </div>
   </div>
 
@@ -115,7 +126,7 @@
                   Total Products
                 </dt>
                 <dd class="text-lg font-semibold text-gray-900">
-                  <%= number_with_delimiter(@inventories.count) %>
+                  <%= number_with_delimiter(@inventories.length) %>
                 </dd>
               </dl>
             </div>

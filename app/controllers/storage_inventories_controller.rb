@@ -32,9 +32,9 @@ class StorageInventoriesController < ApplicationController
   def new
     authorize :storage_inventory, :new?
 
-    # Get all active products not already in this storage
+    # Get all non-deleted products not already in this storage
     @available_products = current_potlift_company.products
-                                                 .active_products
+                                                 .where.not(product_status: :deleted)
                                                  .where.not(id: @storage.products.select(:id))
                                                  .order(:sku)
 
@@ -145,28 +145,23 @@ class StorageInventoriesController < ApplicationController
     end
 
     if failed_products.any?
-      respond_to do |format|
-        format.html do
-          redirect_to inventory_storage_path(@storage),
-                      alert: "Added #{created_count} products. Failed to add: #{failed_products.join(', ')}"
-        end
-        format.turbo_stream do
-          flash.now[:alert] = "Added #{created_count} products. Failed to add: #{failed_products.join(', ')}"
-          # Template will close modal and show flash
-        end
-      end
+      redirect_to inventory_storage_path(@storage), status: :see_other,
+                  alert: "Added #{created_count} products. Failed to add: #{failed_products.join(', ')}"
     else
-      respond_to do |format|
-        format.html do
-          redirect_to inventory_storage_path(@storage),
-                      notice: "Successfully added #{created_count} #{'product'.pluralize(created_count)} to #{@storage.name}."
-        end
-        format.turbo_stream do
-          flash.now[:notice] = "Successfully added #{created_count} #{'product'.pluralize(created_count)} to #{@storage.name}."
-          # Template will close modal and show flash
-        end
-      end
+      redirect_to inventory_storage_path(@storage), status: :see_other,
+                  notice: "Successfully added #{created_count} #{'product'.pluralize(created_count)} to #{@storage.name}."
     end
+  end
+
+  # DELETE /storages/:code/inventories/:id
+  def destroy
+    authorize :storage_inventory, :destroy?
+
+    inventory = @storage.inventories.find(params[:id])
+    inventory.destroy
+
+    redirect_to inventory_storage_path(@storage), status: :see_other,
+                notice: "Removed #{inventory.product.sku} from #{@storage.name}."
   end
 
   private

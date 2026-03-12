@@ -42,21 +42,32 @@
     <%= number_with_delimiter(inventory.value + (inventory.info&.dig('eta_quantity') || 0)) %>
   </td>
   <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-    <%= render Ui::ButtonComponent.new(
-      variant: :ghost,
-      size: :sm,
-      data: {
-        action: "click->inventory-table#openAdjustModal",
-        product_id: product.id,
-        product_sku: product.sku,
-        product_name: product.name,
-        inventory_id: inventory.id,
-        current_value: inventory.value,
-        eta_quantity: inventory.info&.dig('eta_quantity') || 0,
-        eta_date: inventory.info&.dig('eta_date') || ''
-      }
-    ) do %>
-      Adjust
-    <% end %>
+    <div class="flex items-center gap-2">
+      <%= render Ui::ButtonComponent.new(
+        variant: :ghost,
+        size: :sm,
+        data: {
+          action: "click->inventory-table#openAdjustModal",
+          product_id: product.id,
+          product_sku: product.sku,
+          product_name: product.name,
+          inventory_id: inventory.id,
+          current_value: inventory.value,
+          eta_quantity: inventory.info&.dig('eta_quantity') || 0,
+          eta_date: inventory.info&.dig('eta_date') || ''
+        }
+      ) do %>
+        Adjust
+      <% end %>
+      <%= button_to storage_inventory_path(inventory.storage, inventory),
+            method: :delete,
+            class: "text-sm font-medium text-red-600 hover:text-red-800",
+            form: {
+              data: { turbo: false },
+              onsubmit: "return confirm('Remove #{j product.sku} from this storage?')"
+            } do %>
+        Remove
+      <% end %>
+    </div>
   </td>
 </tr>
