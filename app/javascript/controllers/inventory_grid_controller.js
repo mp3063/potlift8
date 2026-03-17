@@ -48,7 +48,6 @@ export default class extends Controller {
     const colSums = {}
 
     this.cellTargets.forEach(cell => {
-      // Skip disabled cells (hidden storages from setup wizard)
       if (cell.disabled) return
 
       const rowId = cell.dataset.rowId
@@ -76,37 +75,56 @@ export default class extends Controller {
   }
 
   // Fill all empty/zero cells with the value from fillInput
-  fillAll() {
+  fillAll(event) {
+    event.preventDefault()
+    event.stopPropagation()
+
     const value = this.hasFillInputTarget ? this.fillInputTarget.value : ""
     if (!value) return
 
-    this.cellTargets.forEach(cell => {
-      if (cell.disabled) return
+    // Collect all eligible cells first, then fill
+    const cells = this.cellTargets
+    for (let i = 0; i < cells.length; i++) {
+      const cell = cells[i]
+      if (cell.disabled) continue
       if (!cell.value || cell.value === "0") {
         cell.value = value
         this.markCellDirty(cell)
       }
-    })
+    }
 
     this.refreshState()
   }
 
   // Fill empty cells in a specific column
   fillColumn(event) {
+    event.preventDefault()
+    event.stopPropagation()
+
     const colId = event.params.colId
     const value = this.hasFillInputTarget ? this.fillInputTarget.value : ""
     if (!value) return
 
-    this.cellTargets
-      .filter(c => !c.disabled && c.dataset.colId === String(colId))
-      .forEach(cell => {
-        if (!cell.value || cell.value === "0") {
-          cell.value = value
-          this.markCellDirty(cell)
-        }
-      })
+    const cells = this.cellTargets
+    for (let i = 0; i < cells.length; i++) {
+      const cell = cells[i]
+      if (cell.disabled) continue
+      if (cell.dataset.colId !== String(colId)) continue
+      if (!cell.value || cell.value === "0") {
+        cell.value = value
+        this.markCellDirty(cell)
+      }
+    }
 
     this.refreshState()
+  }
+
+  // Prevent fillInput enter from submitting the form
+  preventSubmit(event) {
+    if (event.key === "Enter") {
+      event.preventDefault()
+      this.fillAll(event)
+    }
   }
 
   // Keyboard navigation: Enter moves down
@@ -129,7 +147,6 @@ export default class extends Controller {
 
   // --- Private helpers ---
 
-  // Apply dirty styling to a single cell
   markCellDirty(cell) {
     const key = cell.dataset.cellKey
     const original = this.originalValues.get(key)
@@ -140,7 +157,6 @@ export default class extends Controller {
     cell.classList.toggle("border-gray-300", !isDirty)
   }
 
-  // Recalculate totals and update dirty value
   refreshState() {
     this.updateTotals()
     this.dirtyValue = this.cellTargets.some(c =>
