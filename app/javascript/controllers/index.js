@@ -8,6 +8,8 @@ eagerLoadControllersFrom("controllers", application)
 import InventoryGridController from "controllers/inventory_grid_controller"
 import InventorySetupController from "controllers/inventory_setup_controller"
 import InlineCellController from "controllers/inline_cell_controller"
+import AutoCloseModalController from "controllers/auto_close_modal_controller"
 application.register("inventory-grid", InventoryGridController)
 application.register("inventory-setup", InventorySetupController)
 application.register("inline-cell", InlineCellController)
+application.register("auto-close-modal", AutoCloseModalController)
