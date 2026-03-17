@@ -1,0 +1,22 @@
+<%= turbo_frame_tag frame_id do %>
+  <div data-controller="inline-cell" class="inline-flex items-center">
+    <%# Display mode %>
+    <span class="font-medium text-gray-900 cursor-pointer hover:text-blue-600 px-1"
+          data-inline-cell-target="display"
+          data-action="click->inline-cell#edit">
+      <%= number_with_delimiter(value) %>
+    </span>
+
+    <%# Edit mode (hidden initially) %>
+    <%= form_with(url: update_url, method: :patch,
+                  data: { turbo_frame: frame_id }) do %>
+      <input type="number"
+             name="inventory[value]"
+             value="<%= value %>"
+             min="0"
+             class="<%= input_classes %> hidden"
+             data-inline-cell-target="input"
+             data-action="keydown->inline-cell#handleKeydown blur->inline-cell#save">
+    <% end %>
+  </div>
+<% end %>

@@ -58,3 +58,4 @@ spec/visual/tmp/
 CLAUDE.md
 
 /node_modules
+.superpowers/

@@ -75,16 +75,16 @@ RSpec.describe Products::InventorySummaryComponent, type: :component do
       expect(page).to have_css("dd.font-medium", count: 2)
     end
 
-    it "displays View Details link" do
+    it "displays Manage Inventory link" do
       render_inline(described_class.new(product: product))
 
-      expect(page).to have_link("View Details", href: product_inventories_path(product))
+      expect(page).to have_link("Manage Inventory", href: product_inventories_path(product))
     end
 
     it "uses blue-600 color scheme for link" do
       render_inline(described_class.new(product: product))
 
-      expect(page).to have_css("a.text-blue-600", text: "View Details")
+      expect(page).to have_css("a.text-blue-600", text: "Manage Inventory")
     end
   end
 
@@ -117,6 +117,6 @@ RSpec.describe Products::InventorySummaryComponent, type: :component do
 
     expect(page).to have_css("div.mb-4")        # Total inventory spacing
     expect(page).to have_css("dl.space-y-2")    # Storage locations spacing
-    expect(page).to have_css("div.mt-4")        # View Details link spacing
+    expect(page).to have_css("div.mt-4")        # Manage Inventory link spacing
   end
 end

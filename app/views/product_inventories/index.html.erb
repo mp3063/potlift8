@@ -28,17 +28,31 @@
       <h1 class="text-2xl font-bold text-gray-900">Inventory Management</h1>
       <p class="mt-2 text-sm text-gray-700">
         <%= @product.sku %> - <%= @product.name %>
+        <% if @product.product_type_configurable? %>
+          <span class="ml-2">
+            <%= render Ui::BadgeComponent.new(variant: :blue, size: :sm) do %>
+              Configurable &middot; <%= @subproducts&.size || 0 %> variants
+            <% end %>
+          </span>
+        <% elsif @product.product_type_bundle? %>
+          <span class="ml-2">
+            <%= render Ui::BadgeComponent.new(variant: :purple, size: :sm) do %>
+              Bundle
+            <% end %>
+          </span>
+        <% end %>
       </p>
     </div>
 
     <div class="flex gap-3">
-      <%= link_to "Back to Product", product_path(@product), class: "inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" %>
+      <%= link_to "Back to Product", product_path(@product),
+          class: "inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" %>
     </div>
   </div>
 <% end %>
 
 <div class="space-y-6">
-  <!-- Summary Card -->
+  <%# Summary Card %>
   <%= render Ui::CardComponent.new do |card| %>
     <% card.with_header do %>
       <h3 class="text-base font-semibold leading-6 text-gray-900">Inventory Summary</h3>
@@ -49,12 +63,10 @@
         <dt class="text-sm font-medium text-gray-500">Total Inventory</dt>
         <dd class="mt-1 text-3xl font-bold text-gray-900"><%= @product.total_saldo %></dd>
       </div>
-
       <div>
         <dt class="text-sm font-medium text-gray-500">Locations</dt>
-        <dd class="mt-1 text-3xl font-bold text-gray-900"><%= @inventories.count %></dd>
+        <dd class="mt-1 text-3xl font-bold text-gray-900"><%= @storages.count %></dd>
       </div>
-
       <div>
         <dt class="text-sm font-medium text-gray-500">Status</dt>
         <dd class="mt-1">
@@ -69,90 +81,98 @@
     </div>
   <% end %>
 
-  <!-- Inventory by Location -->
-  <%= render Ui::CardComponent.new do |card| %>
-    <% card.with_header do %>
-      <h3 class="text-base font-semibold leading-6 text-gray-900">Inventory by Location</h3>
-    <% end %>
+  <% if !@has_inventory && !@product.product_type_bundle? %>
+    <%# Setup Wizard %>
+    <div data-controller="inventory-setup">
+      <%# Step 1: Select Storages %>
+      <div data-inventory-setup-target="step1">
+        <%= render Ui::CardComponent.new do |card| %>
+          <% card.with_header do %>
+            <div class="flex items-center justify-between">
+              <h3 class="text-base font-semibold leading-6 text-gray-900">Set Up Inventory</h3>
+              <span class="text-sm text-gray-500">Step 1 of 2</span>
+            </div>
+          <% end %>
 
-    <% if @inventories.any? %>
-      <div class="overflow-hidden" data-controller="inventory-table">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead>
-            <tr>
-              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Storage Location</th>
-              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Type</th>
-              <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">Current Stock</th>
-              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Status</th>
-              <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200 bg-white">
-            <% @inventories.each do |inventory| %>
-              <tr class="hover:bg-gray-50">
-                <td class="whitespace-nowrap px-3 py-4 text-sm">
-                  <div class="font-medium text-gray-900"><%= inventory.storage.name %></div>
-                  <div class="text-gray-500"><%= inventory.storage.code %></div>
-                </td>
+          <p class="text-sm text-gray-600 mb-4">Select the storage locations where this product will be stocked.</p>
 
-                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                  <%= render Ui::BadgeComponent.new(variant: :gray, size: :sm) do %>
-                    <%= inventory.storage.storage_type.titleize %>
+          <div class="flex items-center gap-3 mb-4">
+            <button type="button"
+                    class="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    data-action="click->inventory-setup#selectAll">
+              Select All
+            </button>
+            <span class="text-gray-300">|</span>
+            <button type="button"
+                    class="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    data-action="click->inventory-setup#deselectAll">
+              Deselect All
+            </button>
+          </div>
+
+          <div class="space-y-2">
+            <% @storages.each do |storage| %>
+              <label class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                <input type="checkbox"
+                       value="<%= storage.id %>"
+                       data-storage-id="<%= storage.id %>"
+                       data-inventory-setup-target="storageCheckbox"
+                       data-action="change->inventory-setup#toggleStorage"
+                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                       <%= 'checked' if storage.default? %>>
+                <div class="flex-1">
+                  <span class="font-medium text-gray-900"><%= storage.name %></span>
+                  <span class="text-sm text-gray-500 ml-2"><%= storage.code %></span>
+                </div>
+                <%= render Ui::BadgeComponent.new(variant: :gray, size: :sm) do %>
+                  <%= storage.storage_type.titleize %>
+                <% end %>
+                <% if storage.default? %>
+                  <%= render Ui::BadgeComponent.new(variant: :blue, size: :sm) do %>
+                    Default
                   <% end %>
-                </td>
-
-                <td class="whitespace-nowrap px-3 py-4 text-sm text-right">
-                  <span class="font-semibold text-gray-900"><%= inventory.value || 0 %></span>
-                </td>
-
-                <td class="whitespace-nowrap px-3 py-4 text-sm">
-                  <% if inventory.value.to_i > 0 %>
-                    <%= render Ui::BadgeComponent.new(variant: :success, size: :sm) do %>
-                      In Stock
-                    <% end %>
-                  <% elsif inventory.value.to_i == 0 %>
-                    <%= render Ui::BadgeComponent.new(variant: :warning, size: :sm) do %>
-                      Out of Stock
-                    <% end %>
-                  <% else %>
-                    <%= render Ui::BadgeComponent.new(variant: :danger, size: :sm) do %>
-                      Negative
-                    <% end %>
-                  <% end %>
-                </td>
-
-                <td class="whitespace-nowrap px-3 py-4 text-sm text-right">
-                  <%= link_to "Edit", "#",
-                    class: "text-blue-600 hover:text-blue-900 font-medium",
-                    data: {
-                      action: "click->inventory-table#openAdjustModal",
-                      product_id: @product.id,
-                      product_sku: @product.sku,
-                      product_name: @product.name,
-                      inventory_id: inventory.id,
-                      storage_name: inventory.storage.name,
-                      storage_code: inventory.storage.code,
-                      current_value: inventory.value || 0,
-                      eta_quantity: inventory.info&.dig('eta_quantity') || 0,
-                      eta_date: inventory.info&.dig('eta_date') || ''
-                    } %>
-                </td>
-              </tr>
+                <% end %>
+              </label>
             <% end %>
-          </tbody>
-        </table>
+          </div>
+
+          <div class="mt-6">
+            <button type="button"
+                    class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    data-inventory-setup-target="continueButton"
+                    data-action="click->inventory-setup#continue">
+              Continue to Fill Quantities &rarr;
+            </button>
+          </div>
+        <% end %>
       </div>
-    <% else %>
-      <div class="text-center py-12">
-        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-        </svg>
-        <h3 class="mt-2 text-sm font-semibold text-gray-900">No inventory records</h3>
-        <p class="mt-1 text-sm text-gray-500">This product doesn't have any inventory records yet.</p>
+
+      <%# Step 2: Fill Grid (hidden initially) %>
+      <div data-inventory-setup-target="step2" class="hidden">
+        <div data-inventory-setup-target="gridContainer">
+          <%= render Products::InventoryGridComponent.new(
+            product: @product,
+            storages: @storages,
+            inventories: @inventories,
+            subproducts: @subproducts,
+            inventory_matrix: @inventory_matrix,
+            bundle_breakdown: @bundle_breakdown,
+            failed_cells: @failed_cells
+          ) %>
+        </div>
       </div>
-    <% end %>
+    </div>
+
+  <% else %>
+    <%# Inventory Grid %>
+    <%= render Products::InventoryGridComponent.new(
+      product: @product,
+      storages: @storages,
+      inventories: @inventories,
+      subproducts: @subproducts,
+      inventory_matrix: @inventory_matrix,
+      bundle_breakdown: @bundle_breakdown,
+      failed_cells: @failed_cells
+    ) %>
   <% end %>
 </div>
-
-<!-- Inventory Adjustment Modal -->
-<%= render 'adjust_inventory_modal' %>

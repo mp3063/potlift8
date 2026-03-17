@@ -1,0 +1,29 @@
+<div class="flex items-center gap-3 flex-wrap">
+  <%# Fill All %>
+  <div class="flex items-center gap-2">
+    <input type="number"
+           placeholder="qty"
+           min="0"
+           class="w-20 py-1.5 px-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+           data-inventory-grid-target="fillInput">
+    <button type="button"
+            class="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            data-action="click->inventory-grid#fillAll">
+      Fill All
+    </button>
+  </div>
+
+  <%# Dirty count %>
+  <span class="text-sm text-amber-600 font-medium" data-inventory-grid-target="dirtyCount"></span>
+
+  <%# Spacer %>
+  <div class="flex-1"></div>
+
+  <%# Save %>
+  <button type="submit"
+          class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 opacity-50 disabled:cursor-not-allowed"
+          disabled
+          data-inventory-grid-target="saveButton">
+    Save All
+  </button>
+</div>

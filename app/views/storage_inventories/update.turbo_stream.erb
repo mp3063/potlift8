@@ -1,0 +1,3 @@
+<%= turbo_stream.replace dom_id(@inventory, :value) do %>
+  <%= render Storages::InlineInventoryCellComponent.new(inventory: @inventory, storage: @storage) %>
+<% end %>

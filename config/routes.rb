@@ -101,7 +101,11 @@ Rails.application.routes.draw do
       end
     end
     resources :attribute_values, only: [ :update ], controller: "product_attribute_values", param: :attribute_id
-    resources :inventories, only: [ :index, :update ], controller: "product_inventories"
+    resources :inventories, only: [ :index, :update ], controller: "product_inventories" do
+      collection do
+        patch :batch_update
+      end
+    end
     resources :product_assets, except: [ :show ] do
       collection do
         match :reorder, via: [ :post, :patch ]  # Reorder assets via drag-and-drop (POST for legacy, PATCH for asset-reorder)
@@ -167,7 +171,7 @@ Rails.application.routes.draw do
     end
 
     # Storage inventory management - add products to storage
-    resources :inventories, only: [ :new, :create, :destroy ], controller: "storage_inventories"
+    resources :inventories, only: [ :new, :create, :update, :destroy ], controller: "storage_inventories"
   end
 
   resources :product_attributes do

@@ -1,0 +1,192 @@
+<% if bundle? %>
+  <%# Bundle: read-only calculated inventory %>
+  <%= render Ui::CardComponent.new do |card| %>
+    <% card.with_header do %>
+      <h3 class="text-base font-semibold leading-6 text-gray-900">Bundle Inventory (Calculated)</h3>
+    <% end %>
+
+    <% if bundle_breakdown.present? %>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 text-sm">
+          <thead>
+            <tr class="bg-gray-50">
+              <th class="px-4 py-3 text-left font-semibold text-gray-900">Component</th>
+              <th class="px-4 py-3 text-left font-semibold text-gray-900">SKU</th>
+              <th class="px-4 py-3 text-right font-semibold text-gray-900">Required</th>
+              <th class="px-4 py-3 text-right font-semibold text-gray-900">Available</th>
+              <th class="px-4 py-3 text-right font-semibold text-gray-900">Max Bundles</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            <% bundle_breakdown[:components].each do |component| %>
+              <tr class="hover:bg-gray-50">
+                <td class="px-4 py-3 text-gray-900"><%= component[:name] %></td>
+                <td class="px-4 py-3 text-gray-500"><%= component[:sku] %></td>
+                <td class="px-4 py-3 text-right text-gray-900"><%= component[:required_quantity] %></td>
+                <td class="px-4 py-3 text-right text-gray-900"><%= component[:available] %></td>
+                <td class="px-4 py-3 text-right font-semibold <%= component[:is_bottleneck] ? 'text-red-600' : 'text-gray-900' %>">
+                  <%= component[:max_bundles] %>
+                  <% if component[:is_bottleneck] %>
+                    <span class="text-xs text-red-500 ml-1">(bottleneck)</span>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+          <tfoot>
+            <tr class="bg-blue-50 border-t-2 border-blue-200">
+              <td colspan="4" class="px-4 py-3 font-semibold text-gray-900">Max Assemblable Bundles</td>
+              <td class="px-4 py-3 text-right font-bold text-blue-600"><%= bundle_breakdown[:inventory_value] %></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    <% else %>
+      <p class="text-sm text-gray-500 py-4 text-center">No bundle components configured.</p>
+    <% end %>
+  <% end %>
+
+<% elsif configurable? %>
+  <%# Configurable: variants × storages spreadsheet grid %>
+  <%= form_with(url: helpers.batch_update_product_inventories_path(product), method: :patch,
+                data: { controller: "inventory-grid", action: "submit->inventory-grid#dirtyValueChanged" }) do |f| %>
+
+    <%# Toolbar %>
+    <%= render Products::InventoryGridToolbarComponent.new(product: product, storages: storages) %>
+
+    <div class="overflow-x-auto mt-4">
+      <table class="min-w-full divide-y divide-gray-200 text-sm">
+        <thead>
+          <tr class="bg-gray-50">
+            <th class="px-4 py-3 text-left font-semibold text-gray-900 min-w-[160px]">Variant</th>
+            <th class="px-4 py-3 text-left font-semibold text-gray-500 min-w-[100px]">SKU</th>
+            <% storages.each do |storage| %>
+              <th class="px-4 py-3 text-center font-semibold text-gray-900 min-w-[100px]" data-storage-col="<%= storage.id %>">
+                <div><%= storage.code %></div>
+                <div class="font-normal text-xs text-gray-500"><%= storage.name %></div>
+                <button type="button" class="text-xs text-blue-600 hover:text-blue-800 mt-1"
+                        data-action="click->inventory-grid#fillColumn"
+                        data-inventory-grid-col-id-param="<%= storage.id %>">
+                  Fill ↓
+                </button>
+              </th>
+            <% end %>
+            <th class="px-4 py-3 text-center font-semibold text-gray-900 min-w-[80px]">Total</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          <% subproducts.each_with_index do |subproduct, idx| %>
+            <tr class="<%= idx.even? ? 'bg-white' : 'bg-gray-50/50' %> hover:bg-blue-50/30">
+              <td class="px-4 py-2 text-gray-900 font-medium"><%= variant_label(subproduct) %></td>
+              <td class="px-4 py-2 text-gray-500 text-xs"><%= subproduct.sku %></td>
+              <% storages.each do |storage| %>
+                <td class="px-2 py-1.5 text-center" data-storage-col="<%= storage.id %>">
+                  <input type="number"
+                         name="inventories[<%= cell_key(subproduct.id, storage.id) %>][value]"
+                         value="<%= cell_value(subproduct.id, storage.id) %>"
+                         min="0"
+                         class="<%= cell_classes(subproduct.id, storage.id) %>"
+                         data-inventory-grid-target="cell"
+                         data-cell-key="<%= cell_key(subproduct.id, storage.id) %>"
+                         data-row-id="<%= subproduct.id %>"
+                         data-col-id="<%= storage.id %>"
+                         data-action="input->inventory-grid#cellChanged keydown->inventory-grid#handleKeydown">
+                </td>
+              <% end %>
+              <td class="px-4 py-2 text-center font-semibold text-blue-600"
+                  data-inventory-grid-target="rowTotal"
+                  data-row-id="<%= subproduct.id %>">
+                <%= row_total(subproduct.id) %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+        <tfoot>
+          <tr class="bg-blue-50 border-t-2 border-blue-200">
+            <td colspan="2" class="px-4 py-3 font-semibold text-gray-900">Column Total</td>
+            <% storages.each do |storage| %>
+              <td class="px-4 py-3 text-center font-semibold text-gray-900"
+                  data-inventory-grid-target="columnTotal"
+                  data-col-id="<%= storage.id %>"
+                  data-storage-col="<%= storage.id %>">
+                <%= column_total(storage.id) %>
+              </td>
+            <% end %>
+            <td class="px-4 py-3 text-center font-bold text-blue-600"
+                data-inventory-grid-target="grandTotal">
+              <%= subproducts.sum { |sp| storages.sum { |s| cell_value(sp.id, s.id) } } %>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  <% end %>
+
+<% else %>
+  <%# Sellable: storages as rows %>
+  <%= form_with(url: helpers.batch_update_product_inventories_path(product), method: :patch,
+                data: { controller: "inventory-grid" }) do |f| %>
+
+    <%# Toolbar %>
+    <%= render Products::InventoryGridToolbarComponent.new(product: product, storages: storages) %>
+
+    <div class="overflow-x-auto mt-4">
+      <table class="min-w-full divide-y divide-gray-200 text-sm">
+        <thead>
+          <tr class="bg-gray-50">
+            <th class="px-4 py-3 text-left font-semibold text-gray-900">Storage</th>
+            <th class="px-4 py-3 text-left font-semibold text-gray-500 text-xs">Type</th>
+            <th class="px-4 py-3 text-center font-semibold text-gray-900">On Hand</th>
+            <th class="px-4 py-3 text-center font-semibold text-gray-900">ETA Qty</th>
+            <th class="px-4 py-3 text-center font-semibold text-gray-900">ETA Date</th>
+            <th class="px-4 py-3 text-center font-semibold text-gray-900">Total</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          <% inventories_or_empty.each_with_index do |inventory, idx| %>
+            <% storage = inventory.storage %>
+            <tr class="<%= idx.even? ? 'bg-white' : 'bg-gray-50/50' %> hover:bg-blue-50/30">
+              <td class="px-4 py-2">
+                <div class="font-medium text-gray-900"><%= storage.name %></div>
+                <div class="text-xs text-gray-500"><%= storage.code %></div>
+              </td>
+              <td class="px-4 py-2">
+                <%= render Ui::BadgeComponent.new(variant: :gray, size: :sm) do %>
+                  <%= storage.storage_type.titleize %>
+                <% end %>
+              </td>
+              <td class="px-2 py-1.5 text-center">
+                <input type="number"
+                       name="inventories[<%= cell_key(product.id, storage.id) %>][value]"
+                       value="<%= inventory.value || 0 %>"
+                       min="0"
+                       class="<%= cell_classes(product.id, storage.id) %>"
+                       data-inventory-grid-target="cell"
+                       data-cell-key="<%= cell_key(product.id, storage.id) %>"
+                       data-row-id="<%= product.id %>"
+                       data-col-id="<%= storage.id %>"
+                       data-action="input->inventory-grid#cellChanged keydown->inventory-grid#handleKeydown">
+              </td>
+              <td class="px-2 py-1.5 text-center">
+                <input type="number"
+                       name="inventories[<%= cell_key(product.id, storage.id) %>][eta_quantity]"
+                       value="<%= inventory.info&.dig('eta_quantity') || 0 %>"
+                       min="0"
+                       class="w-20 text-center py-1.5 px-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+              </td>
+              <td class="px-2 py-1.5 text-center">
+                <input type="date"
+                       name="inventories[<%= cell_key(product.id, storage.id) %>][eta_date]"
+                       value="<%= inventory.info&.dig('eta_date') %>"
+                       class="py-1.5 px-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+              </td>
+              <td class="px-4 py-2 text-center font-semibold text-blue-600">
+                <%= (inventory.value || 0) + (inventory.info&.dig('eta_quantity') || 0) %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+<% end %>

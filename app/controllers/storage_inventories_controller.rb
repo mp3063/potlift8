@@ -153,6 +153,32 @@ class StorageInventoriesController < ApplicationController
     end
   end
 
+  # PATCH /storages/:code/inventories/:id
+  # Inline cell update for storage inventory view
+  def update
+    authorize :storage_inventory, :update?
+
+    @inventory = @storage.inventories.find(params[:id])
+
+    if @inventory.update(value: params.dig(:inventory, :value).to_i)
+      respond_to do |format|
+        format.turbo_stream
+        format.html { redirect_to inventory_storage_path(@storage), notice: "Inventory updated." }
+      end
+    else
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.replace(
+            dom_id(@inventory, :value),
+            partial: "storages/inline_inventory_cell",
+            locals: { inventory: @inventory, storage: @storage, error: true }
+          )
+        end
+        format.html { redirect_to inventory_storage_path(@storage), alert: "Failed to update inventory." }
+      end
+    end
+  end
+
   # DELETE /storages/:code/inventories/:id
   def destroy
     authorize :storage_inventory, :destroy?
