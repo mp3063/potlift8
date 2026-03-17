@@ -90,23 +90,26 @@ module InventoryCalculator
   #   # => { available: 50, incoming: 0, eta: nil }
   #
   def single_inventory_with_eta
-    # Calculate regular inventory from regular and active storages
-    regular_inventory = inventories
-                          .joins(:storage)
-                          .where(storages: { storage_type: :regular, storage_status: :active })
-                          .sum(:value)
+    # Calculate total on-hand inventory across all active storages (regular + incoming)
+    total_on_hand = inventories
+                      .joins(:storage)
+                      .where(storages: { storage_status: :active })
+                      .sum(:value)
 
-    # Find first incoming inventory ordered by ETA
+    # Find the incoming ETA shipment (eta_quantity from info, not the storage on-hand value)
     incoming_inv = inventories
                      .joins(:storage)
                      .where(storages: { storage_type: :incoming, storage_status: :active })
                      .order(:eta)
                      .first
 
+    eta_quantity = incoming_inv&.info&.dig("eta_quantity").to_i
+    eta_date = incoming_inv&.eta || incoming_inv&.info&.dig("eta_date")
+
     {
-      available: regular_inventory,
-      incoming: incoming_inv&.value || 0,
-      eta: incoming_inv&.eta
+      available: total_on_hand,
+      incoming: eta_quantity,
+      eta: eta_quantity > 0 ? eta_date : nil
     }
   end
 

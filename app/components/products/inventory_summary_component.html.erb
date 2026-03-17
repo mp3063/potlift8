@@ -16,7 +16,12 @@
     <dl class="space-y-2">
       <% storage_locations.each do |inventory| %>
         <div class="flex items-center justify-between text-sm">
-          <dt class="text-gray-500"><%= inventory.storage.name %></dt>
+          <dt>
+            <%= helpers.link_to inventory.storage.name,
+                helpers.inventory_storage_path(inventory.storage, q: product.sku),
+                class: "text-gray-500 hover:text-blue-600",
+                title: "View #{product.sku} in #{inventory.storage.name}" %>
+          </dt>
           <dd class="font-medium text-gray-900"><%= inventory.value || 0 %></dd>
         </div>
       <% end %>

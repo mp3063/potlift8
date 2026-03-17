@@ -144,4 +144,54 @@ export default class extends Controller {
       }
     }
   }
+
+  // Open the adjust inventory modal from a pencil icon click
+  openAdjustModal(event) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const button = event.currentTarget
+    const data = button.dataset
+
+    // Update modal header and product info
+    document.getElementById('modal-product-name').textContent = `Adjust Inventory - ${data.productSku}`
+    document.getElementById('modal-product-sku').textContent = data.productSku
+    document.getElementById('modal-product-description').textContent = data.productName
+
+    // Update storage info
+    const storageNameEl = document.getElementById('modal-storage-name')
+    const storageCodeEl = document.getElementById('modal-storage-code')
+    if (storageNameEl) storageNameEl.textContent = data.storageName
+    if (storageCodeEl) storageCodeEl.textContent = data.storageCode
+
+    // Update form action URL
+    const form = document.getElementById('adjust-inventory-form')
+    form.action = data.updateUrl
+    form.reset()
+
+    // Populate fields
+    const valueInput = document.getElementById('inventory-value')
+    const etaQtyInput = document.getElementById('eta-quantity')
+    const etaDateInput = document.getElementById('eta-date')
+
+    if (valueInput) valueInput.value = parseInt(data.currentValue) || 0
+    if (etaQtyInput) etaQtyInput.value = parseInt(data.etaQuantity) || 0
+    if (etaDateInput && data.etaDate) etaDateInput.value = data.etaDate
+
+    // Update total available
+    const inventoryFormEl = form.closest('[data-controller="inventory-form"]')
+    if (inventoryFormEl) {
+      const ctrl = this.application.getControllerForElementAndIdentifier(inventoryFormEl, "inventory-form")
+      if (ctrl) ctrl.updateTotalAvailable()
+    }
+
+    // Open the modal
+    setTimeout(() => {
+      const modalEl = document.querySelector('[data-controller~="modal"][data-modal-closable-value="true"]')
+      if (modalEl) {
+        const modalCtrl = this.application.getControllerForElementAndIdentifier(modalEl, "modal")
+        if (modalCtrl) modalCtrl.open()
+      }
+    }, 50)
+  }
 }

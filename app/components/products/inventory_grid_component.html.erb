@@ -82,16 +82,36 @@
                 <td class="px-4 py-2 text-gray-500 text-xs"><%= subproduct.sku %></td>
                 <% storages.each do |storage| %>
                   <td class="px-2 py-1.5 text-center" data-storage-col="<%= storage.id %>">
-                    <input type="number"
-                           name="inventories[<%= cell_key(subproduct.id, storage.id) %>][value]"
-                           value="<%= cell_value(subproduct.id, storage.id) %>"
-                           min="0"
-                           class="<%= cell_classes(subproduct.id, storage.id) %>"
-                           data-inventory-grid-target="cell"
-                           data-cell-key="<%= cell_key(subproduct.id, storage.id) %>"
-                           data-row-id="<%= subproduct.id %>"
-                           data-col-id="<%= storage.id %>"
-                           data-action="input->inventory-grid#cellChanged keydown->inventory-grid#handleKeydown">
+                    <div class="flex items-center justify-center gap-0.5">
+                      <input type="number"
+                             name="inventories[<%= cell_key(subproduct.id, storage.id) %>][value]"
+                             value="<%= cell_value(subproduct.id, storage.id) %>"
+                             min="0"
+                             class="<%= cell_classes(subproduct.id, storage.id) %>"
+                             data-inventory-grid-target="cell"
+                             data-cell-key="<%= cell_key(subproduct.id, storage.id) %>"
+                             data-row-id="<%= subproduct.id %>"
+                             data-col-id="<%= storage.id %>"
+                             data-action="input->inventory-grid#cellChanged keydown->inventory-grid#handleKeydown">
+                      <% inv = cell_inventory(subproduct.id, storage.id) %>
+                      <% if inv %>
+                        <button type="button"
+                                class="text-gray-300 hover:text-blue-600 flex-shrink-0"
+                                title="Adjust ETA & details for <%= storage.name %>"
+                                data-action="click->inventory-grid#openAdjustModal"
+                                data-inventory-id="<%= inv.id %>"
+                                data-product-sku="<%= subproduct.sku %>"
+                                data-product-name="<%= subproduct.name %>"
+                                data-storage-name="<%= storage.name %>"
+                                data-storage-code="<%= storage.code %>"
+                                data-current-value="<%= inv.value %>"
+                                data-eta-quantity="<%= inv.info&.dig('eta_quantity') || 0 %>"
+                                data-eta-date="<%= inv.info&.dig('eta_date') || '' %>"
+                                data-update-url="<%= helpers.storage_inventory_path(storage, inv) %>">
+                          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                        </button>
+                      <% end %>
+                    </div>
                   </td>
                 <% end %>
                 <td class="px-4 py-2 text-center font-semibold text-blue-600"
