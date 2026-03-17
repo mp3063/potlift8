@@ -93,12 +93,10 @@ export default class extends Controller {
     const value = this.hasFillInputTarget ? this.fillInputTarget.value : ""
     if (!value) return
 
-    // Fill cells — keep the original working approach
+    // Fill all enabled cells with the value
     this.cellTargets.forEach(cell => {
       if (cell.disabled) return
-      if (!cell.value || cell.value === "0") {
-        cell.value = value
-      }
+      cell.value = value
     })
 
     // Update totals and dirty state directly (dispatchEvent was unreliable for this)
@@ -115,9 +113,7 @@ export default class extends Controller {
     this.cellTargets
       .filter(c => !c.disabled && c.dataset.colId === String(colId))
       .forEach(cell => {
-        if (!cell.value || cell.value === "0") {
-          cell.value = value
-        }
+        cell.value = value
       })
 
     this.updateTotals()
