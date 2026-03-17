@@ -24,10 +24,21 @@ export default class extends Controller {
     window.removeEventListener("beforeunload", this.beforeUnloadHandler)
   }
 
-  // Called on input event of any cell
+  // Called on input event of any cell (user typing)
   cellChanged(event) {
-    this.markCellDirty(event.target)
-    this.refreshState()
+    const cell = event.target
+    const key = cell.dataset.cellKey
+    const original = this.originalValues.get(key)
+    const isDirty = cell.value !== original
+
+    cell.classList.toggle("bg-yellow-50", isDirty)
+    cell.classList.toggle("border-yellow-400", isDirty)
+    cell.classList.toggle("border-gray-300", !isDirty)
+
+    this.updateTotals()
+    this.dirtyValue = this.cellTargets.some(c =>
+      c.value !== this.originalValues.get(c.dataset.cellKey)
+    )
   }
 
   dirtyValueChanged() {
@@ -75,55 +86,45 @@ export default class extends Controller {
   }
 
   // Fill all empty/zero cells with the value from fillInput
-  fillAll(event) {
-    event.preventDefault()
-    event.stopPropagation()
-
+  fillAll() {
     const value = this.hasFillInputTarget ? this.fillInputTarget.value : ""
     if (!value) return
 
-    // Collect all eligible cells first, then fill
-    const cells = this.cellTargets
-    for (let i = 0; i < cells.length; i++) {
-      const cell = cells[i]
-      if (cell.disabled) continue
+    // Fill cells — keep the original working approach
+    this.cellTargets.forEach(cell => {
+      if (cell.disabled) return
       if (!cell.value || cell.value === "0") {
         cell.value = value
-        this.markCellDirty(cell)
       }
-    }
+    })
 
-    this.refreshState()
+    // Update totals and dirty state directly (dispatchEvent was unreliable for this)
+    this.updateTotals()
+    this.dirtyValue = true
   }
 
   // Fill empty cells in a specific column
   fillColumn(event) {
-    event.preventDefault()
-    event.stopPropagation()
-
     const colId = event.params.colId
     const value = this.hasFillInputTarget ? this.fillInputTarget.value : ""
     if (!value) return
 
-    const cells = this.cellTargets
-    for (let i = 0; i < cells.length; i++) {
-      const cell = cells[i]
-      if (cell.disabled) continue
-      if (cell.dataset.colId !== String(colId)) continue
-      if (!cell.value || cell.value === "0") {
-        cell.value = value
-        this.markCellDirty(cell)
-      }
-    }
+    this.cellTargets
+      .filter(c => !c.disabled && c.dataset.colId === String(colId))
+      .forEach(cell => {
+        if (!cell.value || cell.value === "0") {
+          cell.value = value
+        }
+      })
 
-    this.refreshState()
+    this.updateTotals()
+    this.dirtyValue = true
   }
 
-  // Prevent fillInput enter from submitting the form
-  preventSubmit(event) {
-    if (event.key === "Enter") {
-      event.preventDefault()
-      this.fillAll(event)
+  // Submit the form when Save All is clicked
+  save() {
+    if (this.hasFormTarget) {
+      this.formTarget.requestSubmit()
     }
   }
 
@@ -143,31 +144,5 @@ export default class extends Controller {
         }
       }
     }
-  }
-
-  // Submit the form when Save All is clicked
-  save() {
-    if (this.hasFormTarget) {
-      this.formTarget.requestSubmit()
-    }
-  }
-
-  // --- Private helpers ---
-
-  markCellDirty(cell) {
-    const key = cell.dataset.cellKey
-    const original = this.originalValues.get(key)
-    const isDirty = cell.value !== original
-
-    cell.classList.toggle("bg-yellow-50", isDirty)
-    cell.classList.toggle("border-yellow-400", isDirty)
-    cell.classList.toggle("border-gray-300", !isDirty)
-  }
-
-  refreshState() {
-    this.updateTotals()
-    this.dirtyValue = this.cellTargets.some(c =>
-      !c.disabled && c.value !== this.originalValues.get(c.dataset.cellKey)
-    )
   }
 }
