@@ -4,7 +4,7 @@ import { Controller } from "@hotwired/stimulus"
 // Handles dirty tracking, total calculations, fill operations,
 // keyboard navigation, and beforeunload guard.
 export default class extends Controller {
-  static targets = ["cell", "rowTotal", "columnTotal", "grandTotal", "saveButton", "dirtyCount", "fillInput"]
+  static targets = ["cell", "rowTotal", "columnTotal", "grandTotal", "saveButton", "dirtyCount", "fillInput", "form"]
   static values = { dirty: { type: Boolean, default: false } }
 
   connect() {
@@ -142,6 +142,13 @@ export default class extends Controller {
           return
         }
       }
+    }
+  }
+
+  // Submit the form when Save All is clicked
+  save() {
+    if (this.hasFormTarget) {
+      this.formTarget.requestSubmit()
     }
   }
 
