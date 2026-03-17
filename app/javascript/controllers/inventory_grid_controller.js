@@ -26,19 +26,8 @@ export default class extends Controller {
 
   // Called on input event of any cell
   cellChanged(event) {
-    const cell = event.target
-    const key = cell.dataset.cellKey
-    const original = this.originalValues.get(key)
-    const isDirty = cell.value !== original
-
-    cell.classList.toggle("bg-yellow-50", isDirty)
-    cell.classList.toggle("border-yellow-400", isDirty)
-    cell.classList.toggle("border-gray-300", !isDirty)
-
-    this.updateTotals()
-    this.dirtyValue = this.cellTargets.some(c =>
-      c.value !== this.originalValues.get(c.dataset.cellKey)
-    )
+    this.markCellDirty(event.target)
+    this.refreshState()
   }
 
   dirtyValueChanged() {
@@ -55,11 +44,13 @@ export default class extends Controller {
   }
 
   updateTotals() {
-    // Row totals
     const rowSums = {}
     const colSums = {}
 
     this.cellTargets.forEach(cell => {
+      // Skip disabled cells (hidden storages from setup wizard)
+      if (cell.disabled) return
+
       const rowId = cell.dataset.rowId
       const colId = cell.dataset.colId
       const val = parseInt(cell.value) || 0
@@ -90,11 +81,14 @@ export default class extends Controller {
     if (!value) return
 
     this.cellTargets.forEach(cell => {
+      if (cell.disabled) return
       if (!cell.value || cell.value === "0") {
         cell.value = value
-        cell.dispatchEvent(new Event("input", { bubbles: true }))
+        this.markCellDirty(cell)
       }
     })
+
+    this.refreshState()
   }
 
   // Fill empty cells in a specific column
@@ -104,13 +98,15 @@ export default class extends Controller {
     if (!value) return
 
     this.cellTargets
-      .filter(c => c.dataset.colId === String(colId))
+      .filter(c => !c.disabled && c.dataset.colId === String(colId))
       .forEach(cell => {
         if (!cell.value || cell.value === "0") {
           cell.value = value
-          cell.dispatchEvent(new Event("input", { bubbles: true }))
+          this.markCellDirty(cell)
         }
       })
+
+    this.refreshState()
   }
 
   // Keyboard navigation: Enter moves down
@@ -121,14 +117,34 @@ export default class extends Controller {
       const currentIndex = cells.indexOf(event.target)
       const colId = event.target.dataset.colId
 
-      // Find next cell in same column
       for (let i = currentIndex + 1; i < cells.length; i++) {
-        if (cells[i].dataset.colId === colId) {
+        if (cells[i].dataset.colId === colId && !cells[i].disabled) {
           cells[i].focus()
           cells[i].select()
           return
         }
       }
     }
+  }
+
+  // --- Private helpers ---
+
+  // Apply dirty styling to a single cell
+  markCellDirty(cell) {
+    const key = cell.dataset.cellKey
+    const original = this.originalValues.get(key)
+    const isDirty = cell.value !== original
+
+    cell.classList.toggle("bg-yellow-50", isDirty)
+    cell.classList.toggle("border-yellow-400", isDirty)
+    cell.classList.toggle("border-gray-300", !isDirty)
+  }
+
+  // Recalculate totals and update dirty value
+  refreshState() {
+    this.updateTotals()
+    this.dirtyValue = this.cellTargets.some(c =>
+      !c.disabled && c.value !== this.originalValues.get(c.dataset.cellKey)
+    )
   }
 }
