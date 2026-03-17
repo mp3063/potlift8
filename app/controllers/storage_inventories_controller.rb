@@ -154,13 +154,35 @@ class StorageInventoriesController < ApplicationController
   end
 
   # PATCH /storages/:code/inventories/:id
-  # Inline cell update for storage inventory view
+  # Handles both inline cell updates and full adjust modal updates
   def update
     authorize :storage_inventory, :update?
 
     @inventory = @storage.inventories.find(params[:id])
+    inv_params = params[:inventory] || {}
 
-    if @inventory.update(value: params.dig(:inventory, :value).to_i)
+    # Update the on-hand value
+    attrs = { value: inv_params[:value].to_i }
+
+    # Update ETA fields
+    if inv_params[:eta_quantity].present? || inv_params[:eta_date].present? || inv_params[:reason].present?
+      info = @inventory.info || {}
+      info["eta_quantity"] = inv_params[:eta_quantity].to_i if inv_params.key?(:eta_quantity)
+      info["eta_date"] = inv_params[:eta_date].presence if inv_params.key?(:eta_date)
+      info["last_adjustment_reason"] = inv_params[:reason] if inv_params[:reason].present?
+      info["last_adjusted_at"] = Time.current.iso8601
+      attrs[:info] = info
+
+      # Also update the eta column (used by single_inventory_with_eta for Shopify sync)
+      attrs[:eta] = inv_params[:eta_date].presence if inv_params.key?(:eta_date)
+    end
+
+    if @inventory.update(attrs)
+      # Trigger sync to Shopify by updating cache on the product
+      # (plain touch is skipped by ChangePropagator when only updated_at changes)
+      product = @inventory.product
+      product.update!(cache: (product.cache || {}).merge("inventory_updated_at" => Time.current.iso8601))
+
       respond_to do |format|
         format.turbo_stream
         format.html { redirect_to inventory_storage_path(@storage), notice: "Inventory updated." }

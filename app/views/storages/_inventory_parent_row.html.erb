@@ -1,0 +1,54 @@
+<%#
+  Virtual parent row for configurable/bundle products in storage inventory.
+  Groups subproduct inventories under a single expandable row.
+  Locals: product (required), total_value (required), children_count (required)
+%>
+<tr class="hover:bg-gray-50 bg-gray-50/30"
+    data-product-id="<%= product.id %>"
+    data-controller="expandable-row"
+    data-expandable-row-expanded-value="false"
+>
+  <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+    <div class="flex items-center gap-1">
+      <button
+        type="button"
+        class="p-0.5 rounded hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+        data-action="click->expandable-row#toggle"
+        data-expandable-row-target="trigger"
+        aria-expanded="false"
+        aria-label="Expand <%= product.name %> to show <%= children_count %> variants"
+      >
+        <svg
+          data-expandable-row-target="icon"
+          class="h-4 w-4 text-gray-500 transform transition-transform duration-200"
+          fill="none" viewBox="0 0 24 24" stroke="currentColor"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+      <%= link_to product.sku, product_path(product), class: "text-blue-600 hover:text-blue-700 font-semibold" %>
+      <span class="inline-flex items-center rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700">
+        <%= children_count %>
+      </span>
+    </div>
+  </td>
+  <td class="whitespace-nowrap px-3 py-4 text-sm font-medium text-gray-900">
+    <%= product.name %>
+  </td>
+  <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+    <%= render Ui::BadgeComponent.new(variant: :info, size: :sm) do %>
+      <%= product.product_type_configurable? ? 'Configurable' : 'Bundle' %>
+    <% end %>
+  </td>
+  <td class="whitespace-nowrap px-3 py-4 text-sm text-right font-semibold text-gray-700">
+    <%= number_with_delimiter(total_value) %>
+  </td>
+  <td class="whitespace-nowrap px-3 py-4 text-sm text-right text-gray-400">—</td>
+  <td class="whitespace-nowrap px-3 py-4 text-sm text-right text-gray-400">—</td>
+  <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-400">—</td>
+  <td class="whitespace-nowrap px-3 py-4 text-sm text-right font-semibold text-gray-700">
+    <%= number_with_delimiter(total_value) %>
+  </td>
+  <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+  </td>
+</tr>

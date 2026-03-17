@@ -2,8 +2,37 @@ import { Controller } from "@hotwired/stimulus"
 
 // Connects to data-controller="inventory-table"
 export default class extends Controller {
+  static values = { autoOpenProduct: String }
+
   connect() {
-    console.log("Inventory table controller connected")
+    // Auto-open adjust modal for a specific product (linked from inventory grid)
+    if (this.hasAutoOpenProductValue && this.autoOpenProductValue) {
+      setTimeout(() => this.autoOpenForProduct(this.autoOpenProductValue), 100)
+    }
+  }
+
+  autoOpenForProduct(productId) {
+    // Find the Adjust button for this product
+    const button = this.element.querySelector(`button[data-action*="openAdjustModal"][data-inventory-id]`)
+    // Try to find by matching product ID in inventory rows
+    const rows = this.element.querySelectorAll(`tr[data-product-id="${productId}"]`)
+    if (rows.length > 0) {
+      // Expand parent if this is a child row
+      const parentRow = rows[0].closest('table')?.querySelector(`tr[data-controller="expandable-row"]`)
+      if (parentRow) {
+        const expandController = this.application.getControllerForElementAndIdentifier(parentRow, "expandable-row")
+        if (expandController) expandController.expand()
+      }
+
+      // Find the adjust button in this row
+      const adjustBtn = rows[0].querySelector('button[data-action*="openAdjustModal"]')
+      if (adjustBtn) {
+        // Scroll to the row
+        rows[0].scrollIntoView({ behavior: 'smooth', block: 'center' })
+        // Click the adjust button
+        adjustBtn.click()
+      }
+    }
   }
 
   // Opens the adjust inventory modal with product data
@@ -41,7 +70,8 @@ export default class extends Controller {
 
     // Update form action URL
     const form = document.getElementById('adjust-inventory-form')
-    form.action = `/products/${productId}/inventories/${inventoryId}`
+    const updateUrl = button.dataset.updateUrl
+    form.action = updateUrl || `/products/${productId}/inventories/${inventoryId}`
 
     // Reset form first
     form.reset()

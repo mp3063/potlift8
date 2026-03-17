@@ -1,3 +1,29 @@
+<%# Update the inline editable cell value %>
 <%= turbo_stream.replace dom_id(@inventory, :value) do %>
   <%= render Storages::InlineInventoryCellComponent.new(inventory: @inventory, storage: @storage) %>
+<% end %>
+
+<%# Update ETA Quantity %>
+<%= turbo_stream.replace dom_id(@inventory, :eta_quantity) do %>
+  <%= turbo_frame_tag dom_id(@inventory, :eta_quantity) do %>
+    <span class="text-gray-900">
+      <%= number_with_delimiter(@inventory.info&.dig('eta_quantity') || 0) %>
+    </span>
+  <% end %>
+<% end %>
+
+<%# Update ETA Date %>
+<%= turbo_stream.replace dom_id(@inventory, :eta_date) do %>
+  <%= turbo_frame_tag dom_id(@inventory, :eta_date) do %>
+    <% if @inventory.info&.dig('eta_date').present? %>
+      <%= Date.parse(@inventory.info['eta_date']).strftime('%Y-%m-%d') rescue '-' %>
+    <% else %>
+      <span class="text-gray-500">-</span>
+    <% end %>
+  <% end %>
+<% end %>
+
+<%# Close the modal via auto-close-modal Stimulus controller %>
+<%= turbo_stream.append_all "body" do %>
+  <div data-controller="auto-close-modal"></div>
 <% end %>

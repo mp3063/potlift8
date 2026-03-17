@@ -1,23 +1,82 @@
 <%#
   Inventory table row partial for storage inventory display
-  Locals: inventory (required)
+  Locals: inventory (required), is_parent (optional), is_child (optional),
+          children_count (optional), parent_product_id (optional)
 %>
 <% product = inventory.product %>
+<% is_parent = local_assigns.fetch(:is_parent, false) %>
+<% is_child = local_assigns.fetch(:is_child, false) %>
+<% children_count = local_assigns.fetch(:children_count, 0) %>
+<% parent_product_id = local_assigns.fetch(:parent_product_id, nil) %>
 <% is_low_stock = inventory.value < (product.info&.dig('restock_level') || 0) %>
-<tr class="hover:bg-gray-50">
+
+<tr class="<%= is_child ? 'hidden bg-gray-50/50 hover:bg-gray-100 border-l-4 border-blue-200' : 'hover:bg-gray-50' %>"
+    data-product-id="<%= product.id %>"
+    <% if is_parent %>
+      data-controller="expandable-row"
+      data-expandable-row-expanded-value="false"
+    <% end %>
+    <% if is_child %>
+      data-parent-id="<%= parent_product_id %>"
+    <% end %>
+>
   <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-    <%= link_to product.sku, product_path(product), class: "text-blue-600 hover:text-blue-700" %>
+    <div class="flex items-center gap-1">
+      <% if is_parent %>
+        <button
+          type="button"
+          class="p-0.5 rounded hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+          data-action="click->expandable-row#toggle"
+          data-expandable-row-target="trigger"
+          aria-expanded="false"
+          aria-label="Expand <%= product.name %>"
+        >
+          <svg
+            data-expandable-row-target="icon"
+            class="h-4 w-4 text-gray-500 transform transition-transform duration-200"
+            fill="none" viewBox="0 0 24 24" stroke="currentColor"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      <% elsif is_child %>
+        <span class="text-gray-400 ml-1">└</span>
+      <% end %>
+      <%= link_to product.sku, product_path(product), class: "text-blue-600 hover:text-blue-700 #{'text-xs' if is_child}" %>
+      <% if is_parent %>
+        <span class="inline-flex items-center rounded-full bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">
+          <%= children_count %>
+        </span>
+      <% end %>
+    </div>
   </td>
-  <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-900">
+  <td class="whitespace-nowrap px-3 py-4 text-sm <%= is_child ? 'text-gray-600' : 'text-gray-900' %>">
     <%= product.name %>
-  </td>
-  <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-    <%= render Ui::BadgeComponent.new(variant: :gray, size: :sm) do %>
-      <%= product.product_type_before_type_cast == 1 ? 'Sellable' : product.product_type_before_type_cast == 2 ? 'Configurable' : 'Bundle' %>
+    <% if is_child %>
+      <% config = product.product_configurations_as_sub.first %>
+      <% if config&.info&.dig('variant_config').present? %>
+        <% config.info['variant_config'].each do |_key, value| %>
+          <span class="inline-flex items-center rounded bg-blue-50 px-1 py-0.5 text-xs text-blue-700 ml-1"><%= value %></span>
+        <% end %>
+      <% end %>
     <% end %>
   </td>
+  <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+    <% type_label = case product.product_type_before_type_cast
+                    when 1 then 'Sellable'
+                    when 2 then 'Configurable'
+                    when 3 then 'Bundle'
+                    else product.product_type
+                    end %>
+    <% badge_variant = is_parent ? :info : :gray %>
+    <%= render Ui::BadgeComponent.new(variant: badge_variant, size: :sm) { type_label } %>
+  </td>
   <td class="whitespace-nowrap px-3 py-4 text-sm text-right font-medium <%= is_low_stock ? 'text-red-600' : '' %>">
-    <%= render Storages::InlineInventoryCellComponent.new(inventory: inventory, storage: inventory.storage) %>
+    <% if is_parent %>
+      <span class="text-gray-500"><%= number_with_delimiter(inventory.value) %></span>
+    <% else %>
+      <%= render Storages::InlineInventoryCellComponent.new(inventory: inventory, storage: inventory.storage) %>
+    <% end %>
   </td>
   <td class="whitespace-nowrap px-3 py-4 text-sm text-right text-gray-500">
     <%= number_with_delimiter(product.info&.dig('restock_level') || 0) %>
@@ -42,14 +101,30 @@
     <%= number_with_delimiter(inventory.value + (inventory.info&.dig('eta_quantity') || 0)) %>
   </td>
   <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-    <%= button_to storage_inventory_path(inventory.storage, inventory),
-          method: :delete,
-          class: "text-sm font-medium text-red-600 hover:text-red-800",
-          form: {
-            data: { turbo: false },
-            onsubmit: "return confirm('Remove #{j product.sku} from this storage?')"
-          } do %>
-      Remove
-    <% end %>
+    <div class="flex justify-end gap-3">
+      <% unless is_parent %>
+        <button type="button"
+                class="text-sm font-medium text-blue-600 hover:text-blue-800"
+                data-action="click->inventory-table#openAdjustModal"
+                data-inventory-id="<%= inventory.id %>"
+                data-product-sku="<%= product.sku %>"
+                data-product-name="<%= product.name %>"
+                data-current-value="<%= inventory.value %>"
+                data-eta-quantity="<%= inventory.info&.dig('eta_quantity') || 0 %>"
+                data-eta-date="<%= inventory.info&.dig('eta_date') || '' %>"
+                data-update-url="<%= storage_inventory_path(@storage, inventory) %>">
+          Adjust
+        </button>
+      <% end %>
+      <%= button_to storage_inventory_path(inventory.storage, inventory),
+            method: :delete,
+            class: "text-sm font-medium text-red-600 hover:text-red-800",
+            form: {
+              data: { turbo: false },
+              onsubmit: "return confirm('Remove #{j product.sku} from this storage?')"
+            } do %>
+        Remove
+      <% end %>
+    </div>
   </td>
 </tr>

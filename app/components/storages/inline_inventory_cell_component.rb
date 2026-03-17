@@ -4,6 +4,8 @@ module Storages
   # Click-to-edit cell for inventory values in the storage inventory table.
   # Wraps in a turbo_frame for seamless inline updates via PATCH.
   class InlineInventoryCellComponent < ViewComponent::Base
+    include Turbo::FramesHelper
+
     attr_reader :inventory, :storage, :error
 
     def initialize(inventory:, storage:, error: false)

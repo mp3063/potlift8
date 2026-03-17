@@ -60,11 +60,27 @@ class StoragesController < ApplicationController
     authorize @storage
     response.headers["Cache-Control"] = "no-cache, no-store"
 
-    # Get all inventories for this storage with products
-    # Only eager load what we need: product (for sku, name, product_type, info)
+    # Get all inventories for this storage with products and their parent relationships
     @inventories = @storage.inventories
-                           .includes(:product)
+                           .includes(product: :product_configurations_as_sub)
                            .joins(:product)
+
+    # Apply search filter
+    if params[:q].present?
+      escaped = params[:q].gsub("%", "\\%").gsub("_", "\\_")
+      search_term = "%#{escaped}%"
+
+      # Also find subproducts of matching parent products (configurable/bundle)
+      parent_ids = current_potlift_company.products
+                     .where("sku ILIKE ? OR name ILIKE ?", search_term, search_term)
+                     .pluck(:id)
+      subproduct_ids = ProductConfiguration.where(superproduct_id: parent_ids).pluck(:subproduct_id)
+
+      @inventories = @inventories.where(
+        "products.sku ILIKE :term OR products.name ILIKE :term OR products.id IN (:sub_ids)",
+        term: search_term, sub_ids: subproduct_ids.presence || [0]
+      )
+    end
 
     # Apply sorting
     case params[:sort]
@@ -77,6 +93,9 @@ class StoragesController < ApplicationController
     else
       @inventories = @inventories.order("products.sku #{sort_direction}")
     end
+
+    # Group inventories: parent products with their variant inventories nested underneath
+    @grouped_inventories = build_grouped_inventories(@inventories)
 
     respond_to do |format|
       format.html
@@ -175,6 +194,66 @@ class StoragesController < ApplicationController
   end
 
   private
+
+  # Build grouped inventory list: subproducts of configurable/bundle products
+  # are grouped under a virtual parent row. Standalone products appear as-is.
+  def build_grouped_inventories(inventories)
+    inventory_list = inventories.to_a
+
+    # Find which inventories are subproducts and group by parent
+    child_product_ids = Set.new
+    parent_children = Hash.new { |h, k| h[k] = [] }
+
+    inventory_list.each do |inv|
+      parent_config = inv.product.product_configurations_as_sub.first
+      next unless parent_config
+
+      parent_children[parent_config.superproduct_id] << inv
+      child_product_ids << inv.product_id
+    end
+
+    # Only group when there are 2+ children from the same parent
+    grouped_parent_ids = parent_children.select { |_, children| children.size >= 2 }.keys.to_set
+    child_product_ids = Set.new
+    parent_children.each do |parent_id, children|
+      if grouped_parent_ids.include?(parent_id)
+        children.each { |inv| child_product_ids << inv.product_id }
+      end
+    end
+
+    # Load parent products for virtual rows
+    parent_products = current_potlift_company.products.where(id: grouped_parent_ids).index_by(&:id)
+
+    # Build the grouped list
+    result = []
+    inserted_parents = Set.new
+
+    inventory_list.each do |inv|
+      if child_product_ids.include?(inv.product_id)
+        # Find this child's parent
+        parent_id = inv.product.product_configurations_as_sub.first.superproduct_id
+        next unless grouped_parent_ids.include?(parent_id)
+
+        # Insert virtual parent row before first child
+        unless inserted_parents.include?(parent_id)
+          inserted_parents << parent_id
+          children = parent_children[parent_id].sort_by { |i| i.product.sku }
+          total_value = children.sum(&:value)
+          result << {
+            type: :parent,
+            product: parent_products[parent_id],
+            total_value: total_value,
+            children: children
+          }
+        end
+        # Children are rendered via the parent's children array, skip here
+      else
+        result << { type: :standalone, inventory: inv }
+      end
+    end
+
+    result
+  end
 
   # Set the storage for show, edit, update, destroy, inventory actions
   # Uses code as parameter (via to_param and routes param: :code)
