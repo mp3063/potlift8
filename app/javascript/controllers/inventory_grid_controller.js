@@ -42,6 +42,9 @@ export default class extends Controller {
   }
 
   dirtyValueChanged() {
+    // Guard: Stimulus calls this for default values BEFORE connect() runs
+    if (!this.originalValues) return
+
     if (this.hasSaveButtonTarget) {
       this.saveButtonTarget.disabled = !this.dirtyValue
       this.saveButtonTarget.classList.toggle("opacity-50", !this.dirtyValue)
