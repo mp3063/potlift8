@@ -16,7 +16,7 @@ class ProductInventoriesController < ApplicationController
   # Display inventory grid for a product across storage locations
   def index
     authorize :product_inventory, :index?
-    @storages = current_potlift_company.storages.active.order(:storage_position, :name)
+    @all_storages = current_potlift_company.storages.active.order(:storage_position, :name)
 
     case @product.product_type
     when "configurable"
@@ -28,6 +28,14 @@ class ProductInventoriesController < ApplicationController
     end
 
     @has_inventory = detect_has_inventory
+
+    # For products with inventory, show only storages that have records.
+    # For the setup wizard (no inventory), show all storages so user can pick.
+    if @has_inventory
+      @storages = storages_with_inventory
+    else
+      @storages = @all_storages
+    end
   end
 
   # PATCH /products/:product_id/inventories/batch_update
@@ -43,7 +51,7 @@ class ProductInventoriesController < ApplicationController
     end
 
     valid_product_ids = allowed_product_ids
-    valid_storage_ids = @storages = current_potlift_company.storages.active.pluck(:id).to_set
+    valid_storage_ids = current_potlift_company.storages.active.pluck(:id).to_set
 
     errors = []
 
@@ -80,7 +88,7 @@ class ProductInventoriesController < ApplicationController
     else
       flash.now[:alert] = "Failed to save #{errors.size} #{'cell'.pluralize(errors.size)}. Check highlighted fields."
       @failed_cells = errors.map { |e| e[:cell_key] }
-      @storages = current_potlift_company.storages.active.order(:storage_position, :name)
+      @all_storages = current_potlift_company.storages.active.order(:storage_position, :name)
 
       case @product.product_type
       when "configurable" then load_configurable_inventory
@@ -89,6 +97,7 @@ class ProductInventoriesController < ApplicationController
       end
 
       @has_inventory = detect_has_inventory
+      @storages = @has_inventory ? storages_with_inventory : @all_storages
       render :index, status: :unprocessable_entity
     end
   end
@@ -173,6 +182,18 @@ class ProductInventoriesController < ApplicationController
     else
       @product.inventories.exists?
     end
+  end
+
+  # Return only storages that have inventory for this product (or its subproducts)
+  def storages_with_inventory
+    product_ids = if @product.product_type_configurable?
+                    @subproducts&.map(&:id) || @product.subproducts.pluck(:id)
+                  else
+                    [ @product.id ]
+                  end
+
+    storage_ids = Inventory.where(product_id: product_ids).distinct.pluck(:storage_id)
+    @all_storages.where(id: storage_ids)
   end
 
   # Return set of valid product IDs that can be updated via batch_update
