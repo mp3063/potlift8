@@ -61,7 +61,13 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <div>
         <dt class="text-sm font-medium text-gray-500">Total Inventory</dt>
-        <dd class="mt-1 text-3xl font-bold text-gray-900"><%= @product.total_saldo %></dd>
+        <dd class="mt-1 text-3xl font-bold text-gray-900">
+          <% if @product.product_type_configurable? %>
+            <%= @subproducts&.sum { |sp| sp.total_saldo } || 0 %>
+          <% else %>
+            <%= @product.total_saldo %>
+          <% end %>
+        </dd>
       </div>
       <div>
         <dt class="text-sm font-medium text-gray-500">Locations</dt>
