@@ -31,9 +31,9 @@ export default class extends Controller {
     const original = this.originalValues.get(key)
     const isDirty = cell.value !== original
 
-    cell.classList.toggle("bg-yellow-50", isDirty)
-    cell.classList.toggle("border-yellow-400", isDirty)
-    cell.classList.toggle("border-gray-300", !isDirty)
+    // Use inline styles — Tailwind JIT won't compile classes only used in JS
+    cell.style.backgroundColor = isDirty ? "#fefce8" : ""
+    cell.style.borderColor = isDirty ? "#facc15" : ""
 
     this.updateTotals()
     this.dirtyValue = this.cellTargets.some(c =>
