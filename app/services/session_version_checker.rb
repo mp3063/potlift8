@@ -131,6 +131,7 @@ class SessionVersionChecker
     response = Faraday.get("#{site}/api/v1/users/profile") do |req|
       req.headers["Authorization"] = "Bearer #{session[:access_token]}"
       req.headers["Content-Type"] = "application/json"
+      req.headers["X-Request-Id"] = Current.request_id || SecureRandom.uuid
       req.options.timeout = 5
       req.options.open_timeout = 3
     end

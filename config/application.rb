@@ -48,6 +48,9 @@ module Potlift8
       BigDecimal
     ]
 
+    # Tag logs with request_id for correlation across services
+    config.log_tags = [:request_id]
+
     # Don't generate system test files.
     config.generators.system_tests = nil
   end

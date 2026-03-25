@@ -248,6 +248,7 @@ module Authlift
 
       response = Faraday.post("#{site}/oauth/revoke") do |req|
         req.headers["Content-Type"] = "application/x-www-form-urlencoded"
+        req.headers["X-Request-Id"] = Current.request_id || SecureRandom.uuid
         req.body = URI.encode_www_form({
           token: access_token,
           client_id: client_id,
@@ -316,6 +317,7 @@ module Authlift
     # @raise [PublicKeyError] if public key cannot be fetched
     def fetch_public_key_from_server
       response = Faraday.get("#{site}/api/v1/.well-known/jwks.json") do |req|
+        req.headers["X-Request-Id"] = Current.request_id || SecureRandom.uuid
         req.options.timeout = 10
         req.options.open_timeout = 5
       end

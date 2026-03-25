@@ -43,6 +43,10 @@ Rails.application.routes.draw do
   # Authentication: Bearer token (Company.api_token)
   namespace :api do
     namespace :v1 do
+      # Health checks (no authentication required)
+      get "health", to: "health#show"
+      get "health/ready", to: "health#ready"
+
       # Products API
       # - GET /api/v1/products - List active, sellable products
       # - GET /api/v1/products/:sku - Show product details

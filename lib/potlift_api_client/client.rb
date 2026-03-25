@@ -169,12 +169,16 @@ module PotliftApiClient
     def build_connection(timeout, open_timeout)
       Faraday.new(url: "#{base_url}/api/v1") do |f|
         f.request :json
+        f.request :retry, max: 3, interval: 0.5, backoff_factor: 2,
+          exceptions: [Faraday::ConnectionFailed, Faraday::TimeoutError],
+          retry_statuses: [502, 503, 504]
         f.response :json, content_type: /\bjson$/
         f.options.timeout = timeout
         f.options.open_timeout = open_timeout
         f.headers["Authorization"] = "Bearer #{api_token}"
         f.headers["Content-Type"] = "application/json"
         f.headers["Accept"] = "application/json"
+        f.headers["X-Request-Id"] = Current.request_id || SecureRandom.uuid
         f.adapter Faraday.default_adapter
       end
     end

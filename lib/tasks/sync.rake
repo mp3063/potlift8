@@ -23,8 +23,10 @@ namespace :sync do
     response = Faraday.get("#{shopify8_url}/api/v1/products") do |req|
       req.headers["Authorization"] = "Bearer #{api_token}"
       req.headers["Content-Type"] = "application/json"
+      req.headers["X-Request-Id"] = Current.request_id || SecureRandom.uuid
       req.params["shop_id"] = catalog.shop_id
       req.options.timeout = 30
+      req.options.open_timeout = 5
     end
 
     unless response.success?

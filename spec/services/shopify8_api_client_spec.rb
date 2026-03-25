@@ -797,7 +797,7 @@ RSpec.describe Shopify8ApiClient, type: :service do
 
   describe 'connection configuration' do
     it 'uses correct timeout settings' do
-      expect(described_class::CONNECT_TIMEOUT).to eq(10)
+      expect(described_class::CONNECT_TIMEOUT).to eq(5)
       expect(described_class::READ_TIMEOUT).to eq(30)
     end
   end

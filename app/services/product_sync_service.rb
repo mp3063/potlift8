@@ -663,6 +663,9 @@ class ProductSyncService
 
       connection = Faraday.new(url: url) do |faraday|
         faraday.request :json
+        faraday.request :retry, max: 3, interval: 0.5, backoff_factor: 2,
+          exceptions: [Faraday::ConnectionFailed, Faraday::TimeoutError],
+          retry_statuses: [502, 503, 504]
         faraday.response :json
         faraday.adapter Faraday.default_adapter
         faraday.options.timeout = READ_TIMEOUT
@@ -675,6 +678,7 @@ class ProductSyncService
         req.headers["Content-Type"] = "application/json"
         req.headers["Accept"] = "application/json"
         req.headers["Authorization"] = "Bearer #{api_token}" if api_token.present?
+        req.headers["X-Request-Id"] = Current.request_id || SecureRandom.uuid
         req.body = payload
       end
 

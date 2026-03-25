@@ -24,8 +24,17 @@
 #
 class Shopify8ApiClient
   # HTTP timeout settings
-  CONNECT_TIMEOUT = 10 # seconds
+  CONNECT_TIMEOUT = 5  # seconds
   READ_TIMEOUT = 30    # seconds
+
+  # Retry configuration for transient failures
+  RETRY_OPTIONS = {
+    max: 3,
+    interval: 0.5,
+    backoff_factor: 2,
+    exceptions: [Faraday::ConnectionFailed, Faraday::TimeoutError],
+    retry_statuses: [502, 503, 504]
+  }.freeze
 
   # Result struct for API responses
   Result = Struct.new(:success, :data, :error, keyword_init: true) do
@@ -202,6 +211,7 @@ class Shopify8ApiClient
   def connection
     @connection ||= Faraday.new(url: base_url) do |faraday|
       faraday.request :json
+      faraday.request :retry, RETRY_OPTIONS
       faraday.response :json, content_type: /\bjson$/
       faraday.adapter Faraday.default_adapter
       faraday.options.timeout = READ_TIMEOUT
@@ -209,6 +219,7 @@ class Shopify8ApiClient
       faraday.headers["Authorization"] = "Bearer #{api_token}"
       faraday.headers["Content-Type"] = "application/json"
       faraday.headers["Accept"] = "application/json"
+      faraday.headers["X-Request-Id"] = Current.request_id || SecureRandom.uuid
     end
   end
 

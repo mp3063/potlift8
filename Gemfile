@@ -32,12 +32,16 @@ gem "oauth2", "~> 2.0"
 gem "jwt", "~> 2.7"
 # HTTP client for API requests
 gem "faraday", "~> 2.7"
+# Retry middleware for Faraday (exponential backoff on transient failures)
+gem "faraday-retry", "~> 2.0"
 # Environment variable management
 gem "dotenv-rails", groups: [ :development, :test ]
 # State machine for product lifecycle management
 gem "aasm", "~> 5.5"
 # Authorization framework for role-based access control
 gem "pundit", "~> 2.4"
+# Structured request logging
+gem "lograge"
 # Request throttling and IP blocking for API protection
 gem "rack-attack", "~> 6.7"
 # List ordering for models (used by AttributeGroup and ProductAttribute)

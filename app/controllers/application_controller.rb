@@ -11,6 +11,9 @@ class ApplicationController < ActionController::Base
   # Make authentication helpers available in views
   helper_method :current_user, :current_company, :authenticated?, :current_user_name, :current_potlift_company, :current_customer_groups
 
+  # Store request_id in Current for propagation to inter-service HTTP calls
+  before_action :set_current_request_id
+
   # Enforce authentication for all controllers by default
   # Controllers can skip with: skip_before_action :require_authentication
   before_action :require_authentication
@@ -344,5 +347,17 @@ class ApplicationController < ActionController::Base
   # @return [Authlift::Client] OAuth2 client
   def authlift_client
     @authlift_client ||= Authlift::Client.new
+  end
+
+  # Store the request_id from Rails' ActionDispatch::RequestId middleware
+  # into Current so inter-service HTTP clients can forward it.
+  def set_current_request_id
+    Current.request_id = request.request_id
+  end
+
+  def append_info_to_payload(payload)
+    super
+    payload[:user_id] = current_user&.id
+    payload[:company_id] = current_company&.dig(:id)
   end
 end
