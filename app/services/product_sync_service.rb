@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "faraday/retry"
+
 # ProductSyncService
 #
 # Handles synchronization of products to external systems (Shopify8, Bizcart).
