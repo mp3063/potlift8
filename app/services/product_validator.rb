@@ -142,8 +142,10 @@ class ProductValidator
       end
 
       # Error if attribute is missing or has no value
+      # Variants inherit mandatory attributes from their parent product
       if pav.nil? || pav.value.blank?
-        @errors << "Mandatory attribute '#{attr.name}' is missing"
+        inherited = product.superproducts.any? { |sp| sp.read_attribute_value(attr.code).present? }
+        @errors << "Mandatory attribute '#{attr.name}' is missing" unless inherited
       end
     end
   end

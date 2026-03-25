@@ -75,5 +75,35 @@ module Products
     def product_type_label
       product.product_type.humanize
     end
+
+    # Whether this product has variants/subproducts
+    #
+    # @return [Boolean]
+    def configurable_or_bundle?
+      product.product_type_configurable? || product.product_type_bundle?
+    end
+
+    # Whether any variants are not yet active
+    #
+    # @return [Boolean]
+    def has_inactive_variants?
+      return false unless configurable_or_bundle?
+
+      product.subproducts.where.not(product_status: :active).exists?
+    end
+
+    # Count of inactive variants
+    #
+    # @return [Integer]
+    def inactive_variant_count
+      product.subproducts.where.not(product_status: :active).count
+    end
+
+    # Total variant count
+    #
+    # @return [Integer]
+    def total_variant_count
+      product.subproducts.count
+    end
   end
 end

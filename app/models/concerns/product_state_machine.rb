@@ -138,9 +138,13 @@ module ProductStateMachine
     return true if mandatory_attrs.empty?
 
     # Check that each mandatory attribute has a value
+    # Variants (subproducts) inherit from their parent configurable/bundle product
     mandatory_attrs.all? do |attr|
       value = read_attribute_value(attr.code)
-      value.present?
+      next true if value.present?
+
+      # Fall back to superproduct's attribute value for variants
+      superproducts.any? { |sp| sp.read_attribute_value(attr.code).present? }
     end
   end
 

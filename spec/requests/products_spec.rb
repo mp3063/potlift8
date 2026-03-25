@@ -657,6 +657,7 @@ RSpec.describe '/products', type: :request do
     let(:other_company_product) { create(:product, company: other_company) }
 
     it 'activates a draft product' do
+      allow_any_instance_of(Product).to receive(:can_activate?).and_return(true)
       patch toggle_active_product_path(product)
 
       product.reload
@@ -673,6 +674,7 @@ RSpec.describe '/products', type: :request do
     end
 
     it 'redirects to product show page with success message for activation' do
+      allow_any_instance_of(Product).to receive(:can_activate?).and_return(true)
       patch toggle_active_product_path(product)
 
       expect(response).to redirect_to(product)
@@ -688,6 +690,15 @@ RSpec.describe '/products', type: :request do
       expect(response).to redirect_to(product)
       follow_redirect!
       expect(response.body).to include('Product deactivated successfully')
+    end
+
+    it 'shows specific validation errors when activation fails' do
+      patch toggle_active_product_path(product)
+
+      expect(response).to redirect_to(product)
+      follow_redirect!
+      expect(response.body).to include('Cannot activate product:')
+      expect(response.body).to include('Mandatory attribute')
     end
 
     it 'prevents toggling other company products' do

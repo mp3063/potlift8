@@ -15,7 +15,7 @@
 # - Turbo Stream support for dynamic updates
 #
 class ProductsController < ApplicationController
-  before_action :set_product, only: [ :show, :edit, :update, :destroy, :duplicate, :toggle_active, :attribute_value ]
+  before_action :set_product, only: [ :show, :edit, :update, :destroy, :duplicate, :toggle_active, :activate_variants, :attribute_value ]
 
   # GET /products
   # GET /products.turbo_stream
@@ -388,7 +388,13 @@ class ProductsController < ApplicationController
       error_message = if @product.active?
                         "Cannot deactivate product: #{e.message}"
       else
-                        "Cannot activate product. Ensure all mandatory attributes are set and product structure is valid."
+                        validator = ProductValidator.new(@product)
+                        errors = validator.validate_structure
+                        if errors.any?
+                          "Cannot activate product: #{errors.join('. ')}."
+                        else
+                          "Cannot activate product. Ensure all mandatory attributes are set and product structure is valid."
+                        end
       end
 
       @product.reload
@@ -403,6 +409,49 @@ class ProductsController < ApplicationController
         format.html { redirect_to @product, alert: "Failed to update product: #{e.message}", status: :see_other }
         format.turbo_stream { flash.now[:alert] = "Failed to update product: #{e.message}" }
       end
+    end
+  end
+
+  # PATCH /products/:id/activate_variants
+  #
+  # Attempts to activate all non-active variants of a configurable/bundle product.
+  # Reports which variants were activated and which failed with reasons.
+  #
+  def activate_variants
+    authorize @product
+
+    inactive_variants = @product.subproducts.where.not(product_status: :active)
+
+    if inactive_variants.empty?
+      respond_to do |format|
+        format.html { redirect_to @product, notice: "All variants are already active.", status: :see_other }
+        format.turbo_stream { flash.now[:notice] = "All variants are already active." }
+      end
+      return
+    end
+
+    activated = []
+    failed = []
+
+    inactive_variants.each do |variant|
+      variant.activate!
+      activated << variant.sku
+    rescue AASM::InvalidTransition
+      validator = ProductValidator.new(variant)
+      errors = validator.validate_structure
+      reason = errors.any? ? errors.join(", ") : "validation failed"
+      failed << "#{variant.sku} (#{reason})"
+    end
+
+    message = []
+    message << "Activated #{activated.size} variant#{'s' if activated.size != 1}." if activated.any?
+    message << "Failed: #{failed.join('; ')}." if failed.any?
+
+    @product.reload
+    flash_type = failed.any? ? :alert : :notice
+    respond_to do |format|
+      format.html { redirect_to @product, flash_type => message.join(" "), status: :see_other }
+      format.turbo_stream { flash.now[flash_type] = message.join(" ") }
     end
   end
 

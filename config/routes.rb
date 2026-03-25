@@ -89,6 +89,7 @@ Rails.application.routes.draw do
     member do
       post :duplicate
       patch :toggle_active
+      patch :activate_variants
       get :attribute_value
     end
     collection do
