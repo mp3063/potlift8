@@ -145,11 +145,29 @@ class StorageInventoriesController < ApplicationController
     end
 
     if failed_products.any?
-      redirect_to inventory_storage_path(@storage), status: :see_other,
-                  alert: "Added #{created_count} products. Failed to add: #{failed_products.join(', ')}"
+      respond_to do |format|
+        format.html do
+          redirect_to inventory_storage_path(@storage), status: :see_other,
+                      alert: "Added #{created_count} products. Failed to add: #{failed_products.join(', ')}"
+        end
+        format.turbo_stream do
+          flash.now[:alert] = "Added #{created_count} products. Failed to add: #{failed_products.join(', ')}"
+          set_available_products_and_labels
+          render :new, status: :unprocessable_entity
+        end
+      end
     else
-      redirect_to inventory_storage_path(@storage), status: :see_other,
-                  notice: "Successfully added #{created_count} #{'product'.pluralize(created_count)} to #{@storage.name}."
+      respond_to do |format|
+        format.html do
+          redirect_to inventory_storage_path(@storage), status: :see_other,
+                      notice: "Successfully added #{created_count} #{'product'.pluralize(created_count)} to #{@storage.name}."
+        end
+        format.turbo_stream do
+          flash.now[:notice] = "Successfully added #{created_count} #{'product'.pluralize(created_count)} to #{@storage.name}."
+          set_available_products_and_labels
+          render :new
+        end
+      end
     end
   end
 

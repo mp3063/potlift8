@@ -253,6 +253,11 @@ class ProductAttribute < ApplicationRecord
   end
 
   def prevent_system_destroy
+    # Allow destroy to cascade when the parent Company is being destroyed —
+    # otherwise `dependent: :destroy` on Company#product_attributes would
+    # abort the whole transaction and leak a half-deleted company.
+    return if destroyed_by_association
+
     if system?
       errors.add(:base, "System attributes cannot be deleted")
       throw(:abort)
