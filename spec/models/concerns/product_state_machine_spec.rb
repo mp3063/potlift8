@@ -1,6 +1,10 @@
 require 'rails_helper'
 
 RSpec.describe ProductStateMachine, type: :model do
+  before do
+    allow_any_instance_of(Company).to receive(:provision_system_attributes).and_return(true)
+  end
+
   let(:company) { create(:company) }
 
   describe 'AASM configuration' do

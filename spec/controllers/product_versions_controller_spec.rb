@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe ProductVersionsController, type: :request do
   let(:company) { create(:company) }
-  let(:user) { { id: 1, email: 'test@example.com', name: 'Test User' } }
+  let(:user) { create(:user, company: company, name: 'Test User', email: 'test@example.com') }
 
   before do
     allow_any_instance_of(ApplicationController).to receive(:authenticated?).and_return(true)

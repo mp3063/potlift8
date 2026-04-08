@@ -131,6 +131,9 @@ RSpec.describe SessionsController, type: :controller do
       session[:oauth_state] = state_token
       session[:oauth_initiated_at] = Time.now.to_i
       allow(authlift_client).to receive(:exchange_code).and_return(tokens)
+      # lograge's append_info_to_payload hook calls current_user → decode_jwt.
+      # Stub it to a valid payload so the after-hook can resolve the session.
+      allow(authlift_client).to receive(:decode_jwt).and_return(user_payload.stringify_keys)
     end
 
     context 'with valid parameters' do

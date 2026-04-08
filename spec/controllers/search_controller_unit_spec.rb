@@ -5,6 +5,10 @@ require 'rails_helper'
 # Unit tests for SearchController private methods
 # These test the internal logic without making HTTP requests
 RSpec.describe SearchController, type: :controller do
+  before do
+    allow_any_instance_of(Company).to receive(:provision_system_attributes).and_return(true)
+  end
+
   let(:company) { create(:company) }
   let(:user) { create(:user, company: company) }
 

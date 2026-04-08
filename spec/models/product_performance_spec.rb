@@ -1,6 +1,10 @@
 require 'rails_helper'
 
 RSpec.describe Product, type: :model, performance: true do
+  before do
+    allow_any_instance_of(Company).to receive(:provision_system_attributes).and_return(true)
+  end
+
   # Performance tests for query optimization and N+1 query detection
   #
   # These tests verify that:

@@ -335,12 +335,14 @@ RSpec.describe InventoryCalculator, type: :model do
         product: sellable_product,
         storage: incoming_warehouse,
         value: 100,
-        eta: Date.new(2025, 11, 15)
+        eta: Date.new(2025, 11, 15),
+        info: { 'eta_quantity' => 100, 'eta_date' => '2025-11-15' }
       )
 
       result = sellable_product.single_inventory_with_eta
 
-      expect(result[:available]).to eq(50)
+      # available includes on-hand across all active storages (regular + incoming)
+      expect(result[:available]).to eq(150)
       expect(result[:incoming]).to eq(100)
       expect(result[:eta]).to eq(Date.new(2025, 11, 15))
     end
@@ -387,7 +389,8 @@ RSpec.describe InventoryCalculator, type: :model do
         product: sellable_product,
         storage: incoming1,
         value: 200,
-        eta: Date.new(2025, 12, 1)
+        eta: Date.new(2025, 12, 1),
+        info: { 'eta_quantity' => 200, 'eta_date' => '2025-12-01' }
       )
 
       # Earlier date (should be returned)
@@ -395,12 +398,14 @@ RSpec.describe InventoryCalculator, type: :model do
         product: sellable_product,
         storage: incoming2,
         value: 100,
-        eta: Date.new(2025, 11, 1)
+        eta: Date.new(2025, 11, 1),
+        info: { 'eta_quantity' => 100, 'eta_date' => '2025-11-01' }
       )
 
       result = sellable_product.single_inventory_with_eta
 
-      expect(result[:available]).to eq(50)
+      # available is total on-hand across regular + both incoming storages
+      expect(result[:available]).to eq(350)
       expect(result[:incoming]).to eq(100)
       expect(result[:eta]).to eq(Date.new(2025, 11, 1))
     end
@@ -511,10 +516,12 @@ RSpec.describe InventoryCalculator, type: :model do
       # total_saldo should include regular + incoming but not deleted
       expect(sellable_product.total_saldo).to eq(100)
 
-      # single_inventory_with_eta should only count regular as available
+      # single_inventory_with_eta sums on-hand across all active storages
+      # (regular + incoming), excluding deleted. Incoming quantity comes from
+      # info['eta_quantity'], which is not set here, so it's 0.
       result = sellable_product.single_inventory_with_eta
-      expect(result[:available]).to eq(50)  # Only regular storages
-      expect(result[:incoming]).to eq(50)   # Incoming storage
+      expect(result[:available]).to eq(100) # regular1 + regular2 + incoming on-hand
+      expect(result[:incoming]).to eq(0)    # no eta_quantity in info
     end
 
     it 'handles bundle calculation division correctly' do

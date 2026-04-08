@@ -5,6 +5,7 @@ require 'rails_helper'
 RSpec.describe StorageInventoriesController, type: :request do
   # Use let! to ensure company is created before other factories
   let!(:company) { create(:company) }
+  let!(:user) { create(:user, company: company, name: 'Test User', email: 'test@example.com') }
   let!(:storage) { create(:storage, company: company, code: 'MAIN-WAREHOUSE') }
   let!(:product1) { create(:product, company: company, sku: 'PROD-001', name: 'Product 1', product_type: :sellable, product_status: :active) }
   let!(:product2) { create(:product, company: company, sku: 'PROD-002', name: 'Product 2', product_type: :sellable, product_status: :active) }
@@ -20,11 +21,7 @@ RSpec.describe StorageInventoriesController, type: :request do
       'name' => company.name
     })
     allow_any_instance_of(ApplicationController).to receive(:current_potlift_company).and_return(company)
-    allow_any_instance_of(ApplicationController).to receive(:current_user).and_return({
-      'id' => 1,
-      'email' => 'test@example.com',
-      'name' => 'Test User'
-    })
+    allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(user)
     allow_any_instance_of(ApplicationController).to receive(:pundit_user).and_return(
       UserContext.new(nil, "admin", [ "read", "write" ], company)
     )
