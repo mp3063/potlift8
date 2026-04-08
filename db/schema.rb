@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_11_225612) do
+ActiveRecord::Schema[8.0].define(version: 2026_04_09_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -200,6 +200,27 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_11_225612) do
     t.index ["company_id", "code"], name: "index_customer_groups_on_company_id_and_code", unique: true
     t.index ["company_id", "name"], name: "index_customer_groups_on_company_id_and_name"
     t.index ["company_id"], name: "index_customer_groups_on_company_id"
+  end
+
+  create_table "imports", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.bigint "user_id", null: false
+    t.string "import_type", default: "products", null: false
+    t.string "status", default: "pending", null: false
+    t.integer "progress", default: 0, null: false
+    t.integer "total_rows", default: 0, null: false
+    t.integer "imported_count", default: 0, null: false
+    t.integer "updated_count", default: 0, null: false
+    t.jsonb "errors_data", default: [], null: false
+    t.string "error_message"
+    t.datetime "started_at"
+    t.datetime "completed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id", "created_at"], name: "index_imports_on_company_id_and_created_at"
+    t.index ["company_id"], name: "index_imports_on_company_id"
+    t.index ["status"], name: "index_imports_on_status"
+    t.index ["user_id"], name: "index_imports_on_user_id"
   end
 
   create_table "inventories", force: :cascade do |t|
@@ -604,6 +625,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_11_225612) do
   add_foreign_key "configurations", "companies", on_delete: :cascade
   add_foreign_key "configurations", "products", on_delete: :cascade
   add_foreign_key "customer_groups", "companies"
+  add_foreign_key "imports", "companies"
+  add_foreign_key "imports", "users"
   add_foreign_key "inventories", "products"
   add_foreign_key "inventories", "storages"
   add_foreign_key "labels", "companies"

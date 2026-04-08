@@ -62,7 +62,7 @@ class ApplicationJob < ActiveJob::Base
     job_name = job.class.name
     job_id = job.job_id
     queue_name = job.queue_name
-    arguments = job.arguments.map { |arg| arg.try(:id) || arg.to_s }.join(", ")
+    arguments = job.arguments.map { |arg| format_argument_for_log(arg) }.join(", ")
 
     Rails.logger.info(
       "Job started: #{job_name} (ID: #{job_id}, Queue: #{queue_name}) " \
@@ -115,6 +115,25 @@ class ApplicationJob < ActiveJob::Base
   end
 
   private
+
+  # Format a single job argument for logging.
+  # - ActiveRecord objects → their id (no full attribute dump)
+  # - Strings longer than 100 chars → truncated with byte size (prevents logging
+  #   full file contents or other large payloads)
+  # - Everything else → to_s
+  #
+  # @param arg [Object] Job argument
+  # @return [String] Log-safe representation
+  #
+  def format_argument_for_log(arg)
+    if arg.respond_to?(:id) && arg.class.respond_to?(:primary_key)
+      arg.id.to_s
+    elsif arg.is_a?(String) && arg.length > 100
+      "#{arg[0, 100]}... (#{arg.bytesize} bytes)"
+    else
+      arg.to_s
+    end
+  end
 
   # Helper method to determine if job should be retried
   # Can be overridden in individual job classes

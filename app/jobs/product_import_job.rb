@@ -1,109 +1,74 @@
 # ProductImportJob
 #
-# Background job for importing products from CSV files.
-# Uses Redis to track import progress and store results.
+# Background job for importing products from a CSV file stored as an
+# ActiveStorage blob on an Import record.
 #
-# Features:
-# - Progress tracking (0-100%)
-# - Error reporting with row numbers
-# - Import statistics (imported count, updated count)
-# - Status tracking (processing, completed, failed)
-#
-# Redis Progress Key Format:
-#   import_progress:#{job_id}
-#
-# Progress Data Structure:
-#   {
-#     status: 'processing' | 'completed' | 'failed',
-#     progress: 0-100,
-#     imported_count: Integer,
-#     updated_count: Integer,
-#     errors: Array<{ row: Integer, error: String }>
-#   }
+# The job receives only the Import id as its argument — the CSV content is
+# streamed from storage inside the job. Progress and results are persisted
+# on the Import row (no Redis).
 #
 # Usage:
-#   job = ProductImportJob.perform_later(company_id, file_content, user_id)
-#   # => Check progress at: GET /imports/#{job.job_id}/progress
+#   import = company.imports.create!(user: user, import_type: "products")
+#   import.file.attach(uploaded_file)
+#   ProductImportJob.perform_later(import.id)
+#   # Check progress at: GET /imports/#{import.id}/progress
 #
 class ProductImportJob < ApplicationJob
   queue_as :default
 
   # Perform the import
   #
-  # @param company_id [Integer] Company ID
-  # @param file_content [String] CSV file content
-  # @param user_id [Integer] User ID who initiated the import
+  # @param import_id [Integer] Import record ID
   #
-  def perform(company_id, file_content, user_id)
-    company = Company.find(company_id)
-    user = User.find(user_id)
-    @started_at = Time.current
+  def perform(import_id)
+    import = Import.find(import_id)
+    company = import.company
+    user = import.user
 
-    # Initialize progress tracking
-    progress_key = "import_progress:#{company_id}:#{job_id}"
-    update_progress(progress_key, status: "processing", progress: 0)
+    import.update!(status: "processing", progress: 0, started_at: Time.current)
 
-    # Perform import with progress callback
+    file_content = import.file.download
+
     service = ProductImportService.new(
       company, file_content, user,
       on_progress: ->(processed, total) {
         pct = total > 0 ? ((processed.to_f / total) * 100).round : 0
-        update_progress(progress_key,
-          status: "processing",
+        import.update_columns(
           progress: pct,
-          total_rows: total
+          total_rows: total,
+          updated_at: Time.current
         )
       }
     )
     result = service.import!
 
-    # Update progress with final results (all keys the view expects)
-    update_progress(
-      progress_key,
+    import.update!(
       status: "completed",
       progress: 100,
       imported_count: result[:imported_count],
       updated_count: result[:updated_count],
-      errors: result[:errors],
+      errors_data: result[:errors].map { |e| e.is_a?(Hash) ? e.stringify_keys : e },
       total_rows: result[:imported_count] + result[:updated_count] + result[:errors].size,
-      success_count: result[:imported_count] + result[:updated_count],
-      failed_count: result[:errors].size,
-      started_at: @started_at.iso8601,
-      import_type: "products"
+      completed_at: Time.current
     )
 
     Rails.logger.info(
-      "Product import completed: #{result[:imported_count]} imported, " \
-      "#{result[:updated_count]} updated, #{result[:errors].size} errors"
+      "Product import completed: import_id=#{import.id} " \
+      "imported=#{result[:imported_count]} updated=#{result[:updated_count]} " \
+      "errors=#{result[:errors].size}"
     )
   rescue StandardError => e
     Rails.logger.error("Product import failed: #{e.message}")
-    Rails.logger.error(e.backtrace.join("\n"))
+    Rails.logger.error(e.backtrace.join("\n")) if e.backtrace
 
-    # Update progress with error status
-    progress_key = "import_progress:#{company_id}:#{job_id}"
-    update_progress(
-      progress_key,
-      status: "failed",
-      error: e.message,
-      started_at: @started_at&.iso8601,
-      import_type: "products"
-    )
+    if defined?(import) && import
+      import.update!(
+        status: "failed",
+        error_message: e.message,
+        completed_at: Time.current
+      )
+    end
 
     raise # Re-raise to mark job as failed
-  end
-
-  private
-
-  # Update progress in Redis
-  #
-  # @param key [String] Redis key
-  # @param data [Hash] Progress data
-  #
-  def update_progress(key, data)
-    redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
-    redis.setex(key, 7.days.to_i, data.to_json)
-  rescue StandardError => e
-    Rails.logger.error("Failed to update import progress: #{e.message}")
   end
 end

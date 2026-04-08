@@ -1,18 +1,26 @@
 # ImportsController
 #
 # Handles product and catalog imports from CSV files.
-# Uses background jobs for processing with real-time progress tracking.
+#
+# Uploaded CSVs are stored as ActiveStorage blobs on an Import record, and
+# only the import ID is passed to the background job. This keeps the job
+# arguments small, prevents the CSV content from leaking into Rails logs,
+# and makes progress tracking durable across job restarts (no Redis needed).
 #
 # Routes:
-# - GET  /imports/new        - Show upload form
-# - POST /imports            - Upload file and start import
-# - GET  /imports/:id/progress - Check import progress (JSON/HTML)
+# - GET  /imports                - Import history
+# - GET  /imports/new            - Show upload form
+# - POST /imports                - Upload file and start import
+# - GET  /imports/:id/progress   - Check import progress (JSON/HTML)
+# - GET  /imports/:id/errors     - Download row-level errors as CSV
 #
 # Import Types:
 # - products: Import products from CSV
 # - catalog_items: Import catalog items from CSV (future)
 #
 class ImportsController < ApplicationController
+  MAX_FILE_SIZE = 10.megabytes
+
   # Show import upload form
   #
   # GET /imports/new?type=products
@@ -37,29 +45,37 @@ class ImportsController < ApplicationController
       return
     end
 
-    # Validate file type
     unless valid_file?(params[:file])
       redirect_to new_import_path, alert: "Please upload a CSV file."
       return
     end
 
-    file_content = params[:file].read
-    import_type = params[:import_type] || "products"
-
-    # Enqueue appropriate import job
-    job = case import_type
-    when "products"
-            ProductImportJob.perform_later(
-              current_potlift_company.id,
-              file_content,
-              current_user[:id]
-            )
-    else
-            redirect_to new_import_path, alert: "Unknown import type: #{import_type}"
-            return
+    if params[:file].size > MAX_FILE_SIZE
+      redirect_to new_import_path,
+                  alert: "File is too large. Maximum size is #{ActiveSupport::NumberHelper.number_to_human_size(MAX_FILE_SIZE)}."
+      return
     end
 
-    redirect_to progress_import_path(job.job_id),
+    import_type = params[:import_type] || "products"
+
+    unless %w[products catalog_items].include?(import_type)
+      redirect_to new_import_path, alert: "Unknown import type: #{import_type}"
+      return
+    end
+
+    import = current_potlift_company.imports.create!(
+      user: current_user,
+      import_type: import_type,
+      status: "pending"
+    )
+    import.file.attach(params[:file])
+
+    case import_type
+    when "products"
+      ProductImportJob.perform_later(import.id)
+    end
+
+    redirect_to progress_import_path(import.id),
                 notice: "Import started. This may take a few minutes."
   end
 
@@ -70,9 +86,7 @@ class ImportsController < ApplicationController
   def index
     authorize :import, :index?
 
-    # For now, we'll use Redis to track recent imports
-    # In production, you might want to create an Import model
-    @imports = fetch_recent_imports
+    @imports = current_potlift_company.imports.recent.limit(50)
   end
 
   # Download CSV template for import type
@@ -108,30 +122,18 @@ class ImportsController < ApplicationController
   def progress
     authorize :import, :progress?
 
-    @job_id = params[:id]
-    progress_key = "import_progress:#{current_potlift_company.id}:#{@job_id}"
+    @import = current_potlift_company.imports.find(params[:id])
 
-    redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
-    progress_data = redis.get(progress_key)
-
-    @progress = if progress_data.present?
-                  JSON.parse(progress_data)
-    else
-                  { "status" => "pending" }
-    end
-
-    # Set view variables from progress data
-    @status = @progress["status"] || "pending"
-    @imported = @progress["imported_count"] || 0
-    @updated = @progress["updated_count"] || 0
-    @errors = @progress["errors"]&.size || 0
-    @error_message = @progress["error"]
-    @percentage = @progress["progress"] || 0
+    @status = @import.status
+    @percentage = @import.progress
+    @imported = @import.imported_count
+    @updated = @import.updated_count
+    @errors = @import.failed_count
+    @error_message = @import.error_message
 
     respond_to do |format|
       format.html # renders progress.html.erb
       format.json do
-        # Normalize response for JS controller
         render json: {
           status: @status,
           progress: @percentage,
@@ -142,16 +144,6 @@ class ImportsController < ApplicationController
         }
       end
     end
-  rescue Redis::BaseError => e
-    Rails.logger.error("Redis error in progress check: #{e.message}")
-    @progress = { "status" => "error", "error" => "Could not retrieve progress" }
-    @status = "error"
-    @error_message = "Could not retrieve progress"
-
-    respond_to do |format|
-      format.html
-      format.json { render json: @progress, status: :service_unavailable }
-    end
   end
 
   # Download import errors as CSV
@@ -161,26 +153,14 @@ class ImportsController < ApplicationController
   def download_errors
     authorize :import, :download_errors?
 
-    @job_id = params[:id]
-    progress_key = "import_progress:#{current_potlift_company.id}:#{@job_id}"
-
-    redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
-    progress_data = redis.get(progress_key)
-
-    unless progress_data.present?
-      redirect_to imports_path, alert: "Import data not found or has expired."
-      return
-    end
-
-    @progress = JSON.parse(progress_data)
-    errors = @progress["errors"] || []
+    @import = current_potlift_company.imports.find(params[:id])
+    errors = @import.row_errors
 
     if errors.empty?
       redirect_to imports_path, alert: "No errors found for this import."
       return
     end
 
-    # Generate CSV with error details
     csv_data = CSV.generate do |csv|
       csv << [ "Row Number", "Error Message", "Timestamp" ]
 
@@ -188,18 +168,15 @@ class ImportsController < ApplicationController
         csv << [
           error["row"] || "N/A",
           error["error"] || error["message"] || "Unknown error",
-          error["timestamp"] || Time.current.iso8601
+          error["timestamp"] || @import.created_at&.iso8601
         ]
       end
     end
 
     send_data csv_data,
-              filename: "import_#{@job_id}_errors_#{Date.today}.csv",
+              filename: "import_#{@import.id}_errors_#{Date.today}.csv",
               type: "text/csv",
               disposition: "attachment"
-  rescue Redis::BaseError => e
-    Rails.logger.error("Redis error downloading errors: #{e.message}")
-    redirect_to imports_path, alert: "Could not retrieve error data. Please try again."
   end
 
   private
@@ -212,32 +189,8 @@ class ImportsController < ApplicationController
   def valid_file?(file)
     return false unless file.respond_to?(:content_type)
 
-    # Accept CSV files
     file.content_type.in?([ "text/csv", "text/plain", "application/csv" ]) ||
       file.original_filename.end_with?(".csv")
-  end
-
-  # Fetch recent imports from Redis
-  #
-  # @return [Array<Hash>] Array of import data hashes
-  #
-  def fetch_recent_imports
-    redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
-
-    # Get import progress keys scoped to current company (last 50)
-    keys = redis.keys("import_progress:#{current_potlift_company.id}:*").last(50)
-
-    keys.map do |key|
-      data = redis.get(key)
-      next unless data
-
-      parsed = JSON.parse(data)
-      parsed["id"] = key.split(":").last
-      parsed
-    end.compact.reverse # Most recent first
-  rescue Redis::BaseError => e
-    Rails.logger.error("Redis error fetching imports: #{e.message}")
-    []
   end
 
   # Generate product CSV template
@@ -246,7 +199,6 @@ class ImportsController < ApplicationController
   #
   def generate_product_template
     CSV.generate do |csv|
-      # Headers
       csv << [
         "sku",
         "name",
@@ -260,7 +212,6 @@ class ImportsController < ApplicationController
         "attr_color"
       ]
 
-      # Example row
       csv << [
         "EXAMPLE-001",
         "Example Product",
@@ -274,7 +225,6 @@ class ImportsController < ApplicationController
         "Blue"
       ]
 
-      # Instructions row
       csv << [
         "# SKU is required and must be unique",
         "# Name is required",
@@ -296,7 +246,6 @@ class ImportsController < ApplicationController
   #
   def generate_catalog_items_template
     CSV.generate do |csv|
-      # Headers
       csv << [
         "product_sku",
         "catalog_code",
@@ -305,7 +254,6 @@ class ImportsController < ApplicationController
         "attr_special_price"
       ]
 
-      # Example row
       csv << [
         "EXAMPLE-001",
         "WEB-EUR",
@@ -314,7 +262,6 @@ class ImportsController < ApplicationController
         "19.99"
       ]
 
-      # Instructions row
       csv << [
         "# product_sku: SKU of existing product (required)",
         "# catalog_code: Code of existing catalog (required)",

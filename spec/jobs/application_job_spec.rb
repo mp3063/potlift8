@@ -79,4 +79,50 @@ RSpec.describe ApplicationJob, type: :job do
       }.to raise_error(StandardError)
     end
   end
+
+  describe "argument logging" do
+    it "truncates large string arguments instead of dumping them" do
+      logging_job = Class.new(ApplicationJob) do
+        def self.name
+          "LoggingTestJob"
+        end
+
+        def perform(_payload)
+          :ok
+        end
+      end
+
+      big_payload = "x" * 5_000
+
+      captured = []
+      allow(Rails.logger).to receive(:info) { |msg| captured << msg.to_s }
+
+      logging_job.perform_now(big_payload)
+
+      start_log = captured.find { |m| m.include?("Job started:") }
+      expect(start_log).to be_present
+      expect(start_log).not_to include("x" * 200)
+      expect(start_log).to match(/\(\d+ bytes\)/)
+    end
+
+    it "logs short string arguments verbatim" do
+      logging_job = Class.new(ApplicationJob) do
+        def self.name
+          "ShortArgLoggingTestJob"
+        end
+
+        def perform(_v)
+          :ok
+        end
+      end
+
+      captured = []
+      allow(Rails.logger).to receive(:info) { |msg| captured << msg.to_s }
+
+      logging_job.perform_now("hello")
+
+      start_log = captured.find { |m| m.include?("Job started:") }
+      expect(start_log).to include("hello")
+    end
+  end
 end

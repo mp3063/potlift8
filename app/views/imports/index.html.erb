@@ -64,49 +64,44 @@
               <% @imports.each do |import| %>
                 <tr class="hover:bg-gray-50">
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    <%= import['id']&.truncate(12, omission: '...') %>
+                    #<%= import.id %>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <%= import['import_type']&.titleize || 'Products' %>
+                    <%= import.import_type.titleize %>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <% status = import['status'] || 'unknown' %>
-                    <% variant = case status
+                    <% variant = case import.status
                                  when 'completed' then :success
                                  when 'processing' then :info
-                                 when 'failed', 'error' then :danger
+                                 when 'failed' then :danger
                                  else :warning
                                  end %>
                     <%= render Ui::BadgeComponent.new(variant: variant, dot: true) do %>
-                      <%= status.titleize %>
+                      <%= import.status.titleize %>
                     <% end %>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <%= import['total_rows'] || 0 %>
+                    <%= import.total_rows %>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
-                    <%= import['success_count'] || 0 %>
+                    <%= import.success_count %>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-medium">
-                    <%= import['failed_count'] || 0 %>
+                    <%= import.failed_count %>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <% if import['started_at'] %>
-                      <%= Time.parse(import['started_at']).strftime('%Y-%m-%d %H:%M') rescue 'N/A' %>
-                    <% else %>
-                      N/A
-                    <% end %>
+                    <%= import.started_at&.strftime('%Y-%m-%d %H:%M') || 'N/A' %>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div class="flex items-center gap-2">
-                      <%= link_to progress_import_path(import['id']),
+                      <%= link_to progress_import_path(import.id),
                           class: "text-blue-600 hover:text-blue-900" do %>
                         View Details
                       <% end %>
 
-                      <% if import['failed_count']&.positive? %>
+                      <% if import.failed_count.positive? %>
                         <span class="text-gray-300">|</span>
-                        <%= link_to errors_import_path(import['id']),
+                        <%= link_to errors_import_path(import.id),
                             class: "text-red-600 hover:text-red-900",
                             title: "Download errors CSV" do %>
                           Download Errors
@@ -130,13 +125,13 @@
             <div>
               <span class="text-gray-500">Completed:</span>
               <span class="ml-2 font-medium text-green-600">
-                <%= @imports.count { |i| i['status'] == 'completed' } %>
+                <%= @imports.count { |i| i.status == 'completed' } %>
               </span>
             </div>
             <div>
               <span class="text-gray-500">Failed:</span>
               <span class="ml-2 font-medium text-red-600">
-                <%= @imports.count { |i| i['status'] == 'failed' || i['status'] == 'error' } %>
+                <%= @imports.count { |i| i.status == 'failed' } %>
               </span>
             </div>
           </div>
@@ -157,8 +152,9 @@
         <h3 class="text-sm font-medium text-blue-800">About Import History</h3>
         <div class="mt-2 text-sm text-blue-700">
           <p>
-            Import history is stored temporarily in Redis. Recent imports (last 50) are shown here.
-            For long-term audit trails, consider exporting this data or enabling database-backed import tracking.
+            Recent imports (last 50) are shown here. Each import record stores the
+            uploaded file, progress, row counts and any row-level errors so you can
+            revisit the result later.
           </p>
         </div>
       </div>
