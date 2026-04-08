@@ -102,33 +102,6 @@ RSpec.describe 'Api::V1::SyncTasks', type: :request do
         end
       end
 
-      context 'product_create event' do
-        let(:valid_params) do
-          {
-            sync_task: {
-              origin_event_id: 'evt_product_create_001',
-              direction: 'inbound',
-              event_type: 'product_create',
-              load: {
-                sku: 'NEW-PRODUCT-001',
-                name: 'New Product',
-                product_type: 'sellable'
-              }
-            }
-          }
-        end
-
-        it 'returns not implemented error' do
-          post '/api/v1/sync_tasks', params: valid_params.to_json, headers: headers
-
-          expect(response).to have_http_status(:unprocessable_entity)
-
-          json = JSON.parse(response.body)
-          expect(json['success']).to be false
-          expect(json['error']).to include('Product creation via sync is not yet implemented')
-        end
-      end
-
       context 'inventory_update event' do
         let(:valid_params) do
           {
@@ -196,56 +169,6 @@ RSpec.describe 'Api::V1::SyncTasks', type: :request do
           json = JSON.parse(response.body)
           expect(json['success']).to be false
           expect(json['error']).to include('SKU is required')
-        end
-      end
-
-      context 'order_sync event' do
-        let(:valid_params) do
-          {
-            sync_task: {
-              origin_event_id: 'evt_order_sync_001',
-              direction: 'inbound',
-              event_type: 'order_sync',
-              load: {
-                order_id: 'ORD-12345'
-              }
-            }
-          }
-        end
-
-        it 'returns not implemented error' do
-          post '/api/v1/sync_tasks', params: valid_params.to_json, headers: headers
-
-          expect(response).to have_http_status(:unprocessable_entity)
-
-          json = JSON.parse(response.body)
-          expect(json['success']).to be false
-          expect(json['error']).to include('Order sync is not yet implemented')
-        end
-      end
-
-      context 'catalog_sync event' do
-        let(:valid_params) do
-          {
-            sync_task: {
-              origin_event_id: 'evt_catalog_sync_001',
-              direction: 'inbound',
-              event_type: 'catalog_sync',
-              load: {
-                catalog_id: 123
-              }
-            }
-          }
-        end
-
-        it 'returns not implemented error' do
-          post '/api/v1/sync_tasks', params: valid_params.to_json, headers: headers
-
-          expect(response).to have_http_status(:unprocessable_entity)
-
-          json = JSON.parse(response.body)
-          expect(json['success']).to be false
-          expect(json['error']).to include('Catalog sync is not yet implemented')
         end
       end
 

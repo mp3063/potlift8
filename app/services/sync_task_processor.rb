@@ -1,14 +1,16 @@
 # Sync Task Processor Service
 #
-# Processes sync tasks received from external systems (M23, Shopify3, Bizcart).
-# Handles bidirectional synchronization of product data, inventory, and orders.
+# Processes sync tasks received from Shopify8 (product metafield updates,
+# inventory updates, sync status callbacks, and product-deleted callbacks).
+# Potlift is the sole source of truth for products and catalogs — no external
+# system pushes new products or catalog memberships inbound.
 #
 # Features:
 # - Process sync tasks based on event type
-# - Support for inbound and outbound sync directions
 # - Idempotent processing using origin_event_id
 # - Automatic error handling and logging
-# - Supports multiple event types (product_update, inventory_update, order_sync, etc.)
+# - Supported event types: product_update, inventory_update,
+#   shopify_product_deleted, shopify_sync_confirmed, shopify_sync_failed
 #
 # Usage:
 #   service = SyncTaskProcessor.new(company)
@@ -43,10 +45,7 @@ class SyncTaskProcessor
   # Supported event types
   EVENT_TYPES = %w[
     product_update
-    product_create
     inventory_update
-    order_sync
-    catalog_sync
     shopify_product_deleted
     shopify_sync_confirmed
     shopify_sync_failed
@@ -84,14 +83,8 @@ class SyncTaskProcessor
     result = case event_type
     when "product_update"
                process_product_update(load, key)
-    when "product_create"
-               process_product_create(load)
     when "inventory_update"
                process_inventory_update(load, key)
-    when "order_sync"
-               process_order_sync(load, key)
-    when "catalog_sync"
-               process_catalog_sync(load, key)
     when "shopify_product_deleted"
                process_shopify_product_deleted(load, key)
     when "shopify_sync_confirmed"
@@ -217,17 +210,6 @@ class SyncTaskProcessor
     end
   end
 
-  # Process product create event
-  #
-  # @param load [Hash] Product data
-  # @return [Hash] Result
-  #
-  def process_product_create(load)
-    # This is a stub - actual implementation would create products
-    # For now, return not implemented
-    { error: "Product creation via sync is not yet implemented" }
-  end
-
   # Process inventory update event
   #
   # @param load [Hash] Inventory data
@@ -264,30 +246,6 @@ class SyncTaskProcessor
     else
       { error: result[:error] }
     end
-  end
-
-  # Process order sync event
-  #
-  # @param load [Hash] Order data
-  # @param key [String] Order identifier
-  # @return [Hash] Result
-  #
-  def process_order_sync(load, key)
-    # This is a stub - actual implementation would sync orders
-    # For now, return not implemented
-    { error: "Order sync is not yet implemented" }
-  end
-
-  # Process catalog sync event
-  #
-  # @param load [Hash] Catalog data
-  # @param key [String] Catalog identifier
-  # @return [Hash] Result
-  #
-  def process_catalog_sync(load, key)
-    # This is a stub - actual implementation would sync catalogs
-    # For now, return not implemented
-    { error: "Catalog sync is not yet implemented" }
   end
 
   # Process shopify_product_deleted event

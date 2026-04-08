@@ -43,13 +43,12 @@ RSpec.describe SyncTaskProcessor do
 
   describe 'EVENT_TYPES constant' do
     it 'defines supported event types' do
-      expect(described_class::EVENT_TYPES).to include(
+      expect(described_class::EVENT_TYPES).to contain_exactly(
         'product_update',
-        'product_create',
         'inventory_update',
-        'order_sync',
-        'catalog_sync',
-        'shopify_product_deleted'
+        'shopify_product_deleted',
+        'shopify_sync_confirmed',
+        'shopify_sync_failed'
       )
     end
   end
@@ -141,28 +140,6 @@ RSpec.describe SyncTaskProcessor do
       end
     end
 
-    context 'with product_create event' do
-      let(:params) do
-        {
-          origin_event_id: 'evt_create_001',
-          direction: 'inbound',
-          event_type: 'product_create',
-          load: {
-            sku: 'NEW-PRODUCT-001',
-            name: 'New Product',
-            product_type: 'sellable'
-          }
-        }
-      end
-
-      it 'returns not implemented error' do
-        result = service.process(**params)
-
-        expect(result[:success]).to be false
-        expect(result[:error]).to include('Product creation via sync is not yet implemented')
-      end
-    end
-
     context 'with inventory_update event' do
       let(:params) do
         {
@@ -240,42 +217,6 @@ RSpec.describe SyncTaskProcessor do
         expect_any_instance_of(InventoryUpdateService).to receive(:update).and_call_original
 
         service.process(**params)
-      end
-    end
-
-    context 'with order_sync event' do
-      let(:params) do
-        {
-          origin_event_id: 'evt_order_001',
-          direction: 'inbound',
-          event_type: 'order_sync',
-          load: { order_id: 'ORD-123' }
-        }
-      end
-
-      it 'returns not implemented error' do
-        result = service.process(**params)
-
-        expect(result[:success]).to be false
-        expect(result[:error]).to include('Order sync is not yet implemented')
-      end
-    end
-
-    context 'with catalog_sync event' do
-      let(:params) do
-        {
-          origin_event_id: 'evt_catalog_001',
-          direction: 'inbound',
-          event_type: 'catalog_sync',
-          load: { catalog_id: 123 }
-        }
-      end
-
-      it 'returns not implemented error' do
-        result = service.process(**params)
-
-        expect(result[:success]).to be false
-        expect(result[:error]).to include('Catalog sync is not yet implemented')
       end
     end
 
@@ -429,7 +370,7 @@ RSpec.describe SyncTaskProcessor do
           result = service.process(
             origin_event_id: "evt_#{direction}",
             direction: direction,
-            event_type: 'product_create',
+            event_type: 'product_update',
             load: {}
           )
 

@@ -4,16 +4,19 @@ require "faraday/retry"
 
 # ProductSyncService
 #
-# Handles synchronization of products to external systems (Shopify8, Bizcart).
-# This service builds complete product payloads including:
+# Handles per-product synchronization to Shopify8. This service builds
+# complete product payloads including:
 # - Product basic data (SKU, name, status, product type)
 # - Attribute data with catalog overrides
 # - Inventory data (total saldo, max sellable, by warehouse)
 # - Catalog-specific information
 #
-# Sync Targets:
+# Sync Target:
 # - Shopify8: POST to ENV['SHOPIFY8_URL']/api/v1/sync_tasks
-# - Bizcart: POST to ENV['BIZCART_URL']/api/api/update_catalog
+#
+# Bizcart sync is NOT handled here — Bizcart expects a full-catalog JSON
+# replacement on every push, not per-product events. See BizcartCatalogPushService
+# (planned) for the Bizcart path.
 #
 # Usage:
 #   service = ProductSyncService.new(product, catalog)
@@ -504,20 +507,15 @@ class ProductSyncService
 
   # Determine target URL based on catalog's sync_target
   #
+  # Shopify8 is the only per-product sync target. Bizcart catalogs are handled
+  # via a separate full-catalog push path, not this service.
+  #
   # @return [String, nil] Target URL or nil if not configured
   #
   def determine_target_url
     return nil unless @catalog.present?
 
-    case @catalog.info&.dig("sync_target")
-    when "shopify8"
-      shopify8_url
-    when "bizcart"
-      bizcart_url
-    else
-      # Default to shopify8 if not specified
-      shopify8_url
-    end
+    shopify8_url
   end
 
   # Get Shopify8 sync URL
@@ -531,46 +529,27 @@ class ProductSyncService
     "#{base_url}/api/v1/sync_tasks"
   end
 
-  # Get Bizcart sync URL
-  #
-  # @return [String, nil] Bizcart URL or nil if not configured
-  #
-  def bizcart_url
-    base_url = ENV["BIZCART_URL"]
-    return nil if base_url.blank?
-
-    "#{base_url}/api/api/update_catalog"
-  end
-
-  # Wrap payload in target-specific format
+  # Wrap payload in Shopify8 sync_task format
   #
   # @param payload [Hash] Raw product payload
-  # @param sync_target [String] Target system (shopify8, bizcart)
-  # @return [Hash] Wrapped payload for target system
+  # @param sync_target [String] Target system (shopify8 only)
+  # @return [Hash] Wrapped payload for Shopify8
   #
   def wrap_payload_for_target(payload, sync_target)
-    case sync_target
-    when "shopify8"
-      # Shopify8 expects sync_task format with data in info.load
-      # The executor expects a flat structure with sku at the top level
-      load_data = build_shopify_load_data(payload)
+    # Shopify8 expects sync_task format with data in info.load.
+    # The executor expects a flat structure with sku at the top level.
+    load_data = build_shopify_load_data(payload)
 
-      {
-        sync_task: {
-          shop_id: @catalog.info&.dig("shop_id"),
-          event_type: "product_changed",
-          origin_event_id: "potlift8_#{@product.id}_#{Time.current.to_i}",
-          origin_target_id: @product.sku,
-          direction: "inbound",
-          info: { load: load_data }
-        }
+    {
+      sync_task: {
+        shop_id: @catalog.info&.dig("shop_id"),
+        event_type: "product_changed",
+        origin_event_id: "potlift8_#{@product.id}_#{Time.current.to_i}",
+        origin_target_id: @product.sku,
+        direction: "inbound",
+        info: { load: load_data }
       }
-    when "bizcart"
-      # Bizcart uses raw payload format
-      payload
-    else
-      payload
-    end
+    }
   end
 
   # Build Shopify-compatible load data structure
@@ -635,18 +614,11 @@ class ProductSyncService
 
   # Get API token for target system
   #
-  # @param sync_target [String] Target system (shopify8, bizcart)
+  # @param sync_target [String] Target system (shopify8 only)
   # @return [String, nil] API token for authentication
   #
   def get_api_token_for_target(sync_target)
-    case sync_target
-    when "shopify8"
-      @catalog.info&.dig("shopify_api_token") || ENV["SHOPIFY8_API_TOKEN"]
-    when "bizcart"
-      @catalog.info&.dig("bizcart_api_token") || ENV["BIZCART_API_TOKEN"]
-    else
-      nil
-    end
+    @catalog.info&.dig("shopify_api_token") || ENV["SHOPIFY8_API_TOKEN"]
   end
 
   # Send payload to target URL using Faraday with rate limiting

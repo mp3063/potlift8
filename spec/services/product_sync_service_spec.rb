@@ -7,14 +7,11 @@ RSpec.describe ProductSyncService, type: :service do
   let(:service) { ProductSyncService.new(product, catalog) }
 
   before do
-    # Set up environment variables
     ENV['SHOPIFY8_URL'] = 'https://shopify8.example.com'
-    ENV['BIZCART_URL'] = 'https://bizcart.example.com'
   end
 
   after do
     ENV.delete('SHOPIFY8_URL')
-    ENV.delete('BIZCART_URL')
   end
 
   describe '#initialize' do
@@ -219,17 +216,6 @@ RSpec.describe ProductSyncService, type: :service do
       it 'returns Shopify8 URL' do
         url = service.send(:determine_target_url)
         expect(url).to eq('https://shopify8.example.com/api/v1/sync_tasks')
-      end
-    end
-
-    context 'when sync_target is bizcart' do
-      before do
-        catalog.info['sync_target'] = 'bizcart'
-      end
-
-      it 'returns Bizcart URL' do
-        url = service.send(:determine_target_url)
-        expect(url).to eq('https://bizcart.example.com/api/api/update_catalog')
       end
     end
 
@@ -1080,17 +1066,6 @@ RSpec.describe ProductSyncService, type: :service do
         expect(result.success?).to be true
       end
 
-      it 'syncs to Bizcart' do
-        catalog.info['sync_target'] = 'bizcart'
-        service = ProductSyncService.new(product, catalog)
-
-        expect(service).to receive(:send_to_target)
-          .with('https://bizcart.example.com/api/api/update_catalog', anything, anything)
-          .and_return(mock_response)
-
-        result = service.sync_to_external_system
-        expect(result.success?).to be true
-      end
     end
 
     context 'handling different product types' do
