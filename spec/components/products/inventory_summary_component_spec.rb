@@ -71,7 +71,8 @@ RSpec.describe Products::InventorySummaryComponent, type: :component do
       render_inline(described_class.new(product: product))
 
       expect(page).to have_css("dl.space-y-2")
-      expect(page).to have_css("dt.text-gray-500", count: 2)
+      # Storage names are rendered as links with text-gray-500 inside <dt>
+      expect(page).to have_css("dt a.text-gray-500", count: 2)
       expect(page).to have_css("dd.font-medium", count: 2)
     end
 
@@ -105,7 +106,7 @@ RSpec.describe Products::InventorySummaryComponent, type: :component do
 
     render_inline(described_class.new(product: product))
 
-    storage_names = page.all("dt.text-gray-500").map(&:text)
+    storage_names = page.all("dt a.text-gray-500").map { |el| el.text.strip }
     expect(storage_names).to eq([ "Main Warehouse", "Retail Store" ])
   end
 
