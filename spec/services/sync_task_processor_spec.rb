@@ -48,7 +48,9 @@ RSpec.describe SyncTaskProcessor do
         'inventory_update',
         'shopify_product_deleted',
         'shopify_sync_confirmed',
-        'shopify_sync_failed'
+        'shopify_sync_failed',
+        'shopify_order_created',
+        'shopify_order_fulfilled'
       )
     end
   end
@@ -388,8 +390,9 @@ RSpec.describe SyncTaskProcessor do
             load: {}
           )
 
-          # Will fail on processing, but should pass validation
-          expect(result[:error]).not_to include('Invalid event_type')
+          # May fail on processing (or succeed for acknowledge-only events),
+          # but should pass validation
+          expect(result[:error].to_s).not_to include('Invalid event_type')
         end
       end
     end
@@ -684,6 +687,80 @@ RSpec.describe SyncTaskProcessor do
         other_item.reload
         expect(other_item.sync_status).to eq('synced')
         expect(other_item.last_synced_at).to be_present
+      end
+    end
+
+    context 'with shopify order events' do
+      let(:order_params) do
+        {
+          origin_event_id: 'evt_shopify_order_001',
+          direction: 'inbound',
+          event_type: 'shopify_order_created',
+          key: '123456',
+          load: {
+            'source' => 'shopify',
+            'shop' => 'test-shop.myshopify.com',
+            'timestamp' => '2026-06-11T12:00:00Z',
+            'data' => { 'id' => 123456, 'order_number' => 1001 }
+          }
+        }
+      end
+
+      it 'processes shopify_order_created successfully' do
+        result = service.process(**order_params)
+
+        expect(result[:success]).to be true
+        expect(result[:event_type]).to eq('shopify_order_created')
+        expect(result[:result][:acknowledged]).to be true
+        expect(result[:result][:order_id]).to eq(123456)
+        expect(result[:result][:order_number]).to eq(1001)
+      end
+
+      it 'processes shopify_order_fulfilled successfully' do
+        params = order_params.merge(
+          origin_event_id: 'evt_shopify_order_002',
+          event_type: 'shopify_order_fulfilled'
+        )
+
+        result = service.process(**params)
+
+        expect(result[:success]).to be true
+        expect(result[:event_type]).to eq('shopify_order_fulfilled')
+        expect(result[:result][:acknowledged]).to be true
+        expect(result[:result][:order_id]).to eq(123456)
+      end
+
+      it 'falls back to key when order id is missing from load' do
+        params = order_params.merge(
+          origin_event_id: 'evt_shopify_order_003',
+          load: {}
+        )
+
+        result = service.process(**params)
+
+        expect(result[:success]).to be true
+        expect(result[:result][:acknowledged]).to be true
+        expect(result[:result][:order_id]).to eq('123456')
+      end
+
+      it 'does not change any inventory' do
+        create(:inventory, product: product, storage: storage, value: 100)
+
+        expect do
+          service.process(**order_params)
+        end.not_to change { product.inventories.sum(:value) }
+      end
+
+      it 'still rejects unknown event types' do
+        result = service.process(
+          origin_event_id: 'evt_shopify_order_004',
+          direction: 'inbound',
+          event_type: 'shopify_order_cancelled',
+          load: {}
+        )
+
+        expect(result[:success]).to be false
+        expect(result[:error]).to include('Invalid event_type')
       end
     end
 

@@ -55,7 +55,9 @@ Rails.application.routes.draw do
 
       # Inventories API
       # - POST /api/v1/inventories/update - Update product inventory
+      # - POST /api/v1/inventories/reduce - Reduce product inventory (relative decrement)
       post "inventories/update", to: "inventories#update_inventory"
+      post "inventories/reduce", to: "inventories#reduce_inventory"
 
       # Sync Tasks API
       # - POST /api/v1/sync_tasks - Receive sync task from external system

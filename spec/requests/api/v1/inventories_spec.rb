@@ -427,4 +427,172 @@ RSpec.describe 'Api::V1::Inventories', type: :request do
       end
     end
   end
+
+  describe 'POST /api/v1/inventories/reduce' do
+    context 'with valid authentication' do
+      context 'with default-flagged inventory' do
+        let!(:default_inventory) do
+          create(:inventory, :default_location, product: product, storage: storage_main, value: 100)
+        end
+
+        it 'reduces value on the default inventory' do
+          post '/api/v1/inventories/reduce',
+               params: { sku: product.sku, quantity: 30 }.to_json,
+               headers: headers
+
+          expect(response).to have_http_status(:ok)
+
+          json = JSON.parse(response.body)
+          expect(json['success']).to be true
+          expect(json['product']['sku']).to eq('TEST-SKU-001')
+          expect(json['inventory']).to be_present
+          expect(json['reduced']['storage_code']).to eq('MAIN')
+          expect(json['reduced']['quantity']).to eq(30)
+          expect(json['reduced']['new_value']).to eq(70)
+
+          expect(default_inventory.reload.value).to eq(70)
+        end
+
+        it 'allows the value to go negative' do
+          default_inventory.update!(value: 1)
+
+          post '/api/v1/inventories/reduce',
+               params: { sku: product.sku, quantity: 3 }.to_json,
+               headers: headers
+
+          expect(response).to have_http_status(:ok)
+
+          json = JSON.parse(response.body)
+          expect(json['success']).to be true
+          expect(json['reduced']['new_value']).to eq(-2)
+
+          expect(default_inventory.reload.value).to eq(-2)
+        end
+      end
+
+      context 'with explicit storage_code' do
+        let!(:main_inventory) { create(:inventory, product: product, storage: storage_main, value: 50) }
+        let!(:incoming_inventory) { create(:inventory, product: product, storage: storage_incoming, value: 20) }
+
+        it 'reduces inventory in the targeted storage' do
+          post '/api/v1/inventories/reduce',
+               params: { sku: product.sku, quantity: 5, storage_code: 'INCOMING' }.to_json,
+               headers: headers
+
+          expect(response).to have_http_status(:ok)
+
+          json = JSON.parse(response.body)
+          expect(json['reduced']['storage_code']).to eq('INCOMING')
+          expect(json['reduced']['new_value']).to eq(15)
+
+          expect(incoming_inventory.reload.value).to eq(15)
+          expect(main_inventory.reload.value).to eq(50)
+        end
+
+        it 'returns 422 for unknown storage code' do
+          post '/api/v1/inventories/reduce',
+               params: { sku: product.sku, quantity: 5, storage_code: 'INVALID_STORAGE' }.to_json,
+               headers: headers
+
+          expect(response).to have_http_status(:unprocessable_entity)
+
+          json = JSON.parse(response.body)
+          expect(json['success']).to be false
+          expect(json['message']).to include('Storage not found')
+        end
+      end
+
+      context 'with fallback to company default storage' do
+        let!(:default_storage) do
+          create(:storage, :default_storage, company: company, code: 'DEFAULT', name: 'Default Storage')
+        end
+
+        it 'creates and reduces inventory on the default storage' do
+          post '/api/v1/inventories/reduce',
+               params: { sku: product.sku, quantity: 4 }.to_json,
+               headers: headers
+
+          expect(response).to have_http_status(:ok)
+
+          json = JSON.parse(response.body)
+          expect(json['success']).to be true
+          expect(json['reduced']['storage_code']).to eq('DEFAULT')
+          expect(json['reduced']['new_value']).to eq(-4)
+
+          inventory = product.inventories.find_by(storage: default_storage)
+          expect(inventory.value).to eq(-4)
+        end
+      end
+
+      context 'with invalid SKU' do
+        it 'returns 404 not found' do
+          post '/api/v1/inventories/reduce',
+               params: { sku: 'NONEXISTENT-SKU', quantity: 5 }.to_json,
+               headers: headers
+
+          expect(response).to have_http_status(:not_found)
+
+          json = JSON.parse(response.body)
+          expect(json['success']).to be false
+          expect(json['error']).to eq('product_not_found')
+          expect(json['message']).to include('Product not found')
+        end
+      end
+
+      context 'with missing quantity' do
+        it 'returns 400 bad request' do
+          post '/api/v1/inventories/reduce',
+               params: { sku: product.sku }.to_json,
+               headers: headers
+
+          expect(response).to have_http_status(:bad_request)
+
+          json = JSON.parse(response.body)
+          expect(json['message']).to include('quantity is required')
+        end
+      end
+
+      context 'with non-positive quantity' do
+        let!(:default_inventory) do
+          create(:inventory, :default_location, product: product, storage: storage_main, value: 100)
+        end
+
+        it 'returns 422 for zero quantity' do
+          post '/api/v1/inventories/reduce',
+               params: { sku: product.sku, quantity: 0 }.to_json,
+               headers: headers
+
+          expect(response).to have_http_status(:unprocessable_entity)
+
+          json = JSON.parse(response.body)
+          expect(json['success']).to be false
+          expect(json['message']).to include('Quantity must be positive')
+        end
+
+        it 'returns 422 for negative quantity' do
+          post '/api/v1/inventories/reduce',
+               params: { sku: product.sku, quantity: -5 }.to_json,
+               headers: headers
+
+          expect(response).to have_http_status(:unprocessable_entity)
+
+          json = JSON.parse(response.body)
+          expect(json['success']).to be false
+          expect(json['message']).to include('Quantity must be positive')
+        end
+      end
+    end
+
+    context 'without authentication' do
+      it 'returns 401 unauthorized without token' do
+        post '/api/v1/inventories/reduce',
+             params: { sku: product.sku, quantity: 5 }.to_json
+
+        expect(response).to have_http_status(:unauthorized)
+
+        json = JSON.parse(response.body)
+        expect(json['error']).to eq('unauthorized')
+      end
+    end
+  end
 end

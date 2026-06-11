@@ -10,7 +10,8 @@
 # - Idempotent processing using origin_event_id
 # - Automatic error handling and logging
 # - Supported event types: product_update, inventory_update,
-#   shopify_product_deleted, shopify_sync_confirmed, shopify_sync_failed
+#   shopify_product_deleted, shopify_sync_confirmed, shopify_sync_failed,
+#   shopify_order_created, shopify_order_fulfilled
 #
 # Usage:
 #   service = SyncTaskProcessor.new(company)
@@ -49,6 +50,8 @@ class SyncTaskProcessor
     shopify_product_deleted
     shopify_sync_confirmed
     shopify_sync_failed
+    shopify_order_created
+    shopify_order_fulfilled
   ].freeze
 
   # Sync directions
@@ -91,6 +94,10 @@ class SyncTaskProcessor
                process_shopify_sync_confirmed(load, key)
     when "shopify_sync_failed"
                process_shopify_sync_failed(load, key)
+    when "shopify_order_created"
+               process_shopify_order_created(load, key)
+    when "shopify_order_fulfilled"
+               process_shopify_order_fulfilled(load, key)
     else
                { error: "Unsupported event type: #{event_type}" }
     end
@@ -282,6 +289,59 @@ class SyncTaskProcessor
     end
 
     { product_id: product.id, sku: product.sku, catalog_items_reset: reset_count }
+  end
+
+  # Process shopify_order_created event
+  #
+  # Acknowledges the order event without touching inventory — inventory
+  # reduction happens exclusively via POST /api/v1/inventories/reduce,
+  # called separately by Shopify8 (double-decrementing would corrupt stock).
+  #
+  # @param load [Hash] Shopify order webhook payload (order JSON under "data")
+  # @param key [String] Order ID
+  # @return [Hash] Result
+  #
+  def process_shopify_order_created(load, key)
+    acknowledge_shopify_order(load, key, "created")
+  end
+
+  # Process shopify_order_fulfilled event
+  #
+  # Acknowledges the order event without touching inventory (see
+  # process_shopify_order_created).
+  #
+  # @param load [Hash] Shopify order webhook payload (order JSON under "data")
+  # @param key [String] Order ID
+  # @return [Hash] Result
+  #
+  def process_shopify_order_fulfilled(load, key)
+    acknowledge_shopify_order(load, key, "fulfilled")
+  end
+
+  # Acknowledge and log a Shopify order event
+  #
+  # Payload is the raw Shopify order webhook JSON wrapped by Shopify8's
+  # NotifyPotliftExecutor as { source:, shop:, timestamp:, data: <order json> },
+  # so the order ID lives at load.dig("data", "id") with fallbacks to the
+  # top-level id and key.
+  #
+  # @param load [Hash] Order event payload
+  # @param key [String] Order ID fallback
+  # @param action [String] Order action ("created" or "fulfilled")
+  # @return [Hash] Result
+  #
+  def acknowledge_shopify_order(load, key, action)
+    load_hash = load.is_a?(ActionController::Parameters) ? load.to_unsafe_h : load
+
+    order_id = load_hash.dig("data", "id") || load_hash["id"] || key
+    order_number = load_hash.dig("data", "order_number")
+
+    Rails.logger.info(
+      "SyncTaskProcessor: acknowledged shopify order #{action} " \
+      "(order_id: #{order_id}, order_number: #{order_number})"
+    )
+
+    { acknowledged: true, order_id: order_id, order_number: order_number }
   end
 
   def process_shopify_sync_confirmed(load, key)
