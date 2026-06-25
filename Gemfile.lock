@@ -205,7 +205,7 @@ GEM
       actionview (>= 7.0.0)
       activesupport (>= 7.0.0)
     json (2.15.1)
-    jwt (2.10.2)
+    jwt (3.1.2)
       base64
     kamal (2.7.0)
       activesupport (>= 7.0)
@@ -573,7 +573,7 @@ DEPENDENCIES
   image_processing (~> 1.2)
   importmap-rails
   jbuilder
-  jwt (~> 2.7)
+  jwt (~> 3.1)
   kamal
   lograge
   oauth2 (~> 2.0)
