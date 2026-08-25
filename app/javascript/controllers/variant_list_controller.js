@@ -1,36 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import Sortable from "sortablejs"
 
-/**
- * Variant List Controller
- *
- * Handles drag-and-drop reordering of product variants with keyboard accessibility support.
- * Variants can be reordered to control their display order in the variant list.
- *
- * Features:
- * - Drag-and-drop reordering with SortableJS
- * - Keyboard navigation support (Arrow Up/Down, Space/Enter to activate drag)
- * - Visual feedback during drag (ghost class, opacity)
- * - Sends position updates to server
- * - Accessible drag handle with ARIA labels
- *
- * Targets:
- *   - tbody: The table body containing variant rows
- *
- * Usage:
- *   <div data-controller="variant-list">
- *     <tbody data-variant-list-target="tbody">
- *       <tr data-variant-id="123">...</tr>
- *       <tr data-variant-id="456">...</tr>
- *     </tbody>
- *   </div>
- *
- * Accessibility:
- * - Drag handles are keyboard accessible
- * - ARIA live region announces position changes
- * - Focus management during drag operations
- * - Screen reader compatible
- */
 export default class extends Controller {
   static targets = ["tbody"]
 
@@ -44,9 +14,6 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Initialize SortableJS for variant reordering
-   */
   initializeSortable() {
     if (!this.hasTbodyTarget) return
 
@@ -55,7 +22,7 @@ export default class extends Controller {
       handle: ".cursor-move",
       ghostClass: "bg-blue-50",
       dragClass: "opacity-50",
-      forceFallback: true, // Better keyboard support
+      forceFallback: true,
 
       // Accessibility: Allow keyboard navigation
       fallbackOnBody: true,
@@ -65,7 +32,6 @@ export default class extends Controller {
         this.handleReorder(event)
       },
 
-      // Keyboard support
       onChoose: (event) => {
         event.item.setAttribute("aria-grabbed", "true")
       },
@@ -75,13 +41,9 @@ export default class extends Controller {
       }
     })
 
-    // Add keyboard navigation support
     this.addKeyboardSupport()
   }
 
-  /**
-   * Add keyboard navigation for drag-and-drop
-   */
   addKeyboardSupport() {
     const rows = this.tbodyTarget.querySelectorAll("tr")
 
@@ -89,7 +51,6 @@ export default class extends Controller {
       const handle = row.querySelector(".cursor-move")
       if (!handle) return
 
-      // Make handle keyboard focusable
       handle.setAttribute("tabindex", "0")
       handle.setAttribute("role", "button")
       handle.setAttribute("aria-label", `Reorder variant. Press Space or Enter to grab, Arrow keys to move, Space or Enter to drop.`)
@@ -120,12 +81,6 @@ export default class extends Controller {
     })
   }
 
-  /**
-   * Move a row up or down with keyboard
-   *
-   * @param {HTMLElement} row - The row to move
-   * @param {Number} direction - -1 for up, 1 for down
-   */
   moveRow(row, direction) {
     const rows = Array.from(this.tbodyTarget.querySelectorAll("tr"))
     const currentIndex = rows.indexOf(row)
@@ -139,25 +94,16 @@ export default class extends Controller {
       row.nextElementSibling.after(row)
     }
 
-    // Save new order
     this.saveOrder()
 
     // Announce to screen readers
     this.announcePosition(newIndex + 1, rows.length)
   }
 
-  /**
-   * Handle drag-and-drop reorder event
-   *
-   * @param {Event} event - SortableJS event
-   */
   async handleReorder(event) {
     await this.saveOrder()
   }
 
-  /**
-   * Save the current order to the server
-   */
   async saveOrder() {
     const rows = this.tbodyTarget.querySelectorAll("tr[data-variant-id]")
     const order = Array.from(rows).map(row => row.dataset.variantId)
@@ -188,22 +134,11 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Extract product ID from current URL
-   *
-   * @returns {String|null} Product ID or null
-   */
   extractProductIdFromUrl() {
     const match = window.location.pathname.match(/\/products\/(\d+)/)
     return match ? match[1] : null
   }
 
-  /**
-   * Announce position change to screen readers
-   *
-   * @param {Number} position - New position (1-based)
-   * @param {Number} total - Total number of items
-   */
   announcePosition(position, total) {
     let liveRegion = document.getElementById("variant-reorder-announcer")
 
@@ -219,21 +154,10 @@ export default class extends Controller {
     liveRegion.textContent = `Variant moved to position ${position} of ${total}`
   }
 
-  /**
-   * Show error notification
-   *
-   * @param {String} message - Error message
-   */
   showError(message) {
-    // Could integrate with flash notification system
     console.error(message)
   }
 
-  /**
-   * Get CSRF token from meta tag
-   *
-   * @returns {String} CSRF token
-   */
   get csrfToken() {
     const token = document.querySelector('meta[name="csrf-token"]')
     return token ? token.content : ''

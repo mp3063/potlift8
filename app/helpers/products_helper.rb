@@ -1,9 +1,6 @@
 # frozen_string_literal: true
 
 module ProductsHelper
-  # Renders a badge for product status with appropriate variant and dot indicator
-  # @param product [Product] The product instance
-  # @return [String] HTML badge component
   def product_status_badge(product)
     variant = case product.product_status
     when "active" then :success
@@ -17,9 +14,6 @@ module ProductsHelper
     end
   end
 
-  # Renders a badge for product type with appropriate variant
-  # @param product [Product] The product instance
-  # @return [String] HTML badge component
   def product_type_badge(product)
     variant = case product.product_type
     when "sellable" then :info
@@ -33,9 +27,6 @@ module ProductsHelper
     end
   end
 
-  # Renders a badge for sync status based on last sync time
-  # @param synced_at [Time, nil] The timestamp of last sync
-  # @return [String] HTML badge component
   def sync_status_badge(synced_at)
     if synced_at && synced_at > 1.hour.ago
       render Ui::BadgeComponent.new(variant: :success, dot: true) do
@@ -52,9 +43,6 @@ module ProductsHelper
     end
   end
 
-  # Renders a badge for catalog item sync status
-  # @param catalog_item [CatalogItem] The catalog item
-  # @return [String] HTML badge component
   def catalog_filter_label(catalog_param)
     case catalog_param
     when "none"

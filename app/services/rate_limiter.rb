@@ -1,59 +1,19 @@
 # frozen_string_literal: true
 
-# RateLimiter Service
-#
-# Implements distributed rate limiting using Redis for controlling API request rates
-# to external systems. Uses sliding window algorithm with atomic Redis operations.
-#
-# Features:
-# - Distributed rate limiting across multiple workers/servers
-# - Atomic operations using Redis MULTI/EXEC
-# - Configurable limit and time window
-# - Automatic expiration of old entries
-# - Detailed logging for monitoring
-#
 # Algorithm:
 # Uses sliding window counter algorithm:
 # 1. Create a key with current time window
 # 2. Increment counter for this window
 # 3. Set expiration if new key
 # 4. Check if limit exceeded
-#
-# Usage:
-#   # Basic usage with block
-#   rate_limiter = RateLimiter.new("api:shopify", limit: 100, period: 60)
-#   rate_limiter.throttle do
-#     # API call here
-#     HTTParty.post(url, body: data)
-#   end
-#
-#   # Check if action is allowed without executing
-#   if rate_limiter.allowed?
-#     # Proceed with action
-#   else
-#     # Handle rate limit exceeded
-#   end
-#
-# Configuration:
-#   limit: Maximum number of requests allowed
-#   period: Time window in seconds
-#   key: Unique identifier for the rate limit (e.g., "sync:shopify3", "api:bizcart")
-#
 # Error Handling:
 #   Raises RateLimitExceededError when limit is exceeded
 #   Falls back gracefully if Redis is unavailable (allows request)
-#
 class RateLimiter
   class RateLimitExceededError < StandardError; end
 
   attr_reader :key, :limit, :period
 
-  # Initialize rate limiter
-  #
-  # @param key [String] Unique identifier for this rate limit
-  # @param limit [Integer] Maximum requests allowed in the period
-  # @param period [Integer] Time window in seconds
-  #
   def initialize(key, limit:, period:)
     @key = key
     @limit = limit
@@ -61,12 +21,6 @@ class RateLimiter
     @redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
   end
 
-  # Execute block with rate limiting
-  #
-  # @yield Block to execute if rate limit allows
-  # @raise [RateLimitExceededError] If rate limit exceeded
-  # @return [Object] Result of the yielded block
-  #
   def throttle
     unless allowed?
       current_count = current_usage
@@ -91,10 +45,6 @@ class RateLimiter
     yield
   end
 
-  # Check if request is allowed without incrementing counter
-  #
-  # @return [Boolean] true if under rate limit
-  #
   def allowed?
     increment_and_check
   rescue Redis::BaseError => e
@@ -104,10 +54,6 @@ class RateLimiter
     true
   end
 
-  # Get current usage count
-  #
-  # @return [Integer] Number of requests in current window
-  #
   def current_usage
     window_key = build_window_key
     @redis.get(window_key).to_i
@@ -118,10 +64,6 @@ class RateLimiter
     0
   end
 
-  # Get time until rate limit resets
-  #
-  # @return [Integer] Seconds until reset
-  #
   def time_until_reset
     window_key = build_window_key
     ttl = @redis.ttl(window_key)
@@ -133,8 +75,6 @@ class RateLimiter
     @period
   end
 
-  # Reset rate limit counter (useful for testing)
-  #
   def reset!
     window_key = build_window_key
     @redis.del(window_key)
@@ -145,10 +85,6 @@ class RateLimiter
     )
   end
 
-  # Get rate limit info
-  #
-  # @return [Hash] Current rate limit status
-  #
   def info
     {
       key: @key,
@@ -163,16 +99,9 @@ class RateLimiter
 
   private
 
-  # Increment counter and check if limit exceeded
-  #
-  # Uses Redis MULTI/EXEC for atomic operations
-  #
-  # @return [Boolean] true if under limit
-  #
   def increment_and_check
     window_key = build_window_key
 
-    # Use Redis pipeline for atomic operations
     count = @redis.multi do |pipeline|
       pipeline.incr(window_key)
       pipeline.expire(window_key, @period)
@@ -181,20 +110,11 @@ class RateLimiter
     count <= @limit
   end
 
-  # Build Redis key for current time window
-  #
-  # Key format: "rate_limit:{key}:{window_timestamp}"
-  # Window timestamp is rounded to period boundaries
-  #
-  # @return [String] Redis key
-  #
   def build_window_key
     current_window = (Time.current.to_i / @period).floor
     "rate_limit:#{@key}:#{current_window}"
   end
 
-  # Log when rate limit is exceeded
-  #
   def log_rate_limit_exceeded(current_count, wait_time)
     Rails.logger.warn(
       "[RateLimiter] Rate limit EXCEEDED for '#{@key}': " \
@@ -202,7 +122,6 @@ class RateLimiter
       "Reset in #{wait_time.round(1)}s"
     )
 
-    # Structured log for monitoring/alerting
     Rails.logger.info({
       event: "rate_limit_exceeded",
       key: @key,
@@ -214,8 +133,6 @@ class RateLimiter
     }.to_json)
   end
 
-  # Log when request is allowed
-  #
   def log_request_allowed
     current_count = current_usage
 

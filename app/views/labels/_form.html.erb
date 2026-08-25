@@ -12,7 +12,6 @@
     <% modal.with_header do %>
       <div>
         <%= form_title %>
-        <!-- Parent Label Breadcrumb -->
         <% if parent_label.present? %>
           <div class="mt-2 flex items-center text-sm text-gray-600 font-normal">
             <svg class="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -30,7 +29,6 @@
       </div>
     <% end %>
 
-    <!-- Error Messages -->
     <% if label.errors.any? %>
       <div class="rounded-lg bg-red-50 p-4 border border-red-200 mb-6" role="alert">
         <div class="flex">
@@ -54,12 +52,10 @@
     <% end %>
 
     <div class="space-y-6">
-      <!-- Hidden Parent Field -->
       <% if parent_label.present? %>
         <%= form.hidden_field :parent_label_id, value: parent_label.id %>
       <% end %>
 
-      <!-- Name Field -->
       <%= render Ui::FormFieldComponent.new(
         form: form,
         attribute: :name,
@@ -69,7 +65,6 @@
         placeholder: "e.g., Electronics"
       ) %>
 
-      <!-- Code Field -->
       <div>
         <%= form.label :code, class: "block text-sm font-medium text-gray-700" do %>
           Code
@@ -99,7 +94,6 @@
         <% end %>
       </div>
 
-      <!-- Description Field -->
       <%= render Ui::FormFieldComponent.new(
         form: form,
         attribute: :description,
@@ -109,7 +103,6 @@
         placeholder: "Add a description for this label..."
       ) %>
 
-      <!-- Label Type Field -->
       <div>
         <%= form.label :label_type, class: "block text-sm font-medium text-gray-700" do %>
           Label Type <span class="text-red-600" aria-hidden="true">*</span>
@@ -138,7 +131,6 @@
         <% end %>
       </div>
 
-      <!-- Color Picker (stored in info JSONB) -->
       <div data-controller="color-picker">
         <%= form.label :color, "Color (optional)", class: "block text-sm font-medium text-gray-700" %>
         <p class="mt-1 text-xs text-gray-500">
@@ -159,7 +151,6 @@
         </div>
       </div>
 
-      <!-- Product Default Restriction -->
       <div>
         <%= form.label :product_default_restriction, class: "block text-sm font-medium text-gray-700" do %>
           Product Association Rule

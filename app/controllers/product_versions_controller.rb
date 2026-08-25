@@ -1,22 +1,7 @@
-# ProductVersionsController
-#
-# Handles product version history and audit trail using PaperTrail.
-# Allows viewing changes, comparing versions, and reverting to previous states.
-#
-# Routes (nested under products):
-# - GET  /products/:product_id/versions        - List all versions
-# - GET  /products/:product_id/versions/:id    - Show version details
-# - GET  /products/:product_id/versions/compare - Compare two versions
-# - POST /products/:product_id/versions/:id/revert - Revert to version
-#
 class ProductVersionsController < ApplicationController
   before_action :set_product
   before_action :set_version, only: [ :show, :revert ]
 
-  # List all versions for product
-  #
-  # GET /products/:product_id/versions
-  #
   def index
     authorize :product_version, :index?
     @pagy, @versions = pagy(
@@ -25,10 +10,6 @@ class ProductVersionsController < ApplicationController
     )
   end
 
-  # Show version details with diff from previous version
-  #
-  # GET /products/:product_id/versions/:id
-  #
   def show
     authorize :product_version, :show?
     @previous_version = @product.versions
@@ -39,10 +20,6 @@ class ProductVersionsController < ApplicationController
     @changes = calculate_changes(@previous_version, @version)
   end
 
-  # Compare two versions
-  #
-  # GET /products/:product_id/versions/compare?version1_id=1&version2_id=2
-  #
   def compare
     authorize :product_version, :compare?
     @versions = @product.versions.order(created_at: :desc)
@@ -52,10 +29,6 @@ class ProductVersionsController < ApplicationController
     @changes = calculate_changes(@from_version, @to_version)
   end
 
-  # Revert product to a specific version
-  #
-  # POST /products/:product_id/versions/:id/revert
-  #
   def revert
     authorize :product_version, :revert?
     reified_product = @version.reify
@@ -77,32 +50,22 @@ class ProductVersionsController < ApplicationController
 
   private
 
-  # Set product from params
   def set_product
     @product = current_potlift_company.products.find(params[:product_id])
   end
 
-  # Set version from params
   def set_version
     @version = @product.versions.find(params[:id])
   end
 
-  # Calculate changes between two versions
-  #
-  # @param old_version [PaperTrail::Version, nil] Previous version
-  # @param new_version [PaperTrail::Version] Current version
-  # @return [Hash] Hash of changed attributes with old and new values
-  #
   def calculate_changes(old_version, new_version)
     changes = {}
 
-    # Get object data from versions
     new_object = new_version.reify || @product
     old_object = old_version&.reify
 
     return {} unless old_object
 
-    # Compare attributes
     comparable_attributes.each do |attr|
       old_value = old_object.send(attr)
       new_value = new_object.send(attr)
@@ -115,10 +78,6 @@ class ProductVersionsController < ApplicationController
     changes
   end
 
-  # List of attributes to compare between versions
-  #
-  # @return [Array<Symbol>] Attribute names
-  #
   def comparable_attributes
     [
       :sku,

@@ -1,48 +1,9 @@
 # frozen_string_literal: true
 
 module Shared
-  # Mobile sidebar navigation component
-  #
-  # Provides a slide-out navigation menu for mobile and tablet devices.
-  # The sidebar is controlled via Stimulus and overlays the main content
-  # when opened. It includes a backdrop overlay and is hidden by default.
-  #
-  # **Features:**
-  # - Slide-out animation from left side
-  # - Semi-transparent backdrop overlay
-  # - Navigation links with auto-close on click
-  # - Close button in header
-  # - Backdrop click to close
-  # - Hidden on large screens (lg:hidden)
-  # - Scrollable content area
-  #
-  # **Accessibility:**
-  # - Proper ARIA labels for close button
-  # - Keyboard navigation support
-  # - Focus management
-  # - Screen reader friendly
-  #
-  # **Stimulus Integration:**
-  # - Target: overlay (the entire sidebar container)
-  # - Actions: close (closes sidebar)
-  # - Controlled by mobile-sidebar controller in NavbarComponent
-  #
-  # @example Usage in layout (typically rendered once)
-  #   <%= render Shared::MobileSidebarComponent.new %>
-  #
-  # @note This component relies on the mobile-sidebar Stimulus controller
-  #       being initialized in the parent NavbarComponent.
-  #
-  # @see docs/DESIGN_SYSTEM.md Design System Documentation
-  # @see app/javascript/controllers/mobile_sidebar_controller.js Mobile Sidebar Controller
-  # @see Shared::NavbarComponent Parent component with controller
-  #
   class MobileSidebarComponent < ViewComponent::Base
     include Rails.application.routes.url_helpers
 
-    # Renders the mobile sidebar component
-    #
-    # @return [String] HTML structure with backdrop and sidebar panel
     def call
       content_tag(:div,
         id: "mobile-sidebar",
@@ -58,11 +19,6 @@ module Shared
 
     private
 
-    # Renders the semi-transparent backdrop overlay
-    #
-    # Clicking the backdrop closes the sidebar.
-    #
-    # @return [String] HTML div for backdrop overlay
     def render_backdrop
       content_tag(:div, nil,
         class: "fixed inset-0 bg-gray-900 bg-opacity-50",
@@ -70,11 +26,6 @@ module Shared
       )
     end
 
-    # Renders the sidebar panel
-    #
-    # Contains the header with close button and navigation links.
-    #
-    # @return [String] HTML div with sidebar content
     def render_sidebar
       content_tag(:div, class: "fixed inset-y-0 left-0 w-64 bg-white shadow-xl overflow-y-auto") do
         concat(render_header)

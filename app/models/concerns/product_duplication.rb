@@ -1,12 +1,5 @@
 # frozen_string_literal: true
 
-# ProductDuplication
-#
-# Handles product duplication functionality including:
-# - Creating a copy of the product with unique SKU
-# - Duplicating attribute values
-# - Copying labels
-#
 module ProductDuplication
   extend ActiveSupport::Concern
 
@@ -18,7 +11,6 @@ module ProductDuplication
     transaction do
       new_product.save!
 
-      # Duplicate attribute values
       product_attribute_values.each do |pav|
         new_product.product_attribute_values.create!(
           product_attribute: pav.product_attribute,
@@ -27,7 +19,6 @@ module ProductDuplication
         )
       end
 
-      # Copy labels
       new_product.label_ids = label_ids
     end
 

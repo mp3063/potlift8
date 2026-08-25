@@ -45,7 +45,6 @@
       <%= product_type_badge(product) %>
     </td>
     <td class="px-6 py-4 text-sm text-gray-700">
-      <%# Nested cache for labels - invalidates when labels change %>
       <% cache ['product-labels-v1', product.id, product.labels.maximum(:updated_at)] do %>
         <div class="flex flex-wrap gap-1">
           <% labels_to_show = product.labels.take(3) %>

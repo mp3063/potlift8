@@ -1,49 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
 
-/**
- * Label Form Selector Controller
- *
- * Manages label selection in product forms with search, add/remove functionality,
- * and accessibility support. Handles dynamic updates to hidden form inputs for
- * Rails form submission.
- *
- * Features:
- * - Search/filter labels by name
- * - Add labels by clicking (prevents duplicates)
- * - Remove labels with smooth animations
- * - Keyboard navigation support (Tab, Enter, Escape)
- * - Hidden checkboxes for form submission
- * - Accessibility announcements
- * - Empty state management
- *
- * Targets:
- * - search: Search input field
- * - labelList: Container for available labels
- * - labelOption: Individual label button (multiple)
- * - emptyState: Empty state message for no search results
- * - selectedContainer: Container for selected label tags
- * - emptyMessage: Empty message when no labels selected
- * - hiddenInputs: Container for hidden form checkboxes
- *
- * @example
- *   <div data-controller="label-form-selector">
- *     <input data-label-form-selector-target="search"
- *            data-action="input->label-form-selector#filterLabels">
- *
- *     <div data-label-form-selector-target="labelList">
- *       <button data-label-id="1"
- *               data-label-name="Electronics"
- *               data-label-color="#3b82f6"
- *               data-action="click->label-form-selector#addLabel"
- *               data-label-form-selector-target="labelOption">
- *         Electronics
- *       </button>
- *     </div>
- *
- *     <div data-label-form-selector-target="selectedContainer"></div>
- *     <div data-label-form-selector-target="hiddenInputs"></div>
- *   </div>
- */
 export default class extends Controller {
   static targets = [
     "search",
@@ -55,25 +11,15 @@ export default class extends Controller {
     "hiddenInputs"
   ]
 
-  /**
-   * Initialize controller
-   * Sets up selected labels set for duplicate prevention
-   */
   connect() {
     // Track selected label IDs to prevent duplicates
     this.selectedLabels = new Set()
 
-    // Initialize from existing selected labels in the DOM
     this.initializeSelectedLabels()
 
-    // Log connection for debugging
     console.log("Label form selector controller connected")
   }
 
-  /**
-   * Initialize selected labels from existing DOM elements
-   * Called on connect to populate selectedLabels set from pre-rendered labels
-   */
   initializeSelectedLabels() {
     const existingTags = this.selectedContainerTarget.querySelectorAll("[data-label-id]")
 
@@ -87,12 +33,6 @@ export default class extends Controller {
     console.log("Initialized with selected labels:", Array.from(this.selectedLabels))
   }
 
-  /**
-   * Filter labels based on search input
-   * Shows/hides label options and manages empty state
-   *
-   * @param {Event} event - Input event from search field
-   */
   filterLabels(event) {
     const searchTerm = event.target.value.toLowerCase().trim()
     let visibleCount = 0
@@ -110,7 +50,6 @@ export default class extends Controller {
       }
     })
 
-    // Manage empty state visibility
     if (visibleCount === 0 && searchTerm !== "") {
       this.showEmptyState()
     } else {
@@ -118,12 +57,6 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Add a label to the selection
-   * Creates tag element and updates hidden inputs
-   *
-   * @param {Event} event - Click event from label option button
-   */
   addLabel(event) {
     event.preventDefault()
     event.stopPropagation()
@@ -139,46 +72,33 @@ export default class extends Controller {
       return
     }
 
-    // Add to selected set
     this.selectedLabels.add(labelId)
 
-    // Create tag element
     this.createLabelTag(labelId, labelName, labelColor)
 
-    // Create hidden checkbox for form submission
     this.createHiddenCheckbox(labelId)
 
-    // Update empty message visibility
     this.updateEmptyMessage()
 
     // Announce to screen readers
     this.announceToScreenReader(`Label ${labelName} added`)
 
-    // Clear search input
     if (this.hasSearchTarget) {
       this.searchTarget.value = ""
       this.searchTarget.dispatchEvent(new Event("input", { bubbles: true }))
     }
 
-    // Optionally disable the button in available labels
     button.disabled = true
     button.classList.add("opacity-50", "cursor-not-allowed")
     button.setAttribute("aria-disabled", "true")
   }
 
-  /**
-   * Remove a label from the selection
-   * Removes tag element and updates hidden inputs
-   *
-   * @param {Event} event - Click event from remove button
-   */
   removeLabel(event) {
     event.preventDefault()
     event.stopPropagation()
 
     const button = event.currentTarget
     const labelId = button.dataset.labelId
-    // Use parentElement to get the span tag (not the button itself)
     const tagElement = button.parentElement
 
     if (!tagElement) {
@@ -186,14 +106,11 @@ export default class extends Controller {
       return
     }
 
-    // Get label name from the font-medium span
     const labelNameSpan = tagElement.querySelector("span.font-medium")
     const labelName = labelNameSpan ? labelNameSpan.textContent.trim() : "Unknown"
 
-    // Remove from selected set
     this.selectedLabels.delete(labelId)
 
-    // Animate removal
     tagElement.style.transition = "opacity 150ms ease-out, transform 150ms ease-out"
     tagElement.style.opacity = "0"
     tagElement.style.transform = "scale(0.9)"
@@ -201,17 +118,14 @@ export default class extends Controller {
     setTimeout(() => {
       tagElement.remove()
 
-      // Update empty message visibility
       this.updateEmptyMessage()
 
       // Announce to screen readers
       this.announceToScreenReader(`Label ${labelName} removed`)
     }, 150)
 
-    // Remove hidden checkbox
     this.removeHiddenCheckbox(labelId)
 
-    // Re-enable the button in available labels
     const availableButton = Array.from(this.labelOptionTargets).find(
       btn => btn.dataset.labelId === labelId
     )
@@ -223,13 +137,6 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Create a label tag element in the selected container
-   *
-   * @param {string} labelId - Label ID
-   * @param {string} labelName - Label display name
-   * @param {string} labelColor - Label color (hex)
-   */
   createLabelTag(labelId, labelName, labelColor) {
     const tag = document.createElement("span")
     tag.className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm bg-blue-100 text-blue-800 border border-blue-200 transition-all duration-150"
@@ -256,18 +163,12 @@ export default class extends Controller {
 
     this.selectedContainerTarget.appendChild(tag)
 
-    // Animate in
     requestAnimationFrame(() => {
       tag.style.opacity = "1"
       tag.style.transform = "scale(1)"
     })
   }
 
-  /**
-   * Create hidden checkbox for form submission
-   *
-   * @param {string} labelId - Label ID to create checkbox for
-   */
   createHiddenCheckbox(labelId) {
     const checkbox = document.createElement("input")
     checkbox.type = "checkbox"
@@ -280,11 +181,6 @@ export default class extends Controller {
     this.hiddenInputsTarget.appendChild(checkbox)
   }
 
-  /**
-   * Remove hidden checkbox for a label
-   *
-   * @param {string} labelId - Label ID to remove checkbox for
-   */
   removeHiddenCheckbox(labelId) {
     const checkbox = this.hiddenInputsTarget.querySelector(
       `input[data-label-id="${labelId}"]`
@@ -311,9 +207,6 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Show empty state for no search results
-   */
   showEmptyState() {
     if (this.hasEmptyStateTarget && this.hasLabelListTarget) {
       this.labelListTarget.classList.add("hidden")
@@ -321,9 +214,6 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Hide empty state
-   */
   hideEmptyState() {
     if (this.hasEmptyStateTarget && this.hasLabelListTarget) {
       this.labelListTarget.classList.remove("hidden")
@@ -331,12 +221,6 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Announce message to screen readers
-   * Creates a live region for accessibility
-   *
-   * @param {string} message - Message to announce
-   */
   announceToScreenReader(message) {
     const announcement = document.createElement("div")
     announcement.setAttribute("role", "status")
@@ -346,7 +230,6 @@ export default class extends Controller {
 
     document.body.appendChild(announcement)
 
-    // Remove after announcement
     setTimeout(() => {
       announcement.remove()
     }, 1000)
@@ -354,9 +237,6 @@ export default class extends Controller {
 
   /**
    * Escape HTML to prevent XSS
-   *
-   * @param {string} text - Text to escape
-   * @returns {string} Escaped text
    */
   escapeHtml(text) {
     const div = document.createElement("div")
@@ -364,11 +244,7 @@ export default class extends Controller {
     return div.innerHTML
   }
 
-  /**
-   * Clean up when controller disconnects
-   */
   disconnect() {
-    // Clear selected labels set
     this.selectedLabels.clear()
   }
 }

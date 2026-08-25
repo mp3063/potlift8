@@ -27,9 +27,7 @@
   </div>
 <% end %>
 
-<!-- Stats Cards -->
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-  <!-- Discount Card -->
   <%= render Ui::CardComponent.new do %>
     <h3 class="text-sm font-medium text-gray-500 mb-2">Group Discount</h3>
     <p class="text-3xl font-bold text-blue-600">
@@ -38,7 +36,6 @@
     <p class="text-xs text-gray-500 mt-1">Applied to base prices</p>
   <% end %>
 
-  <!-- Products Count -->
   <%= render Ui::CardComponent.new do %>
     <h3 class="text-sm font-medium text-gray-500 mb-2">Products with Pricing</h3>
     <p class="text-3xl font-bold text-gray-900"><%= @products_count %></p>
@@ -47,7 +44,6 @@
     </p>
   <% end %>
 
-  <!-- Active Status -->
   <%= render Ui::CardComponent.new do %>
     <h3 class="text-sm font-medium text-gray-500 mb-2">Status</h3>
     <div class="mt-2">
@@ -61,7 +57,6 @@
   <% end %>
 </div>
 
-<!-- Products with Group Pricing -->
 <% if @products_count > 0 %>
   <%= render Ui::CardComponent.new(padding: :none) do |card| %>
     <% card.with_header do %>
@@ -135,7 +130,6 @@
     </div>
   <% end %>
 <% else %>
-  <!-- Empty State -->
   <%= render Shared::EmptyStateComponent.new(
     title: "No products with group pricing",
     description: "This customer group doesn't have any products with custom pricing yet. Add prices in the product pricing section.",

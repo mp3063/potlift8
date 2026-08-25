@@ -6,7 +6,6 @@ export default class extends Controller {
   toggle() {
     this.fieldsTarget.classList.toggle("hidden", !this.checkboxTarget.checked)
     if (!this.checkboxTarget.checked) {
-      // Clear metafield fields when unchecked
       this.fieldsTarget.querySelectorAll("input, select").forEach(el => {
         if (el.type !== "checkbox") el.value = ""
       })

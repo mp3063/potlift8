@@ -1,24 +1,6 @@
-# CustomerGroupsController
-#
-# Manages customer groups for group-based pricing.
-# All customer groups are scoped to the current company.
-#
-# Routes:
-# - GET    /customer_groups           - List all groups
-# - GET    /customer_groups/new       - New group form
-# - POST   /customer_groups           - Create group
-# - GET    /customer_groups/:id       - Show group details
-# - GET    /customer_groups/:id/edit  - Edit group form
-# - PATCH  /customer_groups/:id       - Update group
-# - DELETE /customer_groups/:id       - Delete group
-#
 class CustomerGroupsController < ApplicationController
   before_action :set_customer_group, only: [ :show, :edit, :update, :destroy ]
 
-  # List all customer groups
-  #
-  # GET /customer_groups
-  #
   def index
     authorize CustomerGroup
 
@@ -28,30 +10,18 @@ class CustomerGroupsController < ApplicationController
     )
   end
 
-  # Show customer group details
-  #
-  # GET /customer_groups/:id
-  #
   def show
     authorize @customer_group
 
     @products_count = @customer_group.prices.count
   end
 
-  # New customer group form
-  #
-  # GET /customer_groups/new
-  #
   def new
     authorize CustomerGroup
 
     @customer_group = current_potlift_company.customer_groups.build
   end
 
-  # Create new customer group
-  #
-  # POST /customer_groups
-  #
   def create
     authorize CustomerGroup
 
@@ -65,18 +35,10 @@ class CustomerGroupsController < ApplicationController
     end
   end
 
-  # Edit customer group form
-  #
-  # GET /customer_groups/:id/edit
-  #
   def edit
     authorize @customer_group
   end
 
-  # Update customer group
-  #
-  # PATCH /customer_groups/:id
-  #
   def update
     authorize @customer_group
 
@@ -88,10 +50,6 @@ class CustomerGroupsController < ApplicationController
     end
   end
 
-  # Delete customer group
-  #
-  # DELETE /customer_groups/:id
-  #
   def destroy
     authorize @customer_group
 
@@ -108,12 +66,10 @@ class CustomerGroupsController < ApplicationController
 
   private
 
-  # Set customer group from params
   def set_customer_group
     @customer_group = current_potlift_company.customer_groups.find(params[:id])
   end
 
-  # Strong parameters
   def customer_group_params
     params.require(:customer_group).permit(
       :name,

@@ -1,25 +1,6 @@
-# ProductImportJob
-#
-# Background job for importing products from a CSV file stored as an
-# ActiveStorage blob on an Import record.
-#
-# The job receives only the Import id as its argument — the CSV content is
-# streamed from storage inside the job. Progress and results are persisted
-# on the Import row (no Redis).
-#
-# Usage:
-#   import = company.imports.create!(user: user, import_type: "products")
-#   import.file.attach(uploaded_file)
-#   ProductImportJob.perform_later(import.id)
-#   # Check progress at: GET /imports/#{import.id}/progress
-#
 class ProductImportJob < ApplicationJob
   queue_as :default
 
-  # Perform the import
-  #
-  # @param import_id [Integer] Import record ID
-  #
   def perform(import_id)
     import = Import.find(import_id)
     company = import.company
@@ -69,6 +50,6 @@ class ProductImportJob < ApplicationJob
       )
     end
 
-    raise # Re-raise to mark job as failed
+    raise
   end
 end

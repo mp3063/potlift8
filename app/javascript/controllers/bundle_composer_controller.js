@@ -1,55 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
 
-/**
- * Bundle Composer Controller
- *
- * Manages the bundle product composition interface, including:
- * - Product search and selection
- * - Sellable and configurable product management
- * - Variant selection and quantity management
- * - Real-time preview of bundle combinations
- * - Configuration validation and limits
- *
- * Targets:
- *   - composer: Main composer container
- *   - searchInput: Product search input field
- *   - searchResults: Search results dropdown
- *   - selectedProducts: Container for selected product cards
- *   - preview: Preview section
- *   - previewCount: Combination count display
- *   - configuration: Hidden input for form submission
- *   - productCount: Selected products count display
- *   - errorContainer: Error messages container
- *   - warningContainer: Warning messages container
- *   - submitButton: Form submit button
- *
- * Values:
- *   - maxConfigurables: Maximum configurable products allowed (default: 3)
- *   - maxSellables: Maximum sellable products allowed (default: 10)
- *   - maxCombinations: Maximum variant combinations allowed (default: 200)
- *
- * Actions:
- *   - productTypeChanged: Show/hide composer based on product type
- *   - search: Search for products
- *   - addProduct: Add product to bundle
- *   - removeProduct: Remove product from bundle
- *   - toggleVariant: Toggle variant inclusion
- *   - quantityChanged: Update quantity
- *
- * Usage:
- *   <div data-controller="bundle-composer"
- *        data-bundle-composer-max-configurables-value="3"
- *        data-bundle-composer-max-sellables-value="10"
- *        data-bundle-composer-max-combinations-value="200">
- *     ...composer UI...
- *   </div>
- *
- * Accessibility:
- * - Keyboard navigation support
- * - ARIA labels and announcements
- * - Focus management
- * - Screen reader-friendly error messages
- */
 export default class extends Controller {
   static targets = [
     "composer",
@@ -71,36 +21,23 @@ export default class extends Controller {
     maxCombinations: { type: Number, default: 200 }
   }
 
-  /**
-   * Initialize controller state
-   */
   connect() {
     console.log("Bundle Composer connected")
 
-    // Track selected products: Map(productId => { type, name, data })
     this.selectedProducts = new Map()
 
     // Debounce timers
     this.searchDebounce = null
     this.previewDebounce = null
 
-    // Check if we have existing configuration to restore
     this.restoreExistingConfiguration().catch(e => console.error("Restore failed:", e))
   }
 
-  /**
-   * Clean up when controller disconnects
-   */
   disconnect() {
     if (this.searchDebounce) clearTimeout(this.searchDebounce)
     if (this.previewDebounce) clearTimeout(this.previewDebounce)
   }
 
-  /**
-   * Show/hide composer based on product type selection
-   *
-   * @param {Event} event - Change event from product type select
-   */
   productTypeChanged(event) {
     const productType = event.target.value
     const isBundle = productType === "3" || productType === "bundle"
@@ -113,17 +50,11 @@ export default class extends Controller {
       }
     }
 
-    // Reset composer if switching away from bundle
     if (!isBundle) {
       this.resetComposer()
     }
   }
 
-  /**
-   * Search for products (debounced)
-   *
-   * @param {Event} event - Input event from search field
-   */
   search(event) {
     const query = event.target.value.trim()
 
@@ -132,7 +63,6 @@ export default class extends Controller {
       clearTimeout(this.searchDebounce)
     }
 
-    // Hide results if query too short
     if (query.length < 2) {
       this.hideSearchResults()
       return
@@ -144,11 +74,6 @@ export default class extends Controller {
     }, 300)
   }
 
-  /**
-   * Perform the actual search request
-   *
-   * @param {String} query - Search query
-   */
   async performSearch(query) {
     try {
       const response = await fetch(`/bundle_composer/search?q=${encodeURIComponent(query)}`, {
@@ -172,11 +97,6 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Display search results
-   *
-   * @param {Array} products - Array of product objects
-   */
   displaySearchResults(products) {
     if (!this.hasSearchResultsTarget) return
 
@@ -217,38 +137,27 @@ export default class extends Controller {
     this.searchResultsTarget.style.display = 'block'
   }
 
-  /**
-   * Hide search results dropdown
-   */
   hideSearchResults() {
     if (this.hasSearchResultsTarget) {
       this.searchResultsTarget.style.display = 'none'
     }
   }
 
-  /**
-   * Add product to bundle composition
-   *
-   * @param {Event} event - Click event from search result
-   */
   async addProduct(event) {
     const productId = event.currentTarget.dataset.productId
     const productType = event.currentTarget.dataset.productType
     const productName = event.currentTarget.dataset.productName
     const productSku = event.currentTarget.dataset.productSku
 
-    // Check if already added
     if (this.selectedProducts.has(productId)) {
       this.showWarning("Product already added to bundle")
       return
     }
 
-    // Check limits before adding
     if (!this.canAddProduct(productType)) {
-      return // Error already shown by canAddProduct
+      return
     }
 
-    // Fetch full product details including variants
     try {
       const response = await fetch(`/bundle_composer/product/${productId}`, {
         headers: {
@@ -265,7 +174,6 @@ export default class extends Controller {
 
       const productData = await response.json()
 
-      // Add to selected products
       this.selectedProducts.set(productId, {
         type: productType,
         name: productName,
@@ -273,14 +181,11 @@ export default class extends Controller {
         data: productData
       })
 
-      // Render product card
       this.renderProductCard(productId, productType, productName, productSku, productData)
 
-      // Update counts and preview
       this.updateProductCount()
       this.updatePreview()
 
-      // Clear search
       if (this.hasSearchInputTarget) {
         this.searchInputTarget.value = ''
       }
@@ -295,12 +200,6 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Check if product can be added (respecting limits)
-   *
-   * @param {String} productType - 'sellable' or 'configurable'
-   * @returns {Boolean} Whether product can be added
-   */
   canAddProduct(productType) {
     const configurableCount = Array.from(this.selectedProducts.values())
       .filter(p => p.type === 'configurable').length
@@ -320,15 +219,6 @@ export default class extends Controller {
     return true
   }
 
-  /**
-   * Render product card in selected products area
-   *
-   * @param {String} productId - Product ID
-   * @param {String} productType - Product type
-   * @param {String} productName - Product name
-   * @param {String} productSku - Product SKU
-   * @param {Object} productData - Full product data
-   */
   renderProductCard(productId, productType, productName, productSku, productData) {
     if (!this.hasSelectedProductsTarget) return
 
@@ -347,14 +237,6 @@ export default class extends Controller {
     this.selectedProductsTarget.appendChild(card)
   }
 
-  /**
-   * Render sellable product card HTML
-   *
-   * @param {String} productId - Product ID
-   * @param {String} productName - Product name
-   * @param {String} productSku - Product SKU
-   * @returns {String} HTML string
-   */
   renderSellableCard(productId, productName, productSku) {
     return `
       <div class="flex items-start justify-between mb-3">
@@ -389,15 +271,6 @@ export default class extends Controller {
     `
   }
 
-  /**
-   * Render configurable product card HTML
-   *
-   * @param {String} productId - Product ID
-   * @param {String} productName - Product name
-   * @param {String} productSku - Product SKU
-   * @param {Object} productData - Full product data with variants
-   * @returns {String} HTML string
-   */
   renderConfigurableCard(productId, productName, productSku, productData) {
     const variants = productData.variants || []
     const variantRows = variants.map(variant => `
@@ -467,27 +340,19 @@ export default class extends Controller {
     `
   }
 
-  /**
-   * Remove product from bundle
-   *
-   * @param {Event} event - Click event from remove button
-   */
   removeProduct(event) {
     const productId = event.currentTarget.dataset.productId
     const product = this.selectedProducts.get(productId)
 
     if (!product) return
 
-    // Remove from map
     this.selectedProducts.delete(productId)
 
-    // Remove card from DOM
     const card = this.selectedProductsTarget.querySelector(`[data-product-card][data-product-id="${productId}"]`)
     if (card) {
       card.remove()
     }
 
-    // Update counts and preview
     this.updateProductCount()
     this.updatePreview()
 
@@ -495,31 +360,17 @@ export default class extends Controller {
     this.announce(`Removed ${product.name} from bundle`)
   }
 
-  /**
-   * Toggle variant inclusion
-   */
   toggleVariant() {
-    // Update preview when variant selection changes
     this.updatePreview()
   }
 
-  /**
-   * Handle quantity changes
-   */
   quantityChanged() {
-    // Update preview when quantities change
     this.updatePreview()
   }
 
-  /**
-   * Build configuration object from current DOM state
-   *
-   * @returns {Object} Configuration object
-   */
   buildConfiguration() {
     const components = []
 
-    // Iterate through all product cards
     const cards = this.selectedProductsTarget.querySelectorAll('[data-product-card]')
 
     cards.forEach(card => {
@@ -539,7 +390,6 @@ export default class extends Controller {
           quantity: quantity
         })
       } else if (productType === 'configurable') {
-        // Collect all variants for this configurable product
         const variants = []
         const variantRows = card.querySelectorAll('[data-variant-row]')
 
@@ -557,7 +407,6 @@ export default class extends Controller {
           })
         })
 
-        // Add single component for configurable product with all variants
         components.push({
           product_id: parseInt(productId),
           product_type: 'configurable',
@@ -569,9 +418,6 @@ export default class extends Controller {
     return { components }
   }
 
-  /**
-   * Update preview (debounced)
-   */
   updatePreview() {
     // Clear previous debounce
     if (this.previewDebounce) {
@@ -587,25 +433,19 @@ export default class extends Controller {
     }, 500)
   }
 
-  /**
-   * Perform the actual preview update
-   */
   async performPreviewUpdate() {
     const configuration = this.buildConfiguration()
 
-    // Update hidden field
     if (this.hasConfigurationTarget) {
       this.configurationTarget.value = JSON.stringify(configuration)
     }
 
-    // If no components, clear preview
     if (configuration.components.length === 0) {
       this.clearPreview()
       this.disableSubmit("Add at least one product to the bundle")
       return
     }
 
-    // Request preview from server
     try {
       const response = await fetch('/bundle_composer/preview', {
         method: 'POST',
@@ -634,15 +474,9 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Display preview data
-   *
-   * @param {Object} data - Preview data from server
-   */
   displayPreview(data) {
     if (!this.hasPreviewTarget) return
 
-    // Check for errors
     if (data.errors && data.errors.length > 0) {
       data.errors.forEach(error => this.showError(error))
       this.disableSubmit("Fix errors before saving")
@@ -654,18 +488,15 @@ export default class extends Controller {
       data.warnings.forEach(warning => this.showWarning(warning))
     }
 
-    // Update combination count
     if (this.hasPreviewCountTarget) {
       const count = data.combination_count || 0
       this.previewCountTarget.textContent = count
 
-      // Warn if approaching limit
       if (count > this.maxCombinationsValue * 0.8) {
         this.showWarning(`Approaching combination limit (${count}/${this.maxCombinationsValue})`)
       }
     }
 
-    // Check if valid
     if (data.valid) {
       this.enableSubmit()
     } else {
@@ -673,27 +504,18 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Clear preview display
-   */
   clearPreview() {
     if (this.hasPreviewCountTarget) {
       this.previewCountTarget.textContent = '0'
     }
   }
 
-  /**
-   * Update selected products count display
-   */
   updateProductCount() {
     if (this.hasProductCountTarget) {
       this.productCountTarget.textContent = this.selectedProducts.size
     }
   }
 
-  /**
-   * Enable form submission
-   */
   enableSubmit() {
     if (this.hasSubmitButtonTarget) {
       this.submitButtonTarget.disabled = false
@@ -701,11 +523,6 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Disable form submission with reason
-   *
-   * @param {String} reason - Reason for disabling
-   */
   disableSubmit(reason) {
     if (this.hasSubmitButtonTarget) {
       this.submitButtonTarget.disabled = true
@@ -714,11 +531,6 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Show error message
-   *
-   * @param {String} message - Error message
-   */
   showError(message) {
     if (!this.hasErrorContainerTarget) return
 
@@ -727,11 +539,6 @@ export default class extends Controller {
     this.errorContainerTarget.style.display = 'block'
   }
 
-  /**
-   * Show warning message
-   *
-   * @param {String} message - Warning message
-   */
   showWarning(message) {
     if (!this.hasWarningContainerTarget) return
 
@@ -740,13 +547,6 @@ export default class extends Controller {
     this.warningContainerTarget.style.display = 'block'
   }
 
-  /**
-   * Create alert element
-   *
-   * @param {String} message - Alert message
-   * @param {String} type - 'error' or 'warning'
-   * @returns {HTMLElement} Alert element
-   */
   createAlert(message, type) {
     const alert = document.createElement('div')
     const bgColor = type === 'error' ? 'bg-red-50 border-red-200' : 'bg-yellow-50 border-yellow-200'
@@ -767,18 +567,12 @@ export default class extends Controller {
     return alert
   }
 
-  /**
-   * Dismiss individual alert
-   *
-   * @param {Event} event - Click event from dismiss button
-   */
   dismissAlert(event) {
     const alert = event.currentTarget.closest('div')
     if (alert) {
       alert.remove()
     }
 
-    // Hide containers if empty
     if (this.hasErrorContainerTarget && this.errorContainerTarget.children.length === 0) {
       this.errorContainerTarget.style.display = 'none'
     }
@@ -787,9 +581,6 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Clear all error and warning messages
-   */
   clearMessages() {
     if (this.hasErrorContainerTarget) {
       this.errorContainerTarget.innerHTML = ''
@@ -801,9 +592,6 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Reset composer to initial state
-   */
   resetComposer() {
     this.selectedProducts.clear()
 
@@ -825,13 +613,6 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Restore existing configuration (for edit mode)
-   *
-   * Parses the existing bundle configuration from the hidden field,
-   * fetches product details for each component, renders product cards,
-   * restores variant checkbox states and quantities, and triggers preview.
-   */
   async restoreExistingConfiguration() {
     if (!this.hasConfigurationTarget) return
 
@@ -849,13 +630,11 @@ export default class extends Controller {
     const components = config.components
     if (!components || components.length === 0) return
 
-    // Remove empty state placeholder
     if (this.hasSelectedProductsTarget) {
       const emptyState = this.selectedProductsTarget.querySelector('[data-empty-state]')
       if (emptyState) emptyState.remove()
     }
 
-    // Fetch product details and render cards for each component
     const fetchPromises = components.map(async (component) => {
       try {
         const response = await fetch(`/bundle_composer/product/${component.product_id}`, {
@@ -889,7 +668,6 @@ export default class extends Controller {
       const productName = productData.name || 'Unknown'
       const productSku = productData.sku || ''
 
-      // Add to selectedProducts map
       this.selectedProducts.set(productId, {
         type: productType,
         name: productName,
@@ -897,10 +675,8 @@ export default class extends Controller {
         data: productData
       })
 
-      // Render the product card
       this.renderProductCard(productId, productType, productName, productSku, productData)
 
-      // Restore variant states for configurable products
       if (productType === 'configurable' && component.variants) {
         const card = this.selectedProductsTarget.querySelector(`[data-product-card][data-product-id="${productId}"]`)
         if (card) {
@@ -917,7 +693,6 @@ export default class extends Controller {
         }
       }
 
-      // Restore quantity for sellable products
       if (productType === 'sellable' && component.quantity) {
         const card = this.selectedProductsTarget.querySelector(`[data-product-card][data-product-id="${productId}"]`)
         if (card) {
@@ -927,16 +702,10 @@ export default class extends Controller {
       }
     })
 
-    // Update counts and trigger preview
     this.updateProductCount()
     this.updatePreview()
   }
 
-  /**
-   * Announce message to screen readers
-   *
-   * @param {String} message - Message to announce
-   */
   announce(message) {
     let liveRegion = document.getElementById("bundle-composer-announcer")
 
@@ -952,11 +721,6 @@ export default class extends Controller {
     liveRegion.textContent = message
   }
 
-  /**
-   * Get CSRF token from meta tag
-   *
-   * @returns {String} CSRF token
-   */
   get csrfToken() {
     const token = document.querySelector('meta[name="csrf-token"]')
     return token ? token.content : ''

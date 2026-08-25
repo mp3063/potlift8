@@ -39,7 +39,6 @@
       </div>
 
       <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-        <!-- Name -->
         <div class="sm:col-span-3">
           <%= form.label :name, class: "block text-sm font-medium text-gray-700" %>
           <%= form.text_field :name,
@@ -50,7 +49,6 @@
           <% end %>
         </div>
 
-        <!-- Code -->
         <div class="sm:col-span-3">
           <%= form.label :code, class: "block text-sm font-medium text-gray-700" %>
           <%= form.text_field :code,
@@ -68,7 +66,6 @@
           <% end %>
         </div>
 
-        <!-- Attribute Type (pa_type) -->
         <div class="sm:col-span-3">
           <%= form.label :pa_type, "Attribute Type", class: "block text-sm font-medium text-gray-700" %>
           <%= form.select :pa_type,
@@ -94,7 +91,6 @@
           <p class="mt-2 text-sm text-gray-500">The data type for this attribute</p>
         </div>
 
-        <!-- View Format -->
         <div class="sm:col-span-3">
           <%= form.label :view_format, "Display Format", class: "block text-sm font-medium text-gray-700" %>
           <%= form.select :view_format,
@@ -125,7 +121,6 @@
           <p class="mt-2 text-sm text-gray-500">How the attribute value will be displayed and edited</p>
         </div>
 
-        <!-- Attribute Group -->
         <div class="sm:col-span-3">
           <%= form.label :attribute_group_id, "Group", class: "block text-sm font-medium text-gray-700" %>
           <%= form.select :attribute_group_id,
@@ -134,7 +129,6 @@
               class: "mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" %>
         </div>
 
-        <!-- Scope -->
         <div class="sm:col-span-3">
           <%= form.label :product_attribute_scope, "Scope", class: "block text-sm font-medium text-gray-700" %>
           <%= form.select :product_attribute_scope,
@@ -151,7 +145,6 @@
           <p class="mt-2 text-sm text-gray-500">Where this attribute can be used</p>
         </div>
 
-        <!-- Description -->
         <div class="sm:col-span-6">
           <%= form.label :description, class: "block text-sm font-medium text-gray-700" %>
           <%= form.text_area :description,
@@ -162,7 +155,6 @@
       </div>
     </div>
 
-    <!-- Options (for select/multiselect) -->
     <div class="pt-8 hidden" data-attribute-form-target="optionsSection">
       <div>
         <h3 class="text-lg font-medium leading-6 text-gray-900">Options</h3>
@@ -173,7 +165,6 @@
         <% existing_options = @product_attribute.info&.dig('options') || [] %>
         <div data-controller="options-manager" data-options-manager-options-value="<%= existing_options.to_json %>">
           <div class="space-y-2" data-options-manager-target="container">
-            <!-- Options will be added here dynamically -->
           </div>
 
           <button type="button"
@@ -190,7 +181,6 @@
       </div>
     </div>
 
-    <!-- Flags -->
     <div class="pt-8">
       <div>
         <h3 class="text-lg font-medium leading-6 text-gray-900">Behavior</h3>
@@ -210,7 +200,6 @@
       </div>
     </div>
 
-    <!-- Default Value -->
     <div class="pt-8">
       <div>
         <h3 class="text-lg font-medium leading-6 text-gray-900">Default Value</h3>
@@ -223,7 +212,6 @@
             placeholder: "Default value (optional)" %>
       </div>
     </div>
-    <!-- Shopify Sync (custom attributes only) -->
     <% unless @product_attribute.system? || @product_attribute.new_record? %>
       <div class="pt-8 border-t" data-controller="shopify-sync-toggle">
         <div>

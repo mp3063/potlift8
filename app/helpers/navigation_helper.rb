@@ -1,24 +1,6 @@
 # frozen_string_literal: true
 
-# Navigation helper for sidebar menu items
-#
-# Provides navigation menu structure with Heroicons SVG paths
-#
 module NavigationHelper
-  # Get navigation menu items for sidebar
-  #
-  # Returns array of navigation items with:
-  # - name: Display name
-  # - path: Route path
-  # - icon_path: Heroicons SVG path element
-  #
-  # @return [Array<Hash>] Navigation menu items
-  #
-  # @example In view
-  #   navigation_items.each do |item|
-  #     link_to item[:name], item[:path]
-  #   end
-  #
   def navigation_items
     [
       {

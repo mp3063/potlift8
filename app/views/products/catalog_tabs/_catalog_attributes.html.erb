@@ -1,5 +1,4 @@
 <div class="space-y-6">
-  <!-- Catalog Actions -->
   <div class="flex items-center justify-between pb-4 border-b border-gray-200">
     <div>
       <h4 class="text-sm font-medium text-gray-900"><%= catalog_item.catalog.name %></h4>
@@ -29,7 +28,6 @@
     </div>
   </div>
 
-  <!-- Attributes with Override Indication -->
   <% if all_attributes.any? %>
     <div class="space-y-4">
       <% all_attributes.each do |product_attribute| %>
@@ -38,11 +36,9 @@
         <% next unless catalog_override.present? || (product_value.present? && product_value.value.present?) %>
 
         <% if catalog_override.present? %>
-          <!-- Catalog override (normal opacity) -->
           <div class="py-3 border-b border-gray-200">
             <%= turbo_frame_tag dom_id(catalog_override, :value) do %>
               <div class="group" data-controller="inline-editor" data-inline-editor-url-value="<%= catalog_item_attribute_value_path(catalog_override) %>">
-                <!-- Display Mode -->
                 <div class="flex items-start justify-between" data-inline-editor-target="display">
                   <div class="flex-1">
                     <dt class="text-sm font-medium text-gray-500 flex items-center gap-2">
@@ -61,7 +57,6 @@
                     <% end %>
                   </div>
                   <div class="ml-4 flex gap-1">
-                    <!-- Edit button -->
                     <%= button_tag type: "button",
                         class: "p-1 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-gray-600 rounded hover:bg-gray-100",
                         data: { action: "click->inline-editor#edit" },
@@ -70,7 +65,6 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                       </svg>
                     <% end %>
-                    <!-- Remove override button -->
                     <%= button_to catalog_item_attribute_value_path(catalog_override),
                           method: :delete,
                           form: { data: { turbo_confirm: "Remove override for #{product_attribute.name}? This will use the product value instead." } },
@@ -85,7 +79,6 @@
                   </div>
                 </div>
 
-                <!-- Edit Mode -->
                 <div class="hidden" data-inline-editor-target="editor">
                   <%= form_with url: catalog_item_attribute_value_path(catalog_override),
                       method: :patch,
@@ -164,7 +157,6 @@
             <% end %>
           </div>
         <% elsif product_value.present? && product_value.value.present? %>
-          <!-- Product fallback (grayed out) -->
           <div class="flex items-start justify-between py-3 border-b border-gray-200 opacity-50">
             <div class="flex-1">
               <dt class="text-sm font-medium text-gray-500"><%= product_attribute.name %></dt>
@@ -180,7 +172,6 @@
       <% end %>
     </div>
 
-    <!-- Add Override CTA -->
     <div class="mt-6">
       <div class="border-t border-gray-200 pt-4">
         <% available_attrs = all_attributes
@@ -207,7 +198,6 @@
                 <%= f.hidden_field :catalog_item_id, value: catalog_item.id %>
 
                 <div class="space-y-4">
-                  <!-- Attribute Selection -->
                   <div>
                     <label for="attribute-select-<%= catalog_item.catalog.code %>" class="block text-sm font-medium text-gray-700">
                       Attribute
@@ -225,7 +215,6 @@
                           } %>
                   </div>
 
-                  <!-- Value Input -->
                   <div>
                     <label for="value-input-<%= catalog_item.catalog.code %>" class="block text-sm font-medium text-gray-700">
                       Override Value
@@ -238,7 +227,6 @@
                             attribute_override_target: "valueInput"
                           } %>
                     <p class="mt-1 text-xs text-gray-500" data-attribute-override-target="productValueHint">
-                      <!-- Product value hint will appear here -->
                     </p>
                   </div>
                 </div>

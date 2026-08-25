@@ -1,5 +1,4 @@
 <div class="px-4 sm:px-6 lg:px-8">
-  <!-- Page Header with Breadcrumbs -->
   <div class="mb-8">
     <nav class="flex mb-4" aria-label="Breadcrumb">
       <ol role="list" class="flex items-center space-x-4">
@@ -82,7 +81,6 @@
     </div>
   </div>
 
-  <!-- Tabs for Asset Types -->
   <div data-controller="asset-manager">
     <div class="mb-6">
       <div class="border-b border-gray-200">
@@ -137,7 +135,6 @@
       </div>
     </div>
 
-    <!-- Bulk Operations Toolbar -->
     <div class="flex items-center gap-4 py-3 px-4 bg-gray-50 rounded-lg mb-4" data-asset-manager-target="bulkActions">
       <label class="flex items-center gap-2 text-sm text-gray-700">
         <input type="checkbox"
@@ -161,7 +158,6 @@
       </button>
     </div>
 
-    <!-- Tab Panels -->
   <div id="product_assets">
   <div data-asset-manager-target="panel" data-tab-id="documents">
     <%= render Ui::CardComponent.new(padding: :none) do %>

@@ -1,49 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import Sortable from "sortablejs"
 
-/**
- * Asset Reorder Controller
- *
- * Enables drag-and-drop reordering of product assets (documents, videos, links)
- * using Sortable.js. Automatically saves the new order to the server via AJAX.
- *
- * Features:
- * - Drag-and-drop reordering with visual feedback
- * - Automatic AJAX save on reorder
- * - Loading state during save
- * - Error handling with user feedback
- * - Position indicator updates
- * - Optional drag handle support
- * - Keyboard accessibility (Sortable.js handles this)
- *
- * Data Attributes:
- * - data-asset-reorder-reorder-url-value: URL to PATCH reorder requests to
- * - data-asset-reorder-handle-value: CSS selector for drag handle (optional)
- * - data-asset-id: ID of each asset in sortable items
- *
- * Targets:
- * - container: The element containing sortable assets
- *
- * Values:
- * - reorderUrl: URL to send reorder requests to (required)
- * - handle: CSS selector for drag handle (optional, defaults to entire item)
- *
- * @example
- *   <div data-controller="asset-reorder"
- *        data-asset-reorder-reorder-url-value="/products/123/assets/reorder"
- *        data-asset-reorder-handle-value=".drag-handle">
- *     <div data-asset-reorder-target="container">
- *       <div data-asset-id="1">
- *         <span class="drag-handle">⋮⋮</span>
- *         Asset 1
- *       </div>
- *       <div data-asset-id="2">
- *         <span class="drag-handle">⋮⋮</span>
- *         Asset 2
- *       </div>
- *     </div>
- *   </div>
- */
 export default class extends Controller {
   static targets = ["container"]
   static values = {
@@ -63,9 +20,6 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Initialize Sortable.js on the container
-   */
   initializeSortable() {
     if (!this.hasContainerTarget) {
       console.warn("Asset reorder controller: container target not found")
@@ -82,13 +36,12 @@ export default class extends Controller {
       ghostClass: "sortable-ghost",
       dragClass: "sortable-drag",
       chosenClass: "sortable-chosen",
-      forceFallback: true, // Better cross-browser support
+      forceFallback: true,
       fallbackClass: "sortable-fallback",
       onEnd: this.handleReorder.bind(this),
       onStart: this.handleDragStart.bind(this)
     }
 
-    // Add handle if specified
     if (this.handleValue) {
       options.handle = this.handleValue
     }
@@ -98,29 +51,16 @@ export default class extends Controller {
     console.log("Sortable initialized with options:", options)
   }
 
-  /**
-   * Handle drag start event
-   * @param {Object} event - Sortable.js event object
-   */
   handleDragStart(event) {
-    // Add visual feedback
     event.item.classList.add("opacity-50")
   }
 
-  /**
-   * Handle reorder event from Sortable.js
-   * Sends new order to server via AJAX
-   *
-   * @param {Object} event - Sortable.js event object
-   */
   handleReorder(event) {
-    // Remove drag visual feedback
     event.item.classList.remove("opacity-50")
 
-    // Get asset IDs in new order
     const assetIds = Array.from(this.containerTarget.children)
       .map(element => element.dataset.assetId)
-      .filter(id => id) // Remove any undefined/null values
+      .filter(id => id)
 
     if (assetIds.length === 0) {
       console.warn("No asset IDs found for reordering")
@@ -129,10 +69,8 @@ export default class extends Controller {
 
     console.log("Reordering assets:", assetIds)
 
-    // Show loading state
     this.showLoadingState()
 
-    // Get CSRF token
     const csrfToken = document.querySelector("[name='csrf-token']")?.content
 
     if (!csrfToken) {
@@ -141,7 +79,6 @@ export default class extends Controller {
       return
     }
 
-    // Send AJAX request to reorder
     fetch(this.reorderUrlValue, {
       method: "PATCH",
       headers: {
@@ -166,84 +103,53 @@ export default class extends Controller {
       console.error("Error reordering assets:", error)
       this.showErrorState("Failed to reorder assets. Please try again.")
 
-      // Optionally reload page to reset order
-      // Uncomment if you want to reset on error:
-      // setTimeout(() => window.location.reload(), 2000)
     })
   }
 
-  /**
-   * Update position indicators after reorder
-   * Updates any elements with .position-indicator class
-   */
   updatePositionIndicators() {
     const indicators = this.containerTarget.querySelectorAll(".position-indicator")
     indicators.forEach((indicator, index) => {
       indicator.textContent = index + 1
     })
 
-    // Also update any data-position attributes
     const items = this.containerTarget.children
     Array.from(items).forEach((item, index) => {
       item.dataset.position = index + 1
     })
   }
 
-  /**
-   * Show loading state
-   */
   showLoadingState() {
     this.containerTarget.classList.add("opacity-50", "pointer-events-none")
     this.containerTarget.setAttribute("aria-busy", "true")
 
-    // Disable sortable during save
     if (this.sortable) {
       this.sortable.option("disabled", true)
     }
   }
 
-  /**
-   * Hide loading state
-   */
   hideLoadingState() {
     this.containerTarget.classList.remove("opacity-50", "pointer-events-none")
     this.containerTarget.setAttribute("aria-busy", "false")
 
-    // Re-enable sortable after save
     if (this.sortable) {
       this.sortable.option("disabled", false)
     }
   }
 
-  /**
-   * Show success state
-   * @param {String} message - Success message
-   */
   showSuccessState(message) {
     this.hideLoadingState()
     this.showFlashMessage(message, "success")
   }
 
-  /**
-   * Show error state
-   * @param {String} message - Error message
-   */
   showErrorState(message) {
     this.hideLoadingState()
     this.showFlashMessage(message, "error")
   }
 
-  /**
-   * Show flash message
-   * @param {String} message - Message to display
-   * @param {String} type - Message type (success, error)
-   */
   showFlashMessage(message, type) {
-    // Check if flash container exists
     const flashContainer = document.getElementById("flash-messages")
 
     if (flashContainer) {
-      // Create flash message element
       const flashElement = document.createElement("div")
       flashElement.className = `flash-message flash-${type} mb-4 p-4 rounded-lg ${
         type === "success" ? "bg-green-50 text-green-800 border border-green-200" : "bg-red-50 text-red-800 border border-red-200"
@@ -279,17 +185,14 @@ export default class extends Controller {
         </div>
       `
 
-      // Clear existing messages
       flashContainer.innerHTML = ""
       flashContainer.appendChild(flashElement)
 
-      // Add dismiss handler
       const dismissButton = flashElement.querySelector("button")
       dismissButton.addEventListener("click", () => {
         flashElement.remove()
       })
 
-      // Auto-dismiss after 3 seconds
       setTimeout(() => {
         if (flashElement.parentNode) {
           flashElement.remove()
@@ -336,13 +239,11 @@ export default class extends Controller {
 
       document.body.appendChild(flashElement)
 
-      // Add dismiss handler
       const dismissButton = flashElement.querySelector("button")
       dismissButton.addEventListener("click", () => {
         flashElement.remove()
       })
 
-      // Auto-dismiss after 3 seconds
       setTimeout(() => {
         if (flashElement.parentNode) {
           flashElement.remove()
@@ -353,9 +254,6 @@ export default class extends Controller {
 
   /**
    * Escape HTML to prevent XSS
-   *
-   * @param {string} text - Text to escape
-   * @returns {string} Escaped text
    */
   escapeHtml(text) {
     const div = document.createElement("div")

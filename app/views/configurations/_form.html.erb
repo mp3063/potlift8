@@ -9,7 +9,6 @@
     <% end %>
 
     <div class="space-y-6">
-      <!-- Name Field -->
       <div>
         <%= form.label :name, "Configuration Name", class: "block text-sm font-medium text-gray-700 mb-1" %>
         <p class="text-xs text-gray-500 mb-2">
@@ -22,7 +21,6 @@
           aria: { required: true } %>
       </div>
 
-      <!-- Code Field -->
       <div>
         <%= form.label :code, "Configuration Code", class: "block text-sm font-medium text-gray-700 mb-1" %>
         <p class="text-xs text-gray-500 mb-2">
@@ -41,7 +39,6 @@
     </div>
   <% end %>
 
-  <!-- Configuration Values Section -->
   <%= render Ui::CardComponent.new(class: "mt-6") do |card| %>
     <% card.with_header do %>
       <h3 class="text-lg font-semibold text-gray-900">Configuration Values</h3>
@@ -53,14 +50,12 @@
     <div class="space-y-4" data-configuration-form-target="container">
       <%= form.fields_for :configuration_values do |value_form| %>
         <div class="flex items-start gap-3" data-value-field data-value-id="<%= value_form.object.id || 'new' %>">
-          <!-- Drag Handle -->
           <div class="flex-shrink-0 pt-2 cursor-move text-gray-400 hover:text-gray-600" tabindex="0" role="button" aria-label="Drag to reorder">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
             </svg>
           </div>
 
-          <!-- Value Input -->
           <div class="flex-1">
             <%= value_form.label :value, "Value", class: "sr-only" %>
             <%= value_form.text_field :value,
@@ -70,13 +65,10 @@
               aria: { label: "Configuration value" } %>
           </div>
 
-          <!-- Position (hidden) -->
           <%= value_form.hidden_field :position %>
 
-          <!-- Destroy Flag (hidden) -->
           <%= value_form.hidden_field :_destroy, value: '0' %>
 
-          <!-- Remove Button -->
           <div class="flex-shrink-0 pt-1">
             <%= render Ui::ButtonComponent.new(
               variant: :ghost,
@@ -94,7 +86,6 @@
       <% end %>
     </div>
 
-    <!-- Add Value Button -->
     <div class="mt-4">
       <%= render Ui::ButtonComponent.new(
         variant: :secondary,
@@ -110,17 +101,14 @@
     </div>
   <% end %>
 
-  <!-- Hidden Template for New Values -->
   <template data-configuration-form-target="template">
     <div class="flex items-start gap-3" data-value-field data-value-id="new">
-      <!-- Drag Handle -->
       <div class="flex-shrink-0 pt-2 cursor-move text-gray-400 hover:text-gray-600" tabindex="0" role="button" aria-label="Drag to reorder">
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
         </svg>
       </div>
 
-      <!-- Value Input -->
       <div class="flex-1">
         <label class="sr-only">Value</label>
         <input
@@ -134,10 +122,8 @@
         >
       </div>
 
-      <!-- Position (hidden) -->
       <input type="hidden" name="configuration[configuration_values_attributes][new_record][position]" value="">
 
-      <!-- Remove Button -->
       <div class="flex-shrink-0 pt-1">
         <%= render Ui::ButtonComponent.new(
           variant: :ghost,
@@ -154,7 +140,6 @@
     </div>
   </template>
 
-  <!-- Form Actions -->
   <div class="mt-6 flex items-center justify-end gap-3">
     <%= render Ui::ButtonComponent.new(
       variant: :secondary,

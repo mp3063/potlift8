@@ -1,7 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import Sortable from "sortablejs"
 
-// Connects to data-controller="catalog-items"
 export default class extends Controller {
   static targets = ["items", "item", "handle"]
   static values = {
@@ -47,12 +46,10 @@ export default class extends Controller {
         throw new Error("Failed to reorder items")
       }
 
-      // Show success notification (optional)
       this.showNotification("Items reordered successfully", "success")
     } catch (error) {
       console.error("Error reordering items:", error)
 
-      // Revert the visual change
       if (event.oldIndex !== undefined && event.newIndex !== undefined) {
         this.sortable.option("disabled", true)
         const movedItem = this.itemTargets[event.newIndex]
@@ -72,7 +69,6 @@ export default class extends Controller {
   }
 
   showNotification(message, type) {
-    // Simple notification - could be enhanced with a proper notification system
     const alertClass = type === "success" ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800"
     const notification = document.createElement("div")
     notification.className = `fixed top-20 right-4 z-50 px-4 py-3 rounded-lg shadow-lg ${alertClass} transition-opacity duration-300`

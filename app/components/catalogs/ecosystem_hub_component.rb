@@ -1,16 +1,6 @@
 # frozen_string_literal: true
 
 module Catalogs
-  # Ecosystem Navigation Hub for Shopify-connected catalogs
-  #
-  # Displays cross-app navigation links to Shopify Admin and Shopify8 Dashboard,
-  # plus an async-loaded sync pipeline status via Turbo Frame.
-  #
-  # Only renders when the catalog is connected to Shopify.
-  #
-  # @example
-  #   <%= render Catalogs::EcosystemHubComponent.new(catalog: @catalog) %>
-  #
   class EcosystemHubComponent < ViewComponent::Base
     attr_reader :catalog
 

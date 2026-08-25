@@ -1,8 +1,3 @@
-<%#
-  Inventory table row partial for storage inventory display
-  Locals: inventory (required), is_parent (optional), is_child (optional),
-          children_count (optional), parent_product_id (optional)
-%>
 <% product = inventory.product %>
 <% is_parent = local_assigns.fetch(:is_parent, false) %>
 <% is_child = local_assigns.fetch(:is_child, false) %>

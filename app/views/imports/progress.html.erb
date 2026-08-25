@@ -13,10 +13,8 @@
      data-import-progress-status-value="<%= @status %>">
 
   <%= render Ui::CardComponent.new do %>
-    <!-- Processing State (also shown for pending) -->
     <div data-import-progress-target="processing" class="<%= @status.in?(['processing', 'pending']) ? '' : 'hidden' %>">
       <div class="text-center py-12">
-        <!-- Spinner Icon -->
         <div class="mx-auto h-16 w-16 flex items-center justify-center">
           <svg class="animate-spin h-16 w-16 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -27,7 +25,6 @@
         <h3 class="mt-6 text-lg font-semibold text-gray-900">Processing Import</h3>
         <p class="mt-2 text-sm text-gray-600">Please wait while we import your data...</p>
 
-        <!-- Progress Bar -->
         <div class="mt-8 w-full">
           <div class="flex items-center justify-between mb-2">
             <span class="text-sm font-medium text-gray-700">Progress</span>
@@ -52,10 +49,8 @@
       </div>
     </div>
 
-    <!-- Completed State -->
     <div data-import-progress-target="completed" class="<%= @status == 'completed' ? '' : 'hidden' %>">
       <div class="text-center py-12">
-        <!-- Success Icon -->
         <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100">
           <svg class="h-10 w-10 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -65,7 +60,6 @@
         <h3 class="mt-6 text-lg font-semibold text-gray-900">Import Completed Successfully</h3>
         <p class="mt-2 text-sm text-gray-600">Your data has been imported</p>
 
-        <!-- Import Stats -->
         <div class="mt-8 grid grid-cols-3 gap-4">
           <div class="bg-green-50 rounded-lg p-4 border border-green-200">
             <div class="text-2xl font-bold text-green-900" data-import-progress-target="imported"><%= @imported || 0 %></div>
@@ -94,10 +88,8 @@
       </div>
     </div>
 
-    <!-- Failed State -->
     <div data-import-progress-target="failed" class="<%= @status == 'failed' ? '' : 'hidden' %>">
       <div class="text-center py-12">
-        <!-- Error Icon -->
         <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100">
           <svg class="h-10 w-10 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -107,7 +99,6 @@
         <h3 class="mt-6 text-lg font-semibold text-gray-900">Import Failed</h3>
         <p class="mt-2 text-sm text-gray-600">There was an error processing your import</p>
 
-        <!-- Error Message -->
         <% if @error_message.present? %>
           <div class="mt-6 rounded-lg bg-red-50 p-4 border border-red-200 text-left">
             <div class="flex">

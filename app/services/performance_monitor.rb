@@ -1,66 +1,16 @@
 # frozen_string_literal: true
 
-# PerformanceMonitor Service
-#
-# Tracks and logs performance metrics for operations with detailed timing,
-# memory usage, and slow operation detection.
-#
-# Features:
-# - Operation timing with high precision
-# - Memory usage tracking (optional)
-# - Slow operation detection with configurable thresholds
-# - Structured logging for monitoring/alerting
-# - Nested operation support
-# - Statistics aggregation
-#
-# Usage:
-#   # Basic timing
-#   result = PerformanceMonitor.track('sync_product') do
-#     ProductSyncService.new(product, catalog).sync_to_external_system
-#   end
-#
-#   # With context
-#   PerformanceMonitor.track('batch_sync', context: { product_count: 100 }) do
-#     BatchProductSyncJob.perform_now(product_ids, catalog_id)
-#   end
-#
-#   # With custom threshold
-#   PerformanceMonitor.track('api_call', threshold: 2.0) do
-#     HTTParty.post(url, body: data)
-#   end
-#
-# Monitoring:
-#   - Logs all operations as structured JSON
-#   - Warns on slow operations
-#   - Tracks memory usage if enabled
-#   - Provides statistics for analysis
-#
 class PerformanceMonitor
-  # Default slow operation threshold in seconds
   DEFAULT_THRESHOLD = 5.0
 
-  # Track memory usage by default
   TRACK_MEMORY = ENV.fetch("TRACK_MEMORY", "false") == "true"
 
   class << self
-    # Track an operation's performance
-    #
-    # @param operation_name [String] Name of the operation
-    # @param context [Hash] Additional context for logging
-    # @param threshold [Float] Slow operation threshold in seconds
-    # @yield Block to execute and measure
-    # @return [Object] Result of the yielded block
-    #
     def track(operation_name, context: {}, threshold: DEFAULT_THRESHOLD)
       monitor = new(operation_name, context: context, threshold: threshold)
       monitor.track { yield }
     end
 
-    # Get statistics for an operation
-    #
-    # @param operation_name [String] Name of the operation
-    # @return [Hash] Statistics for the operation
-    #
     def stats(operation_name)
       stats_key = "perf_stats:#{operation_name}"
       redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
@@ -85,10 +35,6 @@ class PerformanceMonitor
       nil
     end
 
-    # Reset statistics for an operation
-    #
-    # @param operation_name [String] Name of the operation
-    #
     def reset_stats(operation_name)
       stats_key = "perf_stats:#{operation_name}"
       redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
@@ -103,12 +49,6 @@ class PerformanceMonitor
 
   attr_reader :operation_name, :context, :threshold
 
-  # Initialize performance monitor
-  #
-  # @param operation_name [String] Name of the operation to track
-  # @param context [Hash] Additional context information
-  # @param threshold [Float] Slow operation threshold in seconds
-  #
   def initialize(operation_name, context: {}, threshold: DEFAULT_THRESHOLD)
     @operation_name = operation_name
     @context = context
@@ -116,11 +56,6 @@ class PerformanceMonitor
     @redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
   end
 
-  # Track operation performance
-  #
-  # @yield Block to execute and measure
-  # @return [Object] Result of the yielded block
-  #
   def track
     start_time = Time.current
     start_memory = current_memory if TRACK_MEMORY
@@ -146,8 +81,6 @@ class PerformanceMonitor
 
   private
 
-  # Log performance metrics
-  #
   def log_metrics(duration, memory_used, success:, error: nil)
     is_slow = duration >= @threshold
 
@@ -166,7 +99,6 @@ class PerformanceMonitor
     metric_data[:error_class] = error.class.name if error
     metric_data[:error_message] = error.message if error
 
-    # Log based on severity
     if !success
       Rails.logger.error(
         "[PerformanceMonitor] FAILED: #{@operation_name} failed after #{duration}s"
@@ -182,16 +114,12 @@ class PerformanceMonitor
       )
     end
 
-    # Structured log for monitoring
     Rails.logger.info(metric_data.to_json)
   end
 
-  # Update operation statistics in Redis
-  #
   def update_stats(duration, success:)
     stats_key = "perf_stats:#{@operation_name}"
 
-    # Fetch current values before pipeline for conditional logic
     current_min = @redis.hget(stats_key, "min_duration")
     current_max = @redis.hget(stats_key, "max_duration")
 
@@ -199,22 +127,16 @@ class PerformanceMonitor
       pipeline.hincrby(stats_key, "count", 1)
       pipeline.hincrbyfloat(stats_key, "total_duration", duration)
 
-      # Track slow operations
       pipeline.hincrby(stats_key, "slow_count", 1) if duration >= @threshold
 
-      # Update min/max durations (check before pipeline)
       pipeline.hset(stats_key, "min_duration", duration) if current_min.nil? || duration < current_min.to_f
       pipeline.hset(stats_key, "max_duration", duration) if current_max.nil? || duration > current_max.to_f
 
-      # Track last execution
       pipeline.hset(stats_key, "last_execution", Time.current.iso8601)
 
-      # Set expiration (30 days)
       pipeline.expire(stats_key, 30.days.to_i)
     end
 
-    # Calculate and update average after pipeline completes
-    # This is more accurate since count and total have been updated
     count = @redis.hget(stats_key, "count").to_i
     total = @redis.hget(stats_key, "total_duration").to_f
     avg = total / count if count > 0
@@ -226,10 +148,6 @@ class PerformanceMonitor
     )
   end
 
-  # Get current memory usage in bytes
-  #
-  # @return [Integer] Current memory usage
-  #
   def current_memory
     `ps -o rss= -p #{Process.pid}`.to_i * 1024
   rescue StandardError => e

@@ -1,7 +1,6 @@
 <% has_value = value.present? && value.value.present? %>
 
 <div class="group" data-controller="inline-editor" data-inline-editor-url-value="<%= product_attribute_value_path(product, attribute) %>">
-  <!-- Display Mode -->
   <div class="flex items-start justify-between" data-inline-editor-target="display">
     <dl class="flex-1">
       <dt class="text-base font-semibold text-gray-700"><%= attribute.name %></dt>
@@ -24,7 +23,6 @@
     </div>
   </div>
 
-  <!-- Edit Mode -->
   <div class="hidden" data-inline-editor-target="editor">
     <%= form_with url: product_attribute_value_path(product, attribute),
         method: :patch,

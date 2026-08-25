@@ -11,7 +11,6 @@
 
 <div id="label-<%= label.id %>" class="group hover:bg-gray-50 transition-colors" data-label-id="<%= label.id %>">
   <div class="flex items-center gap-3 py-3 px-4" style="<%= indent_style %>">
-    <!-- Expand/Collapse Button -->
     <% if has_sublabels %>
       <button
         type="button"
@@ -29,7 +28,6 @@
       <div class="w-5 h-5 flex-shrink-0"></div>
     <% end %>
 
-    <!-- Drag Handle (visible on hover) -->
     <button
       type="button"
       class="flex-shrink-0 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded cursor-move"
@@ -40,7 +38,6 @@
       </svg>
     </button>
 
-    <!-- Color Indicator -->
     <% if label.info&.dig('color').present? %>
       <div
         class="flex-shrink-0 w-4 h-4 rounded-full border border-gray-300"
@@ -51,7 +48,6 @@
       <div class="w-4 h-4 flex-shrink-0"></div>
     <% end %>
 
-    <!-- Label Info (Clickable) -->
     <div class="flex-1 min-w-0">
       <%= link_to label_path(label), class: "group/link flex items-center gap-2", data: { turbo_frame: "_top" } do %>
         <span class="font-medium text-gray-900 group-hover/link:text-blue-600 transition-colors">
@@ -63,9 +59,7 @@
       <% end %>
     </div>
 
-    <!-- Stats -->
     <div class="flex items-center gap-4 text-sm text-gray-600">
-      <!-- Product Count -->
       <div class="flex items-center gap-1" title="<%= direct_products_count %> direct, <%= total_products_count %> total">
         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -76,7 +70,6 @@
         <% end %>
       </div>
 
-      <!-- Sublabels Count -->
       <% if has_sublabels %>
         <div class="flex items-center gap-1" title="<%= label.sublabels.size %> sublabels">
           <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -87,9 +80,7 @@
       <% end %>
     </div>
 
-    <!-- Actions (visible on hover) -->
     <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-      <!-- Add Sublabel -->
       <%= link_to new_label_path(parent_id: label.id),
         data: { turbo_frame: "label_modal" },
         class: "text-gray-600 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-1 transition-colors",
@@ -100,7 +91,6 @@
         </svg>
       <% end %>
 
-      <!-- Edit -->
       <%= link_to edit_label_path(label),
         data: { turbo_frame: "label_modal" },
         class: "text-gray-600 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-1 transition-colors",
@@ -111,7 +101,6 @@
         </svg>
       <% end %>
 
-      <!-- Delete -->
       <%= button_to label_path(label),
         method: :delete,
         form: {
@@ -127,7 +116,6 @@
     </div>
   </div>
 
-  <!-- Sublabels (recursive) - always render container for turbo stream updates -->
   <div
     id="sublabels-<%= label.id %>"
     class="<%= 'hidden' unless has_sublabels %>"

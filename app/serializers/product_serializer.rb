@@ -1,25 +1,3 @@
-# Product Serializer
-#
-# Basic serializer for product list endpoints.
-# Returns essential product information with total inventory.
-#
-# Usage:
-#   ProductSerializer.new(product).as_json
-#   ProductSerializer.new(products).as_json # for collection
-#
-# @example JSON output
-#   {
-#     "id": 123,
-#     "sku": "ABC123",
-#     "name": "Product Name",
-#     "ean": "1234567890123",
-#     "product_type": "sellable",
-#     "product_status": "active",
-#     "total_saldo": 100,
-#     "created_at": "2025-10-11T12:00:00Z",
-#     "updated_at": "2025-10-11T12:00:00Z"
-#   }
-#
 class ProductSerializer
   attr_reader :product
 
@@ -27,10 +5,6 @@ class ProductSerializer
     @product = product
   end
 
-  # Serialize product to hash
-  #
-  # @return [Hash] Product data
-  #
   def as_json(_options = {})
     {
       id: product.id,
@@ -45,11 +19,6 @@ class ProductSerializer
     }
   end
 
-  # Serialize collection of products
-  #
-  # @param products [ActiveRecord::Relation, Array] Collection of products
-  # @return [Array<Hash>] Array of serialized products
-  #
   def self.collection(products)
     products.map { |product| new(product).as_json }
   end

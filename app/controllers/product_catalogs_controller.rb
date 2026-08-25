@@ -1,31 +1,6 @@
-# ProductCatalogsController
-#
-# Manages product-catalog associations via nested RESTful routes.
-# All operations are scoped to the current company via multi-tenancy.
-#
-# Features:
-# - Add products to catalogs (create)
-# - Remove products from catalogs (destroy)
-# - Turbo Stream support for dynamic updates
-# - JSON API support
-#
-# Routes:
-# - POST /products/:product_id/catalogs - Add product to catalog
-# - DELETE /products/:product_id/catalogs/:id - Remove product from catalog
-#
 class ProductCatalogsController < ApplicationController
   before_action :set_product
 
-  # POST /products/:product_id/catalogs
-  # POST /products/:product_id/catalogs.turbo_stream
-  #
-  # Adds a product to a catalog.
-  #
-  # Parameters:
-  # - catalog_id: The ID of the catalog to add the product to
-  # - active: Whether the catalog item should be active (optional, defaults to false)
-  # - priority: The priority of the catalog item (optional, defaults to 0)
-  #
   def create
     authorize :product_catalog, :create?
     catalog_id = params[:catalog_id]
@@ -90,17 +65,8 @@ class ProductCatalogsController < ApplicationController
     end
   end
 
-  # DELETE /products/:product_id/catalogs/:id
-  # DELETE /products/:product_id/catalogs/:id.turbo_stream
-  #
-  # Removes a product from a catalog.
-  #
-  # Parameters:
-  # - id: The ID of the catalog to remove the product from
-  #
   def destroy
     authorize :product_catalog, :destroy?
-    # Support lookup by both catalog ID and code (since Catalog uses code in to_param)
     catalog = current_potlift_company.catalogs.find_by(id: params[:id]) ||
               current_potlift_company.catalogs.find_by(code: params[:id])
     catalog_item = catalog ? @product.catalog_items.find_by(catalog_id: catalog.id) : nil
@@ -141,8 +107,6 @@ class ProductCatalogsController < ApplicationController
 
   private
 
-  # Set the product from params
-  # Ensures product belongs to current company
   def set_product
     @product = current_potlift_company.products.find(params[:product_id])
   end

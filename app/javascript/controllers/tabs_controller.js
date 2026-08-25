@@ -1,40 +1,19 @@
 import { Controller } from "@hotwired/stimulus"
 
-/**
- * Tabs Controller
- *
- * Simple tabbed navigation controller that handles tab switching
- * with proper ARIA accessibility support.
- *
- * Usage:
- * <div data-controller="tabs">
- *   <button data-tabs-target="tab" data-action="click->tabs#switch" data-tab-id="documents">Documents</button>
- *   <button data-tabs-target="tab" data-action="click->tabs#switch" data-tab-id="videos">Videos</button>
- *
- *   <div data-tabs-target="panel" data-panel-id="documents">Documents content</div>
- *   <div data-tabs-target="panel" data-panel-id="videos" class="hidden">Videos content</div>
- * </div>
- */
 export default class extends Controller {
   static targets = ["tab", "panel"]
 
-  // Active tab styling classes
   static values = {
     activeClasses: { type: String, default: "border-blue-600 text-blue-600" },
     inactiveClasses: { type: String, default: "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700" }
   }
 
   connect() {
-    // Initialize first tab as active if none selected
     if (!this.hasActiveTab()) {
       this.activateFirstTab()
     }
   }
 
-  /**
-   * Switch to clicked tab
-   * @param {Event} event - Click event from tab button
-   */
   switch(event) {
     event.preventDefault()
     const clickedTab = event.currentTarget
@@ -43,16 +22,10 @@ export default class extends Controller {
     this.activateTab(tabId)
   }
 
-  /**
-   * Activate a specific tab by ID
-   * @param {string} tabId - The tab identifier
-   */
   activateTab(tabId) {
-    // Update tab buttons
     this.tabTargets.forEach(tab => {
       const isActive = tab.dataset.tabId === tabId
 
-      // Remove both class sets then add appropriate ones
       this.activeClassesValue.split(" ").forEach(cls => tab.classList.remove(cls))
       this.inactiveClassesValue.split(" ").forEach(cls => tab.classList.remove(cls))
 
@@ -65,7 +38,6 @@ export default class extends Controller {
       }
     })
 
-    // Update panels
     this.panelTargets.forEach(panel => {
       const isActive = panel.dataset.panelId === tabId
 
@@ -79,17 +51,10 @@ export default class extends Controller {
     })
   }
 
-  /**
-   * Check if any tab is currently active
-   * @returns {boolean}
-   */
   hasActiveTab() {
     return this.tabTargets.some(tab => tab.getAttribute("aria-current") === "page")
   }
 
-  /**
-   * Activate the first tab by default
-   */
   activateFirstTab() {
     if (this.tabTargets.length > 0) {
       const firstTabId = this.tabTargets[0].dataset.tabId
@@ -97,10 +62,6 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Keyboard navigation for tabs
-   * @param {KeyboardEvent} event
-   */
   keydown(event) {
     const tabs = this.tabTargets
     const currentIndex = tabs.indexOf(document.activeElement)

@@ -1,6 +1,3 @@
-<%# Turbo Stream response for product details %>
-<%# Updates the product details container with product information and variants %>
-
 <%= turbo_stream.update "bundle_composer_product_details_#{@product.id}" do %>
   <div class="border border-gray-200 rounded-lg p-4 bg-white">
     <div class="mb-4">
@@ -9,7 +6,6 @@
     </div>
 
     <% if @product.product_type_sellable? %>
-      <%# Sellable product - just show quantity input %>
       <div class="space-y-2">
         <label class="block text-sm font-medium text-gray-700">
           Quantity
@@ -23,7 +19,6 @@
                data-product-id="<%= @product.id %>">
       </div>
     <% elsif @product.product_type_configurable? %>
-      <%# Configurable product - show variant selection %>
       <div class="space-y-3">
         <label class="block text-sm font-medium text-gray-700">
           Select Variants (<%= @variants.count %> available)

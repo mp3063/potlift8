@@ -16,7 +16,6 @@
     <% end %>
 
     <%= form_with url: products_bulk_update_labels_path, method: :post, data: { bulk_label_editor_target: "form" }, class: "space-y-6" do |f| %>
-      <!-- Hidden input for product IDs (populated by Stimulus controller) -->
       <div data-bulk-label-editor-target="productIds"></div>
 
       <div>
@@ -25,7 +24,6 @@
         </p>
 
         <div class="space-y-4">
-          <!-- Action Type Selection -->
           <div class="flex gap-4">
             <label class="flex items-center cursor-pointer">
               <%= radio_button_tag :label_action, "add", true,
@@ -47,12 +45,10 @@
             </label>
           </div>
 
-          <!-- Label Selection -->
           <div class="border border-gray-200 rounded-lg max-h-96 overflow-y-auto">
             <% if labels.any? %>
               <div class="divide-y divide-gray-200">
                 <% labels.each do |label| %>
-                  <!-- Root Label -->
                   <label class="flex items-center px-4 py-3 hover:bg-gray-50 cursor-pointer">
                     <%= check_box_tag "label_ids[]", label.id, false,
                         class: "h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600",
@@ -69,7 +65,6 @@
                     <% end %>
                   </label>
 
-                  <!-- Sublabels (if any) -->
                   <% if label.sublabels.any? %>
                     <% label.sublabels.each do |sublabel| %>
                       <label class="flex items-center px-4 py-3 pl-10 hover:bg-gray-50 cursor-pointer">

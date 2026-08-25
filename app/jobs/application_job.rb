@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-# Base class for all background jobs in Potlift8
-# Provides retry strategies, error handling, and performance monitoring
 class ApplicationJob < ActiveJob::Base
   # Automatically retry jobs that encountered a deadlock
   # Deadlocks are transient and usually resolve on retry
@@ -9,17 +7,14 @@ class ApplicationJob < ActiveJob::Base
            wait: :exponentially_longer,
            attempts: 5
 
-  # Retry on connection errors with exponential backoff
   retry_on ActiveRecord::ConnectionNotEstablished,
            wait: :exponentially_longer,
            attempts: 5
 
-  # Retry on lock wait timeout (common in high-concurrency scenarios)
   retry_on ActiveRecord::LockWaitTimeout,
            wait: :exponentially_longer,
            attempts: 5
 
-  # Retry on transient network errors
   retry_on Faraday::ConnectionFailed,
            wait: :exponentially_longer,
            attempts: 5
@@ -37,7 +32,6 @@ class ApplicationJob < ActiveJob::Base
     )
   end
 
-  # Discard jobs that reference deleted records
   discard_on ActiveRecord::RecordNotFound do |job, error|
     Rails.logger.warn(
       "Job discarded - record not found: #{job.class.name} " \
@@ -45,18 +39,15 @@ class ApplicationJob < ActiveJob::Base
     )
   end
 
-  # Global error handler for unexpected errors
-  # Logs the error but allows the retry mechanism to handle it
   rescue_from StandardError do |exception|
     Rails.logger.error(
       "Job error in #{self.class.name} (Job ID: #{job_id}): " \
       "#{exception.class} - #{exception.message}\n" \
       "Backtrace:\n#{exception.backtrace.join("\n")}"
     )
-    raise exception # Re-raise to trigger retry logic
+    raise exception
   end
 
-  # Performance monitoring: log job execution time
   around_perform do |job, block|
     start_time = Time.current
     job_name = job.class.name
@@ -88,7 +79,6 @@ class ApplicationJob < ActiveJob::Base
     end
   end
 
-  # Log when a job is successfully enqueued
   after_enqueue do |job|
     Rails.logger.info(
       "Job enqueued: #{job.class.name} (ID: #{job.job_id}, " \
@@ -96,19 +86,15 @@ class ApplicationJob < ActiveJob::Base
     )
   end
 
-  # Class methods for queue assignment helpers
   class << self
-    # Helper to set high priority queue
     def high_priority
       queue_as :high_priority
     end
 
-    # Helper to set default priority queue
     def default_priority
       queue_as :default
     end
 
-    # Helper to set low priority queue
     def low_priority
       queue_as :low_priority
     end
@@ -121,10 +107,6 @@ class ApplicationJob < ActiveJob::Base
   # - Strings longer than 100 chars → truncated with byte size (prevents logging
   #   full file contents or other large payloads)
   # - Everything else → to_s
-  #
-  # @param arg [Object] Job argument
-  # @return [String] Log-safe representation
-  #
   def format_argument_for_log(arg)
     if arg.respond_to?(:id) && arg.class.respond_to?(:primary_key)
       arg.id.to_s
@@ -135,8 +117,6 @@ class ApplicationJob < ActiveJob::Base
     end
   end
 
-  # Helper method to determine if job should be retried
-  # Can be overridden in individual job classes
   def retryable_error?(error)
     return true if error.is_a?(ActiveRecord::Deadlocked)
     return true if error.is_a?(ActiveRecord::ConnectionNotEstablished)
@@ -147,8 +127,6 @@ class ApplicationJob < ActiveJob::Base
     false
   end
 
-  # Helper method to log job metrics
-  # Can be extended to send metrics to external monitoring services
   def log_job_metric(metric_name, value, tags = {})
     Rails.logger.info(
       "Job metric: #{metric_name}=#{value} " \

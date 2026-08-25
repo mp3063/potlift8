@@ -1,13 +1,10 @@
 # frozen_string_literal: true
 
 module JobMonitoring
-  # Service to monitor the health of Solid Queue
-  # Provides insights into queue depth, processing rates, and worker status
   class QueueHealthService
     QUEUE_NAMES = %w[high_priority default low_priority].freeze
 
     class << self
-      # Get comprehensive queue health report
       def health_report
         {
           timestamp: Time.current.iso8601,
@@ -18,7 +15,6 @@ module JobMonitoring
         }
       end
 
-      # Get statistics for all queues
       def queue_statistics
         QUEUE_NAMES.map do |queue_name|
           {
@@ -31,7 +27,6 @@ module JobMonitoring
         end
       end
 
-      # Get worker pool statistics
       def worker_statistics
         {
           total_workers: total_workers_count,
@@ -40,7 +35,6 @@ module JobMonitoring
         }
       end
 
-      # Get failed job statistics
       def failed_job_statistics
         {
           total_failed: total_failed_jobs,
@@ -49,13 +43,11 @@ module JobMonitoring
         }
       end
 
-      # Check if queue is healthy
       def healthy?
         health = calculate_overall_health
         health[:status] == "healthy"
       end
 
-      # Alert if queue depth exceeds threshold
       def queue_depth_alert?(queue_name, threshold: 100)
         pending_jobs_count(queue_name) > threshold
       end
@@ -105,8 +97,6 @@ module JobMonitoring
       end
 
       def total_workers_count
-        # This would depend on Solid Queue's worker tracking
-        # For now, return configured worker count
         config = YAML.load_file(Rails.root.join("config/queue.yml"))
         env_config = config[Rails.env] || config["default"]
         env_config["workers"]&.sum { |w| w["processes"] || 1 } || 0
@@ -115,7 +105,6 @@ module JobMonitoring
       end
 
       def active_workers_count
-        # Count workers currently processing jobs
         SolidQueue::Process.where("last_heartbeat_at > ?", 1.minute.ago).count
       rescue StandardError
         0
@@ -151,7 +140,6 @@ module JobMonitoring
         warnings = []
         errors = []
 
-        # Check queue depths
         QUEUE_NAMES.each do |queue_name|
           pending = pending_jobs_count(queue_name)
           if pending > 1000
@@ -160,14 +148,12 @@ module JobMonitoring
             warnings << "Queue #{queue_name} has #{pending} pending jobs"
           end
 
-          # Check oldest job age
           age = oldest_pending_job_age(queue_name)
-          if age > 3600 # 1 hour
+          if age > 3600
             warnings << "Oldest job in #{queue_name} is #{age}s old"
           end
         end
 
-        # Check failure rate
         failure_rate = calculate_failure_rate
         if failure_rate > 10
           errors << "High failure rate: #{failure_rate}%"
@@ -175,7 +161,6 @@ module JobMonitoring
           warnings << "Elevated failure rate: #{failure_rate}%"
         end
 
-        # Check worker availability
         active_workers = active_workers_count
         if active_workers.zero?
           errors << "No active workers detected"

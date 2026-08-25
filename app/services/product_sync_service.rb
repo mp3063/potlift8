@@ -2,66 +2,26 @@
 
 require "faraday/retry"
 
-# ProductSyncService
-#
-# Handles per-product synchronization to Shopify8. This service builds
-# complete product payloads including:
-# - Product basic data (SKU, name, status, product type)
-# - Attribute data with catalog overrides
-# - Inventory data (total saldo, max sellable, by warehouse)
-# - Catalog-specific information
-#
-# Sync Target:
-# - Shopify8: POST to ENV['SHOPIFY8_URL']/api/v1/sync_tasks
-#
 # Bizcart sync is NOT handled here — Bizcart expects a full-catalog JSON
 # replacement on every push, not per-product events. See BizcartCatalogPushService
 # (planned) for the Bizcart path.
-#
-# Usage:
-#   service = ProductSyncService.new(product, catalog)
-#   result = service.sync_to_external_system
-#
-#   if result.success?
-#     puts "Synced successfully: #{result.data}"
-#   else
-#     puts "Sync failed: #{result.error}"
-#   end
-#
-# Error Handling:
-# - Network errors (timeouts, connection refused)
-# - API errors (4xx, 5xx responses)
-# - Data validation errors
-# - All errors are logged and returned in result object
-#
 class ProductSyncService
-  # HTTP timeout settings
-  CONNECT_TIMEOUT = 10 # seconds
-  READ_TIMEOUT = 30    # seconds
-  WRITE_TIMEOUT = 30   # seconds
+  CONNECT_TIMEOUT = 10
+  READ_TIMEOUT = 30
+  WRITE_TIMEOUT = 30
 
   attr_reader :product, :catalog, :errors
 
-  # Initialize the sync service
-  #
-  # @param product [Product] The product to sync
-  # @param catalog [Catalog] The catalog context (optional)
-  #
   def initialize(product, catalog = nil)
     @product = product
     @catalog = catalog
     @errors = []
   end
 
-  # Main sync method - syncs product to external system
-  #
-  # @return [SyncLockable::SyncLockResult] Result object with success status
-  #
   def sync_to_external_system
     validate_prerequisites
     return failure_result("Validation failed: #{@errors.join(', ')}") if @errors.any?
 
-    # Eager load all associations for efficient payload building
     eager_load_product_associations
 
     payload = build_payload
@@ -72,7 +32,6 @@ class ProductSyncService
 
     Rails.logger.info("[ProductSyncService] Syncing product #{@product.sku} to #{target_url}")
 
-    # Wrap payload in target-specific format
     wrapped_payload = wrap_payload_for_target(payload, sync_target)
     api_token = get_api_token_for_target(sync_target)
 
@@ -92,10 +51,6 @@ class ProductSyncService
     failure_result("Unexpected error: #{e.message}")
   end
 
-  # Build the complete payload for sync
-  #
-  # @return [Hash] Complete product data payload
-  #
   def build_payload
     {
       product: build_product_data,
@@ -113,10 +68,7 @@ class ProductSyncService
 
   private
 
-  # Eager load all product associations for efficient payload building
-  #
   # Reloads the product with all necessary associations to prevent N+1 queries.
-  #
   def eager_load_product_associations
     @product = Product.includes(
       :labels,
@@ -131,8 +83,6 @@ class ProductSyncService
     ).find(@product.id)
   end
 
-  # Validate prerequisites before syncing
-  #
   def validate_prerequisites
     @errors << "Product is required" if @product.nil?
     @errors << "Product must be persisted" if @product.present? && !@product.persisted?
@@ -143,10 +93,6 @@ class ProductSyncService
     end
   end
 
-  # Build basic product data
-  #
-  # @return [Hash] Product basic information
-  #
   def build_product_data
     {
       id: @product.id,
@@ -161,14 +107,9 @@ class ProductSyncService
     }
   end
 
-  # Build attributes payload with catalog overrides and localization
-  #
   # If a catalog is present, uses catalog-level attribute overrides.
   # Otherwise, uses product-level attribute values.
   # Also includes localized attribute values when present.
-  #
-  # @return [Hash] Attribute data with values and localized variants
-  #
   def build_attributes_payload
     values = {}
     localized = {}
@@ -203,7 +144,6 @@ class ProductSyncService
     code_sym = product_attribute.code.to_sym
     registry = SystemAttributes::SYSTEM_ATTRIBUTES[code_sym]
 
-    # Native Shopify field mapping (from registry constant)
     if registry&.dig(:shopify_field)
       entry[:shopify_field] = registry[:shopify_field].to_s
     end
@@ -213,7 +153,6 @@ class ProductSyncService
       entry[:custom_handler] = registry[:custom_handler].to_s
     end
 
-    # Metafield mapping (from registry or user-configured columns)
     if product_attribute.shopify_metafield_namespace.present?
       entry[:shopify_metafield] = {
         namespace: product_attribute.shopify_metafield_namespace,
@@ -227,13 +166,6 @@ class ProductSyncService
     entry
   end
 
-  # Build labels payload
-  #
-  # Labels include brand, category, campaign, featured, and template types.
-  # Each label includes localized values when available.
-  #
-  # @return [Array<Hash>] Array of label data
-  #
   def build_labels_payload
     @product.labels.includes(:parent_label).map do |label|
       {
@@ -248,13 +180,6 @@ class ProductSyncService
     end
   end
 
-  # Build assets payload
-  #
-  # Only includes images with public or catalog-only visibility.
-  # Generates signed URLs for Shopify8 to fetch.
-  #
-  # @return [Array<Hash>] Array of asset data with URLs
-  #
   def build_assets_payload
     assets = build_product_assets_payload
     return assets if assets.present?
@@ -300,12 +225,6 @@ class ProductSyncService
     end
   end
 
-  # Build translations payload
-  #
-  # Organizes translations by locale, with keys for each translated field.
-  #
-  # @return [Hash] Locale => { key => value } structure
-  #
   def build_translations_payload
     translations_hash = {}
 
@@ -317,12 +236,6 @@ class ProductSyncService
     translations_hash.presence
   end
 
-  # Build configurations payload (for configurable products only)
-  #
-  # Includes variant dimension definitions (Size, Color, etc.) and their values.
-  #
-  # @return [Array<Hash>, nil] Configuration dimensions or nil if not configurable
-  #
   def build_configurations_payload
     return nil unless @product.product_type_configurable?
 
@@ -342,13 +255,6 @@ class ProductSyncService
     end
   end
 
-  # Build subproducts payload (for configurable and bundle products)
-  #
-  # For configurable products: includes variant data with variant_config
-  # For bundles: includes component products with quantities
-  #
-  # @return [Array<Hash>, nil] Subproduct data or nil if no subproducts
-  #
   def build_subproducts_payload
     return nil unless @product.product_type_configurable? || @product.product_type_bundle?
 
@@ -381,11 +287,6 @@ class ProductSyncService
     end
   end
 
-  # Build enriched attributes for a subproduct (variant)
-  #
-  # @param subproduct [Product] The subproduct to get attributes for
-  # @return [Hash] Enriched attribute entries with mapping info
-  #
   def build_subproduct_attributes(subproduct)
     values = {}
     subproduct.product_attribute_values.includes(:product_attribute).each do |pav|
@@ -395,11 +296,6 @@ class ProductSyncService
     values
   end
 
-  # Build translations for a subproduct
-  #
-  # @param subproduct [Product] The subproduct to get translations for
-  # @return [Hash] Locale => { key => value } structure
-  #
   def build_subproduct_translations(subproduct)
     translations_hash = {}
     subproduct.translations.each do |translation|
@@ -409,11 +305,6 @@ class ProductSyncService
     translations_hash
   end
 
-  # Generate a signed URL for an asset file
-  #
-  # @param asset [ProductAsset] The asset with attached file
-  # @return [String, nil] The signed URL or nil
-  #
   def generate_asset_url(asset)
     return nil unless asset.file.attached?
 
@@ -423,16 +314,6 @@ class ProductSyncService
     )
   end
 
-  # Build inventory payload
-  #
-  # Includes:
-  # - Total saldo across all warehouses
-  # - Max sellable (respects product type: sellable/configurable/bundle)
-  # - Inventory by warehouse (with storage codes and ETAs)
-  # - Single inventory with ETA for incoming stock
-  #
-  # @return [Hash] Inventory data structure
-  #
   def build_inventory_payload
     {
       total_saldo: @product.total_saldo,
@@ -442,10 +323,6 @@ class ProductSyncService
     }
   end
 
-  # Build warehouse-specific inventory data
-  #
-  # @return [Array<Hash>] Array of warehouse inventory records
-  #
   def build_warehouse_inventory
     @product.inventories.includes(:storage).map do |inventory|
       {
@@ -459,10 +336,6 @@ class ProductSyncService
     end
   end
 
-  # Build catalog data
-  #
-  # @return [Hash, nil] Catalog information or nil if no catalog
-  #
   def build_catalog_data
     return nil unless @catalog.present?
 
@@ -478,11 +351,6 @@ class ProductSyncService
     }
   end
 
-  # Build catalog item data
-  #
-  # @param catalog_item [CatalogItem] The catalog item
-  # @return [Hash] Catalog item information
-  #
   def build_catalog_item_data(catalog_item)
     {
       id: catalog_item.id,
@@ -493,10 +361,6 @@ class ProductSyncService
     }
   end
 
-  # Build sync metadata
-  #
-  # @return [Hash] Sync timing and version information
-  #
   def build_sync_metadata
     {
       synced_at: Time.current.iso8601,
@@ -505,23 +369,12 @@ class ProductSyncService
     }
   end
 
-  # Determine target URL based on catalog's sync_target
-  #
-  # Shopify8 is the only per-product sync target. Bizcart catalogs are handled
-  # via a separate full-catalog push path, not this service.
-  #
-  # @return [String, nil] Target URL or nil if not configured
-  #
   def determine_target_url
     return nil unless @catalog.present?
 
     shopify8_url
   end
 
-  # Get Shopify8 sync URL
-  #
-  # @return [String, nil] Shopify8 URL or nil if not configured
-  #
   def shopify8_url
     base_url = ENV["SHOPIFY8_URL"]
     return nil if base_url.blank?
@@ -529,12 +382,6 @@ class ProductSyncService
     "#{base_url}/api/v1/sync_tasks"
   end
 
-  # Wrap payload in Shopify8 sync_task format
-  #
-  # @param payload [Hash] Raw product payload
-  # @param sync_target [String] Target system (shopify8 only)
-  # @return [Hash] Wrapped payload for Shopify8
-  #
   def wrap_payload_for_target(payload, sync_target)
     # Shopify8 expects sync_task format with data in info.load.
     # The executor expects a flat structure with sku at the top level.
@@ -552,18 +399,11 @@ class ProductSyncService
     }
   end
 
-  # Build Shopify-compatible load data structure
-  #
   # Shopify8's ProductChangedExecutor expects sku at top level
-  #
-  # @param payload [Hash] Raw payload from build_payload
-  # @return [Hash] Flattened structure for Shopify8
-  #
   def build_shopify_load_data(payload)
     product_data = payload[:product] || {}
 
     {
-      # Core product fields at top level
       "sku" => product_data[:sku],
       "ean" => product_data[:ean],
       "name" => product_data[:name],
@@ -572,7 +412,6 @@ class ProductSyncService
       "configuration_type" => product_data[:configuration_type],
       "total_saldo" => product_data[:total_saldo],
       "total_max_sellable_saldo" => product_data[:total_max_sellable_saldo],
-      # Nested data preserved
       "attributes" => payload[:attributes],
       "labels" => payload[:labels],
       "assets" => payload[:assets],
@@ -585,11 +424,6 @@ class ProductSyncService
     }.compact
   end
 
-  # Build subproducts array with sku at top level for each
-  #
-  # @param subproducts [Array, nil] Raw subproducts array
-  # @return [Array, nil] Transformed subproducts
-  #
   def build_shopify_subproducts(subproducts)
     return nil if subproducts.blank?
 
@@ -612,24 +446,11 @@ class ProductSyncService
     end
   end
 
-  # Get API token for target system
-  #
-  # @param sync_target [String] Target system (shopify8 only)
-  # @return [String, nil] API token for authentication
-  #
   def get_api_token_for_target(sync_target)
     @catalog.info&.dig("shopify_api_token") || ENV["SHOPIFY8_API_TOKEN"]
   end
 
-  # Send payload to target URL using Faraday with rate limiting
-  #
-  # @param url [String] Target URL
-  # @param payload [Hash] Data to send
-  # @param api_token [String, nil] API token for authentication
-  # @return [Faraday::Response] HTTP response
-  #
   def send_to_target(url, payload, api_token = nil)
-    # Apply rate limiting for this catalog
     rate_limiter = build_rate_limiter
 
     rate_limiter.throttle do
@@ -663,7 +484,6 @@ class ProductSyncService
         "(API call: #{api_duration}s)"
       )
 
-      # Log slow API calls
       if api_duration > 5.0
         Rails.logger.warn(
           "[ProductSyncService] SLOW API call detected: #{api_duration}s for #{url}"
@@ -673,17 +493,11 @@ class ProductSyncService
       response
     end
   rescue RateLimiter::RateLimitExceededError => e
-    # Convert rate limit error to retriable error
     Rails.logger.warn("[ProductSyncService] #{e.message}")
     raise e
   end
 
-  # Build rate limiter for catalog
-  #
-  # @return [RateLimiter] Configured rate limiter
-  #
   def build_rate_limiter
-    # Get rate limit configuration from catalog or use defaults
     limit = rate_limit_value
     period = rate_limit_period
 
@@ -692,56 +506,32 @@ class ProductSyncService
     RateLimiter.new(rate_key, limit: limit, period: period)
   end
 
-  # Get rate limit value from catalog config or ENV
-  #
-  # @return [Integer] Maximum requests per period
-  #
   def rate_limit_value
-    # Check catalog info first
     catalog_limit = @catalog.info&.dig("rate_limit", "limit")
     return catalog_limit.to_i if catalog_limit.present? && catalog_limit.to_i > 0
 
-    # Check ENV for catalog-specific limit
     env_key = "RATE_LIMIT_#{@catalog.code.upcase}"
     env_limit = ENV[env_key]
     return env_limit.to_i if env_limit.present? && env_limit.to_i > 0
 
-    # Default limit
     100
   end
 
-  # Get rate limit period from catalog config or ENV
-  #
-  # @return [Integer] Time window in seconds
-  #
   def rate_limit_period
-    # Check catalog info first
     catalog_period = @catalog.info&.dig("rate_limit", "period")
     return catalog_period.to_i if catalog_period.present? && catalog_period.to_i > 0
 
-    # Check ENV for catalog-specific period
     env_key = "RATE_LIMIT_PERIOD_#{@catalog.code.upcase}"
     env_period = ENV[env_key]
     return env_period.to_i if env_period.present? && env_period.to_i > 0
 
-    # Default period (60 seconds)
     60
   end
 
-  # Create success result
-  #
-  # @param data [Object] Response data
-  # @return [SyncLockable::SyncLockResult] Success result
-  #
   def success_result(data)
     SyncLockable::SyncLockResult.new(success: true, data: data)
   end
 
-  # Create failure result
-  #
-  # @param error [String] Error message
-  # @return [SyncLockable::SyncLockResult] Failure result
-  #
   def failure_result(error)
     Rails.logger.error("[ProductSyncService] #{error}")
     SyncLockable::SyncLockResult.new(success: false, error: error)

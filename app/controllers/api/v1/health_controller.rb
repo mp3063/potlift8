@@ -3,10 +3,6 @@
 module Api
   module V1
     class HealthController < ActionController::API
-      # No authentication required for health checks
-
-      # GET /api/v1/health
-      # Basic liveness check — returns 200 if the app is running
       def show
         render json: {
           status: "ok",
@@ -18,8 +14,6 @@ module Api
         }
       end
 
-      # GET /api/v1/health/ready
-      # Readiness check — verifies database, Redis, and Solid Queue
       def ready
         checks = {
           database: check_database,

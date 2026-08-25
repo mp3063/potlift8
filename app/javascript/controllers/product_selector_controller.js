@@ -1,39 +1,8 @@
 import { Controller } from "@hotwired/stimulus"
 
-/**
- * Product Selector Controller
- *
- * Manages product selection interface for adding products to storage locations.
- * Provides bulk selection controls, search handling, and selected count tracking.
- *
- * Targets:
- * - checkbox: Individual product checkboxes
- * - selectedCount: Element displaying count of selected products
- * - submitButton: Form submit button (optional, for disabling when no selection)
- * - form: The product selection form
- * - productList: Container for product rows
- * - productRow: Individual product table rows
- *
- * Actions:
- * - selectAll: Select all visible product checkboxes
- * - deselectAll: Deselect all product checkboxes
- * - updateCount: Update the selected product count display
- * - handleSearch: Handle search form submission (auto-submit on filter change)
- *
- * Usage:
- *   <div data-controller="product-selector">
- *     <button data-action="click->product-selector#selectAll">Select All</button>
- *     <span data-product-selector-target="selectedCount">0</span>
- *     <input type="checkbox" data-product-selector-target="checkbox">
- *   </div>
- */
 export default class extends Controller {
   static targets = ["checkbox", "selectedCount", "submitButton", "form", "productList", "productRow", "selectAll", "count", "productCheckbox"]
 
-  /**
-   * Initialize controller
-   * Updates count on connect to handle pre-selected checkboxes
-   */
   connect() {
     console.log('ProductSelectorController connected')
     console.log('Checkboxes found:', this.checkboxTargets.length)
@@ -43,11 +12,6 @@ export default class extends Controller {
     this.updateSubmitButton()
   }
 
-  /**
-   * Select all product checkboxes
-   *
-   * @param {Event} event - Click event
-   */
   selectAll(event) {
     event.preventDefault()
 
@@ -58,11 +22,6 @@ export default class extends Controller {
     this.updateCount()
   }
 
-  /**
-   * Deselect all product checkboxes
-   *
-   * @param {Event} event - Click event
-   */
   deselectAll(event) {
     event.preventDefault()
 
@@ -73,15 +32,10 @@ export default class extends Controller {
     this.updateCount()
   }
 
-  /**
-   * Update the selected product count display
-   * Also enables/disables submit button based on selection
-   */
   updateCount() {
     const selectedCount = this.selectedCheckboxes.length
     console.log('updateCount called, selectedCount:', selectedCount)
 
-    // Update count display
     if (this.hasSelectedCountTarget) {
       this.selectedCountTarget.textContent = selectedCount
       console.log('Updated selectedCountTarget to:', selectedCount)
@@ -89,7 +43,6 @@ export default class extends Controller {
       console.warn('selectedCountTarget not found!')
     }
 
-    // Update alternate count target
     if (this.hasCountTarget) {
       this.countTarget.textContent = selectedCount
     }
@@ -97,9 +50,6 @@ export default class extends Controller {
     this.updateSubmitButton()
   }
 
-  /**
-   * Enable/disable submit button based on selection
-   */
   updateSubmitButton() {
     if (!this.hasSubmitButtonTarget) {
       console.warn('updateSubmitButton: submitButtonTarget not found')
@@ -123,11 +73,6 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Toggle all product checkboxes on/off
-   *
-   * @param {Event} event - Change event from select all checkbox
-   */
   toggleAll(event) {
     const checked = event.target.checked
     const targets = this.hasProductCheckboxTarget ? this.productCheckboxTargets : this.checkboxTargets
@@ -139,19 +84,11 @@ export default class extends Controller {
     this.updateCount()
   }
 
-  /**
-   * Toggle individual product checkbox and update select all state
-   *
-   * @param {Event} event - Change event
-   */
   toggleProduct(event) {
     this.updateCount()
     this.updateSelectAllState()
   }
 
-  /**
-   * Update select all checkbox state (checked/unchecked/indeterminate)
-   */
   updateSelectAllState() {
     if (!this.hasSelectAllTarget) return
 
@@ -171,34 +108,17 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Handle search form changes
-   * Auto-submits the search form when filters change
-   *
-   * @param {Event} event - Change event from select/input
-   */
   handleSearch(event) {
-    // For select elements, auto-submit the form
     if (event.target.tagName === 'SELECT') {
       event.target.form.requestSubmit()
     }
   }
 
-  /**
-   * Get array of selected checkboxes
-   *
-   * @returns {Array} Array of checked checkbox elements
-   */
   get selectedCheckboxes() {
     const targets = this.hasProductCheckboxTarget ? this.productCheckboxTargets : this.checkboxTargets
     return targets.filter(checkbox => checkbox.checked)
   }
 
-  /**
-   * Get array of selected product IDs
-   *
-   * @returns {Array} Array of product ID values
-   */
   get selectedProductIds() {
     return this.selectedCheckboxes.map(checkbox => checkbox.value)
   }

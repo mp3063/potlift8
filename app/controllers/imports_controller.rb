@@ -1,42 +1,15 @@
-# ImportsController
-#
-# Handles product and catalog imports from CSV files.
-#
 # Uploaded CSVs are stored as ActiveStorage blobs on an Import record, and
 # only the import ID is passed to the background job. This keeps the job
 # arguments small, prevents the CSV content from leaking into Rails logs,
 # and makes progress tracking durable across job restarts (no Redis needed).
-#
-# Routes:
-# - GET  /imports                - Import history
-# - GET  /imports/new            - Show upload form
-# - POST /imports                - Upload file and start import
-# - GET  /imports/:id/progress   - Check import progress (JSON/HTML)
-# - GET  /imports/:id/errors     - Download row-level errors as CSV
-#
-# Import Types:
-# - products: Import products from CSV
-# - catalog_items: Import catalog items from CSV (future)
-#
 class ImportsController < ApplicationController
   MAX_FILE_SIZE = 10.megabytes
 
-  # Show import upload form
-  #
-  # GET /imports/new?type=products
-  #
   def new
     authorize :import, :new?
     @import_type = params[:type] || "products"
   end
 
-  # Create new import job
-  #
-  # POST /imports
-  # Parameters:
-  #   - file: CSV file upload
-  #   - import_type: 'products' or 'catalog_items'
-  #
   def create
     authorize :import, :create?
 
@@ -79,20 +52,12 @@ class ImportsController < ApplicationController
                 notice: "Import started. This may take a few minutes."
   end
 
-  # List import history
-  #
-  # GET /imports
-  #
   def index
     authorize :import, :index?
 
     @imports = current_potlift_company.imports.recent.limit(50)
   end
 
-  # Download CSV template for import type
-  #
-  # GET /imports/template/:type
-  #
   def download_template
     authorize :import, :download_template?
 
@@ -114,11 +79,6 @@ class ImportsController < ApplicationController
               disposition: "attachment"
   end
 
-  # Show import progress
-  #
-  # GET /imports/:id/progress
-  # GET /imports/:id/progress.json
-  #
   def progress
     authorize :import, :progress?
 
@@ -132,7 +92,7 @@ class ImportsController < ApplicationController
     @error_message = @import.error_message
 
     respond_to do |format|
-      format.html # renders progress.html.erb
+      format.html
       format.json do
         render json: {
           status: @status,
@@ -146,10 +106,6 @@ class ImportsController < ApplicationController
     end
   end
 
-  # Download import errors as CSV
-  #
-  # GET /imports/:id/errors
-  #
   def download_errors
     authorize :import, :download_errors?
 
@@ -181,11 +137,6 @@ class ImportsController < ApplicationController
 
   private
 
-  # Validate uploaded file
-  #
-  # @param file [ActionDispatch::Http::UploadedFile] Uploaded file
-  # @return [Boolean] true if valid
-  #
   def valid_file?(file)
     return false unless file.respond_to?(:content_type)
 
@@ -193,10 +144,6 @@ class ImportsController < ApplicationController
       file.original_filename.end_with?(".csv")
   end
 
-  # Generate product CSV template
-  #
-  # @return [String] CSV template with headers and example row
-  #
   def generate_product_template
     CSV.generate do |csv|
       csv << [
@@ -240,10 +187,6 @@ class ImportsController < ApplicationController
     end
   end
 
-  # Generate catalog items CSV template
-  #
-  # @return [String] CSV template with headers and example row
-  #
   def generate_catalog_items_template
     CSV.generate do |csv|
       csv << [

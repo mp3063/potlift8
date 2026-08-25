@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 module Storages
-  # Click-to-edit cell for inventory values in the storage inventory table.
-  # Wraps in a turbo_frame for seamless inline updates via PATCH.
   class InlineInventoryCellComponent < ViewComponent::Base
     include Turbo::FramesHelper
 

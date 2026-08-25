@@ -126,7 +126,6 @@
   </div>
 <% end %>
 
-<!-- Search Bar -->
 <% if @catalog_items.any? || params[:q].present? %>
   <div class="mb-6">
     <%= form_with url: catalog_items_path(@catalog), method: :get, class: "flex gap-3" do |form| %>
@@ -146,7 +145,6 @@
 <% end %>
 
 <% if @catalog_items.any? %>
-  <!-- Items Table -->
   <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden"
        data-controller="catalog-items"
        data-catalog-items-catalog-id-value="<%= @catalog.id %>">

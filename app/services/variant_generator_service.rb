@@ -1,25 +1,5 @@
 # frozen_string_literal: true
 
-# Service to generate all possible variant combinations from configurations
-#
-# Usage:
-#   service = VariantGeneratorService.new(configurable_product)
-#   count = service.generate!
-#   # => Creates all variant combinations and returns count
-#
-# Example:
-#   T-Shirt (configurable)
-#     - Size: Small, Medium, Large
-#     - Color: Red, Blue
-#
-#   Generates 6 variants:
-#     - T-Shirt Small Red
-#     - T-Shirt Small Blue
-#     - T-Shirt Medium Red
-#     - T-Shirt Medium Blue
-#     - T-Shirt Large Red
-#     - T-Shirt Large Blue
-#
 # Features:
 #   - Generates Cartesian product of all configuration values
 #   - Creates variant products as sellable type
@@ -28,13 +8,6 @@
 #   - Prevents duplicate variants
 #   - Inherits parent product status
 #   - Generates unique SKUs with collision handling
-#
-# Error Handling:
-#   - Validates product type and configuration
-#   - Collects all errors during batch generation
-#   - Skips existing variants gracefully
-#   - Returns count of successfully created variants
-#
 class VariantGeneratorService
   attr_reader :product, :company, :errors
 
@@ -44,8 +17,6 @@ class VariantGeneratorService
     @errors = []
   end
 
-  # Generate all variant combinations
-  # Returns: Integer (number of variants created)
   def generate!
     validate_product!
     return 0 if errors.any?
@@ -65,8 +36,6 @@ class VariantGeneratorService
     create_variants(combinations)
   end
 
-  # Generate variants without saving (preview mode)
-  # Returns: Array of hashes with variant details
   def preview
     validate_product!
     return [] if errors.any?
@@ -80,7 +49,6 @@ class VariantGeneratorService
     preview_variants(combinations)
   end
 
-  # Check if all required configurations have values
   def valid_for_generation?
     validate_product!
     return false if errors.any?
@@ -91,7 +59,6 @@ class VariantGeneratorService
     configurations.all? { |config| config.configuration_values.any? }
   end
 
-  # Count how many variants would be generated
   def variant_count
     return 0 unless valid_for_generation?
 
@@ -128,7 +95,6 @@ class VariantGeneratorService
   end
 
   def generate_combinations(configurations)
-    # Get all values for each configuration
     value_sets = configurations.map do |config|
       values = config.configuration_values.order(:position)
 
@@ -150,8 +116,6 @@ class VariantGeneratorService
 
     return [] if value_sets.any?(&:empty?)
 
-    # Generate Cartesian product
-    # For single configuration, wrap in array
     if value_sets.size == 1
       value_sets.first.map { |v| [ v ] }
     else
@@ -165,16 +129,13 @@ class VariantGeneratorService
 
     ActiveRecord::Base.transaction do
       combinations.each do |combination|
-        # Build variant config hash
         variant_config = build_variant_config(combination)
 
-        # Check if variant already exists
         if variant_exists?(variant_config)
           skipped += 1
           next
         end
 
-        # Create variant
         variant = create_variant_product(combination, variant_config)
         if variant&.persisted?
           link_variant(variant, combination, variant_config)
@@ -218,17 +179,14 @@ class VariantGeneratorService
   end
 
   def create_variant_product(combination, variant_config)
-    # Generate unique SKU
     base_suffix = combination.map { |c| sanitize_sku_part(c[:value]) }.join("-")
     sku = generate_unique_sku("#{product.sku}-#{base_suffix}")
 
-    # Generate descriptive name
     name = generate_variant_name(combination)
 
-    # Create variant product
     variant = company.products.create!(
       product_type: :sellable,
-      product_status: product.product_status,  # Inherit parent status
+      product_status: product.product_status,
       sku: sku,
       name: name
     )
@@ -242,7 +200,6 @@ class VariantGeneratorService
   end
 
   def link_variant(variant, combination, variant_config)
-    # Build detailed metadata for the variant
     configuration_details = combination.map do |item|
       {
         configuration_id: item[:configuration_id],
@@ -255,7 +212,7 @@ class VariantGeneratorService
 
     product.product_configurations_as_super.create!(
       subproduct: variant,
-      quantity: 1,  # Variants are 1:1 relationship
+      quantity: 1,
       info: {
         variant_config: variant_config,
         configuration_details: configuration_details,
@@ -266,12 +223,10 @@ class VariantGeneratorService
   rescue ActiveRecord::RecordInvalid => e
     @errors << "Failed to link variant #{variant.sku}: #{e.message}"
     Rails.logger.error("Variant linking failed: #{e.message}")
-    # Rollback will handle cleanup
     raise
   end
 
   def generate_variant_name(combination)
-    # Format: "Parent Name - Value1 / Value2 / Value3"
     value_parts = combination.map { |c| c[:value] }
     "#{product.name} - #{value_parts.join(' / ')}"
   end
@@ -282,13 +237,10 @@ class VariantGeneratorService
   end
 
   def generate_unique_sku(base_sku)
-    # Sanitize SKU (uppercase, alphanumeric + hyphen only)
     sku = sanitize_sku(base_sku)
 
-    # Check if SKU is available
     return sku unless company.products.exists?(sku: sku)
 
-    # Append incrementing number if collision detected
     counter = 1
     loop do
       candidate = "#{sku}-#{counter}"
@@ -304,18 +256,15 @@ class VariantGeneratorService
   end
 
   def sanitize_sku(sku)
-    # Convert to uppercase, remove non-alphanumeric except hyphen
-    # Replace spaces with hyphens, collapse multiple hyphens
     sku.to_s
        .upcase
        .gsub(/\s+/, "-")
        .gsub(/[^A-Z0-9-]/, "")
        .gsub(/-+/, "-")
-       .gsub(/^-|-$/, "")  # Remove leading/trailing hyphens
+       .gsub(/^-|-$/, "")
   end
 
   def sanitize_sku_part(part)
-    # Sanitize individual part (configuration value)
     part.to_s
         .strip
         .upcase

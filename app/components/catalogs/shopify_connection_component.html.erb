@@ -2,7 +2,6 @@
 <%= render Ui::CardComponent.new do |card| %>
   <% card.with_header do %>
     <div class="flex items-center gap-2">
-      <!-- Shopify Icon -->
       <svg class="h-5 w-5 text-green-600" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
         <path d="M15.337 3.415c-.073-.015-.147.003-.2.052-.053.049-.083.117-.086.19l-.116 1.765-1.262-.32c-.073-.018-.15.003-.208.056-.058.054-.089.13-.085.208l.21 3.88-1.79-.454c-.074-.019-.152.003-.21.058-.059.054-.089.132-.083.21l.303 3.81-1.71-.435c-.074-.019-.152.003-.21.058-.058.054-.088.131-.082.208l.21 2.9-.003.026c-.002.082.027.161.08.22.053.058.127.093.206.096l4.387.137c.077.002.152-.024.21-.074.059-.05.098-.12.11-.196l.847-4.803c.024-.135-.041-.27-.163-.34l-1.03-.593.206-3.167 1.13.287c.077.02.157-.001.217-.057.06-.055.092-.134.086-.214l-.21-3.182 1.064.27c.077.02.157-.002.217-.058.06-.056.092-.135.086-.215l-.116-1.767c-.006-.08-.046-.154-.11-.205-.063-.05-.146-.074-.226-.064l-1.54.156z"/>
         <path d="M20.925 5.93c-.013-.12-.122-.21-.242-.21l-2.063.034c-.073-.003-.145.024-.2.074-.055.05-.09.118-.097.192l-.58 5.55c-.01.088.024.175.09.236.066.06.157.088.246.076l1.574-.242c.112-.017.197-.106.21-.218l.143-1.37 1.11.282c.078.02.158-.003.217-.06.06-.058.09-.138.083-.218l-.118-1.166 1.026.26c.078.02.158-.004.217-.062.06-.058.088-.14.08-.22l-.116-1.155.87.22c.114.03.234-.035.278-.148.044-.113-.006-.24-.114-.29l-1.3-.59.108-1.035c.008-.076-.018-.152-.07-.208z"/>
@@ -13,10 +12,8 @@
 
   <div data-controller="shopify-connection">
     <% if connected? %>
-      <!-- Connected State - Display Mode -->
       <div data-shopify-connection-target="display">
         <% if details_error? %>
-          <!-- Error fetching details - show cached info -->
           <div class="rounded-lg bg-yellow-50 border border-yellow-200 p-3 mb-4">
             <div class="flex">
               <svg class="h-5 w-5 text-yellow-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -29,16 +26,13 @@
           </div>
         <% end %>
 
-        <!-- Connection Status Badge -->
         <div class="flex items-center justify-between mb-4">
           <%= render Ui::BadgeComponent.new(variant: :success, dot: true) do %>
             Connected
           <% end %>
         </div>
 
-        <!-- Shop Details -->
         <dl class="space-y-3">
-          <!-- Store Domain -->
           <div class="flex items-center justify-between">
             <dt class="text-sm font-medium text-gray-500">Store</dt>
             <dd class="text-sm text-gray-900 font-mono">
@@ -50,7 +44,6 @@
             </dd>
           </div>
 
-          <!-- API Key -->
           <div class="flex items-center justify-between">
             <dt class="text-sm font-medium text-gray-500">API Key</dt>
             <dd class="text-sm text-gray-900 font-mono">
@@ -58,7 +51,6 @@
             </dd>
           </div>
 
-          <!-- API Secret -->
           <div class="flex items-center justify-between">
             <dt class="text-sm font-medium text-gray-500">API Secret</dt>
             <dd class="text-sm">
@@ -70,7 +62,6 @@
             </dd>
           </div>
 
-          <!-- Location ID -->
           <div class="flex items-center justify-between">
             <dt class="text-sm font-medium text-gray-500">Location ID</dt>
             <dd class="text-sm text-gray-900 font-mono">
@@ -83,7 +74,6 @@
           </div>
         </dl>
 
-        <!-- Actions -->
         <div class="mt-6 flex flex-col gap-3">
           <button type="button"
                   class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
@@ -108,9 +98,7 @@
         </div>
       </div>
 
-      <!-- Connected State - Edit Mode (hidden by default) -->
       <div data-shopify-connection-target="form" class="hidden">
-        <!-- Connection Status Badge -->
         <div class="flex items-center justify-between mb-4">
           <%= render Ui::BadgeComponent.new(variant: :success, dot: true) do %>
             Connected
@@ -118,9 +106,7 @@
           <span class="text-sm text-gray-500">Updating credentials</span>
         </div>
 
-        <!-- Update Form -->
         <%= form_with url: connect_path, method: :post, class: "space-y-4" do |form| %>
-          <!-- Store URL -->
           <div>
             <%= form.label :shopify_domain, class: "block text-sm font-medium text-gray-700 mb-1" do %>
               Store URL <span class="text-red-600" aria-hidden="true">*</span>
@@ -133,7 +119,6 @@
                 aria_required: "true" %>
           </div>
 
-          <!-- API Key -->
           <div>
             <%= form.label :shopify_api_key, class: "block text-sm font-medium text-gray-700 mb-1" do %>
               API Key <span class="text-red-600" aria-hidden="true">*</span>
@@ -149,7 +134,6 @@
             </p>
           </div>
 
-          <!-- API Secret -->
           <div>
             <%= form.label :shopify_password, class: "block text-sm font-medium text-gray-700 mb-1" do %>
               API Secret <span class="text-red-600" aria-hidden="true">*</span>
@@ -162,7 +146,6 @@
                 autocomplete: "new-password" %>
           </div>
 
-          <!-- Location ID (Optional) -->
           <div>
             <%= form.label :location_id, class: "block text-sm font-medium text-gray-700 mb-1" %>
             <%= form.text_field :location_id,
@@ -174,7 +157,6 @@
             </p>
           </div>
 
-          <!-- Form Actions -->
           <div class="pt-2 flex gap-3">
             <button type="button"
                     class="flex-1 inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
@@ -188,9 +170,7 @@
         <% end %>
       </div>
     <% else %>
-      <!-- Disconnected State -->
       <div>
-        <!-- Connection Status Badge -->
         <div class="flex items-center justify-between mb-4">
           <%= render Ui::BadgeComponent.new(variant: :gray, dot: true) do %>
             Not Connected
@@ -201,9 +181,7 @@
           Connect this catalog to a Shopify store to sync products and inventory.
         </p>
 
-        <!-- Connection Form -->
         <%= form_with url: connect_path, method: :post, class: "space-y-4" do |form| %>
-          <!-- Store URL -->
           <div>
             <%= form.label :shopify_domain, class: "block text-sm font-medium text-gray-700 mb-1" do %>
               Store URL <span class="text-red-600" aria-hidden="true">*</span>
@@ -218,7 +196,6 @@
             </p>
           </div>
 
-          <!-- API Key -->
           <div>
             <%= form.label :shopify_api_key, class: "block text-sm font-medium text-gray-700 mb-1" do %>
               API Key <span class="text-red-600" aria-hidden="true">*</span>
@@ -231,7 +208,6 @@
                 autocomplete: "off" %>
           </div>
 
-          <!-- API Secret -->
           <div>
             <%= form.label :shopify_password, class: "block text-sm font-medium text-gray-700 mb-1" do %>
               API Secret <span class="text-red-600" aria-hidden="true">*</span>
@@ -244,7 +220,6 @@
                 autocomplete: "new-password" %>
           </div>
 
-          <!-- Location ID (Optional) -->
           <div>
             <%= form.label :location_id, class: "block text-sm font-medium text-gray-700 mb-1" %>
             <%= form.text_field :location_id,
@@ -255,7 +230,6 @@
             </p>
           </div>
 
-          <!-- Submit Button -->
           <div class="pt-2">
             <%= form.submit "Connect to Shopify",
                 class: "w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200",

@@ -1,58 +1,19 @@
-# Cache Monitor Service
-#
 # Monitors cache performance metrics and provides insights into cache effectiveness.
 # Tracks hits, misses, and cache key statistics for optimization.
-#
-# **Key Metrics:**
-# - Cache hit rate: Percentage of successful cache retrievals
-# - Cache miss rate: Percentage of cache lookups that failed
-# - Cache size: Total bytes stored in cache
-# - Key count: Number of cache entries
-# - Memory usage: Estimated memory consumption
-#
-# **Usage:**
-#   monitor = CacheMonitorService.new
-#   stats = monitor.cache_stats
-#   puts "Hit rate: #{stats[:hit_rate]}%"
-#
 # **Performance Optimization:**
 # - Target hit rate: > 90% for fragment caches
 # - Target hit rate: > 80% for HTTP ETags
 # - Alert if hit rate drops below 70%
-#
 # **Integration:**
 # - Call from rake tasks for daily reports
 # - Expose metrics endpoint for monitoring tools
 # - Log warnings for low hit rates
-#
 class CacheMonitorService
-  # Initialize cache monitor
-  #
-  # @param logger [Logger] Optional logger instance (defaults to Rails.logger)
-  #
   def initialize(logger: Rails.logger)
     @logger = logger
     @cache_store = Rails.cache
   end
 
-  # Get comprehensive cache statistics
-  #
-  # @return [Hash] Cache performance metrics
-  #
-  # @example
-  #   stats = monitor.cache_stats
-  #   # => {
-  #   #   hit_rate: 92.5,
-  #   #   miss_rate: 7.5,
-  #   #   total_reads: 1000,
-  #   #   total_hits: 925,
-  #   #   total_misses: 75,
-  #   #   key_count: 150,
-  #   #   cache_size_mb: 25.3,
-  #   #   evictions: 10,
-  #   #   oldest_entry_age: 3600
-  #   # }
-  #
   def cache_stats
     stats = {
       store_type: cache_store_type,
@@ -60,7 +21,6 @@ class CacheMonitorService
       environment: Rails.env
     }
 
-    # Get hit/miss metrics from Redis if available
     if redis_available?
       redis_stats = fetch_redis_stats
       stats.merge!(redis_stats)
@@ -68,7 +28,6 @@ class CacheMonitorService
       stats[:error] = "Redis stats not available (check Solid Cache configuration)"
     end
 
-    # Calculate derived metrics
     if stats[:total_reads]&.positive?
       stats[:hit_rate] = ((stats[:total_hits].to_f / stats[:total_reads]) * 100).round(2)
       stats[:miss_rate] = ((stats[:total_misses].to_f / stats[:total_reads]) * 100).round(2)
@@ -82,18 +41,6 @@ class CacheMonitorService
     stats
   end
 
-  # Sample cache read operation with timing
-  #
-  # @param key [String] Cache key to test
-  # @param block [Proc] Block to execute if cache miss
-  # @return [Hash] Performance metrics for this operation
-  #
-  # @example
-  #   result = monitor.sample_read('products-list-page-1') do
-  #     Product.all.to_a
-  #   end
-  #   # => { hit: false, duration_ms: 150, value_size_bytes: 50000 }
-  #
   def sample_read(key, &block)
     start_time = Time.current
     hit = false
@@ -116,14 +63,9 @@ class CacheMonitorService
   end
 
   # Clear all cache entries (use with caution)
-  #
-  # @param namespace [String, nil] Optional namespace to clear
-  # @return [Boolean] true if successful
-  #
   def clear_cache(namespace: nil)
     if namespace
       @logger.info("Clearing cache namespace: #{namespace}")
-      # Clear by pattern matching (if supported by cache store)
       @cache_store.delete_matched("#{namespace}*")
     else
       @logger.warn("Clearing entire cache")
@@ -136,15 +78,6 @@ class CacheMonitorService
     false
   end
 
-  # Get cache size by namespace
-  #
-  # @param namespace [String] Cache namespace to analyze
-  # @return [Hash] Size statistics
-  #
-  # @example
-  #   stats = monitor.namespace_stats('product-row')
-  #   # => { key_count: 500, total_size_mb: 12.5, avg_size_bytes: 25600 }
-  #
   def namespace_stats(namespace)
     keys = find_keys_by_pattern("*#{namespace}*")
     total_size = 0
@@ -164,11 +97,6 @@ class CacheMonitorService
     }
   end
 
-  # Generate cache performance report
-  #
-  # @param format [Symbol] Output format (:text or :json)
-  # @return [String] Formatted report
-  #
   def performance_report(format: :text)
     stats = cache_stats
 
@@ -179,13 +107,6 @@ class CacheMonitorService
     end
   end
 
-  # Test cache warming for a specific collection
-  #
-  # @param collection_name [String] Name of the collection to warm
-  # @param items [Array] Items to cache
-  # @param cache_key_prefix [String] Prefix for cache keys
-  # @return [Hash] Warming statistics
-  #
   def warm_cache(collection_name, items, cache_key_prefix:)
     start_time = Time.current
     warmed_count = 0
@@ -218,37 +139,23 @@ class CacheMonitorService
 
   attr_reader :cache_store, :logger
 
-  # Get cache store type
-  #
-  # @return [String] Cache store class name
-  #
   def cache_store_type
     @cache_store.class.name
   end
 
-  # Check if Redis is available for stats
-  #
-  # @return [Boolean] true if Redis connection is available
-  #
   def redis_available?
-    # Solid Cache uses a database, not Redis directly
-    # Check if we can access cache statistics
     @cache_store.respond_to?(:stats)
   end
 
-  # Fetch statistics from Redis/Solid Cache
-  #
-  # @return [Hash] Redis statistics
-  #
   def fetch_redis_stats
     # For Solid Cache, we don't have built-in stats
     # Estimate based on cache operations
     {
-      total_reads: 0, # Would need instrumentation
+      total_reads: 0,
       total_hits: 0,
       total_misses: 0,
       key_count: estimate_key_count,
-      cache_size_mb: 0.0, # Would need storage inspection
+      cache_size_mb: 0.0,
       evictions: 0,
       note: "Solid Cache stats require instrumentation"
     }
@@ -257,41 +164,23 @@ class CacheMonitorService
     {}
   end
 
-  # Estimate object size in bytes
-  #
-  # @param obj [Object] Object to measure
-  # @return [Integer] Estimated size in bytes
-  #
   def estimate_size(obj)
     return 0 if obj.nil?
 
-    # Rough estimation using Marshal dump
     Marshal.dump(obj).bytesize
   rescue => e
     @logger.warn("Failed to estimate size: #{e.message}")
     0
   end
 
-  # Find cache keys matching a pattern
-  #
-  # @param pattern [String] Pattern to match
-  # @return [Array<String>] Matching keys
-  #
   def find_keys_by_pattern(pattern)
-    # This is a simplified version
-    # In production, would need proper key enumeration support
     []
   rescue => e
     @logger.error("Failed to find keys: #{e.message}")
     []
   end
 
-  # Estimate total number of cache keys
-  #
-  # @return [Integer] Estimated key count
-  #
   def estimate_key_count
-    # For Solid Cache, query the solid_cache_entries table
     if defined?(SolidCache::Entry)
       SolidCache::Entry.count
     else
@@ -302,11 +191,6 @@ class CacheMonitorService
     0
   end
 
-  # Generate text-based performance report
-  #
-  # @param stats [Hash] Cache statistics
-  # @return [String] Formatted text report
-  #
   def generate_text_report(stats)
     report = []
     report << "=" * 60

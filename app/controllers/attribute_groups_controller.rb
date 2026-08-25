@@ -1,18 +1,8 @@
 # frozen_string_literal: true
 
-# AttributeGroupsController
-#
-# Manages CRUD operations for AttributeGroups with drag-and-drop reordering.
-#
-# Key Features:
-# - Group creation and editing
-# - Drag-and-drop position management
-# - Scoped to current_potlift_company
-#
 class AttributeGroupsController < ApplicationController
   before_action :set_attribute_group, only: [ :show, :edit, :update, :destroy ]
 
-  # GET /attribute_groups
   def index
     authorize AttributeGroup
 
@@ -21,26 +11,22 @@ class AttributeGroupsController < ApplicationController
       .order(:position)
   end
 
-  # GET /attribute_groups/:code
   def show
     authorize @attribute_group
 
     @product_attributes = @attribute_group.product_attributes.order(:attribute_position)
   end
 
-  # GET /attribute_groups/new
   def new
     authorize AttributeGroup
 
     @attribute_group = current_potlift_company.attribute_groups.build
   end
 
-  # GET /attribute_groups/:code/edit
   def edit
     authorize @attribute_group
   end
 
-  # POST /attribute_groups
   def create
     authorize AttributeGroup
 
@@ -53,7 +39,6 @@ class AttributeGroupsController < ApplicationController
     end
   end
 
-  # PATCH /attribute_groups/:code
   def update
     authorize @attribute_group
 
@@ -64,7 +49,6 @@ class AttributeGroupsController < ApplicationController
     end
   end
 
-  # DELETE /attribute_groups/:code
   def destroy
     authorize @attribute_group
 
@@ -76,8 +60,6 @@ class AttributeGroupsController < ApplicationController
     end
   end
 
-  # PATCH /attribute_groups/reorder
-  # Updates group positions
   def reorder
     authorize AttributeGroup
 

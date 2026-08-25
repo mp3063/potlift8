@@ -17,7 +17,6 @@
   </div>
 <% end %>
 
-<!-- Version Selectors -->
 <%= render Ui::CardComponent.new do |card| %>
   <% card.with_header do %>
     <h3 class="text-lg font-semibold text-gray-900">Select Versions to Compare</h3>
@@ -25,7 +24,6 @@
 
   <%= form_with url: compare_product_versions_path(@product), method: :get, class: "space-y-6" do |f| %>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <!-- From Version -->
       <div>
         <label for="from-version" class="block text-sm font-medium text-gray-700">
           From Version <span class="text-red-600" aria-hidden="true">*</span>
@@ -46,7 +44,6 @@
         %>
       </div>
 
-      <!-- To Version -->
       <div>
         <label for="to-version" class="block text-sm font-medium text-gray-700">
           To Version <span class="text-red-600" aria-hidden="true">*</span>
@@ -79,10 +76,8 @@
   <% end %>
 <% end %>
 
-<!-- Comparison Results -->
 <% if @from_version && @to_version %>
   <div class="mt-8">
-    <!-- Version Info Banner -->
     <div class="rounded-lg bg-blue-50 p-4 border border-blue-200 mb-6">
       <div class="flex items-start">
         <div class="flex-shrink-0">
@@ -106,7 +101,6 @@
       </div>
     </div>
 
-    <!-- Attribute Changes -->
     <h2 class="text-lg font-semibold text-gray-900 mb-4">Attribute Changes</h2>
 
     <% if @changes.any? %>

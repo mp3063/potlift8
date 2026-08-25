@@ -1,11 +1,6 @@
-<%#
-  Storage card partial for grid display
-  Locals: storage (required)
-%>
 <div id="<%= dom_id(storage) %>">
 <%= render Ui::CardComponent.new(hover: true, padding: :none) do |card| %>
   <div class="p-6">
-    <!-- Header with name and badges -->
     <div class="flex items-start justify-between mb-4">
       <div class="flex-1">
         <h3 class="text-lg font-semibold text-gray-900">
@@ -32,7 +27,6 @@
       </div>
     </div>
 
-    <!-- Stats -->
     <div class="grid grid-cols-2 gap-4 mb-4">
       <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
         <dt class="text-sm font-medium text-gray-500 truncate">
@@ -52,7 +46,6 @@
       </div>
     </div>
 
-    <!-- Actions -->
     <div class="flex gap-2">
       <%= link_to inventory_storage_path(storage),
             class: "flex-1 inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" do %>

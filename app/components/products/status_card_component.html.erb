@@ -4,7 +4,6 @@
   <% end %>
 
   <dl class="space-y-3">
-    <!-- Active Status -->
     <div class="flex items-center justify-between">
       <dt class="text-sm font-medium text-gray-500">Active Status</dt>
       <dd class="flex items-center text-sm font-semibold">
@@ -19,7 +18,6 @@
       </dd>
     </div>
 
-    <!-- Product Type -->
     <div class="flex items-center justify-between">
       <dt class="text-sm font-medium text-gray-500">Product Type</dt>
       <dd class="text-sm text-gray-900">
@@ -27,7 +25,6 @@
       </dd>
     </div>
 
-    <!-- Last Updated -->
     <div class="flex items-center justify-between">
       <dt class="text-sm font-medium text-gray-500">Last Updated</dt>
       <dd class="text-sm text-gray-900" title="<%= product.updated_at.strftime('%B %d, %Y at %I:%M %p') %>">
@@ -36,7 +33,6 @@
     </div>
   </dl>
 
-  <!-- Toggle Button -->
   <div class="mt-6">
     <% if product.active? %>
       <%= button_to toggle_active_product_path(product),

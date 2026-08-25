@@ -11,7 +11,6 @@ module SystemAttributes
   }.freeze
 
   SYSTEM_ATTRIBUTES = {
-    # --- Pricing ---
     price: {
       pa_type: :patype_number,
       view_format: :view_format_price,
@@ -52,7 +51,6 @@ module SystemAttributes
       options: ["standard", "reduced 9", "reduced 14", "zero"]
     },
 
-    # --- Identifiers ---
     ean: {
       pa_type: :patype_text,
       view_format: :view_format_ean,
@@ -72,7 +70,6 @@ module SystemAttributes
       description: "Alternative identifier, used as barcode fallback when EAN is empty"
     },
 
-    # --- Details ---
     description_html: {
       pa_type: :patype_rich_text,
       view_format: :view_format_html,
@@ -114,7 +111,6 @@ module SystemAttributes
       description: "Product brand/manufacturer"
     },
 
-    # --- Physical ---
     weight: {
       pa_type: :patype_number,
       view_format: :view_format_weight,
@@ -142,7 +138,6 @@ module SystemAttributes
 
   class_methods do
     def ensure_system_attributes!(company)
-      # Create attribute groups
       SYSTEM_ATTRIBUTE_GROUPS.each do |code, config|
         company.attribute_groups.find_or_create_by!(code: code.to_s) do |group|
           group.name = config[:name]
@@ -150,7 +145,6 @@ module SystemAttributes
         end
       end
 
-      # Create system attributes
       SYSTEM_ATTRIBUTES.each_with_index do |(code, config), index|
         group = company.attribute_groups.find_by(code: config[:group].to_s)
 
@@ -188,7 +182,6 @@ module SystemAttributes
           end
         end
 
-        # Always set system flag and metafield mapping
         attr.system = true
         if config[:shopify_metafield].present?
           attr.shopify_metafield_namespace = config[:shopify_metafield][:namespace]

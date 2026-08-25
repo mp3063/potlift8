@@ -1,19 +1,7 @@
 # frozen_string_literal: true
 
-# SessionVersionChecker Service
-#
-# Checks session versions against Authlift8's Redis-stored versions
-# to determine if cached session data needs to be refreshed.
-#
 # This service connects directly to the shared Redis instance used
 # by Authlift8 to avoid unnecessary API calls for version checks.
-#
-# Usage:
-#   checker = SessionVersionChecker.new(session)
-#   if checker.needs_refresh?
-#     checker.refresh_session!
-#   end
-#
 class SessionVersionChecker
   REDIS_NAMESPACE = "session_version"
 
@@ -23,10 +11,6 @@ class SessionVersionChecker
     @session = session
   end
 
-  # Check if session needs refresh (lightweight Redis check)
-  # Returns true if any version is stale
-  #
-  # @return [Boolean] true if session data needs to be refreshed
   def needs_refresh?
     return false unless session[:user_id].present?
 
@@ -36,9 +20,6 @@ class SessionVersionChecker
     false  # On Redis error, don't force refresh
   end
 
-  # Refresh session data from Authlift8 API
-  #
-  # @return [Boolean] true if refresh succeeded
   def refresh_session!
     return false unless session[:access_token].present?
 
@@ -64,7 +45,6 @@ class SessionVersionChecker
     false
   end
 
-  # Store current versions in session (called after successful login or refresh)
   def store_current_versions!
     user_id = session[:user_id]
     company_id = session[:company_id]
@@ -74,7 +54,6 @@ class SessionVersionChecker
     session[:session_version_customer_group] = company_id ? get_version(:customer_group, company_id) : 0
   end
 
-  # Get current versions from Redis (for debugging)
   def current_versions
     {
       user: get_version(:user, session[:user_id]),
@@ -83,7 +62,6 @@ class SessionVersionChecker
     }
   end
 
-  # Get stored versions from session (for debugging)
   def session_versions
     {
       user: session[:session_version_user].to_i,
@@ -96,7 +74,7 @@ class SessionVersionChecker
 
   def user_stale?
     current = get_version(:user, session[:user_id])
-    return false if current.zero?  # No version set = current
+    return false if current.zero?
     session[:session_version_user].to_i < current
   end
 
@@ -147,12 +125,10 @@ class SessionVersionChecker
   end
 
   def update_session_from_profile(profile)
-    # Update user data
     session[:email] = profile["email"]
     session[:user_name] = profile["full_name"]
     session[:locale] = profile["locale"]
 
-    # Update company data
     if profile["company"]
       session[:company_id] = profile["company"]["id"]
       session[:company_code] = profile["company"]["code"]
@@ -160,18 +136,15 @@ class SessionVersionChecker
       session[:customer_groups] = profile["company"]["customer_groups"] || []
     end
 
-    # Update membership data
     if profile["membership"]
       session[:role] = profile["membership"]["role"]
       session[:scopes] = profile["membership"]["scopes"]
     end
 
-    # Sync local User/Company records
     sync_local_records(profile)
   end
 
   def sync_local_records(profile)
-    # Update User record
     if session[:user_id]
       user = User.find_by(id: session[:user_id])
       user&.update(
@@ -180,7 +153,6 @@ class SessionVersionChecker
       )
     end
 
-    # Update Company record
     if profile["company"]
       Company.from_authlift8(profile["company"])
     end

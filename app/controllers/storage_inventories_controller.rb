@@ -1,44 +1,18 @@
-# Storage Inventories Controller
-#
-# Manages adding products to storage locations in the Potlift8 inventory system.
-# Handles bulk creation of inventory records for products not yet in a storage.
-#
-# Features:
-# - Product selection modal for adding inventory to storage
-# - Filters out products already in storage
-# - Bulk inventory creation with initial quantities
-# - Search and filter support for product selection
-# - Turbo Stream support for dynamic updates
-#
 # Security:
 # - All operations scoped to current company via multi-tenancy
 # - Validates storage belongs to company before operations
 # - Validates products belong to company before adding to inventory
-#
 class StorageInventoriesController < ApplicationController
   before_action :set_storage
 
-  # GET /storages/:code/inventories/new
-  # GET /storages/:code/inventories/new.turbo_stream
-  #
-  # Shows modal for adding products to storage.
-  # Displays products not yet in this storage with search/filter capability.
-  #
-  # Query Parameters:
-  # - search: Filter products by SKU or name
-  # - product_type: Filter by product type (sellable, configurable, bundle)
-  # - label_id: Filter by label
-  #
   def new
     authorize :storage_inventory, :new?
 
-    # Get all non-deleted products not already in this storage
     @available_products = current_potlift_company.products
                                                  .where.not(product_status: :deleted)
                                                  .where.not(id: @storage.products.select(:id))
                                                  .order(:sku)
 
-    # Apply search filter if provided
     if params[:search].present?
       search_term = "%#{params[:search]}%"
       @available_products = @available_products.where(
@@ -48,23 +22,19 @@ class StorageInventoriesController < ApplicationController
       )
     end
 
-    # Apply product type filter if provided
     if params[:product_type].present?
       @available_products = @available_products.where(
         product_type: params[:product_type]
       )
     end
 
-    # Apply label filter if provided
     if params[:label_id].present?
       @available_products = @available_products.joins(:product_labels)
                                                .where(product_labels: { label_id: params[:label_id] })
     end
 
-    # Limit results for performance (paginate if needed)
     @available_products = @available_products.limit(100)
 
-    # Load labels for filtering dropdown
     @labels = current_potlift_company.labels.order(:name)
 
     respond_to do |format|
@@ -73,16 +43,6 @@ class StorageInventoriesController < ApplicationController
     end
   end
 
-  # POST /storages/:code/inventories
-  # POST /storages/:code/inventories.turbo_stream
-  #
-  # Creates inventory records for selected products.
-  # Handles bulk creation with initial quantities.
-  #
-  # Parameters:
-  # - product_ids: Array of product IDs to add
-  # - quantities: Hash of product_id => initial_quantity
-  #
   def create
     authorize :storage_inventory, :create?
 
@@ -103,7 +63,6 @@ class StorageInventoriesController < ApplicationController
       return
     end
 
-    # Verify all products belong to current company
     products = current_potlift_company.products.where(id: product_ids)
 
     if products.count != product_ids.count
@@ -121,15 +80,12 @@ class StorageInventoriesController < ApplicationController
       return
     end
 
-    # Create inventory records
     created_count = 0
     failed_products = []
 
     products.each do |product|
-      # Get quantity for this product (default to 0)
       quantity = params.dig(:quantities, product.id.to_s).to_i
 
-      # Skip if inventory already exists
       next if @storage.inventories.exists?(product_id: product.id)
 
       inventory = @storage.inventories.build(
@@ -171,18 +127,14 @@ class StorageInventoriesController < ApplicationController
     end
   end
 
-  # PATCH /storages/:code/inventories/:id
-  # Handles both inline cell updates and full adjust modal updates
   def update
     authorize :storage_inventory, :update?
 
     @inventory = @storage.inventories.find(params[:id])
     inv_params = params[:inventory] || {}
 
-    # Update the on-hand value
     attrs = { value: inv_params[:value].to_i }
 
-    # Update ETA fields
     if inv_params[:eta_quantity].present? || inv_params[:eta_date].present? || inv_params[:reason].present?
       info = @inventory.info || {}
       info["eta_quantity"] = inv_params[:eta_quantity].to_i if inv_params.key?(:eta_quantity)
@@ -191,13 +143,10 @@ class StorageInventoriesController < ApplicationController
       info["last_adjusted_at"] = Time.current.iso8601
       attrs[:info] = info
 
-      # Also update the eta column (used by single_inventory_with_eta for Shopify sync)
       attrs[:eta] = inv_params[:eta_date].presence if inv_params.key?(:eta_date)
     end
 
     if @inventory.update(attrs)
-      # Trigger sync to Shopify by updating cache on the product
-      # (plain touch is skipped by ChangePropagator when only updated_at changes)
       product = @inventory.product
       product.update!(cache: (product.cache || {}).merge("inventory_updated_at" => Time.current.iso8601))
 
@@ -219,7 +168,6 @@ class StorageInventoriesController < ApplicationController
     end
   end
 
-  # DELETE /storages/:code/inventories/:id
   def destroy
     authorize :storage_inventory, :destroy?
 
@@ -232,16 +180,10 @@ class StorageInventoriesController < ApplicationController
 
   private
 
-  # Set the storage for all actions
-  # Uses code as parameter (via to_param)
-  # Ensures storage belongs to current company
-  # Raises ActiveRecord::RecordNotFound if storage not found or doesn't belong to company
   def set_storage
     @storage = current_potlift_company.storages.find_by!(code: params[:storage_code])
   end
 
-  # Set available products and labels for rendering the new form
-  # Used by create action when re-rendering form after validation errors
   def set_available_products_and_labels
     @available_products = current_potlift_company.products
                                                  .active_products

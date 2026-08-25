@@ -1,17 +1,12 @@
 # frozen_string_literal: true
 
-# Controller for managing product variants
-# Uses ProductConfiguration under the hood but presents as "variants" for UI/UX
-# A variant is a sellable product linked to a configurable product with specific configuration values
 class VariantsController < ApplicationController
   before_action :set_product
   before_action :set_variant, only: [ :edit, :update, :destroy ]
 
-  # GET /products/:product_id/variants
   def index
     authorize :variant, :index?
 
-    # Load ProductConfigurations as "variants"
     @variants = @product.product_configurations_as_super
                         .includes(subproduct: :inventories)
                         .order(:configuration_position)
@@ -19,16 +14,13 @@ class VariantsController < ApplicationController
     @configurations = @product.configurations.order(:position)
   end
 
-  # GET /products/:product_id/variants/new
   def new
     authorize :variant, :new?
 
-    # Build new variant through ProductConfiguration
     @variant_product = @product.company.products.build(product_type: :sellable)
     @configurations = @product.configurations.includes(:configuration_values).order(:position)
   end
 
-  # POST /products/:product_id/variants
   def create
     authorize :variant, :create?
 
@@ -38,7 +30,6 @@ class VariantsController < ApplicationController
     ActiveRecord::Base.transaction do
       @variant_product.save!
 
-      # Create ProductConfiguration link
       variant_config = build_variant_config
       @product.product_configurations_as_super.create!(
         subproduct: @variant_product,
@@ -54,11 +45,9 @@ class VariantsController < ApplicationController
     render :new, status: :unprocessable_entity
   end
 
-  # POST /products/:product_id/variants/generate
   def generate
     authorize :variant, :generate?
 
-    # Generate all variant combinations
     service = VariantGeneratorService.new(@product)
     count = service.generate!
 
@@ -71,7 +60,6 @@ class VariantsController < ApplicationController
     end
   end
 
-  # GET /products/:product_id/variants/:id/edit
   def edit
     authorize :variant, :edit?
 
@@ -79,14 +67,12 @@ class VariantsController < ApplicationController
     @configurations = @product.configurations.includes(:configuration_values).order(:position)
   end
 
-  # PATCH/PUT /products/:product_id/variants/:id
   def update
     authorize :variant, :update?
 
     ActiveRecord::Base.transaction do
       @variant.subproduct.update!(variant_product_params)
 
-      # Update variant config
       variant_config = build_variant_config
       @variant.update!(info: @variant.info.merge(variant_config: variant_config))
 
@@ -100,16 +86,14 @@ class VariantsController < ApplicationController
     render :edit, status: :unprocessable_entity
   end
 
-  # DELETE /products/:product_id/variants/:id
   def destroy
     authorize :variant, :destroy?
 
-    @variant.subproduct.destroy # Cascades to ProductConfiguration
+    @variant.subproduct.destroy
     redirect_to product_variants_path(@product),
                 notice: "Variant deleted successfully."
   end
 
-  # POST /products/:product_id/variants/reorder
   def reorder
     authorize :variant, :reorder?
 

@@ -1,6 +1,4 @@
-<%# Turbo stream response for index action - renders full page HTML for redirects from form submissions %>
 <%= turbo_stream.update "labels_content" do %>
-  <!-- Search Bar -->
   <%= form_with url: labels_path, method: :get, class: "mb-6", data: { turbo_frame: "labels_content" } do |f| %>
     <div class="flex gap-3">
       <%= render Ui::SearchInputComponent.new(
@@ -23,7 +21,6 @@
     </div>
   <% end %>
   <% if @labels.any? %>
-    <!-- Labels Tree View -->
     <%= render Ui::CardComponent.new(padding: :none) do %>
       <div class="divide-y divide-gray-200" data-controller="label-tree" id="root-labels-list">
         <% @labels.each do |label| %>
@@ -32,14 +29,12 @@
       </div>
     <% end %>
 
-    <!-- Pagination -->
     <% if @pagy %>
       <div class="mt-6">
         <%== pagy_nav(@pagy) if @pagy.pages > 1 %>
       </div>
     <% end %>
   <% else %>
-    <!-- Empty State -->
     <div class="text-center py-12">
       <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
@@ -72,10 +67,8 @@
   <% end %>
 <% end %>
 
-<%# Clear the modal %>
 <%= turbo_stream.update "label_modal", "" %>
 
-<%# Show flash message if present %>
 <% if flash[:notice].present? %>
   <%= turbo_stream.update "flash" do %>
     <%= render FlashComponent.new(flash: flash) %>

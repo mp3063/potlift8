@@ -22,7 +22,6 @@ module Shared
 
     private
 
-    # Container classes based on variant
     def container_classes
       if @variant == :table
         "flex items-center justify-between border-t border-gray-200 bg-gray-50 px-6 py-3"
@@ -128,7 +127,6 @@ module Shared
           class: "relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20",
           data: { turbo_action: "advance" }
       when String
-        # Pagy returns the current page as a string
         content_tag(:span, item,
           class: "relative z-10 inline-flex items-center bg-blue-600 px-4 py-2 text-sm font-semibold text-white focus:z-20",
           aria: { current: "page" })
@@ -141,13 +139,10 @@ module Shared
     def pagy_url_for(pagy, page)
       return "#" if page.nil?
 
-      # Get current request parameters and preserve them all
       current_params = helpers.request.query_parameters.dup
 
-      # Update the page parameter
       current_params["page"] = page.to_s
 
-      # Build URL with preserved params
       path = helpers.request.path
       query_string = current_params.to_query
 

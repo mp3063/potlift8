@@ -5,9 +5,7 @@
   <% end %>
 
   <%= form_with url: catalog_products_path(@catalog.code), method: :post, id: "add-products-form", data: { controller: "product-selector", product_selector_target: "form" } do |f| %>
-    <!-- Search and Filters -->
     <div class="mb-6 space-y-4">
-      <!-- Search Bar -->
       <div class="relative">
         <%= text_field_tag :q, params[:q],
             placeholder: "Search by product name or SKU...",
@@ -15,7 +13,6 @@
             data: { action: "input->product-selector#search" } %>
       </div>
 
-      <!-- Filters -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label for="product_type" class="block text-sm font-medium text-gray-700 mb-1">Product Type</label>
@@ -45,10 +42,8 @@
       </div>
     </div>
 
-    <!-- Products List -->
     <div class="mb-6">
       <% if @products.any? %>
-        <!-- Select All Checkbox -->
         <div class="mb-3 flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <label class="flex items-center">
             <%= check_box_tag "select_all", "1", false,
@@ -60,7 +55,6 @@
           <span class="text-sm text-gray-600"><%= @products.count %> products available</span>
         </div>
 
-        <!-- Product List -->
         <div class="border border-gray-200 rounded-lg divide-y divide-gray-200 max-h-96 overflow-y-auto" data-product-selector-target="list">
           <% @products.each do |product| %>
             <div class="p-4 hover:bg-gray-50 transition-colors duration-150">
@@ -119,7 +113,6 @@
           <% end %>
         </div>
 
-        <!-- Pagination -->
         <% if @pagy.pages > 1 %>
           <div class="mt-4 flex items-center justify-between">
             <p class="text-sm text-gray-700">

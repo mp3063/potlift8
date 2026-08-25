@@ -5,7 +5,6 @@
   <% end %>
 
   <div class="space-y-6">
-    <!-- Instructions -->
     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
       <div class="flex">
         <div class="flex-shrink-0">
@@ -26,7 +25,6 @@
       </div>
     </div>
 
-    <!-- Template Download -->
     <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
       <div>
         <p class="text-sm font-medium text-gray-900">Need a template?</p>
@@ -40,7 +38,6 @@
       <% end %>
     </div>
 
-    <!-- CSV Format Reference -->
     <div class="border border-gray-200 rounded-lg overflow-hidden">
       <div class="px-4 py-3 bg-gray-50 border-b border-gray-200">
         <h4 class="text-sm font-medium text-gray-900">CSV Format</h4>
@@ -95,7 +92,6 @@
       </div>
     </div>
 
-    <!-- File Upload Form -->
     <%= form_with url: catalog_imports_path(@catalog.code), method: :post, multipart: true, id: "import-products-form", data: { controller: "file-upload" } do |f| %>
       <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-blue-400 transition-colors duration-200" data-file-upload-target="dropzone">
         <div class="text-center">
@@ -121,7 +117,6 @@
           </div>
           <p class="mt-2 text-xs text-gray-500">CSV files only, max 10MB</p>
 
-          <!-- Selected File Display -->
           <div data-file-upload-target="fileName" class="mt-4 hidden">
             <div class="inline-flex items-center px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm">
               <svg class="h-5 w-5 text-blue-500 mr-2" fill="currentColor" viewBox="0 0 20 20">

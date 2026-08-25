@@ -1,8 +1,3 @@
-<%# Turbo Stream template for editing an asset with errors
-  Replaces the form with the updated form that includes error messages
-  This template is rendered when form validation fails on update action
-%>
-
 <%= turbo_stream.replace "asset_form" do %>
   <%= render "form", product: @product, product_asset: @asset %>
 <% end %>

@@ -1,21 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import Sortable from "sortablejs"
 
-/**
- * Options Manager Controller
- *
- * Manages select/multiselect options with drag-and-drop reordering:
- * - Add/remove options dynamically
- * - Drag-and-drop reordering with SortableJS
- * - Syncs to hidden field for form submission
- *
- * Values:
- *   options: Array - Initial options array
- *
- * Targets:
- *   container: Options list container
- *   hiddenField: Hidden field for form submission
- */
 export default class extends Controller {
   static targets = ["container", "hiddenField"]
   static values = { options: Array }
@@ -26,9 +11,6 @@ export default class extends Controller {
     this.initSortable()
   }
 
-  /**
-   * Initialize SortableJS for drag-and-drop
-   */
   initSortable() {
     Sortable.create(this.containerTarget, {
       animation: 150,
@@ -41,50 +23,34 @@ export default class extends Controller {
     })
   }
 
-  /**
-   * Add a new empty option
-   */
   addOption() {
     this.options.push("")
     this.render()
 
-    // Focus the new input
     const inputs = this.containerTarget.querySelectorAll("input[type='text']")
     if (inputs.length > 0) {
       inputs[inputs.length - 1].focus()
     }
   }
 
-  /**
-   * Remove an option by index
-   */
   removeOption(event) {
     const index = parseInt(event.currentTarget.dataset.index)
     this.options.splice(index, 1)
     this.render()
   }
 
-  /**
-   * Update option value when input changes
-   */
   updateOption(event) {
     const index = parseInt(event.currentTarget.dataset.index)
     this.options[index] = event.currentTarget.value
     this.updateHiddenField()
   }
 
-  /**
-   * Update options array from DOM after drag-and-drop
-   */
   updateOptionsFromDOM() {
     const inputs = this.containerTarget.querySelectorAll("input[type='text']")
     this.options = Array.from(inputs).map(input => input.value)
     this.updateHiddenField()
   }
 
-  /**
-   * Render options list
-   */
   render() {
     this.containerTarget.innerHTML = this.options.map((option, index) => `
       <div class="flex items-center gap-x-2">
@@ -118,11 +84,7 @@ export default class extends Controller {
     this.updateHiddenField()
   }
 
-  /**
-   * Update hidden field with current options (as JSON array)
-   */
   updateHiddenField() {
-    // Filter out empty options
     const validOptions = this.options.filter(opt => opt.trim() !== '')
     this.hiddenFieldTarget.value = JSON.stringify(validOptions)
   }

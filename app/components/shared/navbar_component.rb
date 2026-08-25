@@ -1,74 +1,16 @@
 # frozen_string_literal: true
 
 module Shared
-  # Primary navigation bar component
-  #
-  # Renders the main navigation header with logo, navigation links, company switcher,
-  # and user menu. The navbar is fixed to the top of the viewport and includes
-  # responsive behavior for mobile devices.
-  #
-  # **Features:**
-  # - Fixed position navigation bar
-  # - Logo and branding
-  # - Primary navigation links (Desktop only)
-  # - Company switcher display
-  # - User dropdown menu with profile/settings/logout
-  # - Mobile menu trigger button
-  # - Responsive design (stacks on mobile)
-  # - Active link highlighting
-  #
-  # **Accessibility:**
-  # - Semantic nav element
-  # - Proper ARIA labels for icon buttons
-  # - Keyboard navigation support
-  # - Focus indicators
-  # - Screen reader friendly
-  #
-  # **Stimulus Integration:**
-  # - Controller: dropdown (for user menu)
-  # - Controller: mobile-sidebar (for mobile menu)
-  #
-  # @example Basic usage in layout
-  #   <%= render Shared::NavbarComponent.new(
-  #     current_user: current_user,
-  #     current_company: current_company
-  #   ) %>
-  #
-  # @example Without user (guest state)
-  #   <%= render Shared::NavbarComponent.new %>
-  #
-  # @see docs/DESIGN_SYSTEM.md Design System Documentation
-  # @see app/javascript/controllers/dropdown_controller.js Dropdown Controller
-  # @see app/javascript/controllers/mobile_sidebar_controller.js Mobile Sidebar Controller
-  #
   class NavbarComponent < ViewComponent::Base
     include Rails.application.routes.url_helpers
 
     attr_reader :current_user, :current_company
 
-    # Initialize a new navbar component
-    #
-    # @param current_user [User, nil] Current user model instance
-    # @param current_company [Company, nil] Current company model instance
-    #
-    # @example With authenticated user
-    #   NavbarComponent.new(
-    #     current_user: User.find(1),
-    #     current_company: Company.find(1)
-    #   )
-    #
-    # @example Guest user
-    #   NavbarComponent.new(current_user: nil, current_company: nil)
-    #
-    # @return [NavbarComponent]
     def initialize(current_user: nil, current_company: nil)
       @current_user = current_user
       @current_company = current_company
     end
 
-    # Renders the navbar component
-    #
-    # @return [String] HTML nav element with navigation structure
     def call
       content_tag(:nav, class: navbar_classes, data: { controller: "dropdown mobile-sidebar" }) do
         content_tag(:div, class: "mx-auto max-w-7xl px-4 sm:px-6 lg:px-8") do
@@ -83,16 +25,10 @@ module Shared
 
     private
 
-    # CSS classes for the navbar container
-    #
-    # @return [String] CSS classes for fixed navbar with border and shadow
     def navbar_classes
       "fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 shadow-sm"
     end
 
-    # Renders the logo section with mobile menu button
-    #
-    # @return [String] HTML div with logo and mobile menu button
     def render_logo_section
       content_tag(:div, class: "flex items-center gap-4") do
         concat(render_mobile_menu_button)
@@ -103,11 +39,6 @@ module Shared
       end
     end
 
-    # Renders the mobile menu hamburger button
-    #
-    # Only visible on mobile/tablet devices (hidden on lg+ screens).
-    #
-    # @return [String] HTML button with hamburger icon
     def render_mobile_menu_button
       button_tag(
         type: "button",
@@ -170,11 +101,6 @@ module Shared
       end
     end
 
-    # Renders the search button trigger
-    #
-    # Opens the global search modal when clicked.
-    #
-    # @return [String] HTML button element
     def render_search_button
       button_tag(
         type: "button",
@@ -277,7 +203,6 @@ module Shared
     end
 
     def dropdown_item(text, path, icon: nil, method: :get, **options)
-      # Dropdown item styling with accessible focus state
       item_classes = [
         "block px-4 py-2 text-sm hover:bg-gray-100 transition-colors",
         "cursor-pointer",
@@ -302,7 +227,6 @@ module Shared
           end
         end
       else
-        # Use link_to for GET requests
         helpers.link_to path, class: "#{item_classes} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-100", role: "menuitem" do
           content_tag(:div, class: "flex items-center gap-2") do
             concat(dropdown_icon(icon)) if icon

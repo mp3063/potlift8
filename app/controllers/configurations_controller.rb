@@ -1,12 +1,9 @@
 # frozen_string_literal: true
 
-# Controller for managing product configurations (e.g., Size, Color)
-# Configurations define the axes of variation for configurable products
 class ConfigurationsController < ApplicationController
   before_action :set_product
   before_action :set_configuration, only: [ :edit, :update, :destroy ]
 
-  # GET /products/:product_id/configurations
   def index
     authorize ::Configuration
 
@@ -15,15 +12,13 @@ class ConfigurationsController < ApplicationController
                               .order(:position)
   end
 
-  # GET /products/:product_id/configurations/new
   def new
     authorize ::Configuration
 
     @configuration = @product.configurations.build
-    @configuration.configuration_values.build # For nested form
+    @configuration.configuration_values.build
   end
 
-  # POST /products/:product_id/configurations
   def create
     authorize ::Configuration
 
@@ -38,12 +33,10 @@ class ConfigurationsController < ApplicationController
     end
   end
 
-  # GET /products/:product_id/configurations/:id/edit
   def edit
     authorize @configuration
   end
 
-  # PATCH/PUT /products/:product_id/configurations/:id
   def update
     authorize @configuration
 
@@ -55,7 +48,6 @@ class ConfigurationsController < ApplicationController
     end
   end
 
-  # DELETE /products/:product_id/configurations/:id
   def destroy
     authorize @configuration
 

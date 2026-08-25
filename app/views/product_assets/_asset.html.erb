@@ -1,6 +1,3 @@
-<%# Generic asset partial for Turbo Streams %>
-<%# This partial delegates to the appropriate row partial based on asset type %>
-
 <% case asset.product_asset_type %>
 <% when 'document' %>
   <%= render "document_row", document: asset, product: product %>

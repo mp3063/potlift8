@@ -94,14 +94,12 @@
     </div>
   <% end %>
 
-  <!-- Pagination -->
   <% if @pagy %>
     <div class="mt-6">
       <%== pagy_nav(@pagy) %>
     </div>
   <% end %>
 <% else %>
-  <!-- Empty State -->
   <%= render Shared::EmptyStateComponent.new(
     title: "No customer groups",
     description: "Get started by creating your first customer group for targeted pricing",

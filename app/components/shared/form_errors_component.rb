@@ -1,27 +1,13 @@
 # frozen_string_literal: true
 
 module Shared
-  # Form errors component that displays validation errors in a consistent format
-  #
-  # @example Basic usage
-  #   <%= render Shared::FormErrorsComponent.new(errors: @product.errors) %>
-  #
-  # @example With custom model
-  #   <%= render Shared::FormErrorsComponent.new(errors: @catalog.errors) %>
-  #
   class FormErrorsComponent < ViewComponent::Base
     attr_reader :errors
 
-    # Initialize a new form errors component
-    #
-    # @param errors [ActiveModel::Errors] ActiveModel errors object
     def initialize(errors:)
       @errors = errors
     end
 
-    # Only render if there are errors
-    #
-    # @return [Boolean] true if errors are present
     def render?
       @errors.any?
     end

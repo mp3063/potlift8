@@ -9,13 +9,11 @@
         <% recent_activities.each_with_index do |activity, index| %>
           <li>
             <div class="relative pb-8">
-              <!-- Connecting line (except for last item) -->
               <% if index < recent_activities.length - 1 %>
                 <span class="absolute left-4 top-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
               <% end %>
 
               <div class="relative flex space-x-3">
-                <!-- Icon -->
                 <div>
                   <span class="h-8 w-8 rounded-full bg-gray-50 flex items-center justify-center ring-8 ring-white">
                     <svg class="h-5 w-5 <%= activity_color(activity[:type]) %>" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -24,7 +22,6 @@
                   </span>
                 </div>
 
-                <!-- Content -->
                 <div class="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
                   <div>
                     <p class="text-sm text-gray-900">

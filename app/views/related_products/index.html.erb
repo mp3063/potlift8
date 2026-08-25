@@ -34,7 +34,6 @@
 <% end %>
 
 <div class="space-y-6">
-  <!-- Cross-Sell Products -->
   <%= render 'relation_section',
     title: 'Cross-Sell Products',
     description: 'Products frequently bought together with this product',
@@ -42,7 +41,6 @@
     related_products: @product.related_products.cross_sell,
     badge_variant: :info %>
 
-  <!-- Upsell Products -->
   <%= render 'relation_section',
     title: 'Upsell Products',
     description: 'Higher-value alternatives to this product',
@@ -50,7 +48,6 @@
     related_products: @product.related_products.upsell,
     badge_variant: :success %>
 
-  <!-- Alternative Products -->
   <%= render 'relation_section',
     title: 'Alternative Products',
     description: 'Similar products that can be offered as alternatives',
@@ -58,7 +55,6 @@
     related_products: @product.related_products.alternative,
     badge_variant: :warning %>
 
-  <!-- Accessory Products -->
   <%= render 'relation_section',
     title: 'Accessory Products',
     description: 'Products that complement or enhance this product',
@@ -66,7 +62,6 @@
     related_products: @product.related_products.accessory,
     badge_variant: :primary %>
 
-  <!-- Similar Products -->
   <%= render 'relation_section',
     title: 'Similar Products',
     description: 'Products with similar features or characteristics',

@@ -4,7 +4,6 @@
     <h1 class="text-2xl font-semibold text-gray-900">Search</h1>
   </div>
 
-  <!-- Search Form -->
   <div class="bg-white shadow rounded-lg p-6">
     <%= form_with url: search_path, method: :get, class: "space-y-4" do |form| %>
       <div>
@@ -35,7 +34,6 @@
     <% end %>
   </div>
 
-  <!-- Search Results -->
   <% if @query.present? && @results.present? %>
     <% total_results = @results.values.flatten.size %>
 
@@ -47,7 +45,6 @@
         </h2>
 
         <div class="space-y-6">
-          <!-- Products Results -->
           <% if @results[:products]&.any? %>
             <div>
               <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-3">
@@ -82,7 +79,6 @@
             </div>
           <% end %>
 
-          <!-- Storage Results -->
           <% if @results[:storage]&.any? %>
             <div>
               <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-3">
@@ -106,7 +102,6 @@
             </div>
           <% end %>
 
-          <!-- Product Attributes Results -->
           <% if @results[:attributes]&.any? %>
             <div>
               <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-3">
@@ -130,7 +125,6 @@
             </div>
           <% end %>
 
-          <!-- Labels Results -->
           <% if @results[:labels]&.any? %>
             <div>
               <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-3">
@@ -154,7 +148,6 @@
             </div>
           <% end %>
 
-          <!-- Catalogs Results -->
           <% if @results[:catalogs]&.any? %>
             <div>
               <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-3">
@@ -185,7 +178,6 @@
         </div>
       </div>
     <% else %>
-      <!-- No Results -->
       <div class="bg-white shadow rounded-lg p-6">
         <div class="text-center">
           <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

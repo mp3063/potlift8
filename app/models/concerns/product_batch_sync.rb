@@ -1,12 +1,5 @@
 # frozen_string_literal: true
 
-# ProductBatchSync
-#
-# Handles batch synchronization methods for products including:
-# - Syncing to all catalogs
-# - Syncing to specific catalogs with deduplication
-# - Scheduling off-peak batch syncs
-#
 module ProductBatchSync
   extend ActiveSupport::Concern
 

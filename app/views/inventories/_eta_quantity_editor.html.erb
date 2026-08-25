@@ -1,13 +1,3 @@
-<%#
-  ETA Quantity Editor for Inventory
-
-  Inline editing component for inventory quantity field (value).
-
-  Usage:
-    <%= render "inventories/eta_quantity_editor",
-               storage: @storage,
-               inventory: @inventory %>
-
   Features:
   - Display mode: Shows quantity value or "—" if null, with hover-visible edit icon
   - Edit mode: Number input (min: 0) with Save/Cancel buttons
@@ -21,7 +11,6 @@
 <% storage ||= inventory.storage %>
 
 <div class="group relative" data-controller="inline-editor">
-  <!-- Display Mode -->
   <div class="flex items-center" data-inline-editor-target="display">
     <span class="font-medium text-gray-900">
       <%= inventory.value.present? ? inventory.value : "—" %>
@@ -36,7 +25,6 @@
     </button>
   </div>
 
-  <!-- Edit Mode -->
   <div class="hidden" data-inline-editor-target="editor" aria-hidden="true">
     <%= form_with model: inventory,
                   url: storage_inventory_path(storage, inventory),

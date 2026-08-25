@@ -1,27 +1,11 @@
 # frozen_string_literal: true
 
-# Flash messages component
-#
 # Displays dismissible flash messages with different styles for:
 # - success (green) - Success messages
 # - error (red) - Error messages
 # - alert (yellow) - Warning messages
 # - notice (blue) - Informational messages
-#
-# Features:
-# - Auto-dismiss after 5 seconds
-# - Manual dismiss button
-# - Accessible with ARIA labels and role="alert"
-# - Smooth fade-out animation
-#
-# @example Basic usage in layout
-#   <%= render FlashComponent.new %>
-#
-# @example With explicit flash hash
-#   <%= render FlashComponent.new(flash: { notice: 'Success!' }) %>
-#
 class FlashComponent < ViewComponent::Base
-  # Flash message configuration with Authlift8 design system colors
   VARIANT_CLASSES = {
     "success" => {
       container: "bg-green-50 border-green-200",
@@ -49,26 +33,16 @@ class FlashComponent < ViewComponent::Base
     }
   }.freeze
 
-  # Initialize flash component
-  #
-  # @param flash [ActionDispatch::Flash::FlashHash] Flash messages (optional, defaults to view's flash)
   def initialize(flash: nil)
     @flash = flash
   end
 
-  # Get flash messages to display
-  #
-  # @return [ActionDispatch::Flash::FlashHash, Hash] Flash messages
   def flash
     @flash || helpers.flash
   end
 
   private
 
-  # Get configuration for flash message type
-  #
-  # @param type [String, Symbol] Flash message type (success, error, alert, notice)
-  # @return [Hash] Configuration hash with container, icon, text classes and icon path
   def flash_config(type)
     VARIANT_CLASSES[type.to_s] || VARIANT_CLASSES["notice"]
   end

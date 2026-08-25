@@ -1,12 +1,9 @@
 # frozen_string_literal: true
 
-# Controller for managing related products (cross-sells, upsells, alternatives)
-# Allows products to be linked with specific relationship types
 class RelatedProductsController < ApplicationController
   before_action :set_product
   before_action :set_related_product, only: [ :destroy ]
 
-  # GET /products/:product_id/related_products
   def index
     authorize :related_product, :index?
     @related_products_by_type = RelatedProduct.relation_types.keys.index_with do |relation_type|
@@ -16,13 +13,11 @@ class RelatedProductsController < ApplicationController
               .order(:position)
     end
 
-    # Available products for each relation type
     @available_products = current_potlift_company.products
                                                   .where.not(id: @product.id)
                                                   .order(:name)
   end
 
-  # POST /products/:product_id/related_products
   def create
     authorize :related_product, :create?
     @related_product = @product.related_products.build(related_product_params)
@@ -36,7 +31,6 @@ class RelatedProductsController < ApplicationController
     end
   end
 
-  # DELETE /products/:product_id/related_products/:id
   def destroy
     authorize :related_product, :destroy?
     @related_product.destroy
@@ -44,7 +38,6 @@ class RelatedProductsController < ApplicationController
                 notice: "Related product removed."
   end
 
-  # POST /products/:product_id/related_products/reorder
   def reorder
     authorize :related_product, :reorder?
     params[:order].each_with_index do |id, index|

@@ -33,7 +33,6 @@ export default class extends Controller {
   static targets = ["message", "container"]
 
   connect() {
-    // Initialize timeout storage
     this.timeouts = []
 
     // Calculate timeout based on message length for each message
@@ -41,13 +40,11 @@ export default class extends Controller {
     this.messageTargets.forEach((message, index) => {
       const timeout = this.calculateTimeout(message)
 
-      // Store timeout ID for cleanup
       this.timeouts[index] = setTimeout(() => {
         this.fadeOut(message)
       }, timeout)
     })
 
-    // Listen for custom flash events
     this.handleFlashEvent = this.handleFlashEvent.bind(this)
     window.addEventListener('flash:show', this.handleFlashEvent)
   }
@@ -55,8 +52,6 @@ export default class extends Controller {
   /**
    * Calculate dynamic timeout based on message length
    * Formula: minimum 5s, +1s per 10 words
-   * @param {HTMLElement} message - Flash message element
-   * @returns {number} Timeout in milliseconds
    */
   calculateTimeout(message) {
     const text = message.textContent || ''
@@ -64,43 +59,26 @@ export default class extends Controller {
     return Math.max(5000, 5000 + (wordCount / 10) * 1000)
   }
 
-  /**
-   * Handle custom flash:show events
-   * @param {CustomEvent} event - Event with detail: { type, message }
-   */
   handleFlashEvent(event) {
     const { type, message } = event.detail
     this.show(type, message)
   }
 
-  /**
-   * Dynamically show a flash message
-   * @param {string} type - Message type: success, error, warning, info
-   * @param {string} message - Message text
-   */
   show(type, message) {
     if (!this.hasContainerTarget) {
       console.warn('Flash container not found')
       return
     }
 
-    // Create flash message element
     const flash = this.createFlashElement(type, message)
     this.containerTarget.appendChild(flash)
 
-    // Auto-dismiss with dynamic timeout based on message length
     const timeout = this.calculateTimeout(flash)
     setTimeout(() => {
       this.fadeOut(flash)
     }, timeout)
   }
 
-  /**
-   * Create a flash message element
-   * @param {string} type - Message type
-   * @param {string} message - Message text
-   * @returns {HTMLElement} Flash message element
-   */
   createFlashElement(type, message) {
     const colors = {
       success: 'bg-green-50 border-green-200 text-green-800',
@@ -142,8 +120,6 @@ export default class extends Controller {
 
   /**
    * Escape HTML to prevent XSS
-   * @param {string} text - Text to escape
-   * @returns {string} Escaped text
    */
   escapeHtml(text) {
     const div = document.createElement('div')
@@ -154,14 +130,11 @@ export default class extends Controller {
   /**
    * Manually dismiss a specific flash message
    * Clears associated timeout to prevent memory leaks
-   * @param {Event} event - Click event on dismiss button
    */
   dismiss(event) {
-    // Use currentTarget to always start from the button element, not the clicked SVG/path
     const button = event.currentTarget
     const message = button.closest("[data-flash-target='message']")
     if (message) {
-      // Clear timeout if it exists
       const index = this.messageTargets.indexOf(message)
       if (index !== -1 && this.timeouts && this.timeouts[index]) {
         clearTimeout(this.timeouts[index])
@@ -171,22 +144,16 @@ export default class extends Controller {
     }
   }
 
-  // Dismiss all flash messages
   dismissAll() {
     this.messageTargets.forEach(message => {
       this.fadeOut(message)
     })
   }
 
-  // Fade out and remove a message element
-  //
-  // @param {HTMLElement} element - Flash message element to remove
   fadeOut(element) {
-    // Add fade-out transition
     element.style.transition = "opacity 0.3s ease-out"
     element.style.opacity = "0"
 
-    // Remove element after transition completes
     setTimeout(() => {
       element.remove()
     }, 300)
@@ -197,7 +164,6 @@ export default class extends Controller {
    * Prevents memory leaks from pending timeouts
    */
   disconnect() {
-    // Clear all pending timeouts
     if (this.timeouts) {
       this.timeouts.forEach(timeout => {
         if (timeout) {

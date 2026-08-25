@@ -1,19 +1,12 @@
 # frozen_string_literal: true
 
-# SyncBroadcastable
-#
-# Broadcasts Turbo Stream updates when a CatalogItem's sync_status changes.
-# Delivers real-time updates to the catalog items page via ActionCable.
-#
 # Broadcasts two targets:
 # 1. Individual sync cell — updates the badge/timestamp for a single row
 # 2. Summary card — updates the aggregate sync counts in the header
-#
 # Uses broadcast_replace_to (synchronous) because the callback fires from
 # background jobs (not web requests), so blocking is acceptable. The sync
 # variant avoids an extra Solid Queue hop that fails with the async
 # ActionCable adapter in development (process-bound in-memory subscriptions).
-#
 module SyncBroadcastable
   extend ActiveSupport::Concern
 

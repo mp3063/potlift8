@@ -1,46 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
 
-/**
- * Video Embed Controller
- *
- * Handles video URL validation and preview generation for YouTube and Vimeo embeds.
- * Extracts video IDs from various URL formats and generates preview thumbnails.
- *
- * Supported Formats:
- * - YouTube: youtube.com/watch?v=ID, youtu.be/ID, youtube.com/embed/ID
- * - Vimeo: vimeo.com/ID, player.vimeo.com/video/ID
- *
- * Features:
- * - Real-time URL validation
- * - Video ID extraction
- * - Thumbnail preview generation
- * - Error handling with user feedback
- * - Support for both YouTube and Vimeo
- * - ARIA live regions for screen reader feedback
- *
- * Targets:
- * - urlInput: URL input field
- * - preview: Preview container showing video thumbnail
- * - errorMessage: Container for error messages
- * - videoIdInput: Hidden input for storing extracted video ID
- * - platformInput: Hidden input for storing platform (youtube/vimeo)
- *
- * Values:
- * - currentUrl: Currently validated URL
- * - currentPlatform: Currently detected platform (youtube/vimeo)
- * - currentVideoId: Currently extracted video ID
- *
- * @example
- *   <div data-controller="video-embed">
- *     <input type="url"
- *            data-video-embed-target="urlInput"
- *            data-action="blur->video-embed#validateUrl input->video-embed#clearError">
- *     <div data-video-embed-target="preview"></div>
- *     <div data-video-embed-target="errorMessage"></div>
- *     <input type="hidden" data-video-embed-target="videoIdInput" name="video_id">
- *     <input type="hidden" data-video-embed-target="platformInput" name="platform">
- *   </div>
- */
 export default class extends Controller {
   static targets = [
     "urlInput",
@@ -56,9 +15,6 @@ export default class extends Controller {
     currentVideoId: String
   }
 
-  /**
-   * YouTube URL patterns
-   */
   get youtubePatterns() {
     return [
       /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
@@ -66,9 +22,6 @@ export default class extends Controller {
     ]
   }
 
-  /**
-   * Vimeo URL patterns
-   */
   get vimeoPatterns() {
     return [
       /vimeo\.com\/(\d+)/,
@@ -76,10 +29,6 @@ export default class extends Controller {
     ]
   }
 
-  /**
-   * Validate URL on blur
-   * @param {Event} event
-   */
   validateUrl(event) {
     const url = this.urlInputTarget.value.trim()
 
@@ -89,7 +38,6 @@ export default class extends Controller {
       return
     }
 
-    // Try to extract video ID
     const result = this.extractVideoInfo(url)
 
     if (result) {
@@ -97,7 +45,6 @@ export default class extends Controller {
       this.currentPlatformValue = result.platform
       this.currentVideoIdValue = result.videoId
 
-      // Update hidden inputs
       if (this.hasVideoIdInputTarget) {
         this.videoIdInputTarget.value = result.videoId
       }
@@ -105,7 +52,6 @@ export default class extends Controller {
         this.platformInputTarget.value = result.platform
       }
 
-      // Show preview
       this.showPreview(result.platform, result.videoId)
       this.clearError()
     } else {
@@ -114,9 +60,6 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Clear error message on input
-   */
   clearError() {
     if (this.hasErrorMessageTarget) {
       this.errorMessageTarget.innerHTML = ""
@@ -124,13 +67,7 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Extract video platform and ID from URL
-   * @param {string} url
-   * @returns {Object|null} { platform: 'youtube'|'vimeo', videoId: string }
-   */
   extractVideoInfo(url) {
-    // Try YouTube patterns
     for (const pattern of this.youtubePatterns) {
       const match = url.match(pattern)
       if (match && match[1]) {
@@ -141,7 +78,6 @@ export default class extends Controller {
       }
     }
 
-    // Try Vimeo patterns
     for (const pattern of this.vimeoPatterns) {
       const match = url.match(pattern)
       if (match && match[1]) {
@@ -155,11 +91,6 @@ export default class extends Controller {
     return null
   }
 
-  /**
-   * Show video preview with thumbnail
-   * @param {string} platform - 'youtube' or 'vimeo'
-   * @param {string} videoId - Video ID
-   */
   showPreview(platform, videoId) {
     if (!this.hasPreviewTarget) return
 
@@ -172,8 +103,6 @@ export default class extends Controller {
       embedUrl = `https://www.youtube.com/embed/${videoId}`
       platformName = "YouTube"
     } else if (platform === "vimeo") {
-      // Vimeo requires API call for thumbnail, use placeholder for now
-      // In production, you might want to fetch this server-side
       thumbnailUrl = `https://vumbnail.com/${videoId}.jpg`
       embedUrl = `https://player.vimeo.com/video/${videoId}`
       platformName = "Vimeo"
@@ -208,16 +137,12 @@ export default class extends Controller {
     this.previewTarget.classList.remove("hidden")
   }
 
-  /**
-   * Clear preview
-   */
   clearPreview() {
     if (this.hasPreviewTarget) {
       this.previewTarget.innerHTML = ""
       this.previewTarget.classList.add("hidden")
     }
 
-    // Clear hidden inputs
     if (this.hasVideoIdInputTarget) {
       this.videoIdInputTarget.value = ""
     }
@@ -225,16 +150,11 @@ export default class extends Controller {
       this.platformInputTarget.value = ""
     }
 
-    // Clear values
     this.currentUrlValue = ""
     this.currentPlatformValue = ""
     this.currentVideoIdValue = ""
   }
 
-  /**
-   * Show error message
-   * @param {string} message
-   */
   showError(message) {
     if (!this.hasErrorMessageTarget) return
 
@@ -269,19 +189,10 @@ export default class extends Controller {
     this.errorMessageTarget.setAttribute("aria-live", "assertive")
   }
 
-  /**
-   * Validate specific URL (can be called programmatically)
-   * @param {string} url
-   * @returns {boolean}
-   */
   isValidUrl(url) {
     return this.extractVideoInfo(url) !== null
   }
 
-  /**
-   * Get embed URL for current video
-   * @returns {string|null}
-   */
   getEmbedUrl() {
     if (!this.currentPlatformValue || !this.currentVideoIdValue) {
       return null
@@ -298,9 +209,6 @@ export default class extends Controller {
 
   /**
    * Escape HTML to prevent XSS
-   *
-   * @param {string} text - Text to escape
-   * @returns {string} Escaped text
    */
   escapeHtml(text) {
     const div = document.createElement("div")

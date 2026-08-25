@@ -1,9 +1,3 @@
-# Inventory Model
-#
-# Represents stock levels for products in storage locations.
-# Each inventory record tracks the quantity (value) of a specific product
-# in a specific storage location.
-#
 # Attributes:
 # - product_id: Product being tracked
 # - storage_id: Storage location
@@ -11,27 +5,18 @@
 # - info: JSONB field for additional metadata
 # - default: Whether this is the default inventory location for the product
 # - eta: Estimated time of arrival for incoming inventory
-#
-# Associations:
-# - belongs_to :product
-# - belongs_to :storage
-#
 # Constraints:
 # - Each product can only have one inventory record per storage location
 # - Value defaults to 0 and cannot be null
-#
 # Note: This model uses 'value' instead of 'quantity' to maintain
 # compatibility with the pot3 (Rails 7) schema.
-#
 class Inventory < ApplicationRecord
   belongs_to :product
   belongs_to :storage
 
-  # Validations
   validates :value, presence: true, numericality: { only_integer: true }
   validates :product_id, uniqueness: { scope: :storage_id }
 
-  # Scopes
   scope :for_product, ->(product) { where(product: product) }
   scope :except_in, ->(storage) { where.not(storage: storage) }
   scope :with_stock, -> { where("value > 0") }

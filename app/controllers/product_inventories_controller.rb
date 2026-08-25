@@ -1,19 +1,7 @@
-# ProductInventoriesController
-#
-# Manages inventory records for products across storage locations.
-# Nested under products route: /products/:product_id/inventories
-#
-# Supports three product types with different grid layouts:
-# - Sellable: storages as rows, editable value + ETA columns
-# - Configurable: variants × storages spreadsheet grid
-# - Bundle: read-only calculated inventory
-#
 class ProductInventoriesController < ApplicationController
   before_action :set_product
   before_action :set_inventory, only: [ :update ]
 
-  # GET /products/:product_id/inventories
-  # Display inventory grid for a product across storage locations
   def index
     authorize :product_inventory, :index?
     @all_storages = current_potlift_company.storages.active.order(:storage_position, :name)
@@ -29,8 +17,6 @@ class ProductInventoriesController < ApplicationController
 
     @has_inventory = detect_has_inventory
 
-    # For products with inventory, show only storages that have records.
-    # For the setup wizard (no inventory), show all storages so user can pick.
     if @has_inventory
       @storages = storages_with_inventory
     else
@@ -38,8 +24,6 @@ class ProductInventoriesController < ApplicationController
     end
   end
 
-  # PATCH /products/:product_id/inventories/batch_update
-  # Batch update all inventory cells from the grid form
   def batch_update
     authorize :product_inventory, :batch_update?
 
@@ -67,7 +51,6 @@ class ProductInventoriesController < ApplicationController
         inventory = Inventory.find_or_initialize_by(product_id: product_id, storage_id: storage_id)
         inventory.value = cell_params[:value].to_i
 
-        # Handle ETA fields for sellable grid (stored in info JSONB)
         if cell_params[:eta_quantity].present? || cell_params.key?(:eta_date)
           info = inventory.info || {}
           info["eta_quantity"] = cell_params[:eta_quantity].to_i if cell_params[:eta_quantity].present?
@@ -102,13 +85,10 @@ class ProductInventoriesController < ApplicationController
     end
   end
 
-  # PATCH/PUT /products/:product_id/inventories/:id
-  # Update inventory value for a specific storage location
   def update
     authorize @inventory
     update_params = { value: inventory_params[:value] }
 
-    # Handle ETA fields in info JSONB column
     info_updates = {}
 
     if inventory_params[:eta_quantity].present?
@@ -147,14 +127,12 @@ class ProductInventoriesController < ApplicationController
     params.require(:inventory).permit(:value, :eta_quantity, :eta_date, :reason)
   end
 
-  # Load inventory for sellable products (storages as rows)
   def load_sellable_inventory
     @inventories = @product.inventories
       .includes(:storage)
       .order("storages.storage_position ASC, storages.name ASC")
   end
 
-  # Load inventory matrix for configurable products (variants × storages)
   def load_configurable_inventory
     @subproducts = @product.subproducts
       .includes(:product_configurations_as_sub)
@@ -162,19 +140,16 @@ class ProductInventoriesController < ApplicationController
 
     subproduct_ids = @subproducts.map(&:id)
 
-    # Build lookup hash: { [product_id, storage_id] => inventory } — O(1) cell access
     @inventory_matrix = Inventory
       .where(product_id: subproduct_ids)
       .includes(:storage)
       .index_by { |inv| [ inv.product_id, inv.storage_id ] }
   end
 
-  # Load bundle inventory (read-only calculated values)
   def load_bundle_inventory
     @bundle_breakdown = BundleInventoryCalculator.new(@product).detailed_breakdown
   end
 
-  # Detect whether the product (or its subproducts) has any inventory
   def detect_has_inventory
     if @product.product_type_configurable?
       subproduct_ids = @subproducts&.map(&:id) || []
@@ -184,7 +159,6 @@ class ProductInventoriesController < ApplicationController
     end
   end
 
-  # Return only storages that have inventory for this product (or its subproducts)
   def storages_with_inventory
     product_ids = if @product.product_type_configurable?
                     @subproducts&.map(&:id) || @product.subproducts.pluck(:id)
@@ -196,7 +170,6 @@ class ProductInventoriesController < ApplicationController
     @all_storages.where(id: storage_ids)
   end
 
-  # Return set of valid product IDs that can be updated via batch_update
   def allowed_product_ids
     if @product.product_type_configurable?
       @product.subproducts.pluck(:id).to_set

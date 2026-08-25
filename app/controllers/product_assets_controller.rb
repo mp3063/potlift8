@@ -1,39 +1,10 @@
-# ProductAssetsController
-#
-# Manages product assets (videos, documents, links) using ActiveStorage.
-# Images are handled separately by ProductImagesController.
-# All operations are scoped to the current company via multi-tenancy.
-#
-# Features:
-# - File upload for videos and documents via ActiveStorage
-# - URL management for link assets and video URLs (YouTube/Vimeo)
-# - Asset metadata management (name, description, visibility, priority)
-# - Drag-and-drop reordering
-# - Turbo Stream support for dynamic updates
-#
-# Asset Types (handled by this controller):
-# - video (2): Video files with ActiveStorage OR video URLs (YouTube/Vimeo) stored in info['url']
-# - document (3): PDF, Word, Excel, etc. with ActiveStorage (file required)
-# - link (4): External URLs stored in info['url']
-#
-# Routes:
-# - GET /products/:product_id/product_assets - List assets
-# - GET /products/:product_id/product_assets/new - New asset form
-# - POST /products/:product_id/product_assets - Create asset
-# - GET /products/:product_id/product_assets/:id/edit - Edit asset form
-# - PATCH /products/:product_id/product_assets/:id - Update asset
-# - DELETE /products/:product_id/product_assets/:id - Delete asset
-# - POST /products/:product_id/product_assets/reorder - Reorder assets
-#
 class ProductAssetsController < ApplicationController
   before_action :set_product
   before_action :set_asset, only: [ :edit, :update, :destroy ]
 
-  # Maximum file sizes by type
   MAX_VIDEO_SIZE = 100.megabytes
   MAX_DOCUMENT_SIZE = 20.megabytes
 
-  # Allowed content types
   ALLOWED_VIDEO_TYPES = %w[
     video/mp4
     video/mpeg
@@ -54,12 +25,6 @@ class ProductAssetsController < ApplicationController
     text/csv
   ].freeze
 
-  # GET /products/:product_id/product_assets
-  # GET /products/:product_id/product_assets.turbo_stream
-  #
-  # Lists all non-image assets (videos, documents, links) for a product.
-  # Images are handled by ProductImagesController.
-  #
   def index
     authorize ProductAsset
 
@@ -70,58 +35,31 @@ class ProductAssetsController < ApplicationController
     @product_asset = @product.product_assets.build
   end
 
-  # GET /products/:product_id/product_assets/new
-  # GET /products/:product_id/product_assets/new.turbo_stream
-  #
-  # Renders form for creating a new asset.
-  # Supports all asset types: video, document, link.
-  #
   def new
     authorize ProductAsset
 
     @asset = @product.product_assets.build
-    @product_asset = @asset  # View uses @product_asset
-    # Default to public visibility and medium priority
+    @product_asset = @asset
     @asset.asset_visibility = :public_visibility
     @asset.asset_priority = 50
   end
 
-  # POST /products/:product_id/product_assets
-  # POST /products/:product_id/product_assets.turbo_stream
-  #
-  # Creates a new asset (video, document, or link).
-  # For videos: attaches file via ActiveStorage OR stores URL in info['url'] (YouTube/Vimeo)
-  # For documents: attaches file via ActiveStorage (required)
-  # For links: stores URL in info['url']
-  #
-  # Parameters:
-  # - asset[name]: Asset name/title (required)
-  # - asset[product_asset_type]: Type (video/document/link) (required)
-  # - asset[asset_visibility]: Visibility level (private/public/catalog_only)
-  # - asset[asset_priority]: Sort order priority (integer)
-  # - asset[asset_description]: Description text
-  # - asset[file]: File upload (for video/document) - required for documents, optional for videos with URL
-  # - asset[url]: URL (for link type, or video type as alternative to file)
-  #
   def create
     authorize ProductAsset
 
     @asset = @product.product_assets.build(asset_params)
-    @product_asset = @asset  # View uses @product_asset
+    @product_asset = @asset
 
-    # Handle link URL separately (stored in info JSONB)
     if @asset.link? && url_param.present?
       @asset.info ||= {}
       @asset.info["url"] = url_param
     end
 
-    # Store URL for video type (similar to link type)
     if @asset.video? && url_param.present?
       @asset.info ||= {}
       @asset.info["url"] = url_param
     end
 
-    # Validate file presence for document types (always required)
     if @asset.document? && file_param.blank? && signed_blob_id_param.blank?
       @asset.errors.add(:file, "is required for documents")
       respond_to do |format|
@@ -134,7 +72,6 @@ class ProductAssetsController < ApplicationController
       return
     end
 
-    # Validate that video has either file OR URL (at least one required)
     if @asset.video? && file_param.blank? && url_param.blank? && signed_blob_id_param.blank?
       @asset.errors.add(:base, "Either a video file or video URL is required")
       respond_to do |format|
@@ -147,7 +84,6 @@ class ProductAssetsController < ApplicationController
       return
     end
 
-    # Validate file type and size
     if file_param.present?
       file = file_param
       validation_error = validate_file(file, @asset.product_asset_type)
@@ -166,7 +102,6 @@ class ProductAssetsController < ApplicationController
     end
 
     if @asset.save
-      # Attach file after save (for video/document)
       if signed_blob_id_param.present?
         @asset.file.attach(signed_blob_id_param)
       elsif file_param.present?
@@ -190,55 +125,31 @@ class ProductAssetsController < ApplicationController
     end
   end
 
-  # GET /products/:product_id/product_assets/:id/edit
-  # GET /products/:product_id/product_assets/:id/edit.turbo_stream
-  #
-  # Renders form for editing an existing asset.
-  # Allows updating metadata and replacing files.
-  #
   def edit
     authorize @asset
 
-    @product_asset = @asset  # View uses @product_asset
-    # Populate URL field for link and video assets
+    @product_asset = @asset
     @asset_url = @asset.info&.dig("url") if @asset.link? || @asset.video?
   end
 
-  # PATCH /products/:product_id/product_assets/:id
-  # PATCH /products/:product_id/product_assets/:id.turbo_stream
-  #
-  # Updates asset metadata and optionally replaces the file.
-  #
-  # Parameters:
-  # - asset[name]: Asset name/title
-  # - asset[asset_visibility]: Visibility level
-  # - asset[asset_priority]: Sort order priority
-  # - asset[asset_description]: Description text
-  # - asset[file]: Replacement file (optional, for video/document)
-  # - asset[url]: Updated URL (for link type or video type)
-  #
   def update
     authorize @asset
 
-    @product_asset = @asset  # View uses @product_asset
+    @product_asset = @asset
 
-    # Handle link URL update
     if @asset.link? && url_param.present?
       @asset.info ||= {}
       @asset.info["url"] = url_param
     end
 
-    # Handle video URL update (similar to link type)
     if @asset.video? && url_param.present?
       @asset.info ||= {}
       @asset.info["url"] = url_param
     end
 
-    # Handle signed blob ID from drag-and-drop upload
     if signed_blob_id_param.present?
       @asset.file.purge if @asset.file.attached?
       @asset.file.attach(signed_blob_id_param)
-    # Validate and attach new file if provided
     elsif file_param.present?
       file = file_param
       validation_error = validate_file(file, @asset.product_asset_type)
@@ -255,7 +166,6 @@ class ProductAssetsController < ApplicationController
         return
       end
 
-      # Purge old file and attach new one
       @asset.file.purge if @asset.file.attached?
       @asset.file.attach(file_param)
     end
@@ -278,18 +188,12 @@ class ProductAssetsController < ApplicationController
     end
   end
 
-  # DELETE /products/:product_id/product_assets/:id
-  # DELETE /products/:product_id/product_assets/:id.turbo_stream
-  #
-  # Deletes an asset and its associated file (if any).
-  #
   def destroy
     authorize @asset
 
     asset_name = @asset.name
     asset_type = @asset.product_asset_type
 
-    # Purge file if attached
     @asset.file.purge if @asset.file.attached?
 
     @asset.destroy
@@ -301,15 +205,6 @@ class ProductAssetsController < ApplicationController
     end
   end
 
-  # POST /products/:product_id/product_assets/reorder
-  # POST /products/:product_id/product_assets/reorder.json
-  #
-  # Reorders assets based on drag-and-drop.
-  # Updates asset_priority for each asset based on position.
-  #
-  # Parameters:
-  # - asset_ids: Array of asset IDs in new order
-  #
   def reorder
     authorize ProductAsset
 
@@ -322,7 +217,6 @@ class ProductAssetsController < ApplicationController
 
     asset_ids = params[:asset_ids].map(&:to_i)
 
-    # Verify all asset IDs belong to this product
     current_asset_ids = @product.product_assets.non_images.pluck(:id)
     unless (asset_ids - current_asset_ids).empty?
       respond_to do |format|
@@ -331,8 +225,6 @@ class ProductAssetsController < ApplicationController
       return
     end
 
-    # Update priorities (highest priority = first in list)
-    # Reverse the array so first item gets highest priority
     priority = asset_ids.size * 10
     asset_ids.each do |asset_id|
       ProductAsset.where(id: asset_id).update_all(asset_priority: priority)
@@ -351,14 +243,6 @@ class ProductAssetsController < ApplicationController
     end
   end
 
-  # DELETE /products/:product_id/product_assets/bulk_destroy
-  # DELETE /products/:product_id/product_assets/bulk_destroy.json
-  #
-  # Bulk deletes selected assets.
-  #
-  # Parameters:
-  # - asset_ids: Array of asset IDs to delete
-  #
   def bulk_destroy
     authorize ProductAsset
 
@@ -387,8 +271,6 @@ class ProductAssetsController < ApplicationController
 
   private
 
-  # Set the product from params
-  # Ensures product belongs to current company
   def set_product
     @product = current_potlift_company.products.find(params[:product_id])
   rescue ActiveRecord::RecordNotFound
@@ -399,8 +281,6 @@ class ProductAssetsController < ApplicationController
     end
   end
 
-  # Set the asset from params
-  # Ensures asset belongs to the product
   def set_asset
     @asset = @product.product_assets.non_images.find(params[:id])
   rescue ActiveRecord::RecordNotFound
@@ -411,12 +291,8 @@ class ProductAssetsController < ApplicationController
     end
   end
 
-  # Strong parameters for asset
-  # Permits only safe attributes for mass assignment
-  #
   # Note: file and url are handled separately in create/update actions
   def asset_params
-    # Accept both :product_asset (from form_with) and :asset namespaces
     asset_key = params.key?(:product_asset) ? :product_asset : :asset
     params.require(asset_key).permit(
       :name,
@@ -427,15 +303,10 @@ class ProductAssetsController < ApplicationController
     )
   end
 
-  # Get URL from params based on asset type
-  # Video assets use video_url, Link assets use link_url
   def url_param
-    # Check for type-specific URL params first (new format)
     video_url = params.dig(:product_asset, :video_url) || params.dig(:asset, :video_url)
     link_url = params.dig(:product_asset, :link_url) || params.dig(:asset, :link_url)
 
-    # Return the appropriate URL based on which one has a value
-    # (only one should be filled based on asset type)
     return video_url if video_url.present?
     return link_url if link_url.present?
 
@@ -443,22 +314,14 @@ class ProductAssetsController < ApplicationController
     params.dig(:asset, :url) || params.dig(:product_asset, :url)
   end
 
-  # Get file from params (can be in :asset or :product_asset namespace)
   def file_param
     params.dig(:asset, :file) || params.dig(:product_asset, :file)
   end
 
-  # Get signed blob ID from params (from drag-and-drop upload via ActiveStorage)
   def signed_blob_id_param
     params.dig(:product_asset, :signed_blob_id) || params.dig(:asset, :signed_blob_id)
   end
 
-  # Validate file based on asset type
-  #
-  # @param file [ActionDispatch::Http::UploadedFile] Uploaded file
-  # @param asset_type [String] Asset type (video, document)
-  # @return [String, nil] Error message or nil if valid
-  #
   def validate_file(file, asset_type)
     return "File is required" if file.blank?
 
@@ -472,11 +335,6 @@ class ProductAssetsController < ApplicationController
     end
   end
 
-  # Validate video file
-  #
-  # @param file [ActionDispatch::Http::UploadedFile] Uploaded file
-  # @return [String, nil] Error message or nil if valid
-  #
   def validate_video_file(file)
     unless ALLOWED_VIDEO_TYPES.include?(file.content_type)
       return "Invalid video file type. Allowed types: MP4, MPEG, QuickTime, AVI, WebM"
@@ -489,11 +347,6 @@ class ProductAssetsController < ApplicationController
     nil
   end
 
-  # Validate document file
-  #
-  # @param file [ActionDispatch::Http::UploadedFile] Uploaded file
-  # @return [String, nil] Error message or nil if valid
-  #
   def validate_document_file(file)
     unless ALLOWED_DOCUMENT_TYPES.include?(file.content_type)
       return "Invalid document file type. Allowed types: PDF, Word, Excel, PowerPoint, Text, CSV"

@@ -1,27 +1,9 @@
-# ProductImagesController
-#
-# Manages product image uploads and deletions using ActiveStorage.
-# All operations are scoped to the current company via multi-tenancy.
-#
-# Features:
-# - Multiple image upload with drag-and-drop support
-# - ActiveStorage Direct Upload integration
-# - Image validation (file type, size)
-# - Image deletion
-# - Turbo Stream support for dynamic updates
-#
-# Routes:
-# - POST /products/:product_id/images - Upload images
-# - DELETE /products/:product_id/images/:id - Delete image
-#
 class ProductImagesController < ApplicationController
   before_action :set_product
   before_action :set_image, only: [ :update, :destroy ]
 
-  # Maximum file size: 10MB
   MAX_FILE_SIZE = 10.megabytes
 
-  # Allowed image content types
   ALLOWED_CONTENT_TYPES = %w[
     image/png
     image/jpeg
@@ -30,25 +12,13 @@ class ProductImagesController < ApplicationController
     image/webp
   ].freeze
 
-  # POST /products/:product_id/images
-  # POST /products/:product_id/images.turbo_stream
-  #
-  # Uploads one or more images to the product.
-  # Supports both regular form submission and ActiveStorage Direct Upload.
-  #
-  # Parameters:
-  # - images: Array of image files
-  # - signed_blob_id: ActiveStorage signed blob ID (for direct upload)
-  #
   def create
     authorize :product_image, :create?
-    # Handle ActiveStorage Direct Upload (signed_blob_id)
     if params[:signed_blob_id].present?
       handle_direct_upload
       return
     end
 
-    # Handle regular form upload (multiple files)
     if params[:images].blank?
       respond_to do |format|
         format.html { redirect_to @product, alert: "Please select at least one image." }
@@ -61,24 +31,20 @@ class ProductImagesController < ApplicationController
     errors = []
 
     Array(params[:images]).each do |image|
-      # Validate file type
       unless ALLOWED_CONTENT_TYPES.include?(image.content_type)
         errors << "#{image.original_filename}: Invalid file type. Only PNG, JPG, GIF, and WebP are allowed."
         next
       end
 
-      # Validate file size
       if image.size > MAX_FILE_SIZE
         errors << "#{image.original_filename}: File size exceeds 10MB limit."
         next
       end
 
-      # Attach image to product
       @product.images.attach(image)
       uploaded_count += 1
     end
 
-    # Build response message
     if uploaded_count > 0 && errors.empty?
       message = "#{uploaded_count} image(s) uploaded successfully."
       notice_type = :notice
@@ -103,17 +69,9 @@ class ProductImagesController < ApplicationController
     end
   end
 
-  # PATCH /products/:product_id/images/reorder
-  # PATCH /products/:product_id/images/reorder.json
-  # PATCH /products/:product_id/images/reorder.turbo_stream
-  #
   # Reorders product images based on drag-and-drop.
   # ActiveStorage orders attachments by ID (primary key), so we must detach and
   # reattach in the desired order to get sequential IDs.
-  #
-  # Parameters:
-  # - image_ids: Array of image attachment IDs in new order
-  #
   def reorder
     authorize :product_image, :reorder?
     unless params[:image_ids].is_a?(Array)
@@ -126,7 +84,6 @@ class ProductImagesController < ApplicationController
 
     image_ids = params[:image_ids].map(&:to_i)
 
-    # Verify all image IDs belong to this product
     current_image_ids = @product.images.map(&:id)
     unless (image_ids - current_image_ids).empty?
       respond_to do |format|
@@ -136,21 +93,15 @@ class ProductImagesController < ApplicationController
       return
     end
 
-    # Use a transaction to ensure atomicity
     ActiveRecord::Base.transaction do
-      # Collect blobs with their metadata BEFORE detaching
-      # Map each attachment ID to its blob
       blob_map = {}
       image_ids.each do |attachment_id|
         attachment = @product.images.find(attachment_id)
         blob_map[attachment_id] = attachment.blob
       end
 
-      # Detach all images (removes attachment records but keeps blobs)
       @product.images.detach
 
-      # Reattach blobs in the new order
-      # New attachments will get sequential IDs in this order
       image_ids.each do |attachment_id|
         blob = blob_map[attachment_id]
         @product.images.attach(blob)
@@ -174,11 +125,6 @@ class ProductImagesController < ApplicationController
     end
   end
 
-  # PATCH /products/:product_id/images/:id
-  # PATCH /products/:product_id/images/:id.turbo_stream
-  #
-  # Updates image metadata (alt text, caption, description).
-  #
   def update
     authorize :product_image, :update?
     # ActiveStorage attachments don't have direct metadata fields
@@ -203,11 +149,6 @@ class ProductImagesController < ApplicationController
     end
   end
 
-  # DELETE /products/:product_id/images/:id
-  # DELETE /products/:product_id/images/:id.turbo_stream
-  #
-  # Deletes an image from the product.
-  #
   def destroy
     authorize :product_image, :destroy?
     filename = @image.filename.to_s
@@ -226,14 +167,6 @@ class ProductImagesController < ApplicationController
     end
   end
 
-  # DELETE /products/:product_id/images/bulk_destroy
-  # DELETE /products/:product_id/images/bulk_destroy.json
-  #
-  # Deletes multiple images at once.
-  #
-  # Parameters:
-  # - image_ids: Array of image attachment IDs to delete
-  #
   def bulk_destroy
     authorize :product_image, :bulk_destroy?
     unless params[:image_ids].is_a?(Array)
@@ -252,7 +185,6 @@ class ProductImagesController < ApplicationController
         image.purge
         deleted_count += 1
       rescue ActiveRecord::RecordNotFound
-        # Skip invalid IDs
         next
       end
     end
@@ -274,14 +206,10 @@ class ProductImagesController < ApplicationController
 
   private
 
-  # Set the product from params
-  # Ensures product belongs to current company
   def set_product
     @product = current_potlift_company.products.find(params[:product_id])
   end
 
-  # Set the image attachment from params
-  # Ensures image belongs to the product
   def set_image
     @image = @product.images.find(params[:id])
   rescue ActiveRecord::RecordNotFound
@@ -292,15 +220,9 @@ class ProductImagesController < ApplicationController
     end
   end
 
-  # Handle ActiveStorage Direct Upload
-  #
-  # This is called when using ActiveStorage's JavaScript Direct Upload feature.
-  # The blob is already uploaded to storage, we just need to attach it to the product.
-  #
   def handle_direct_upload
     blob = ActiveStorage::Blob.find_signed!(params[:signed_blob_id])
 
-    # Validate blob
     unless ALLOWED_CONTENT_TYPES.include?(blob.content_type)
       respond_to do |format|
         format.json { render json: { error: "Invalid file type" }, status: :unprocessable_entity }
@@ -315,7 +237,6 @@ class ProductImagesController < ApplicationController
       return
     end
 
-    # Attach blob to product
     @product.images.attach(blob)
 
     respond_to do |format|

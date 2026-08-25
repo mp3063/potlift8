@@ -14,7 +14,6 @@
     <% end %>
 
     <%= form_with url: imports_path, method: :post, multipart: true, class: "space-y-6" do |f| %>
-      <!-- Import Type Selection -->
       <div>
         <label for="import-type" class="block text-sm font-medium text-gray-700">
           Import Type <span class="text-red-600" aria-hidden="true">*</span>
@@ -38,7 +37,6 @@
         </p>
       </div>
 
-      <!-- File Upload -->
       <div>
         <label for="csv-file" class="block text-sm font-medium text-gray-700">
           CSV File <span class="text-red-600" aria-hidden="true">*</span>
@@ -56,7 +54,6 @@
         </p>
       </div>
 
-      <!-- Instructions -->
       <div class="rounded-lg bg-blue-50 p-4 border border-blue-200">
         <div class="flex">
           <div class="flex-shrink-0">
@@ -87,7 +84,6 @@
         </div>
       </div>
 
-      <!-- Form Actions -->
       <div class="flex items-center justify-end gap-3 pt-4">
         <%= render Ui::ButtonComponent.new(variant: :secondary, href: products_path) do %>
           Cancel

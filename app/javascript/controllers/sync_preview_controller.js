@@ -1,7 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
 
-// Manages the sync preview slide-out drawer.
-// Opens via Turbo Frame, closes on Esc or backdrop click.
 export default class extends Controller {
   connect() {
     document.body.classList.add("overflow-hidden")

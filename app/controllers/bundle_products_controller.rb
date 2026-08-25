@@ -1,29 +1,22 @@
 # frozen_string_literal: true
 
-# Controller for managing bundle product components
-# Uses ProductConfiguration under the hood but presents as "bundle_products" for UI/UX
-# A bundle product is a product composed of multiple subproducts with quantities
 class BundleProductsController < ApplicationController
   before_action :set_product
   before_action :set_bundle_product, only: [ :update, :destroy ]
 
-  # GET /products/:product_id/bundle_products
   def index
     authorize :bundle_product, :index?
 
-    # Load ProductConfigurations as "bundle_products"
     @bundle_products = @product.product_configurations_as_super
                                .includes(subproduct: :inventories)
                                .order(:configuration_position)
 
-    # Available products (not already in bundle)
     @available_products = current_potlift_company.products
                                                   .where(product_type: [ :sellable, :configurable ])
                                                   .where.not(id: [ @product.id ] + @bundle_products.pluck(:subproduct_id))
                                                   .order(:name)
   end
 
-  # POST /products/:product_id/bundle_products
   def create
     authorize :bundle_product, :create?
 
@@ -42,7 +35,6 @@ class BundleProductsController < ApplicationController
     end
   end
 
-  # PATCH/PUT /products/:product_id/bundle_products/:id
   def update
     authorize :bundle_product, :update?
 
@@ -59,7 +51,6 @@ class BundleProductsController < ApplicationController
     end
   end
 
-  # DELETE /products/:product_id/bundle_products/:id
   def destroy
     authorize :bundle_product, :destroy?
 
@@ -68,7 +59,6 @@ class BundleProductsController < ApplicationController
                 notice: "Product removed from bundle."
   end
 
-  # POST /products/:product_id/bundle_products/reorder
   def reorder
     authorize :bundle_product, :reorder?
 

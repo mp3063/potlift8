@@ -1,15 +1,12 @@
 <%= helpers.form_with model: product, url: url, method: method, data: { controller: "product-form bundle-composer", turbo: true }, class: "space-y-6" do |form| %>
-  <!-- Error Summary -->
   <%= render Shared::FormErrorsComponent.new(errors: product.errors) %>
 
-  <!-- Basic Information Section -->
   <%= render Ui::CardComponent.new do |card| %>
     <% card.with_header do %>
       <h2 class="text-lg font-semibold text-gray-900">Basic Information</h2>
     <% end %>
 
     <div class="space-y-4">
-      <!-- SKU field -->
       <div>
         <%= form.label :sku, "SKU", class: "block text-sm font-medium text-gray-900 mb-1" %>
         <%= form.text_field :sku,
@@ -30,7 +27,6 @@
         <% end %>
       </div>
 
-      <!-- Name field -->
       <div>
         <%= form.label :name, class: "block text-sm font-medium text-gray-900 mb-1" %>
         <%= form.text_field :name,
@@ -47,7 +43,6 @@
         <% end %>
       </div>
 
-      <!-- Product Type select -->
       <div>
         <%= form.label :product_type, "Product Type", class: "block text-sm font-medium text-gray-900 mb-1" %>
         <%= form.select :product_type,
@@ -67,10 +62,8 @@
         <% end %>
       </div>
 
-      <!-- Bundle Composer -->
       <%= render 'bundle_composer/composer', existing_configuration: product.bundle_template&.configuration %>
 
-      <!-- Configuration Type select (shown only for configurable products) -->
       <div data-product-form-target="configurationTypeContainer" class="<%= product.product_type_configurable? ? '' : 'hidden' %>">
         <%= form.label :configuration_type, "Configuration Type", class: "block text-sm font-medium text-gray-900 mb-1" %>
         <%= form.select :configuration_type,
@@ -93,14 +86,12 @@
     </div>
   <% end %>
 
-  <!-- Additional Details Section -->
   <%= render Ui::CardComponent.new do |card| %>
     <% card.with_header do %>
       <h2 class="text-lg font-semibold text-gray-900">Additional Details</h2>
     <% end %>
 
     <div class="space-y-4">
-      <!-- Description -->
       <div>
         <%= form.label :description, class: "block text-sm font-medium text-gray-900 mb-1" %>
         <%= form.text_area :description,
@@ -113,7 +104,6 @@
         <p class="text-xs text-gray-600 mt-1" id="description-hint">Optional product description</p>
       </div>
 
-      <!-- Restock Level -->
       <div>
         <%= form.label :restock_level, "Restock Level", class: "block text-sm font-medium text-gray-900 mb-1" %>
         <%= form.number_field :restock_level,
@@ -127,7 +117,6 @@
         <p class="text-xs text-gray-600 mt-1" id="restock-level-hint">Low stock threshold - inventory below this level will be highlighted in red</p>
       </div>
 
-      <!-- Active Status -->
       <div class="relative flex items-start">
         <div class="flex h-6 items-center">
           <%= form.check_box :active,
@@ -146,7 +135,6 @@
     </div>
   <% end %>
 
-  <!-- Labels Section -->
   <%= render Ui::CardComponent.new do |card| %>
     <% card.with_header do %>
       <h2 class="text-lg font-semibold text-gray-900">Labels</h2>
@@ -161,7 +149,6 @@
           Choose labels to categorize this product. Click on a label to add it.
         </p>
 
-        <!-- Search input -->
         <div class="relative mb-3">
           <input
             type="text"
@@ -179,7 +166,6 @@
           </div>
         </div>
 
-        <!-- Available labels (clickable) -->
         <div class="max-h-48 overflow-y-auto border border-gray-200 rounded-lg bg-gray-50 p-3" data-label-form-selector-target="labelList">
           <% if available_labels.any? %>
             <div class="space-y-1">
@@ -207,13 +193,11 @@
           <% end %>
         </div>
 
-        <!-- Empty state for no results -->
         <div class="hidden max-h-48 border border-gray-200 rounded-lg bg-gray-50 p-3" data-label-form-selector-target="emptyState">
           <p class="text-sm text-gray-500 text-center py-4">No labels found matching your search.</p>
         </div>
       </div>
 
-      <!-- Selected labels (tags) -->
       <div>
         <label class="block text-sm font-medium text-gray-900 mb-2">
           Selected Labels
@@ -242,7 +226,6 @@
           <% end %>
         </div>
 
-        <!-- Hidden checkboxes for form submission -->
         <div class="hidden" data-label-form-selector-target="hiddenInputs">
           <% selected_label_ids.each do |label_id| %>
             <%= form.check_box :label_ids, { multiple: true, checked: true, class: "label-checkbox", data: { label_id: label_id } }, label_id, nil %>
@@ -252,7 +235,6 @@
     </div>
   <% end %>
 
-  <!-- Form Actions -->
   <div class="flex justify-end gap-2">
     <%= render Ui::ButtonComponent.new(variant: :secondary, type: "button", onclick: "window.location.href='#{helpers.products_path}'") do %>
       Cancel

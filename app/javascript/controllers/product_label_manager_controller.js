@@ -1,7 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
 
-// Product Label Manager Controller
-// Handles label search filtering and add/remove on product show page
 export default class extends Controller {
   static targets = ["searchInput", "labelList", "labelOption", "emptyState", "selectedContainer", "emptyMessage"]
   static values = {
@@ -12,7 +10,6 @@ export default class extends Controller {
     console.log("Product label manager controller connected for product", this.productIdValue)
   }
 
-  // Add a label to the product
   async addLabel(event) {
     const button = event.currentTarget
     const labelId = button.dataset.labelId
@@ -31,12 +28,10 @@ export default class extends Controller {
 
     // Optimistically update UI
     this.addLabelToSelected(labelId, labelName, labelCode, labelColor)
-    button.remove() // Remove from available list
+    button.remove()
 
-    // Check if we should show empty message
     this.updateEmptyMessages()
 
-    // Send request to backend
     try {
       const response = await fetch(`/products/${productId}/labels`, {
         method: 'POST',
@@ -55,17 +50,14 @@ export default class extends Controller {
       console.log('Label added successfully')
     } catch (error) {
       console.error('Error adding label:', error)
-      // Optionally revert UI on error
       alert('Failed to add label. Please refresh and try again.')
     }
   }
 
-  // Remove a label from the product
   async removeLabel(event) {
     event.preventDefault()
     const button = event.currentTarget
     const labelId = button.dataset.labelId
-    // Find the parent span (not the button itself which also has data-label-id)
     const labelTag = button.closest('span[data-label-id][role="listitem"]')
 
     if (!labelTag) {
@@ -90,10 +82,8 @@ export default class extends Controller {
     labelTag.remove()
     this.addLabelToAvailable(labelId, labelName, labelCode, labelColor)
 
-    // Check if we should show empty message
     this.updateEmptyMessages()
 
-    // Send request to backend
     try {
       const url = `/products/${productId}/labels/${labelId}`
       console.log('DELETE request to:', url)
@@ -117,10 +107,8 @@ export default class extends Controller {
       console.log('Label removed successfully')
     } catch (error) {
       console.error('Error removing label:', error)
-      // Revert UI on error
       this.addLabelToSelected(labelId, labelName, labelCode, labelColor)
 
-      // Find and remove the button we just added back to available
       const addedButton = this.labelListTarget.querySelector(`[data-label-id="${labelId}"]`)
       if (addedButton) {
         addedButton.remove()
@@ -131,7 +119,6 @@ export default class extends Controller {
     }
   }
 
-  // Filter labels based on search input
   filterLabels() {
     const query = this.searchInputTarget.value.toLowerCase().trim()
     let hasVisibleLabels = false
@@ -149,7 +136,6 @@ export default class extends Controller {
       }
     })
 
-    // Toggle empty state
     if (query && !hasVisibleLabels) {
       this.labelListTarget.classList.add('hidden')
       this.emptyStateTarget.classList.remove('hidden')
@@ -159,9 +145,7 @@ export default class extends Controller {
     }
   }
 
-  // Helper: Add label to selected container
   addLabelToSelected(labelId, labelName, labelCode, labelColor) {
-    // Remove empty message if exists
     const emptyMessage = this.selectedContainerTarget.querySelector('[data-product-label-manager-target="emptyMessage"]')
     if (emptyMessage) {
       emptyMessage.remove()
@@ -219,7 +203,6 @@ export default class extends Controller {
     this.selectedContainerTarget.appendChild(labelSpan)
   }
 
-  // Helper: Add label back to available list
   addLabelToAvailable(labelId, labelName, labelCode, labelColor) {
     // Sanitize color to prevent CSS injection
     const safeColor = this.sanitizeColor(labelColor)
@@ -252,23 +235,19 @@ export default class extends Controller {
     div.appendChild(nameSpan)
     button.appendChild(div)
 
-    // Find the container inside labelList
     const container = this.labelListTarget.querySelector('.space-y-1')
     if (container) {
       container.appendChild(button)
     }
   }
 
-  // Helper: Update empty messages
   updateEmptyMessages() {
-    // Check selected labels
     const selectedLabels = this.selectedContainerTarget.querySelectorAll('[data-label-id]')
     if (selectedLabels.length === 0) {
       const emptyMessage = `<p class="text-sm text-gray-500 py-1" data-product-label-manager-target="emptyMessage">No labels selected. Click on labels above to add them.</p>`
       this.selectedContainerTarget.innerHTML = emptyMessage
     }
 
-    // Check available labels
     const availableLabels = this.labelListTarget.querySelectorAll('[data-product-label-manager-target="labelOption"]')
     const container = this.labelListTarget.querySelector('.space-y-1')
     if (availableLabels.length === 0 && container) {
@@ -282,7 +261,7 @@ export default class extends Controller {
   sanitizeColor(color) {
     const hexColorPattern = /^#(?:[0-9a-fA-F]{3}){1,2}$/
     if (!color || !hexColorPattern.test(color)) {
-      return '#6b7280' // Default gray color if invalid
+      return '#6b7280'
     }
     return color
   }

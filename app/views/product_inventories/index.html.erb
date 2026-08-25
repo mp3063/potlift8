@@ -52,7 +52,6 @@
 <% end %>
 
 <div class="space-y-6">
-  <%# Summary Card %>
   <%= render Ui::CardComponent.new do |card| %>
     <% card.with_header do %>
       <h3 class="text-base font-semibold leading-6 text-gray-900">Inventory Summary</h3>
@@ -88,9 +87,7 @@
   <% end %>
 
   <% if !@has_inventory && !@product.product_type_bundle? %>
-    <%# Setup Wizard %>
     <div data-controller="inventory-setup">
-      <%# Step 1: Select Storages %>
       <div data-inventory-setup-target="step1">
         <%= render Ui::CardComponent.new do |card| %>
           <% card.with_header do %>
@@ -153,7 +150,6 @@
         <% end %>
       </div>
 
-      <%# Step 2: Fill Grid (hidden initially) %>
       <div data-inventory-setup-target="step2" class="hidden">
         <div data-inventory-setup-target="gridContainer">
           <%= render Products::InventoryGridComponent.new(
@@ -170,7 +166,6 @@
     </div>
 
   <% else %>
-    <%# Inventory Grid %>
     <%= render Products::InventoryGridComponent.new(
       product: @product,
       storages: @storages,
@@ -183,5 +178,4 @@
   <% end %>
 </div>
 
-<%# Adjust Inventory Modal (for pencil icon clicks in the grid) %>
 <%= render 'shared/adjust_inventory_modal' %>

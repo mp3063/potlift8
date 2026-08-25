@@ -1,10 +1,8 @@
-<%# Product assets list partial - used by Turbo Stream responses %>
 <% documents = assets.documents %>
 <% videos = assets.videos %>
 <% links = assets.links %>
 
 <div id="product_assets">
-  <!-- Documents Tab Content -->
   <div data-asset-manager-target="panel" data-tab-id="documents">
     <%= render Ui::CardComponent.new(padding: :none) do %>
       <% if documents.any? %>
@@ -29,7 +27,6 @@
     <% end %>
   </div>
 
-  <!-- Videos Tab Content -->
   <div data-asset-manager-target="panel" data-tab-id="videos" class="hidden">
     <%= render Ui::CardComponent.new(padding: :none) do %>
       <% if videos.any? %>
@@ -54,7 +51,6 @@
     <% end %>
   </div>
 
-  <!-- Links Tab Content -->
   <div data-asset-manager-target="panel" data-tab-id="links" class="hidden">
     <%= render Ui::CardComponent.new(padding: :none) do %>
       <% if links.any? %>

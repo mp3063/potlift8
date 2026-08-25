@@ -1,34 +1,12 @@
 import { Controller } from "@hotwired/stimulus"
 
-/**
- * Global search controller with keyboard shortcut support
- *
- * Handles global search with CMD/CTRL+K shortcut:
- * - Opens search modal
- * - Debounced search (300ms)
- * - Multi-scope search (products, storage, attributes, labels, catalogs)
- * - Recent searches display
- * - Loading and error states
- * - Keyboard navigation
- * - Focus management
- *
- * @example
- *   <div data-controller="global-search">
- *     <div data-global-search-target="modal" class="hidden">
- *       <input data-global-search-target="input" data-action="input->global-search#handleInput">
- *       <div data-global-search-target="results"></div>
- *     </div>
- *   </div>
- */
 export default class extends Controller {
   static targets = ["input", "results", "modal"]
 
   connect() {
-    // Listen for CMD/CTRL+K keyboard shortcut
     this.keyboardHandler = this.handleKeyboardShortcut.bind(this)
     document.addEventListener("keydown", this.keyboardHandler)
 
-    // Click outside handler
     this.outsideClickHandler = this.handleOutsideClick.bind(this)
 
     this.debounceTimer = null
@@ -42,32 +20,17 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Handle keyboard shortcuts
-   * - CMD/CTRL+K: Open search modal
-   * - Escape: Close modal
-   */
   handleKeyboardShortcut(event) {
-    // CMD/CTRL+K to open search
     if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
       event.preventDefault()
       this.open()
     }
 
-    // Escape to close
     if (event.key === 'Escape' && this.isOpen()) {
       this.close()
     }
   }
 
-  /**
-   * Open the search dropdown
-   * - Shows dropdown
-   * - Focuses input
-   * - Loads recent searches
-   * - Adds outside click listener
-   * - Locks body scroll
-   */
   open() {
     if (this.hasModalTarget) {
       this.modalTarget.classList.remove("hidden")
@@ -76,25 +39,16 @@ export default class extends Controller {
       // Lock body scroll to prevent background scrolling
       document.body.style.overflow = 'hidden'
 
-      // Load recent searches if input is empty
       if (!this.inputTarget.value.trim()) {
         this.loadRecentSearches()
       }
 
-      // Add click listener after a short delay
       setTimeout(() => {
         document.addEventListener("click", this.outsideClickHandler)
       }, 100)
     }
   }
 
-  /**
-   * Close the search dropdown
-   * - Hides dropdown
-   * - Clears input and results
-   * - Removes outside click listener
-   * - Restores body scroll
-   */
   close(event) {
     if (event) event.preventDefault()
 
@@ -104,15 +58,10 @@ export default class extends Controller {
       this.clearResults()
       document.removeEventListener("click", this.outsideClickHandler)
 
-      // Restore body scroll
       document.body.style.overflow = ''
     }
   }
 
-  /**
-   * Check if modal is currently open
-   * @returns {boolean}
-   */
   isOpen() {
     return this.hasModalTarget && !this.modalTarget.classList.contains("hidden")
   }
@@ -124,7 +73,6 @@ export default class extends Controller {
   handleInput(event) {
     const query = event.target.value.trim()
 
-    // Clear previous timer
     if (this.debounceTimer) {
       clearTimeout(this.debounceTimer)
     }
@@ -140,10 +88,6 @@ export default class extends Controller {
     }, 300)
   }
 
-  /**
-   * Perform search via fetch API
-   * @param {string} query - Search query string
-   */
   async performSearch(query) {
     try {
       this.showLoading()
@@ -166,15 +110,9 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Display search results grouped by category
-   * @param {Object} results - Search results object with categories
-   * @param {string} query - Original search query
-   */
   displayResults(results, query) {
     let html = ""
 
-    // Products
     if (results.products && results.products.length > 0) {
       html += this.renderSection("Products", results.products, (product) => `
         <a href="/products/${product.id}" class="block px-4 py-3 hover:bg-gray-50 transition-colors focus:outline-none focus:bg-gray-100">
@@ -191,7 +129,6 @@ export default class extends Controller {
       `)
     }
 
-    // Storage Locations
     if (results.storage && results.storage.length > 0) {
       html += this.renderSection("Storage Locations", results.storage, (storage) => `
         <a href="/storages/${storage.code}" class="block px-4 py-3 hover:bg-gray-50 transition-colors focus:outline-none focus:bg-gray-100">
@@ -205,7 +142,6 @@ export default class extends Controller {
       `)
     }
 
-    // Product Attributes
     if (results.attributes && results.attributes.length > 0) {
       html += this.renderSection("Product Attributes", results.attributes, (attribute) => `
         <a href="/product_attributes/${attribute.id}" class="block px-4 py-3 hover:bg-gray-50 transition-colors focus:outline-none focus:bg-gray-100">
@@ -219,7 +155,6 @@ export default class extends Controller {
       `)
     }
 
-    // Labels
     if (results.labels && results.labels.length > 0) {
       html += this.renderSection("Labels", results.labels, (label) => `
         <a href="/labels/${label.id}" class="block px-4 py-3 hover:bg-gray-50 transition-colors focus:outline-none focus:bg-gray-100">
@@ -232,7 +167,6 @@ export default class extends Controller {
       `)
     }
 
-    // Catalogs
     if (results.catalogs && results.catalogs.length > 0) {
       html += this.renderSection("Catalogs", results.catalogs, (catalog) => `
         <a href="/catalogs/${catalog.code}" class="block px-4 py-3 hover:bg-gray-50 transition-colors focus:outline-none focus:bg-gray-100">
@@ -246,7 +180,6 @@ export default class extends Controller {
       `)
     }
 
-    // Empty state
     if (html === "") {
       html = `
         <div class="px-4 py-12 text-center">
@@ -262,13 +195,6 @@ export default class extends Controller {
     this.resultsTarget.innerHTML = html
   }
 
-  /**
-   * Render a results section with title and items
-   * @param {string} title - Section title
-   * @param {Array} items - Array of items to render
-   * @param {Function} itemRenderer - Function to render each item
-   * @returns {string} HTML string for section
-   */
   renderSection(title, items, itemRenderer) {
     return `
       <div class="py-2">
@@ -282,9 +208,6 @@ export default class extends Controller {
     `
   }
 
-  /**
-   * Load recent searches from server
-   */
   async loadRecentSearches() {
     try {
       const response = await fetch('/search/recent', {
@@ -292,7 +215,6 @@ export default class extends Controller {
       })
 
       if (!response.ok) {
-        // Silently fail - recent searches are optional
         return
       }
 
@@ -326,14 +248,9 @@ export default class extends Controller {
       }
     } catch (error) {
       console.error("Error loading recent searches:", error)
-      // Silently fail - recent searches are optional
     }
   }
 
-  /**
-   * Fill search input with a recent search query
-   * @param {Event} event - Click event
-   */
   fillSearch(event) {
     const query = event.currentTarget.dataset.query
     if (query) {
@@ -342,9 +259,6 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Show loading state
-   */
   showLoading() {
     this.resultsTarget.innerHTML = `
       <div class="px-4 py-12 text-center">
@@ -357,9 +271,6 @@ export default class extends Controller {
     `
   }
 
-  /**
-   * Show error state
-   */
   showError() {
     this.resultsTarget.innerHTML = `
       <div class="px-4 py-12 text-center">
@@ -372,17 +283,12 @@ export default class extends Controller {
     `
   }
 
-  /**
-   * Clear results area
-   */
   clearResults() {
     this.resultsTarget.innerHTML = ""
   }
 
   /**
    * Escape HTML to prevent XSS
-   * @param {string} text - Text to escape
-   * @returns {string} Escaped text
    */
   escapeHtml(text) {
     const div = document.createElement('div')
@@ -392,16 +298,11 @@ export default class extends Controller {
 
   /**
    * Prevent dropdown close when clicking inside
-   * @param {Event} event - Click event
    */
   preventClose(event) {
     event.stopPropagation()
   }
 
-  /**
-   * Handle clicks outside the dropdown
-   * @param {Event} event - Click event
-   */
   handleOutsideClick(event) {
     if (this.hasModalTarget && !this.modalTarget.contains(event.target)) {
       this.close()

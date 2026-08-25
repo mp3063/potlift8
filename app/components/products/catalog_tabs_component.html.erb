@@ -1,9 +1,7 @@
 <%= helpers.turbo_frame_tag "catalog-tabs-#{product.id}" do %>
 <div class="bg-white shadow rounded-lg" data-controller="catalog-tabs">
-  <!-- Tab Navigation -->
   <div class="border-b border-gray-200">
     <nav class="-mb-px flex space-x-1 overflow-x-auto px-6" aria-label="Catalog tabs" role="tablist" style="scrollbar-width: thin;">
-      <!-- Product Tab (always first) -->
       <button
         type="button"
         data-catalog-tabs-target="tab"
@@ -16,7 +14,6 @@
         Product
       </button>
 
-      <!-- Catalog Tabs (dynamic) -->
       <% catalog_items.each do |catalog_item| %>
         <button
           type="button"
@@ -38,7 +35,6 @@
         </button>
       <% end %>
 
-      <!-- Add to Catalog Button -->
       <% if has_available_catalogs? %>
         <button
           type="button"
@@ -54,9 +50,7 @@
     </nav>
   </div>
 
-  <!-- Tab Content -->
   <div class="p-6">
-    <!-- Product Tab Content -->
     <div
       data-catalog-tabs-target="panel"
       data-panel-id="product"
@@ -66,7 +60,6 @@
       <%= render partial: 'products/catalog_tabs/product_attributes', locals: { product: product, attribute_values: attribute_values, all_attributes: all_attributes } %>
     </div>
 
-    <!-- Catalog Tab Content (dynamic) -->
     <% catalog_items.each do |catalog_item| %>
       <div
         data-catalog-tabs-target="panel"
@@ -80,7 +73,6 @@
     <% end %>
   </div>
 
-  <!-- Add to Catalog Modal -->
   <% if has_available_catalogs? %>
     <%= render partial: 'products/add_to_catalog_modal', locals: { product: product, available_catalogs: available_catalogs } %>
   <% end %>

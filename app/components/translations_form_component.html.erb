@@ -1,5 +1,4 @@
 <div data-controller="translation-tabs" class="space-y-6">
-  <!-- Tab Navigation -->
   <div class="border-b border-gray-200">
     <nav class="-mb-px flex space-x-8" aria-label="Translations">
       <% available_locales.each do |locale| %>
@@ -21,7 +20,6 @@
     </nav>
   </div>
 
-  <!-- Tab Panels -->
   <div class="mt-6">
     <% available_locales.each do |locale| %>
       <% translation = translation_for(locale) %>
@@ -34,11 +32,9 @@
         aria-labelledby="<%= tab_id(locale) %>">
 
         <% if form.present? %>
-          <!-- Form with nested fields (requires accepts_nested_attributes_for) -->
           <%= form.fields_for :translations, translation do |translation_form| %>
             <%= translation_form.hidden_field :locale, value: locale %>
 
-            <!-- Name Field -->
             <div>
               <label for="<%= "#{locale}-name" %>" class="block text-sm font-medium text-gray-700">
                 Name (<%= locale_config(locale)[:name] %>)
@@ -59,7 +55,6 @@
               <% end %>
             </div>
 
-            <!-- Description Field -->
             <div>
               <label for="<%= "#{locale}-description" %>" class="block text-sm font-medium text-gray-700">
                 Description (<%= locale_config(locale)[:name] %>)
@@ -73,8 +68,6 @@
             </div>
           <% end %>
         <% else %>
-          <!-- Standalone fields (not within form) -->
-          <!-- Name Field -->
           <div>
             <label for="<%= "#{locale}-name" %>" class="block text-sm font-medium text-gray-700">
               Name (<%= locale_config(locale)[:name] %>)
@@ -97,7 +90,6 @@
             <% end %>
           </div>
 
-          <!-- Description Field -->
           <div>
             <label for="<%= "#{locale}-description" %>" class="block text-sm font-medium text-gray-700">
               Description (<%= locale_config(locale)[:name] %>)
@@ -111,7 +103,6 @@
           </div>
         <% end %>
 
-        <!-- Helper Text -->
         <div class="rounded-lg bg-blue-50 p-4 border border-blue-200">
           <div class="flex">
             <div class="flex-shrink-0">

@@ -2,13 +2,6 @@ import { Controller } from "@hotwired/stimulus"
 import Sortable from "sortablejs"
 
 /**
- * Attribute Reorder Controller
- *
- * Handles drag-and-drop reordering of attributes within groups:
- * - Initializes SortableJS for each attribute group
- * - Sends reorder requests to server
- * - Maintains position state
- *
  * Expects DOM structure:
  *   - Container with data-controller="attribute-reorder"
  *   - Lists with data-sortable-group="<group_id>"
@@ -16,7 +9,6 @@ import Sortable from "sortablejs"
  */
 export default class extends Controller {
   connect() {
-    // Initialize sortable for each group
     const groups = this.element.querySelectorAll("[data-sortable-group]")
 
     groups.forEach(group => {
@@ -32,9 +24,6 @@ export default class extends Controller {
     })
   }
 
-  /**
-   * Handles reorder event and sends to server
-   */
   async handleReorder(event, groupId) {
     const items = event.to.querySelectorAll("[data-attribute-id]")
     const order = Array.from(items).map(item => item.dataset.attributeId)
@@ -54,17 +43,12 @@ export default class extends Controller {
 
       if (!response.ok) {
         console.error("Reorder failed:", response.statusText)
-        // Could show error notification here
       }
     } catch (error) {
       console.error("Reorder error:", error)
-      // Could show error notification here
     }
   }
 
-  /**
-   * Get CSRF token from meta tag
-   */
   get csrfToken() {
     const token = document.querySelector('meta[name="csrf-token"]')
     return token ? token.content : ''

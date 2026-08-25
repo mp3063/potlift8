@@ -18,7 +18,6 @@
 <% end %>
 
 <div class="space-y-8">
-  <!-- Base Price Section -->
   <%= render Ui::CardComponent.new do |card| %>
     <% card.with_header do %>
       <h3 class="text-lg font-semibold text-gray-900">Base Price</h3>
@@ -75,7 +74,6 @@
     <% end %>
   <% end %>
 
-  <!-- Special Prices Section -->
   <%= render Ui::CardComponent.new do |card| %>
     <% card.with_header do %>
       <h3 class="text-lg font-semibold text-gray-900">Special Prices</h3>
@@ -165,7 +163,6 @@
     <% end %>
   <% end %>
 
-  <!-- Customer Group Prices Section -->
   <%= render Ui::CardComponent.new do |card| %>
     <% card.with_header do %>
       <h3 class="text-lg font-semibold text-gray-900">Customer Group Prices</h3>

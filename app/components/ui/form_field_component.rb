@@ -1,37 +1,6 @@
 # frozen_string_literal: true
 
 module Ui
-  # Form field component with label, input, and inline error display
-  #
-  # Provides consistent form field styling with accessibility features
-  # and inline validation feedback.
-  #
-  # @example Text input
-  #   <%= render Ui::FormFieldComponent.new(
-  #     form: f,
-  #     attribute: :sku,
-  #     label: "SKU",
-  #     required: true
-  #   ) %>
-  #
-  # @example Select input
-  #   <%= render Ui::FormFieldComponent.new(
-  #     form: f,
-  #     attribute: :product_type,
-  #     label: "Product Type",
-  #     type: :select,
-  #     options: [['Sellable', 1], ['Configurable', 2]]
-  #   ) %>
-  #
-  # @example Textarea
-  #   <%= render Ui::FormFieldComponent.new(
-  #     form: f,
-  #     attribute: :description,
-  #     label: "Description",
-  #     type: :text_area,
-  #     rows: 4
-  #   ) %>
-  #
   class FormFieldComponent < ViewComponent::Base
     attr_reader :form, :attribute, :label, :type, :required
 

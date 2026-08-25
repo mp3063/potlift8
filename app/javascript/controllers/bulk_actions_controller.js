@@ -1,45 +1,13 @@
 import { Controller } from "@hotwired/stimulus"
 
-/**
- * Bulk Actions Controller
- *
- * Manages bulk operations on products:
- * - Checkbox selection (individual and select all)
- * - Bulk delete with confirmation
- * - Bulk CSV export
- * - Bulk label editing
- * - Toolbar visibility based on selection
- *
- * Targets:
- * - checkbox: Individual product checkboxes
- * - toolbar: Bulk actions toolbar (shown when items selected)
- * - count: Display count of selected items
- * - labelEditorTrigger: Trigger button for label editor modal
- *
- * Actions:
- * - toggleAll: Select/deselect all products
- * - toggleCheckbox: Toggle individual product selection
- * - bulkDelete: Delete selected products
- * - bulkExport: Export selected products to CSV
- * - openLabelEditor: Open bulk label editor modal
- */
 export default class extends Controller {
   static targets = ["checkbox", "toolbar", "count", "labelEditorTrigger"]
 
-  /**
-   * Initialize controller
-   * Sets up selected IDs tracking
-   */
   connect() {
     this.selectedIds = new Set()
     this.updateToolbar()
   }
 
-  /**
-   * Toggle all checkboxes
-   *
-   * @param {Event} event - Change event from select-all checkbox
-   */
   toggleAll(event) {
     const checked = event.target.checked
 
@@ -55,15 +23,6 @@ export default class extends Controller {
     this.updateToolbar()
   }
 
-  /**
-   * Toggle individual checkbox
-   *
-   * Handles parent-child relationships:
-   * - When a parent checkbox is checked, all its children are also checked
-   * - When a parent checkbox is unchecked, all its children are also unchecked
-   *
-   * @param {Event} event - Change event from individual checkbox
-   */
   toggleCheckbox(event) {
     const checkbox = event.target
     const isParent = checkbox.dataset.parentCheckbox === "true"
@@ -72,7 +31,6 @@ export default class extends Controller {
     if (checkbox.checked) {
       this.selectedIds.add(checkbox.value)
 
-      // If this is a parent checkbox, also select all children
       if (isParent) {
         this.getChildCheckboxes(parentId).forEach(childCheckbox => {
           childCheckbox.checked = true
@@ -82,7 +40,6 @@ export default class extends Controller {
     } else {
       this.selectedIds.delete(checkbox.value)
 
-      // If this is a parent checkbox, also deselect all children
       if (isParent) {
         this.getChildCheckboxes(parentId).forEach(childCheckbox => {
           childCheckbox.checked = false
@@ -95,21 +52,12 @@ export default class extends Controller {
     this.updateSelectAllCheckbox()
   }
 
-  /**
-   * Get all child checkboxes for a parent
-   *
-   * @param {string} parentId - The parent product ID
-   * @returns {Array<HTMLInputElement>} Array of child checkbox elements
-   */
   getChildCheckboxes(parentId) {
     return this.checkboxTargets.filter(
       checkbox => checkbox.dataset.childOf === parentId
     )
   }
 
-  /**
-   * Update toolbar visibility based on selection
-   */
   updateToolbar() {
     if (this.selectedIds.size > 0) {
       this.showToolbar()
@@ -119,37 +67,24 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Show bulk actions toolbar
-   */
   showToolbar() {
     if (this.hasToolbarTarget) {
       this.toolbarTarget.classList.remove("hidden")
     }
   }
 
-  /**
-   * Hide bulk actions toolbar
-   */
   hideToolbar() {
     if (this.hasToolbarTarget) {
       this.toolbarTarget.classList.add("hidden")
     }
   }
 
-  /**
-   * Update selected count display
-   */
   updateCount() {
     if (this.hasCountTarget) {
       this.countTarget.textContent = this.selectedIds.size
     }
   }
 
-  /**
-   * Update select-all checkbox state
-   * Sets indeterminate if some but not all items selected
-   */
   updateSelectAllCheckbox() {
     const selectAllCheckbox = document.querySelector('[data-action="change->bulk-actions#toggleAll"]')
     if (!selectAllCheckbox) return
@@ -169,10 +104,6 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Bulk delete selected products
-   * Shows confirmation dialog before proceeding
-   */
   bulkDelete() {
     if (this.selectedIds.size === 0) {
       return
@@ -189,7 +120,6 @@ export default class extends Controller {
     form.method = "POST"
     form.action = "/products/bulk_destroy"
 
-    // Add CSRF token
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content
     const csrfInput = document.createElement("input")
     csrfInput.type = "hidden"
@@ -197,7 +127,6 @@ export default class extends Controller {
     csrfInput.value = csrfToken
     form.appendChild(csrfInput)
 
-    // Add product IDs
     this.selectedIds.forEach(id => {
       const input = document.createElement("input")
       input.type = "hidden"
@@ -210,10 +139,6 @@ export default class extends Controller {
     form.submit()
   }
 
-  /**
-   * Bulk export selected products to CSV
-   * Opens download in current window
-   */
   bulkExport() {
     if (this.selectedIds.size === 0) {
       return
@@ -223,27 +148,20 @@ export default class extends Controller {
     window.location.href = `/products.csv?ids=${ids}`
   }
 
-  /**
-   * Open bulk label editor modal
-   * Passes selected product IDs to the label editor controller
-   */
   openLabelEditor() {
     if (this.selectedIds.size === 0) {
       alert("Please select at least one product")
       return
     }
 
-    // Find the bulk label editor controller
     const labelEditorController = this.application.getControllerForElementAndIdentifier(
       document.querySelector('[data-controller*="bulk-label-editor"]'),
       "bulk-label-editor"
     )
 
     if (labelEditorController) {
-      // Pass selected product IDs to the label editor
       labelEditorController.setProductIds(Array.from(this.selectedIds))
 
-      // Trigger the modal to open
       if (this.hasLabelEditorTriggerTarget) {
         this.labelEditorTriggerTarget.click()
       }
@@ -252,10 +170,6 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Clear all selections
-   * Useful for resetting state after operations
-   */
   clearSelection() {
     this.selectedIds.clear()
     this.checkboxTargets.forEach(checkbox => {

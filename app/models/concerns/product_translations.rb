@@ -1,10 +1,5 @@
 # frozen_string_literal: true
 
-# ProductTranslations
-#
-# Handles product translation helper methods for multi-language support.
-# Works with the polymorphic translations association.
-#
 module ProductTranslations
   extend ActiveSupport::Concern
 

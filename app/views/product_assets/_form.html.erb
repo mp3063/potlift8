@@ -3,7 +3,6 @@
               data: { controller: "asset-form asset-upload", turbo: true },
               html: { class: "space-y-6" } do |f| %>
 
-  <!-- Asset Type Selector -->
   <div>
     <%= f.label :product_asset_type, "Asset Type", class: "block text-sm font-medium text-gray-700" %>
     <span class="text-red-600 ml-1" aria-hidden="true">*</span>
@@ -22,7 +21,6 @@
         } %>
   </div>
 
-  <!-- Name Field (all types) -->
   <div>
     <%= f.label :name, class: "block text-sm font-medium text-gray-700" do %>
       Name
@@ -36,7 +34,6 @@
         aria: { required: "true" } %>
   </div>
 
-  <!-- Description Field (all types) -->
   <div>
     <%= f.label :asset_description, "Description", class: "block text-sm font-medium text-gray-700" %>
     <%= f.text_area :asset_description,
@@ -45,7 +42,6 @@
         placeholder: "Optional description" %>
   </div>
 
-  <!-- Document File Upload (only for document type) -->
   <div data-asset-form-target="documentFields" class="<%= 'hidden' unless product_asset.product_asset_type == 'document' %>">
     <%= f.label :file, class: "block text-sm font-medium text-gray-700" do %>
       Document File
@@ -76,10 +72,8 @@
     </div>
   </div>
 
-  <!-- Video Fields (only for video type) -->
   <div data-asset-form-target="videoFields" class="<%= 'hidden' unless product_asset.product_asset_type == 'video' %>">
     <div class="space-y-4">
-      <!-- Video URL -->
       <div data-controller="video-embed">
         <label for="product_asset_video_url" class="block text-sm font-medium text-gray-700">Video URL</label>
         <input type="url" name="product_asset[video_url]" id="product_asset_video_url"
@@ -96,7 +90,6 @@
         <input type="hidden" name="product_asset[video_platform]" data-video-embed-target="platformInput">
       </div>
 
-      <!-- OR separator -->
       <div class="relative">
         <div class="absolute inset-0 flex items-center" aria-hidden="true">
           <div class="w-full border-t border-gray-300"></div>
@@ -106,7 +99,6 @@
         </div>
       </div>
 
-      <!-- Video File Upload -->
       <div>
         <%= f.label :file, "Upload Video File", class: "block text-sm font-medium text-gray-700" %>
         <div class="mt-1">
@@ -136,10 +128,8 @@
     </div>
   </div>
 
-  <!-- Link Fields (only for link type) -->
   <div data-asset-form-target="linkFields" class="<%= 'hidden' unless product_asset.product_asset_type == 'link' %>">
     <div class="space-y-4">
-      <!-- Link URL -->
       <div>
         <label for="product_asset_link_url" class="block text-sm font-medium text-gray-700">
           URL
@@ -155,7 +145,6 @@
     </div>
   </div>
 
-  <!-- Visibility Selector -->
   <div>
     <%= f.label :asset_visibility, "Visibility", class: "block text-sm font-medium text-gray-700" %>
     <span class="text-red-600 ml-1" aria-hidden="true">*</span>
@@ -170,10 +159,8 @@
         required: true %>
   </div>
 
-  <!-- Position Field (hidden, for drag-drop reordering) -->
   <%= f.hidden_field :asset_priority, data: { asset_form_target: "position" } %>
 
-  <!-- Form Errors -->
   <% if product_asset.errors.any? %>
     <div class="rounded-md bg-red-50 p-4">
       <div class="flex">

@@ -5,7 +5,6 @@
 
   <div data-controller="product-label-manager" data-product-label-manager-product-id-value="<%= product.id %>">
     <div class="space-y-4">
-      <!-- Label Selection Section -->
       <div>
         <label class="block text-sm font-medium text-gray-900 mb-2">
           Select Labels
@@ -14,7 +13,6 @@
           Choose labels to categorize this product. Click on a label to add it.
         </p>
 
-        <!-- Search input -->
         <div class="relative mb-3">
           <input
             type="text"
@@ -32,7 +30,6 @@
           </div>
         </div>
 
-        <!-- Available labels (clickable) -->
         <div class="max-h-48 overflow-y-auto border border-gray-200 rounded-lg bg-gray-50 p-3" data-product-label-manager-target="labelList">
           <% if available_labels.any? %>
             <div class="space-y-1">
@@ -60,13 +57,11 @@
           <% end %>
         </div>
 
-        <!-- Empty state for no results -->
         <div class="hidden max-h-48 border border-gray-200 rounded-lg bg-gray-50 p-3" data-product-label-manager-target="emptyState">
           <p class="text-sm text-gray-500 text-center py-4">No labels found matching your search.</p>
         </div>
       </div>
 
-      <!-- Selected labels (tags) -->
       <div>
         <label class="block text-sm font-medium text-gray-900 mb-2">
           Selected Labels

@@ -11,14 +11,12 @@
       <% related_products.includes(:related_to).order(:position).each do |relation| %>
         <li class="flex items-center justify-between py-3">
           <div class="flex items-center min-w-0 flex-1">
-            <!-- Drag Handle -->
             <div class="flex-shrink-0 cursor-move text-gray-400 hover:text-gray-600 mr-3" tabindex="0" role="button" aria-label="Drag to reorder">
               <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
               </svg>
             </div>
 
-            <!-- Product Avatar -->
             <div class="flex-shrink-0">
               <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gray-500">
                 <span class="text-xs font-medium leading-none text-white">
@@ -27,7 +25,6 @@
               </span>
             </div>
 
-            <!-- Product Info -->
             <div class="ml-3 flex-1 min-w-0">
               <p class="text-sm font-medium text-gray-900 truncate">
                 <%= link_to relation.related_to.name, product_path(relation.related_to), class: "text-blue-600 hover:text-blue-900 hover:underline" %>
@@ -37,7 +34,6 @@
               </p>
             </div>
 
-            <!-- Relation Type Badge -->
             <div class="ml-3">
               <%= render Ui::BadgeComponent.new(variant: badge_variant, size: :sm) do %>
                 <%= relation_type.humanize %>
@@ -45,7 +41,6 @@
             </div>
           </div>
 
-          <!-- Remove Button -->
           <div class="ml-4 flex-shrink-0">
             <%= button_to product_related_product_path(@product, relation),
                 method: :delete,
@@ -61,7 +56,6 @@
       <% end %>
     </ul>
 
-    <!-- Add More Button -->
     <div class="mt-4 pt-4 border-t border-gray-200">
       <%= form_with model: @product.related_products.build(relation_type: relation_type), url: product_related_products_path(@product), class: "flex items-center gap-3" do |form| %>
         <%= form.hidden_field :relation_type, value: relation_type %>
@@ -83,7 +77,6 @@
       <% end %>
     </div>
   <% else %>
-    <!-- Empty State -->
     <div class="text-center py-8">
       <svg class="mx-auto h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -91,7 +84,6 @@
       <h4 class="mt-2 text-sm font-semibold text-gray-900">No <%= relation_type.humanize.downcase %> products</h4>
       <p class="mt-1 text-sm text-gray-500">Add products below</p>
 
-      <!-- Add First Product Form -->
       <div class="mt-4">
         <%= form_with model: @product.related_products.build(relation_type: relation_type), url: product_related_products_path(@product), class: "flex items-center gap-3 max-w-md mx-auto" do |form| %>
           <%= form.hidden_field :relation_type, value: relation_type %>

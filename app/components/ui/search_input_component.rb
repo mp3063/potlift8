@@ -1,23 +1,6 @@
 # frozen_string_literal: true
 
 module Ui
-  # Reusable search input with icon and consistent styling
-  #
-  # @example Basic search
-  #   <%= render Ui::SearchInputComponent.new(
-  #     name: :q,
-  #     placeholder: "Search products..."
-  #   ) %>
-  #
-  # @example With form builder
-  #   <%= form_with url: products_path, method: :get do |f| %>
-  #     <%= render Ui::SearchInputComponent.new(
-  #       name: :q,
-  #       value: params[:q],
-  #       placeholder: "Search products by name or SKU..."
-  #     ) %>
-  #   <% end %>
-  #
   class SearchInputComponent < ViewComponent::Base
     attr_reader :name, :value, :placeholder, :label
 

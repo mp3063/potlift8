@@ -1,13 +1,3 @@
-<%#
-  ETA Date Editor for Inventory
-
-  Inline editing component for inventory estimated arrival date (eta).
-
-  Usage:
-    <%= render "inventories/eta_date_editor",
-               storage: @storage,
-               inventory: @inventory %>
-
   Features:
   - Display mode: Shows formatted date or "—" if null, with hover-visible edit icon
   - Edit mode: Date input with Save/Cancel buttons
@@ -19,7 +9,6 @@
 <% storage ||= inventory.storage %>
 
 <div class="group relative" data-controller="inline-editor">
-  <!-- Display Mode -->
   <div class="flex items-center" data-inline-editor-target="display">
     <span class="font-medium text-gray-900">
       <%= inventory.eta.present? ? inventory.eta.strftime("%b %d, %Y") : "—" %>
@@ -34,7 +23,6 @@
     </button>
   </div>
 
-  <!-- Edit Mode -->
   <div class="hidden" data-inline-editor-target="editor" aria-hidden="true">
     <%= form_with model: inventory,
                   url: storage_inventory_path(storage, inventory),

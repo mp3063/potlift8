@@ -1,20 +1,6 @@
 # frozen_string_literal: true
 
 module Shared
-  # Skeleton loading state for table components
-  #
-  # Displays a placeholder table while actual content loads via Turbo Frames.
-  # Provides better perceived performance and visual feedback.
-  #
-  # @example Basic usage
-  #   <%= render Shared::SkeletonTableComponent.new(rows: 10) %>
-  #
-  # @example With custom columns
-  #   <%= render Shared::SkeletonTableComponent.new(
-  #     rows: 5,
-  #     columns: ['SKU', 'Name', 'Status', 'Actions']
-  #   ) %>
-  #
   class SkeletonTableComponent < ViewComponent::Base
     attr_reader :rows, :columns
 
@@ -66,7 +52,6 @@ module Shared
 
     def render_skeleton_cell(index)
       content_tag(:td, class: "whitespace-nowrap px-3 py-4") do
-        # Vary skeleton widths for more realistic appearance
         width = case index
         when 0 then "w-24"
         when 1 then "w-48"

@@ -1,7 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
 
-// Manages the inventory setup wizard for products with no inventory.
-// Step 1: Select storages → Step 2: Fill grid
 export default class extends Controller {
   static targets = ["storageCheckbox", "step1", "step2", "continueButton", "gridContainer"]
 
@@ -9,7 +7,6 @@ export default class extends Controller {
     this.updateContinueButton()
   }
 
-  // Toggle checkbox and update button state
   toggleStorage() {
     this.updateContinueButton()
   }
@@ -32,7 +29,6 @@ export default class extends Controller {
     this.updateContinueButton()
   }
 
-  // Transition from Step 1 to Step 2
   continue() {
     const selectedStorages = this.storageCheckboxTargets
       .filter(cb => cb.checked)
@@ -40,7 +36,6 @@ export default class extends Controller {
 
     if (selectedStorages.length === 0) return
 
-    // Hide unselected storage columns in the grid
     if (this.hasGridContainerTarget) {
       const allCols = this.gridContainerTarget.querySelectorAll("[data-storage-col]")
       allCols.forEach(col => {
@@ -48,7 +43,6 @@ export default class extends Controller {
         col.classList.toggle("hidden", !selectedStorages.includes(storageId))
       })
 
-      // Also hide/disable inputs in unselected storage columns
       const allInputs = this.gridContainerTarget.querySelectorAll("input[data-col-id]")
       allInputs.forEach(input => {
         const colId = input.dataset.colId
@@ -59,11 +53,9 @@ export default class extends Controller {
       })
     }
 
-    // Transition steps
     if (this.hasStep1Target) this.step1Target.classList.add("hidden")
     if (this.hasStep2Target) this.step2Target.classList.remove("hidden")
 
-    // Focus the fill-all input if available
     const fillInput = this.step2Target?.querySelector("[data-inventory-grid-target='fillInput']")
     if (fillInput) fillInput.focus()
   }

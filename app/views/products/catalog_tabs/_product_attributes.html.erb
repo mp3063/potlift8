@@ -6,7 +6,6 @@
     <div class="py-3 border-b border-gray-200">
       <%= turbo_frame_tag dom_id(product_attribute, :value) do %>
         <div class="group" data-controller="inline-editor" data-inline-editor-url-value="<%= product_attribute_value_path(product, product_attribute) %>">
-          <!-- Display Mode -->
           <div class="flex items-start justify-between" data-inline-editor-target="display">
             <dl class="flex-1">
               <dt class="text-base font-semibold text-gray-700"><%= product_attribute.name %></dt>
@@ -29,7 +28,6 @@
             </div>
           </div>
 
-          <!-- Edit Mode -->
           <div class="hidden" data-inline-editor-target="editor">
             <%= form_with url: product_attribute_value_path(product, product_attribute),
                 method: :patch,

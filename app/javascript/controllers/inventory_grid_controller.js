@@ -1,8 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
 
-// Manages the inventory grid for batch editing.
-// Handles dirty tracking, total calculations, fill operations,
-// keyboard navigation, and beforeunload guard.
 export default class extends Controller {
   static targets = ["cell", "rowTotal", "columnTotal", "grandTotal", "saveButton", "dirtyCount", "fillInput", "form"]
   static values = { dirty: { type: Boolean, default: false } }
@@ -24,14 +21,12 @@ export default class extends Controller {
     window.removeEventListener("beforeunload", this.beforeUnloadHandler)
   }
 
-  // Called on input event of any cell (user typing)
   cellChanged(event) {
     const cell = event.target
     const key = cell.dataset.cellKey
     const original = this.originalValues.get(key)
     const isDirty = cell.value !== original
 
-    // Use inline styles — Tailwind JIT won't compile classes only used in JS
     cell.style.backgroundColor = isDirty ? "#fefce8" : ""
     cell.style.borderColor = isDirty ? "#facc15" : ""
 
@@ -42,7 +37,6 @@ export default class extends Controller {
   }
 
   dirtyValueChanged() {
-    // Guard: Stimulus calls this for default values BEFORE connect() runs
     if (!this.originalValues) return
 
     if (this.hasSaveButtonTarget) {
@@ -88,23 +82,19 @@ export default class extends Controller {
     }
   }
 
-  // Fill all empty/zero cells with the value from fillInput
   fillAll() {
     const value = this.hasFillInputTarget ? this.fillInputTarget.value : ""
     if (!value) return
 
-    // Fill all enabled cells with the value
     this.cellTargets.forEach(cell => {
       if (cell.disabled) return
       cell.value = value
     })
 
-    // Update totals and dirty state directly (dispatchEvent was unreliable for this)
     this.updateTotals()
     this.dirtyValue = true
   }
 
-  // Fill empty cells in a specific column
   fillColumn(event) {
     const colId = event.params.colId
     const value = this.hasFillInputTarget ? this.fillInputTarget.value : ""
@@ -120,14 +110,12 @@ export default class extends Controller {
     this.dirtyValue = true
   }
 
-  // Submit the form when Save All is clicked
   save() {
     if (this.hasFormTarget) {
       this.formTarget.requestSubmit()
     }
   }
 
-  // Keyboard navigation: Enter moves down
   handleKeydown(event) {
     if (event.key === "Enter") {
       event.preventDefault()
@@ -145,7 +133,6 @@ export default class extends Controller {
     }
   }
 
-  // Open the adjust inventory modal from a pencil icon click
   openAdjustModal(event) {
     event.preventDefault()
     event.stopPropagation()
@@ -153,23 +140,19 @@ export default class extends Controller {
     const button = event.currentTarget
     const data = button.dataset
 
-    // Update modal header and product info
     document.getElementById('modal-product-name').textContent = `Adjust Inventory - ${data.productSku}`
     document.getElementById('modal-product-sku').textContent = data.productSku
     document.getElementById('modal-product-description').textContent = data.productName
 
-    // Update storage info
     const storageNameEl = document.getElementById('modal-storage-name')
     const storageCodeEl = document.getElementById('modal-storage-code')
     if (storageNameEl) storageNameEl.textContent = data.storageName
     if (storageCodeEl) storageCodeEl.textContent = data.storageCode
 
-    // Update form action URL
     const form = document.getElementById('adjust-inventory-form')
     form.action = data.updateUrl
     form.reset()
 
-    // Populate fields
     const valueInput = document.getElementById('inventory-value')
     const etaQtyInput = document.getElementById('eta-quantity')
     const etaDateInput = document.getElementById('eta-date')
@@ -178,14 +161,12 @@ export default class extends Controller {
     if (etaQtyInput) etaQtyInput.value = parseInt(data.etaQuantity) || 0
     if (etaDateInput && data.etaDate) etaDateInput.value = data.etaDate
 
-    // Update total available
     const inventoryFormEl = form.closest('[data-controller="inventory-form"]')
     if (inventoryFormEl) {
       const ctrl = this.application.getControllerForElementAndIdentifier(inventoryFormEl, "inventory-form")
       if (ctrl) ctrl.updateTotalAvailable()
     }
 
-    // Open the modal
     setTimeout(() => {
       const modalEl = document.querySelector('[data-controller~="modal"][data-modal-closable-value="true"]')
       if (modalEl) {

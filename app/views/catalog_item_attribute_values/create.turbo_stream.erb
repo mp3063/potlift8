@@ -1,6 +1,3 @@
-<%# Turbo Stream response for creating a catalog attribute override %>
-
-<%# Update the entire catalog tab panel with refreshed content %>
 <%= turbo_stream.replace "panel-#{@catalog_item.catalog.code}" do %>
   <div
     data-catalog-tabs-target="panel"
@@ -18,7 +15,6 @@
   </div>
 <% end %>
 
-<%# Update the tab badge counter (using counter cache for consistency) %>
 <%= turbo_stream.update "tab-#{@catalog_item.catalog.code}-badge" do %>
   <% if @catalog_item.catalog_item_attribute_values_count > 0 %>
     <span id="tab-<%= @catalog_item.catalog.code %>-badge" class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
@@ -27,7 +23,6 @@
   <% end %>
 <% end %>
 
-<%# Show success message %>
 <%= turbo_stream.prepend "flash" do %>
   <div data-controller="flash" data-flash-target="message" data-flash-auto-dismiss-value="true" class="rounded-md bg-green-50 p-4 shadow-sm">
     <div class="flex">

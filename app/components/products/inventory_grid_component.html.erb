@@ -1,5 +1,4 @@
 <% if bundle? %>
-  <%# Bundle: read-only calculated inventory %>
   <%= render Ui::CardComponent.new do |card| %>
     <% card.with_header do %>
       <h3 class="text-base font-semibold leading-6 text-gray-900">Bundle Inventory (Calculated)</h3>
@@ -47,7 +46,6 @@
   <% end %>
 
 <% elsif configurable? %>
-  <%# Configurable: variants × storages spreadsheet grid %>
   <%# Controller is on the wrapper div so toolbar is OUTSIDE the form %>
   <div data-controller="inventory-grid">
     <%# Toolbar (outside form — prevents accidental form submission) %>
@@ -145,9 +143,7 @@
   </div>
 
 <% else %>
-  <%# Sellable: storages as rows %>
   <div data-controller="inventory-grid">
-    <%# Toolbar (outside form) %>
     <%= render Products::InventoryGridToolbarComponent.new(product: product, storages: storages) %>
 
     <%= form_with(url: helpers.batch_update_product_inventories_path(product), method: :patch,

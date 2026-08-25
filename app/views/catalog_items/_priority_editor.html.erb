@@ -1,13 +1,3 @@
-<%#
-  Priority Editor for CatalogItem
-
-  Inline editing component for catalog item priority field.
-
-  Usage:
-    <%= render "catalog_items/priority_editor",
-               catalog: @catalog,
-               catalog_item: @catalog_item %>
-
   Features:
   - Display mode: Shows priority number with hover-visible edit icon
   - Edit mode: Number input with Save/Cancel buttons
@@ -19,7 +9,6 @@
 <% catalog ||= catalog_item.catalog %>
 
 <div class="group relative" data-controller="inline-editor">
-  <!-- Display Mode -->
   <div class="flex items-center" data-inline-editor-target="display">
     <span class="font-medium text-gray-900">
       <%= catalog_item.priority || "—" %>
@@ -34,7 +23,6 @@
     </button>
   </div>
 
-  <!-- Edit Mode -->
   <div class="hidden" data-inline-editor-target="editor" aria-hidden="true">
     <%= form_with model: catalog_item,
                   url: catalog_catalog_item_path(catalog, catalog_item),

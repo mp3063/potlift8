@@ -1,11 +1,8 @@
 # frozen_string_literal: true
 
-# SyncErrorSanitizer
-#
 # Sanitizes sync error messages before storing them on catalog_items.
 # Prevents leaking internal details (URLs, stack traces, DB errors)
 # via Turbo Stream broadcasts to the browser.
-#
 module SyncErrorSanitizer
   extend ActiveSupport::Concern
 

@@ -1,18 +1,13 @@
 # frozen_string_literal: true
 
-# Job Monitoring Concern
-# Provides enhanced monitoring capabilities for background jobs
-# including metrics tracking, performance analysis, and error reporting
 module JobMonitoring
   extend ActiveSupport::Concern
 
   included do
-    # Track job execution metrics
     around_perform :track_job_metrics
   end
 
   class_methods do
-    # Get statistics for this job type
     def job_statistics(since: 24.hours.ago)
       {
         total_jobs: job_count(since: since),
@@ -26,8 +21,6 @@ module JobMonitoring
     private
 
     def job_count(since:)
-      # This would query Solid Queue's job records
-      # Implementation depends on accessing Solid Queue's internal tables
       SolidQueue::Job.where(
         class_name: name,
         created_at: since..Time.current
@@ -56,7 +49,6 @@ module JobMonitoring
     end
 
     def average_job_duration(since:)
-      # Calculate average duration from successful jobs
       jobs = SolidQueue::Job.where(
         class_name: name,
         created_at: since..Time.current
@@ -129,8 +121,6 @@ module JobMonitoring
   end
 
   def memory_usage
-    # Returns memory usage in bytes
-    # This is a basic implementation; can be enhanced with more accurate metrics
     if RUBY_PLATFORM =~ /linux/
       `ps -o rss= -p #{Process.pid}`.to_i * 1024
     elsif RUBY_PLATFORM =~ /darwin/

@@ -1,33 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
 
-/**
- * Bundle Manager Controller
- *
- * Manages bundle product composition, including:
- * - Inline quantity editing
- * - Real-time inventory calculations
- * - Add/remove subproducts
- * - Bundle availability display
- *
- * Values:
- *   - productId: The bundle product ID
- *
- * Actions:
- *   - editQuantity: Enable inline editing for quantity
- *   - saveQuantity: Save quantity change
- *   - cancelEdit: Cancel quantity editing
- *
- * Usage:
- *   <div data-controller="bundle-manager" data-bundle-manager-product-id-value="123">
- *     ...bundle products...
- *   </div>
- *
- * Accessibility:
- * - Keyboard navigation support (Enter to save, Escape to cancel)
- * - Focus management during edit
- * - ARIA labels for edit controls
- * - Screen reader announcements for quantity changes
- */
 export default class extends Controller {
   static values = {
     productId: String
@@ -37,11 +9,6 @@ export default class extends Controller {
     console.log("Bundle Manager connected for product:", this.productIdValue)
   }
 
-  /**
-   * Enable inline editing for a bundle product quantity
-   *
-   * @param {Event} event - Click event
-   */
   editQuantity(event) {
     event.preventDefault()
 
@@ -51,24 +18,15 @@ export default class extends Controller {
     const currentQuantity = quantityDisplay.dataset.quantity
     const bundleProductId = quantityDisplay.dataset.bundleProductId
 
-    // Replace display with input
     const input = this.createQuantityInput(currentQuantity, bundleProductId)
     quantityDisplay.replaceWith(input)
 
-    // Focus input and select text
     setTimeout(() => {
       input.querySelector('input').focus()
       input.querySelector('input').select()
     }, 10)
   }
 
-  /**
-   * Create quantity input form
-   *
-   * @param {String} currentQuantity - Current quantity value
-   * @param {String} bundleProductId - Bundle product ID
-   * @returns {HTMLElement} Form element with input
-   */
   createQuantityInput(currentQuantity, bundleProductId) {
     const form = document.createElement('div')
     form.className = 'flex items-center gap-2'
@@ -114,11 +72,6 @@ export default class extends Controller {
     return form
   }
 
-  /**
-   * Handle keyboard events in quantity input
-   *
-   * @param {KeyboardEvent} event - Keyboard event
-   */
   handleKeydown(event) {
     if (event.key === "Enter") {
       event.preventDefault()
@@ -129,11 +82,6 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Save quantity change to server
-   *
-   * @param {Event} event - Click or keyboard event
-   */
   async saveQuantity(event) {
     const editor = event.currentTarget.closest('[data-quantity-editor]')
     if (!editor) return
@@ -162,7 +110,6 @@ export default class extends Controller {
       })
 
       if (response.ok) {
-        // Turbo Stream will handle the update
         this.announceQuantityChange(newQuantity)
       } else {
         this.showError("Failed to update quantity")
@@ -175,11 +122,6 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Cancel quantity editing and restore display
-   *
-   * @param {Event} event - Click or blur event
-   */
   cancelEdit(event) {
     // Prevent blur from firing when clicking save/cancel buttons
     if (event.relatedTarget && event.relatedTarget.hasAttribute('data-action')) {
@@ -192,15 +134,9 @@ export default class extends Controller {
     const editor = event.currentTarget.closest('[data-quantity-editor]')
     if (!editor) return
 
-    // Reload page to restore state (or use Turbo Frame refresh)
     window.location.reload()
   }
 
-  /**
-   * Announce quantity change to screen readers
-   *
-   * @param {Number} quantity - New quantity value
-   */
   announceQuantityChange(quantity) {
     let liveRegion = document.getElementById("bundle-quantity-announcer")
 
@@ -216,21 +152,10 @@ export default class extends Controller {
     liveRegion.textContent = `Quantity updated to ${quantity}`
   }
 
-  /**
-   * Show error notification
-   *
-   * @param {String} message - Error message
-   */
   showError(message) {
-    // Could integrate with flash notification system
     alert(message)
   }
 
-  /**
-   * Get CSRF token from meta tag
-   *
-   * @returns {String} CSRF token
-   */
   get csrfToken() {
     const token = document.querySelector('meta[name="csrf-token"]')
     return token ? token.content : ''

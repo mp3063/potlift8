@@ -2,7 +2,6 @@
   <meta name="turbo-cache-control" content="no-cache">
 <% end %>
 <div class="px-4 sm:px-6 lg:px-8">
-  <!-- Breadcrumb Navigation -->
   <nav class="flex mb-4" aria-label="Breadcrumb">
     <ol role="list" class="flex items-center space-x-4">
       <li>
@@ -34,7 +33,6 @@
     </ol>
   </nav>
 
-  <!-- Page Header -->
   <div class="sm:flex sm:items-center mb-8">
     <div class="sm:flex-auto">
       <h1 class="text-3xl font-semibold leading-6 text-gray-900">
@@ -67,7 +65,6 @@
     </div>
   </div>
 
-  <!-- Search -->
   <div class="mb-4">
     <%= form_with(url: inventory_storage_path(@storage), method: :get, data: { turbo_action: "replace" }, class: "flex items-center gap-3") do %>
       <div class="relative flex-1 max-w-md">
@@ -85,7 +82,6 @@
     <% end %>
   </div>
 
-  <!-- Inventory Table -->
   <% if @inventories.any? %>
     <%= render Ui::CardComponent.new(padding: :none) do %>
       <div class="overflow-x-auto" data-controller="inventory-table"
@@ -138,7 +134,6 @@
       </div>
     <% end %>
 
-    <!-- Summary Stats -->
     <div id="inventory-summary-stats" class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-3">
       <div class="bg-white overflow-hidden shadow rounded-lg">
         <div class="p-5">
@@ -207,7 +202,6 @@
       </div>
     </div>
   <% else %>
-    <!-- Empty State -->
     <div class="text-center py-12">
       <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
@@ -229,6 +223,5 @@
     </div>
   <% end %>
 
-  <!-- Inventory Adjustment Modal -->
   <%= render 'shared/adjust_inventory_modal' %>
 </div>

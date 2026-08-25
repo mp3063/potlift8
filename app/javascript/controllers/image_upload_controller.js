@@ -1,78 +1,28 @@
 import { Controller } from "@hotwired/stimulus"
 import { DirectUpload } from "@rails/activestorage"
 
-/**
- * Image Upload Controller
- *
- * Handles file uploads for product images with drag-and-drop support and progress tracking.
- * Uses ActiveStorage Direct Upload for efficient file uploads.
- *
- * Features:
- * - File input change handling
- * - Drag-and-drop support with visual feedback
- * - File type validation (image/* only)
- * - File size validation (10MB limit)
- * - Upload progress bars
- * - Error handling with user feedback
- * - Blue-500 border on dragover (matches design system)
- *
- * Targets:
- * - input: File input element
- * - dropzone: Drop zone container
- * - progressContainer: Container for progress bars
- *
- * @example
- *   <form data-controller="image-upload" data-turbo="false">
- *     <div data-image-upload-target="dropzone"
- *          data-action="drop->image-upload#handleDrop
- *                       dragover->image-upload#handleDragOver
- *                       dragleave->image-upload#handleDragLeave">
- *       <input type="file"
- *              multiple
- *              accept="image/*"
- *              data-image-upload-target="input"
- *              data-action="change->image-upload#handleFiles">
- *     </div>
- *     <div data-image-upload-target="progressContainer"></div>
- *   </form>
- */
 export default class extends Controller {
   static targets = ["input", "dropzone", "progressContainer"]
 
   static values = {
-    maxFileSize: { type: Number, default: 10 * 1024 * 1024 }, // 10MB default
+    maxFileSize: { type: Number, default: 10 * 1024 * 1024 },
     acceptedTypes: { type: Array, default: ["image/jpeg", "image/png", "image/gif", "image/webp"] }
   }
 
-  /**
-   * Handle file input change event
-   * Validates and uploads selected files
-   *
-   * @param {Event} event - Change event from file input
-   */
   handleFiles(event) {
     const files = Array.from(event.target.files)
     this.uploadFiles(files)
 
-    // Reset input so the same file can be selected again if needed
     event.target.value = ""
   }
 
-  /**
-   * Handle drop event
-   * Validates and uploads dropped files
-   *
-   * @param {DragEvent} event - Drop event
-   */
   handleDrop(event) {
     event.preventDefault()
     event.stopPropagation()
 
-    // Remove dragover styles
     this.dropzoneTarget.classList.remove("border-blue-500", "bg-blue-50")
     this.dropzoneTarget.setAttribute("aria-dropeffect", "none")
 
-    // Get files from dataTransfer
     const files = Array.from(event.dataTransfer.files).filter(file =>
       file.type.startsWith("image/")
     )
@@ -85,54 +35,31 @@ export default class extends Controller {
     this.uploadFiles(files)
   }
 
-  /**
-   * Handle dragover event
-   * Adds visual feedback when files are dragged over dropzone
-   *
-   * @param {DragEvent} event - Dragover event
-   */
   handleDragOver(event) {
     event.preventDefault()
     event.stopPropagation()
 
-    // Add visual feedback using blue (NOT indigo) to match design system
     this.dropzoneTarget.classList.add("border-blue-500", "bg-blue-50")
     this.dropzoneTarget.setAttribute("aria-dropeffect", "copy")
   }
 
-  /**
-   * Handle dragleave event
-   * Removes visual feedback when files leave dropzone
-   *
-   * @param {DragEvent} event - Dragleave event
-   */
   handleDragLeave(event) {
     event.preventDefault()
     event.stopPropagation()
 
-    // Only remove styles if we're actually leaving the dropzone
-    // (not just moving to a child element)
     if (!this.dropzoneTarget.contains(event.relatedTarget)) {
       this.dropzoneTarget.classList.remove("border-blue-500", "bg-blue-50")
       this.dropzoneTarget.setAttribute("aria-dropeffect", "none")
     }
   }
 
-  /**
-   * Upload multiple files
-   * Validates each file before uploading
-   *
-   * @param {File[]} files - Array of files to upload
-   */
   uploadFiles(files) {
     files.forEach(file => {
-      // Validate file type
       if (!this.isValidFileType(file)) {
         this.showError(`${file.name} is not a valid image type. Please use PNG, JPG, GIF, or WebP.`)
         return
       }
 
-      // Validate file size
       if (!this.isValidFileSize(file)) {
         this.showError(`${file.name} exceeds the maximum file size of ${this.formatFileSize(this.maxFileSizeValue)}.`)
         return
@@ -142,12 +69,6 @@ export default class extends Controller {
     })
   }
 
-  /**
-   * Upload a single file using ActiveStorage Direct Upload
-   * Creates progress bar and handles upload lifecycle
-   *
-   * @param {File} file - File to upload
-   */
   uploadFile(file) {
     const progressBar = this.createProgressBar(file.name)
     const directUploadUrl = "/rails/active_storage/direct_uploads"
@@ -170,12 +91,6 @@ export default class extends Controller {
     })
   }
 
-  /**
-   * Create a progress bar element
-   *
-   * @param {string} filename - Name of file being uploaded
-   * @returns {HTMLElement} Progress bar container element
-   */
   createProgressBar(filename) {
     const container = document.createElement("div")
     container.className = "space-y-1"
@@ -195,12 +110,6 @@ export default class extends Controller {
     return container
   }
 
-  /**
-   * Update progress bar to show current upload progress
-   *
-   * @param {HTMLElement} container - Progress bar container
-   * @param {number} progress - Upload progress (0-100)
-   */
   updateProgressBar(container, progress) {
     const percentage = Math.round(progress)
     const progressBar = container.querySelector("div > div")
@@ -213,13 +122,6 @@ export default class extends Controller {
     container.setAttribute("aria-label", `Upload progress: ${percentage}%`)
   }
 
-  /**
-   * Attach uploaded blob to product
-   * POSTs signed blob ID to product images controller
-   *
-   * @param {HTMLElement} container - Progress bar container
-   * @param {Object} blob - ActiveStorage blob object with signed_id
-   */
   attachBlobToProduct(container, blob) {
     const formAction = this.element.action
     const csrfToken = document.querySelector("[name='csrf-token']").content
@@ -250,42 +152,24 @@ export default class extends Controller {
     })
   }
 
-  /**
-   * Handle successful upload
-   * Completes progress bar and reloads page to show new image
-   *
-   * @param {HTMLElement} container - Progress bar container
-   */
   handleUploadSuccess(container) {
-    // Set to 100% complete
     this.updateProgressBar(container, 100)
 
-    // Update visual state
     const progressBar = container.querySelector("div > div")
     progressBar.classList.add("bg-green-600")
 
     // Announce success to screen readers
     container.setAttribute("aria-label", "Upload complete")
 
-    // Remove after a short delay and reload to show new image
     setTimeout(() => {
       container.remove()
 
-      // If all uploads complete, reload page
       if (this.progressContainerTarget.children.length === 0) {
         window.location.reload()
       }
     }, 500)
   }
 
-  /**
-   * Handle upload error
-   * Shows error state in progress bar
-   *
-   * @param {HTMLElement} container - Progress bar container
-   * @param {Error} error - Error object
-   * @param {string} filename - Name of file that failed
-   */
   handleUploadError(container, error, filename) {
     container.classList.add("bg-red-50", "p-2", "rounded-md")
 
@@ -304,39 +188,19 @@ export default class extends Controller {
     console.error("Upload error:", error)
     this.showError(`Failed to upload ${filename}. Please try again.`)
 
-    // Remove error container after 5 seconds
     setTimeout(() => {
       container.remove()
     }, 5000)
   }
 
-  /**
-   * Validate file type
-   *
-   * @param {File} file - File to validate
-   * @returns {boolean} True if file type is valid
-   */
   isValidFileType(file) {
-    // Check if file type starts with "image/"
     return file.type.startsWith("image/")
   }
 
-  /**
-   * Validate file size
-   *
-   * @param {File} file - File to validate
-   * @returns {boolean} True if file size is within limit
-   */
   isValidFileSize(file) {
     return file.size <= this.maxFileSizeValue
   }
 
-  /**
-   * Format file size for display
-   *
-   * @param {number} bytes - Size in bytes
-   * @returns {string} Formatted size (e.g., "10 MB")
-   */
   formatFileSize(bytes) {
     if (bytes === 0) return "0 Bytes"
 
@@ -347,12 +211,6 @@ export default class extends Controller {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i]
   }
 
-  /**
-   * Show error message to user
-   * Creates a flash-style message at the top of the page
-   *
-   * @param {string} message - Error message to display
-   */
   showError(message) {
     const errorDiv = document.createElement("div")
     errorDiv.className = "fixed top-20 right-4 z-50 max-w-sm rounded-md bg-red-50 p-4 shadow-lg"
@@ -380,13 +238,11 @@ export default class extends Controller {
 
     document.body.appendChild(errorDiv)
 
-    // Add dismiss handler
     const dismissButton = errorDiv.querySelector("button")
     dismissButton.addEventListener("click", () => {
       errorDiv.remove()
     })
 
-    // Auto-dismiss after 5 seconds
     setTimeout(() => {
       errorDiv.remove()
     }, 5000)
@@ -394,9 +250,6 @@ export default class extends Controller {
 
   /**
    * Escape HTML to prevent XSS
-   *
-   * @param {string} text - Text to escape
-   * @returns {string} Escaped text
    */
   escapeHtml(text) {
     const div = document.createElement("div")

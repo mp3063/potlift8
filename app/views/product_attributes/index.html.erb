@@ -27,7 +27,6 @@
 </div>
 
 <div class="space-y-6" data-controller="attribute-reorder">
-  <!-- Grouped Attributes -->
   <% @attribute_groups.each do |group| %>
     <div class="rounded-lg bg-white shadow">
       <div class="border-b border-gray-200 bg-gray-50 px-4 py-5 sm:px-6">
@@ -77,7 +76,6 @@
     </div>
   <% end %>
 
-  <!-- Ungrouped Attributes -->
   <% if @ungrouped_attributes.any? %>
     <div class="rounded-lg bg-white shadow">
       <div class="border-b border-gray-200 bg-gray-50 px-4 py-5 sm:px-6">

@@ -1,17 +1,6 @@
 # frozen_string_literal: true
 
-# Product Bulk Operations Controller
-#
-# Handles bulk operations for products, extracted from ProductsController
-# to follow the Single Responsibility Principle.
-#
-# Actions:
-# - POST /products/bulk/destroy - Bulk delete multiple products
-# - POST /products/bulk/update_labels - Bulk add/remove labels from products
-# - GET /products/bulk/labels_for_products - Get labels assigned to selected products
-#
 class ProductBulkOperationsController < ApplicationController
-  # POST /products/bulk/destroy
   def destroy
     authorize :product_bulk_operation, :destroy?
     product_ids = params[:product_ids] || []
@@ -48,7 +37,6 @@ class ProductBulkOperationsController < ApplicationController
     end
   end
 
-  # POST /products/bulk/update_labels
   def update_labels
     authorize :product_bulk_operation, :update_labels?
     product_ids = params[:product_ids] || []
@@ -105,10 +93,6 @@ class ProductBulkOperationsController < ApplicationController
     redirect_to products_path, alert: "Failed to update labels: #{e.message}"
   end
 
-  # GET /products/bulk/labels_for_products
-  # Returns JSON with:
-  # - assigned_to_any: label IDs assigned to ANY selected product (for remove mode)
-  # - assigned_to_all: label IDs assigned to ALL selected products (for add mode exclusion)
   def labels_for_products
     authorize :product_bulk_operation, :labels_for_products?
     product_ids = params[:product_ids] || []
@@ -126,14 +110,11 @@ class ProductBulkOperationsController < ApplicationController
       return
     end
 
-    # Get all label IDs assigned to ANY of the selected products (union)
     assigned_to_any = products
                         .joins(:labels)
                         .distinct
                         .pluck("labels.id")
 
-    # Get label IDs assigned to ALL selected products (intersection)
-    # These are labels where the count of products equals the total product count
     assigned_to_all = ProductLabel
                         .where(product_id: products.select(:id))
                         .group(:label_id)

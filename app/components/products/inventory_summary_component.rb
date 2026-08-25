@@ -1,12 +1,6 @@
 # frozen_string_literal: true
 
 module Products
-  # Product inventory summary component for sidebar
-  #
-  # Displays total inventory count with large display and storage location
-  # breakdown. Includes link to inventory details page.
-  # Handles configurable products by aggregating subproduct inventories.
-  #
   class InventorySummaryComponent < ViewComponent::Base
     attr_reader :product
 
@@ -16,8 +10,6 @@ module Products
 
     private
 
-    # For configurable products, returns per-storage totals as [{storage:, total:}]
-    # For other products, returns inventories with storage
     def storage_locations
       @storage_locations ||= if product.product_type_configurable?
         configurable_storage_totals
@@ -26,7 +18,6 @@ module Products
       end
     end
 
-    # Returns total inventory count
     def total_inventory
       if product.product_type_configurable?
         Inventory.where(product_id: subproduct_ids).sum(:value)
@@ -35,7 +26,6 @@ module Products
       end
     end
 
-    # Checks if product has any storage locations
     def has_storage_locations?
       if product.product_type_configurable?
         Inventory.where(product_id: subproduct_ids).exists?
@@ -44,7 +34,6 @@ module Products
       end
     end
 
-    # Is this a configurable product?
     def configurable?
       product.product_type_configurable?
     end
@@ -53,7 +42,6 @@ module Products
       @subproduct_ids ||= product.subproducts.pluck(:id)
     end
 
-    # Aggregate inventory by storage for configurable products
     def configurable_storage_totals
       Storage.where(id: Inventory.where(product_id: subproduct_ids).select(:storage_id))
              .order(:name)

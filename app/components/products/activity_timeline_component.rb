@@ -1,30 +1,15 @@
 # frozen_string_literal: true
 
 module Products
-  # Product activity timeline component for sidebar
-  #
-  # Displays the last 5 PaperTrail version entries in timeline format with
-  # icon indicators, user attribution, and human-readable change descriptions.
-  #
-  # @example Render activity timeline
-  #   <%= render Products::ActivityTimelineComponent.new(product: @product) %>
-  #
   class ActivityTimelineComponent < ViewComponent::Base
     attr_reader :product
 
-    # Initialize a new activity timeline component
-    #
-    # @param product [Product] Product instance
-    # @return [ActivityTimelineComponent]
     def initialize(product:)
       @product = product
     end
 
     private
 
-    # Returns recent activities from PaperTrail version history
-    #
-    # @return [Array<Hash>] Array of activity hashes with type, description, timestamp, user
     def recent_activities
       @recent_activities ||= begin
         versions = product.versions.order(id: :desc).limit(5)
@@ -82,10 +67,6 @@ module Products
       end
     end
 
-    # Returns icon SVG path for activity type
-    #
-    # @param type [Symbol] Activity type (:create, :update, :delete, :status_change)
-    # @return [String] SVG path data
     def activity_icon_path(type)
       case type
       when :create
@@ -101,10 +82,6 @@ module Products
       end
     end
 
-    # Returns color class for activity type
-    #
-    # @param type [Symbol] Activity type
-    # @return [String] Tailwind color class
     def activity_color(type)
       case type
       when :create
@@ -120,9 +97,6 @@ module Products
       end
     end
 
-    # Checks if any activities exist
-    #
-    # @return [Boolean] True if activities present
     def has_activities?
       recent_activities.any?
     end

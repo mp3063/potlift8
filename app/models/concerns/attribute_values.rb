@@ -1,23 +1,9 @@
 require "active_support/concern"
 
-# AttributeValues Module
-#
-# Provides validation and value handling logic for ProductAttributeValue records.
-# This concern handles:
-# - Validation of values against ProductAttribute rules
-# - Value formatting based on view_format
-# - Storage of complex attribute values in info jsonb
-#
-# Usage:
-#   class ProductAttributeValue < ApplicationRecord
-#     include AttributeValues
-#   end
-#
 module AttributeValues
   extend ActiveSupport::Concern
 
   included do
-    # Validate attribute value against ProductAttribute rules before save
     validate do |av|
       if (av.ready? || !av.new_record?) && broken_rule.present?
         av.errors.add(:base, "You can't give this value to #{av.product_attribute.name} as it must be #{broken_rule}")
@@ -25,16 +11,6 @@ module AttributeValues
     end
   end
 
-  # Stores value from form parameters based on view_format
-  #
-  # Handles different view formats:
-  # - customer_group_price: Stores customer-specific prices in info hash
-  # - special_price: Stores amount and date range in info hash
-  # - default: Stores in value column
-  #
-  # @param params [Hash] Form parameters containing the value(s)
-  # @return [String, nil] Formatted display value or nil
-  #
   def store_value_from_params(params)
     self.info ||= {}
 
@@ -50,7 +26,6 @@ module AttributeValues
         end
       end
 
-      # Return formatted display value
       info["customer_group_prices"].keys.sum("") do |customer_group_key|
         price = ActionController::Base.helpers.number_to_currency(
           (info.to_h["customer_group_prices"].to_h[customer_group_key].to_f / 100),
@@ -80,11 +55,6 @@ module AttributeValues
     end
   end
 
-  # Stores value from CSV import based on view_format
-  #
-  # @param value [String] CSV value to parse and store
-  # @raise [ArgumentError] if value format is invalid
-  #
   def store_value_from_import(value)
     self.info ||= {}
 
@@ -117,17 +87,11 @@ module AttributeValues
     end
   end
 
-  # Checks if attribute value passes all validation rules
-  # Sets the ready flag before save
-  #
   def check_readiness
     self.ready = broken_rule.blank?
   end
 
   # Finds the first broken rule for the current value
-  #
-  # @return [String, nil] Name of broken rule or nil if all rules pass
-  #
   def broken_rule
     return nil unless product_attribute.rules.present?
 
@@ -137,13 +101,6 @@ module AttributeValues
     nil
   end
 
-  # Returns the value, handling custom view formats
-  #
-  # For custom view formats (special_price, customer_group_price),
-  # reconstructs the value from info jsonb storage
-  #
-  # @return [String] The attribute value
-  #
   def value
     return super unless product_attribute.patype_custom?
 
@@ -158,34 +115,22 @@ module AttributeValues
     super
   end
 
-  # Returns related products for view_format_related_products
-  #
-  # @return [ActiveRecord::Relation<Product>] Related products
-  #
   def related_products
     related_products = self.info.to_h["related_products"].to_a
     Product.where(sku: related_products)
   end
 
-  # Checks if attribute has localized values
-  #
-  # @return [Boolean] true if localized values exist
-  #
   def localized_values?
     info.to_h["localized_value"].to_h.values.any? { |x| x.present? }
   end
 
   private
 
-  # Propagates attribute value changes to external systems
-  #
   # This method does two things:
   # 1. Touches the product to invalidate HTTP caches (ETags, fresh_when)
   # 2. Directly enqueues ProductSyncJob for each catalog that has sync enabled
-  #
   # We must enqueue sync jobs directly because ChangePropagator skips sync when
   # only updated_at changed (to avoid unnecessary syncs from simple touches).
-  #
   def propagate_change
     return unless product.present?
     return if product.destroyed?
@@ -196,7 +141,6 @@ module AttributeValues
 
     timestamp = Time.current
 
-    # Get catalogs that need syncing
     catalogs_to_sync = product.catalogs.to_a
 
     if catalogs_to_sync.empty?
@@ -212,7 +156,6 @@ module AttributeValues
     )
 
     catalogs_to_sync.each do |catalog|
-      # Skip if catalog has sync paused
       if catalog.info&.dig("sync_paused")
         Rails.logger.debug(
           "Catalog #{catalog.code} has sync paused. Skipping propagation."
@@ -220,7 +163,6 @@ module AttributeValues
         next
       end
 
-      # Enqueue sync job
       ProductSyncJob.perform_later(product, catalog, timestamp)
     end
   end

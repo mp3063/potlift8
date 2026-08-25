@@ -7,7 +7,6 @@
   </div>
 
   <% if @product.product_type_sellable? %>
-    <%# Sellable product - just show quantity input %>
     <div class="space-y-2">
       <label class="block text-sm font-medium text-gray-700">
         Quantity
@@ -21,7 +20,6 @@
              data-product-id="<%= @product.id %>">
     </div>
   <% elsif @product.product_type_configurable? %>
-    <%# Configurable product - show variant selection %>
     <div class="space-y-3">
       <label class="block text-sm font-medium text-gray-700">
         Select Variants (<%= @variants.count %> available)

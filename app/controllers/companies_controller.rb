@@ -1,15 +1,6 @@
 # frozen_string_literal: true
 
-# Companies controller
-#
-# Handles company switching for users with access to multiple companies
-#
 class CompaniesController < ApplicationController
-  # POST /switch_company/:id
-  # Switch active company for current user
-  #
-  # This is a stub implementation. Full implementation will be added
-  # when User model with company associations is created.
   def switch
     authorize :company, :switch?
 

@@ -28,30 +28,23 @@ class BundleSkuGeneratorService
   private
 
   def sanitize_sku_part(part)
-    # First pass: replace spaces and underscores with hyphens
-    # Second pass: remove all other special characters (not replace)
-    # This way "X/L" becomes "XL" and "Red Color" becomes "RED-COLOR"
     part.to_s
         .upcase
-        .gsub(/[\s_]+/, "-")      # Replace spaces/underscores with hyphen
-        .gsub(/[^A-Z0-9-]/, "")   # Remove all other special characters
-        .gsub(/-+/, "-")          # Collapse multiple hyphens
-        .gsub(/^-|-$/, "")        # Remove leading/trailing hyphens
+        .gsub(/[\s_]+/, "-")
+        .gsub(/[^A-Z0-9-]/, "")
+        .gsub(/-+/, "-")
+        .gsub(/^-|-$/, "")
   end
 
   def truncate_if_needed(sku)
     return sku if sku.length <= MAX_SKU_LENGTH
 
-    # If base SKU itself is at or over max length, return it as is
     return @base_sku if @base_sku.length >= MAX_SKU_LENGTH
 
-    # Calculate available space for variants
-    available_space = MAX_SKU_LENGTH - @base_sku.length - 1 # -1 for hyphen
+    available_space = MAX_SKU_LENGTH - @base_sku.length - 1
 
-    # If no space for any variants, return base SKU only
     return @base_sku if available_space <= 0
 
-    # Extract variant parts and truncate proportionally
     variant_part = sku[@base_sku.length + 1..]
     truncated_variants = truncate_variant_part(variant_part, available_space)
 
@@ -64,8 +57,7 @@ class BundleSkuGeneratorService
     variants = variant_part.split("-")
     return variants.first[0...max_length] if variants.one?
 
-    # Truncate each variant proportionally
-    per_variant_length = (max_length / variants.size).floor - 1 # -1 for hyphen
+    per_variant_length = (max_length / variants.size).floor - 1
 
     return variant_part[0...max_length] if per_variant_length <= 0
 

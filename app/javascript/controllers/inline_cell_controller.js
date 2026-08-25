@@ -1,7 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
 
-// Click-to-edit controller for individual inventory cells in the storage view.
-// Click display value → show input → Enter/blur saves via Turbo PATCH.
 export default class extends Controller {
   static targets = ["display", "input"]
 

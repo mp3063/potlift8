@@ -9,7 +9,6 @@
   <% end %>
 
   <div class="space-y-6">
-    <!-- Stats Summary -->
     <div class="grid grid-cols-2 gap-4">
       <div class="bg-gray-50 rounded-lg p-4 text-center">
         <div class="text-2xl font-bold text-gray-900"><%= configurations_count %></div>
@@ -22,7 +21,6 @@
     </div>
 
     <% if has_configurations? %>
-      <!-- Configurations List -->
       <div class="space-y-3">
         <h3 class="text-sm font-medium text-gray-700">Dimensions</h3>
         <% configurations.each do |config| %>
@@ -46,7 +44,6 @@
       </div>
 
       <% if can_generate_variants? && variants_count < possible_combinations %>
-        <!-- Generation Info -->
         <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
           <div class="flex items-start">
             <svg class="h-5 w-5 text-blue-400 mt-0.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -64,7 +61,6 @@
         </div>
       <% end %>
     <% else %>
-      <!-- Empty State -->
       <div class="text-center py-6">
         <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -76,7 +72,6 @@
       </div>
     <% end %>
 
-    <!-- Action Buttons -->
     <div class="flex flex-col gap-2">
       <%= link_to product_configurations_path(product), class: "inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" do %>
         <svg class="-ml-0.5 mr-2 h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">

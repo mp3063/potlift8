@@ -1,6 +1,5 @@
 <% content_for :title, "Products - Potlift8" %>
 <div class="px-4 sm:px-6 lg:px-8" data-controller="bulk-actions">
-  <!-- Page Header -->
   <div class="sm:flex sm:items-center">
     <div class="sm:flex-auto">
       <h1 class="text-3xl font-semibold leading-6 text-gray-900">Products</h1>
@@ -39,10 +38,8 @@
     </div>
   </div>
 
-  <!-- Search and Filters -->
   <div class="mt-8">
     <%= form_with url: products_path, method: :get, data: { turbo_frame: 'products_table' }, class: "space-y-4" do |f| %>
-      <!-- Main search and type filter row -->
       <div class="sm:flex sm:gap-x-4">
         <%= render Ui::SearchInputComponent.new(
           name: :q,
@@ -65,7 +62,6 @@
               data: { action: "change->auto-submit#submit" } %>
         </div>
 
-        <!-- Label filter dropdown -->
         <div class="mt-4 sm:mt-0 relative" data-controller="dropdown">
           <button
             type="button"
@@ -113,7 +109,6 @@
           </div>
         </div>
 
-        <!-- Catalog filter dropdown -->
         <div class="mt-4 sm:mt-0 relative" data-controller="dropdown">
           <button
             type="button"
@@ -176,7 +171,6 @@
         </div>
       </div>
 
-      <!-- Active filters display -->
       <% if @current_label.present? || params[:catalog].present? %>
         <div class="flex flex-wrap gap-2 items-center">
           <span class="text-sm text-gray-700">Active filters:</span>
@@ -215,7 +209,6 @@
     <% end %>
   </div>
 
-  <!-- Bulk Actions Toolbar (hidden by default) -->
   <div class="mt-4 hidden" data-bulk-actions-target="toolbar">
     <div class="rounded-md bg-blue-50 p-4">
       <div class="flex items-center justify-between">
@@ -254,17 +247,6 @@
     </div>
   </div>
 
-  <!-- Products Table -->
-  <%#
-  Example usage with Turbo Frames + Skeleton Loading:
-
-  turbo_frame_tag "products_table", src: products_path, loading: :lazy do
-    render Shared::SkeletonTableComponent.new(
-      rows: 10,
-      columns: ['SKU', 'Name', 'Type', 'Status', 'Inventory', 'Actions']
-    )
-  end
-  %>
   <%= render Products::TableComponent.new(
     products: @products,
     pagy: @pagy,
@@ -274,7 +256,6 @@
     has_filters: params[:type].present? || params[:label_id].present? || params[:catalog].present?
   ) %>
 
-  <!-- Bulk Label Editor Modal -->
   <%= render Products::BulkLabelEditorComponent.new(
     labels: @available_labels
   ) %>
