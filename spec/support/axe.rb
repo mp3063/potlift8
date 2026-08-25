@@ -103,7 +103,7 @@ module AccessibilityHelpers
   def test_focus_order(expected_order)
     expected_order.each_with_index do |selector, index|
       # Get currently focused element
-      focused = page.evaluate_script('document.activeElement.outerHTML')
+      _focused = page.evaluate_script('document.activeElement.outerHTML')
 
       expect(page).to have_css(selector),
         "Expected element #{selector} to be focused at position #{index + 1}, but it wasn't found or focused"
@@ -166,7 +166,7 @@ module AccessibilityHelpers
     elements_in_modal = expect_keyboard_navigable(modal_selector)
 
     # Get all focusable elements outside modal
-    elements_outside = page.evaluate_script(<<~JS)
+    _elements_outside = page.evaluate_script(<<~JS)
       const modal = document.querySelector('#{modal_selector.gsub("'", "\\'")}');
       const allFocusable = document.querySelectorAll(
         'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])'

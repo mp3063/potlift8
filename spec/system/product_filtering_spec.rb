@@ -22,9 +22,7 @@ RSpec.describe 'Product Filtering', type: :system do
   # Mock authentication
   before do
     allow_any_instance_of(ApplicationController).to receive(:authenticated?).and_return(true)
-    allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(
-      { id: user.id, email: user.email, name: user.name }
-    )
+    allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(user)
     allow_any_instance_of(ApplicationController).to receive(:current_company).and_return(
       { id: company.id, code: company.code, name: company.name }
     )

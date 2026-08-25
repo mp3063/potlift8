@@ -698,10 +698,12 @@ RSpec.describe '/catalogs', type: :request do
         }.to have_enqueued_job(ProductSyncJob)
       end
 
-      it 'includes flash update in turbo_stream response' do
+      it 'includes a sync-button update in turbo_stream response' do
         post sync_product_catalog_path(catalog.code, product.id), as: :turbo_stream
         expect(response.body).to include('turbo-stream')
-        expect(response.body).to include('flash')
+        # sync_product updates the per-product sync button (not a flash).
+        expect(response.body).to include("sync-btn-#{catalog.code}")
+        expect(response.body).to include('Synced')
       end
 
       it 'falls back to redirect for HTML format' do

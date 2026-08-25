@@ -144,13 +144,14 @@ RSpec.describe 'Authentication Flow', type: :request do
     end
 
     before do
-      # Set up authenticated session with expiring token (expires in < 5 minutes)
-      # Uses test_token_old_access_token by default
-      authenticate_with_expiring_token(user)
       allow(authlift_client).to receive(:refresh_token).and_return(new_tokens)
     end
 
     it 'automatically refreshes token on authenticated request' do
+      # Set up authenticated session with expiring token (expires in < 5 minutes).
+      # Proactive refresh fires on the first authenticated request, using
+      # test_token_old_access_token / old_refresh_token by default.
+      authenticate_with_expiring_token(user)
       get '/'
 
       expect(authlift_client).to have_received(:refresh_token).with('old_refresh_token')
@@ -165,6 +166,7 @@ RSpec.describe 'Authentication Flow', type: :request do
       end
 
       it 'logs user out and redirects to login' do
+        authenticate_with_expiring_token(user)
         get '/'
 
         expect(response).to redirect_to(auth_login_path)

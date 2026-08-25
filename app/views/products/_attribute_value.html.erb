@@ -3,15 +3,15 @@
 <div class="group" data-controller="inline-editor" data-inline-editor-url-value="<%= product_attribute_value_path(product, attribute) %>">
   <!-- Display Mode -->
   <div class="flex items-start justify-between" data-inline-editor-target="display">
-    <div class="flex-1">
+    <dl class="flex-1">
       <dt class="text-base font-semibold text-gray-700"><%= attribute.name %></dt>
-      <dd class="mt-1 text-sm <%= has_value ? 'text-gray-900' : 'text-gray-400 italic' %>">
+      <dd class="mt-1 text-sm <%= has_value ? 'text-gray-900' : 'text-gray-500 italic' %>">
         <%= has_value ? value.value : 'Not set' %>
       </dd>
       <% if attribute.description.present? %>
         <dd class="mt-1 text-xs text-gray-500"><%= attribute.description %></dd>
       <% end %>
-    </div>
+    </dl>
     <div class="ml-4">
       <%= button_tag type: "button",
           class: "p-1 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-gray-600 rounded hover:bg-gray-100",

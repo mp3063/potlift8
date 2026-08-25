@@ -317,7 +317,9 @@ RSpec.describe '/products', type: :request do
     end
 
     context 'with attributes' do
-      let(:product_attribute) { create(:product_attribute, company: company, code: 'price', name: 'Price') }
+      # 'price' is auto-provisioned as a system attribute on company creation,
+      # so reuse the existing record instead of creating a duplicate (unique on code+company).
+      let(:product_attribute) { company.product_attributes.find_by(code: 'price') }
       let!(:attribute_value) do
         create(:product_attribute_value,
                product: product,
@@ -612,7 +614,9 @@ RSpec.describe '/products', type: :request do
     end
 
     context 'with attribute values' do
-      let(:product_attribute) { create(:product_attribute, company: company, code: 'price', name: 'Price') }
+      # 'price' is auto-provisioned as a system attribute on company creation,
+      # so reuse the existing record instead of creating a duplicate (unique on code+company).
+      let(:product_attribute) { company.product_attributes.find_by(code: 'price') }
 
       before do
         create(:product_attribute_value,

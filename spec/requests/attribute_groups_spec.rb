@@ -64,7 +64,8 @@ RSpec.describe '/attribute_groups', type: :request do
   end
 
   describe 'GET /show' do
-    let(:group) { create(:attribute_group, company: company, code: 'pricing', name: 'Pricing') }
+    # 'pricing' is a seeded system attribute group (name "Pricing"); reference rather than recreate.
+    let(:group) { company.attribute_groups.find_by(code: 'pricing') }
     let(:other_company_group) { create(:attribute_group, company: other_company) }
 
     it 'returns successful response for own company group' do
@@ -85,7 +86,8 @@ RSpec.describe '/attribute_groups', type: :request do
     end
 
     context 'with attributes' do
-      let!(:attr1) { create(:product_attribute, company: company, attribute_group: group, code: 'price', name: 'Price', attribute_position: 1) }
+      # 'price' is a seeded system attribute already in the pricing group; reference and position it.
+      let!(:attr1) { company.product_attributes.find_by(code: 'price').tap { |a| a.update!(attribute_group: group, name: 'Price', attribute_position: 1) } }
       let!(:attr2) { create(:product_attribute, company: company, attribute_group: group, code: 'cost', name: 'Cost', attribute_position: 2) }
 
       it 'displays attributes ordered by position' do
@@ -114,7 +116,8 @@ RSpec.describe '/attribute_groups', type: :request do
   end
 
   describe 'GET /edit' do
-    let(:group) { create(:attribute_group, company: company, code: 'pricing', name: 'Pricing') }
+    # 'pricing' is a seeded system attribute group (name "Pricing"); reference rather than recreate.
+    let(:group) { company.attribute_groups.find_by(code: 'pricing') }
     let(:other_company_group) { create(:attribute_group, company: other_company) }
 
     it 'returns successful response for own company group' do

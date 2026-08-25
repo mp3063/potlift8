@@ -4,14 +4,12 @@ RSpec.describe CatalogPriceValidator do
   let(:company) { create(:company) }
   let(:product) { create(:product, company: company) }
 
-  let(:price_attr) do
-    create(:product_attribute,
-          company: company,
-          code: 'price',
-          pa_type: :patype_number,
-          view_format: :view_format_price,
-          product_attribute_scope: :product_and_catalog_scope)
-  end
+  # The 'price' system attribute is auto-seeded for every company via
+  # Company#provision_system_attributes (after_create). It is already
+  # patype_number / view_format_price / mandatory / product_and_catalog_scope,
+  # so reference the seeded record rather than creating a duplicate (which
+  # would raise RecordInvalid: Code has already been taken).
+  let(:price_attr) { company.product_attributes.find_by(code: 'price') }
 
   # Set up base EUR price on product
   before do
@@ -121,7 +119,14 @@ RSpec.describe CatalogPriceValidator do
 
     context 'when base price is zero' do
       before do
-        product.write_attribute_value('price', '0')
+        # ProductAttributeValue enforces a positive value for the 'price'
+        # system attribute, so '0' cannot be persisted. Removing the base
+        # price value drives the same "missing/zero base price" branch in
+        # the validator (base_price.nil? || base_price.zero?).
+        product.product_attribute_values
+               .joins(:product_attribute)
+               .where(product_attributes: { code: 'price' })
+               .destroy_all
       end
 
       it 'fails validation' do

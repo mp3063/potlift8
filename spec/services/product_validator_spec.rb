@@ -10,32 +10,20 @@ RSpec.describe ProductValidator, type: :service do
   end
 
   # Create mandatory product attributes
+  # NOTE: 'price' is an auto-seeded system attribute (Company#provision_system_attributes),
+  # so we reference the existing one instead of creating a duplicate (which would raise
+  # a uniqueness violation). The seeded 'price' is already mandatory / patype_number /
+  # view_format_price with rules ['positive', 'not_null'].
   let!(:mandatory_price_attr) do
-    ProductAttribute.create!(
-      company: company,
-      code: 'price',
-      name: 'Price',
-      pa_type: :patype_number,
-      view_format: :view_format_price,
-      mandatory: true,
-      product_attribute_scope: :product_scope,
-      has_rules: true,
-      rules: [ 'positive', 'not_null' ]
-    )
+    company.product_attributes.find_by(code: 'price')
   end
 
+  # NOTE: 'description_html' is the auto-seeded system mandatory description attribute
+  # (name "Description", product_and_catalog_scope). Reference it instead of creating a
+  # separate custom 'description' attribute, so that setting a value here satisfies the
+  # system mandatory attribute the validator now enforces.
   let!(:mandatory_description_attr) do
-    ProductAttribute.create!(
-      company: company,
-      code: 'description',
-      name: 'Description',
-      pa_type: :patype_text,
-      view_format: :view_format_general,
-      mandatory: true,
-      product_attribute_scope: :product_and_catalog_scope,
-      has_rules: true,
-      rules: [ 'not_null' ]
-    )
+    company.product_attributes.find_by(code: 'description_html')
   end
 
   let!(:stock_quantity_attr) do

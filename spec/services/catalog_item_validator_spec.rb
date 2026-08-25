@@ -12,6 +12,10 @@ RSpec.describe CatalogItemValidator do
         # Mock ProductValidator to always pass
         product_validator = instance_double(ProductValidator, validate_structure: [])
         allow(ProductValidator).to receive(:new).and_return(product_validator)
+
+        # Satisfy mandatory system attributes (auto-provisioned per company)
+        catalog_item.write_catalog_attribute_value('price', '1999')
+        catalog_item.write_catalog_attribute_value('description_html', 'A description')
       end
 
       it 'returns true' do
@@ -32,6 +36,10 @@ RSpec.describe CatalogItemValidator do
       before do
         product_validator = instance_double(ProductValidator, validate_structure: [])
         allow(ProductValidator).to receive(:new).with(product).and_return(product_validator)
+
+        # Satisfy mandatory system attributes (auto-provisioned per company)
+        catalog_item.write_catalog_attribute_value('price', '1999')
+        catalog_item.write_catalog_attribute_value('description_html', 'A description')
       end
 
       it 'passes validation' do
@@ -70,13 +78,10 @@ RSpec.describe CatalogItemValidator do
             product_attribute_scope: :catalog_scope)
     end
 
+    # The system 'price' attribute is auto-provisioned per company: mandatory,
+    # product_and_catalog_scope, name "Price". Reuse it rather than creating a duplicate.
     let(:mandatory_product_and_catalog_attr) do
-      create(:product_attribute,
-            company: company,
-            code: 'price',
-            name: 'Price',
-            mandatory: true,
-            product_attribute_scope: :product_and_catalog_scope)
+      company.product_attributes.find_by(code: 'price')
     end
 
     let(:mandatory_product_only_attr) do
@@ -101,6 +106,8 @@ RSpec.describe CatalogItemValidator do
 
         catalog_item.write_catalog_attribute_value('catalog_description', 'Test description')
         catalog_item.write_catalog_attribute_value('price', '1999')
+        # System 'description_html' is also mandatory (auto-provisioned)
+        catalog_item.write_catalog_attribute_value('description_html', 'A description')
       end
 
       it 'passes validation' do
@@ -146,6 +153,10 @@ RSpec.describe CatalogItemValidator do
     context 'when mandatory product_scope attribute is missing' do
       before do
         mandatory_product_only_attr
+
+        # Satisfy mandatory system attributes (auto-provisioned per company)
+        catalog_item.write_catalog_attribute_value('price', '1999')
+        catalog_item.write_catalog_attribute_value('description_html', 'A description')
       end
 
       it 'passes validation (product_scope not checked at catalog level)' do
@@ -163,6 +174,11 @@ RSpec.describe CatalogItemValidator do
               product: product,
               product_attribute: mandatory_product_and_catalog_attr,
               value: '1999')
+        # System 'description_html' is also mandatory; provide a product-level value
+        create(:product_attribute_value,
+              product: product,
+              product_attribute: company.product_attributes.find_by(code: 'description_html'),
+              value: 'A description')
       end
 
       it 'passes validation (falls back to product value)' do
@@ -189,13 +205,10 @@ RSpec.describe CatalogItemValidator do
   end
 
   describe 'price validation' do
+    # Reuse the auto-provisioned system 'price' attribute
+    # (patype_number / view_format_price / product_and_catalog_scope).
     let(:price_attr) do
-      create(:product_attribute,
-            company: company,
-            code: 'price',
-            pa_type: :patype_number,
-            view_format: :view_format_price,
-            product_attribute_scope: :product_and_catalog_scope)
+      company.product_attributes.find_by(code: 'price')
     end
 
     before do
@@ -205,6 +218,13 @@ RSpec.describe CatalogItemValidator do
 
       # Set base price
       create(:product_attribute_value, product: product, product_attribute: price_attr, value: '100')
+
+      # System 'description_html' is also mandatory; provide a product-level value
+      # so price-focused scenarios aren't tripped by an unrelated missing attribute.
+      create(:product_attribute_value,
+            product: product,
+            product_attribute: company.product_attributes.find_by(code: 'description_html'),
+            value: 'A description')
     end
 
     context 'for EUR catalog' do
@@ -288,13 +308,10 @@ RSpec.describe CatalogItemValidator do
   end
 
   describe 'composite validation scenarios' do
+    # Reuse the auto-provisioned system 'price' attribute
+    # (patype_number / mandatory / product_and_catalog_scope).
     let(:price_attr) do
-      create(:product_attribute,
-            company: company,
-            code: 'price',
-            pa_type: :patype_number,
-            mandatory: true,
-            product_attribute_scope: :product_and_catalog_scope)
+      company.product_attributes.find_by(code: 'price')
     end
 
     let(:description_attr) do
@@ -348,6 +365,8 @@ RSpec.describe CatalogItemValidator do
       before do
         catalog_item.write_catalog_attribute_value('price', '100')
         catalog_item.write_catalog_attribute_value('description', 'Valid description')
+        # System 'description_html' is also mandatory (auto-provisioned)
+        catalog_item.write_catalog_attribute_value('description_html', 'A description')
       end
 
       it 'passes validation' do
@@ -377,6 +396,12 @@ RSpec.describe CatalogItemValidator do
     end
 
     context 'after successful validation' do
+      before do
+        # Satisfy mandatory system attributes (auto-provisioned per company)
+        catalog_item.write_catalog_attribute_value('price', '1999')
+        catalog_item.write_catalog_attribute_value('description_html', 'A description')
+      end
+
       it 'returns empty array' do
         validator = CatalogItemValidator.new(catalog_item)
         validator.valid?
@@ -408,13 +433,10 @@ RSpec.describe CatalogItemValidator do
 
   # Integration tests
   describe 'integration scenarios' do
+    # Reuse the auto-provisioned system 'price' attribute
+    # (patype_number / mandatory / product_and_catalog_scope).
     let(:price_attr) do
-      create(:product_attribute,
-            company: company,
-            code: 'price',
-            pa_type: :patype_number,
-            mandatory: true,
-            product_attribute_scope: :product_and_catalog_scope)
+      company.product_attributes.find_by(code: 'price')
     end
 
     before do
@@ -425,6 +447,12 @@ RSpec.describe CatalogItemValidator do
       allow(ProductValidator).to receive(:new).and_return(product_validator)
 
       create(:product_attribute_value, product: product, product_attribute: price_attr, value: '100')
+
+      # System 'description_html' is also mandatory; provide a product-level value
+      create(:product_attribute_value,
+            product: product,
+            product_attribute: company.product_attributes.find_by(code: 'description_html'),
+            value: 'A description')
     end
 
     context 'multi-catalog validation' do

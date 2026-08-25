@@ -126,7 +126,9 @@ RSpec.describe ProductDetailSerializer do
     end
 
     context 'attributes serialization' do
-      let(:price_attr) { create(:product_attribute, company: company, code: 'price', name: 'Price') }
+      # 'price' is auto-provisioned as a system attribute on company creation,
+      # so reuse the existing record instead of creating a duplicate (unique on code+company).
+      let(:price_attr) { company.product_attributes.find_by(code: 'price') }
       let(:color_attr) { create(:product_attribute, company: company, code: 'color', name: 'Color') }
 
       before do

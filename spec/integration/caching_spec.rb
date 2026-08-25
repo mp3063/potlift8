@@ -9,9 +9,7 @@ RSpec.describe 'Caching Integration', type: :request do
   # Mock authentication
   before do
     allow_any_instance_of(ApplicationController).to receive(:authenticated?).and_return(true)
-    allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(
-      { id: user.id, email: user.email, name: user.name }
-    )
+    allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(user)
     allow_any_instance_of(ApplicationController).to receive(:current_company).and_return(
       { id: company.id, code: company.code, name: company.name }
     )
@@ -105,9 +103,7 @@ RSpec.describe 'Caching Integration', type: :request do
       get search_path, params: { q: 'User1 Search', scope: 'all' }
 
       # Second user searches (mock their session)
-      allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(
-        { id: other_user.id, email: other_user.email, name: other_user.name }
-      )
+      allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(other_user)
       get search_path, params: { q: 'User2 Search', scope: 'all' }
 
       # Check first user's cache
@@ -379,9 +375,7 @@ RSpec.describe 'Caching Integration', type: :request do
       user2 = create(:user, company: company2)
 
       # Switch to company 2
-      allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(
-        { id: user2.id, email: user2.email, name: user2.name }
-      )
+      allow_any_instance_of(ApplicationController).to receive(:current_user).and_return(user2)
       allow_any_instance_of(ApplicationController).to receive(:current_potlift_company).and_return(company2)
 
       get search_path, params: { q: 'Product', scope: 'all' }

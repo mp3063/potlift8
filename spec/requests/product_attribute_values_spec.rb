@@ -8,7 +8,8 @@ RSpec.describe '/products/:product_id/attribute_values', type: :request do
   let(:user) { create(:user, company: company) }
   let(:product) { create(:product, company: company) }
   let(:other_company_product) { create(:product, company: other_company) }
-  let(:product_attribute) { create(:product_attribute, company: company, code: 'price', name: 'Price') }
+  # 'price' is a seeded system attribute (name "Price"); reference rather than recreate.
+  let(:product_attribute) { company.product_attributes.find_by(code: 'price') }
   let(:other_company_attribute) { create(:product_attribute, company: other_company) }
 
   before do
@@ -121,12 +122,8 @@ RSpec.describe '/products/:product_id/attribute_values', type: :request do
     end
 
     context 'with unit fields (weight attributes)' do
-      let(:weight_attribute) do
-        create(:product_attribute, :weight_format,
-               company: company,
-               code: 'weight',
-               name: 'Weight')
-      end
+      # 'weight' is a seeded system attribute (number/weight format); reference rather than recreate.
+      let(:weight_attribute) { company.product_attributes.find_by(code: 'weight') }
 
       it 'stores unit in info field' do
         patch product_attribute_value_path(product, weight_attribute),

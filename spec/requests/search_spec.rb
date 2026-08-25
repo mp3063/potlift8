@@ -171,8 +171,11 @@ RSpec.describe 'Search API', type: :request do
     end
 
     context 'with query and scope=attributes' do
-      let!(:attr1) { create(:product_attribute, company: company, name: 'Price', code: 'price') }
-      let!(:attr2) { create(:product_attribute, company: company, name: 'Weight', code: 'weight') }
+      # 'price' and 'weight' are auto-provisioned as system attributes on company
+      # creation, so reuse the existing records instead of creating duplicates
+      # (unique on code+company). Both already carry the 'Price'/'Weight' names.
+      let!(:attr1) { company.product_attributes.find_by(code: 'price') }
+      let!(:attr2) { company.product_attributes.find_by(code: 'weight') }
 
       it 'searches only product attributes' do
         get search_path, params: { q: 'Price', scope: 'attributes' }, as: :json

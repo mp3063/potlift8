@@ -25,9 +25,10 @@ RSpec.describe '/product_attributes', type: :request do
   describe 'GET /index' do
     let!(:group1) { create(:attribute_group, company: company, name: 'Pricing', position: 1) }
     let!(:group2) { create(:attribute_group, company: company, name: 'Dimensions', position: 2) }
-    let!(:attr1) { create(:product_attribute, company: company, attribute_group: group1, code: 'price', name: 'Price') }
+    # 'price' and 'weight' are seeded system attributes; reference them rather than recreate.
+    let!(:attr1) { company.product_attributes.find_by(code: 'price').tap { |a| a.update!(attribute_group: group1) } }
     let!(:attr2) { create(:product_attribute, company: company, attribute_group: group1, code: 'cost', name: 'Cost') }
-    let!(:attr3) { create(:product_attribute, company: company, attribute_group: group2, code: 'weight', name: 'Weight') }
+    let!(:attr3) { company.product_attributes.find_by(code: 'weight').tap { |a| a.update!(attribute_group: group2, name: 'Weight') } }
     let!(:ungrouped_attr) { create(:product_attribute, company: company, attribute_group: nil, code: 'sku', name: 'SKU') }
     let!(:other_company_attr) { create(:product_attribute, company: other_company) }
 
@@ -67,7 +68,8 @@ RSpec.describe '/product_attributes', type: :request do
   end
 
   describe 'GET /show' do
-    let(:attribute) { create(:product_attribute, company: company, code: 'price', name: 'Price') }
+    # 'price' is a seeded system attribute (name "Price"); reference rather than recreate.
+    let(:attribute) { company.product_attributes.find_by(code: 'price') }
     let(:other_company_attribute) { create(:product_attribute, company: other_company) }
 
     it 'returns successful response for own company attribute' do
@@ -128,7 +130,8 @@ RSpec.describe '/product_attributes', type: :request do
   end
 
   describe 'GET /edit' do
-    let(:attribute) { create(:product_attribute, company: company, code: 'price', name: 'Price') }
+    # 'price' is a seeded system attribute (name "Price"); reference rather than recreate.
+    let(:attribute) { company.product_attributes.find_by(code: 'price') }
     let(:other_company_attribute) { create(:product_attribute, company: other_company) }
 
     it 'returns successful response for own company attribute' do

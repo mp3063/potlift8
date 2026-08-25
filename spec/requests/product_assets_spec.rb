@@ -113,7 +113,7 @@ RSpec.describe 'ProductAssets', type: :request do
     end
 
     it 'excludes image assets' do
-      image_asset = create(:product_asset, :image, product: product, name: 'Photo.jpg')
+      create(:product_asset, :image, product: product, name: 'Photo.jpg')
       get product_product_assets_path(product)
       expect(response.body).not_to include('Photo.jpg')
     end

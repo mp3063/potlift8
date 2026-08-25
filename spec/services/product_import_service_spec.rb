@@ -92,9 +92,10 @@ RSpec.describe ProductImportService do
     end
 
     context 'with product attributes' do
-      let!(:price_attr) { create(:product_attribute, company: company, code: 'price') }
+      # 'price' and 'weight' are auto-seeded system attributes; reuse them instead of creating duplicates
+      let!(:price_attr) { company.product_attributes.find_by(code: 'price') }
       let!(:color_attr) { create(:product_attribute, company: company, code: 'color') }
-      let!(:weight_attr) { create(:product_attribute, company: company, code: 'weight') }
+      let!(:weight_attr) { company.product_attributes.find_by(code: 'weight') }
 
       let(:csv_content) do
         <<~CSV

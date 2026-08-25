@@ -310,7 +310,9 @@ RSpec.describe 'API Workflow Integration', type: :request do
                product_status: :draft)
       end
 
-      let!(:price_attr) { create(:product_attribute, company: company, code: 'price', name: 'Price') }
+      # 'price' is auto-provisioned as a system attribute on company creation,
+      # so reuse the existing record instead of creating a duplicate (unique on code+company).
+      let!(:price_attr) { company.product_attributes.find_by(code: 'price') }
       let!(:label) { create(:label, company: company, code: 'featured', name: 'Featured') }
 
       it 'completes multi-step setup workflow', :aggregate_failures do

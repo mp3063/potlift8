@@ -4,7 +4,7 @@ require 'rails_helper'
 
 RSpec.describe 'Navigation Accessibility', type: :system, js: true do
   let(:company) { create(:company) }
-  let(:current_user) { { id: 1, email: 'test@example.com', name: 'Test User' } }
+  let(:current_user) { create(:user, company: company) }
 
   # Helper to set up authenticated session
   def sign_in_user

@@ -84,7 +84,7 @@ class ProductAsset < ApplicationRecord
     url = info&.dig("url")
     if url.blank?
       errors.add(:base, "URL is required for link assets")
-    elsif url.present? && !url.match?(/\A#{URI::DEFAULT_PARSER.make_regexp(%w[http https])}\z/)
+    elsif url.present? && !url.match?(/\A#{URI::RFC2396_PARSER.make_regexp(%w[http https])}\z/)
       errors.add(:base, "URL must be a valid http or https URL")
     end
   end

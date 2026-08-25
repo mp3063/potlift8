@@ -394,9 +394,10 @@ RSpec.describe ProductExportService do
   end
 
   describe 'EAV attribute export' do
-    let!(:price_attr) { create(:product_attribute, company: company, code: 'price', name: 'Price') }
+    # 'price' and 'weight' are auto-seeded system attributes; reuse them instead of creating duplicates
+    let!(:price_attr) { company.product_attributes.find_by(code: 'price') }
     let!(:color_attr) { create(:product_attribute, company: company, code: 'color', name: 'Color') }
-    let!(:weight_attr) { create(:product_attribute, company: company, code: 'weight', name: 'Weight') }
+    let!(:weight_attr) { company.product_attributes.find_by(code: 'weight') }
 
     let!(:product1) do
       product = create(:product, company: company, sku: 'ATTR001', name: 'Product with Attrs')
@@ -555,7 +556,8 @@ RSpec.describe ProductExportService do
     end
 
     let!(:label) { create(:label, company: company, name: 'Featured') }
-    let!(:price_attr) { create(:product_attribute, company: company, code: 'price', name: 'Price') }
+    # 'price' is an auto-seeded system attribute; reuse it instead of creating a duplicate
+    let!(:price_attr) { company.product_attributes.find_by(code: 'price') }
 
     before do
       create(:product_label, product: product, label: label)

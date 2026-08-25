@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe CustomerGroupsController, type: :request do
   let(:company) { create(:company) }
-  let(:user) { { id: 1, email: 'test@example.com', name: 'Test User' } }
+  let(:user) { create(:user, company: company) }
 
   before do
     # Mock authentication

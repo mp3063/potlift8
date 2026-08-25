@@ -6,7 +6,7 @@ RSpec.describe 'Labels Management', type: :system, js: true do
   # Use unique codes for companies to avoid conflicts
   let(:company) { create(:company, code: "TEST#{SecureRandom.hex(4).upcase}", name: 'Test Company') }
   let(:other_company) { create(:company, code: "OTHER#{SecureRandom.hex(4).upcase}", name: 'Other Company') }
-  let(:current_user) { { id: 1, email: 'test@example.com', name: 'Test User' } }
+  let(:current_user) { create(:user, company: company, name: 'Test User') }
 
   # Helper to set up authenticated session
   def sign_in_user

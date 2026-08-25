@@ -128,6 +128,10 @@ RSpec.describe 'Authorization integration', type: :request do
 
       it 'allows toggling product active status' do
         draft_product = create(:product, company: company, product_status: :draft)
+        # Satisfy activation guards: company auto-creates mandatory system
+        # attributes (price, description_html) that must be present to activate.
+        draft_product.write_attribute_value('price', '19.99')
+        draft_product.write_attribute_value('description_html', '<p>Desc</p>')
         patch toggle_active_product_path(draft_product)
         expect(draft_product.reload.product_status).to eq('active')
       end
@@ -168,6 +172,10 @@ RSpec.describe 'Authorization integration', type: :request do
 
       it 'allows toggling product active status' do
         draft_product = create(:product, company: company, product_status: :draft)
+        # Satisfy activation guards: company auto-creates mandatory system
+        # attributes (price, description_html) that must be present to activate.
+        draft_product.write_attribute_value('price', '19.99')
+        draft_product.write_attribute_value('description_html', '<p>Desc</p>')
         patch toggle_active_product_path(draft_product)
         expect(draft_product.reload.product_status).to eq('active')
       end
