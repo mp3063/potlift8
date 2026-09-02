@@ -1,92 +1,43 @@
 <% content_for :title, "#{@product.name} - Potlift8" %>
 <div class="px-4 sm:px-6 lg:px-8">
-  <div class="mb-8">
-    <nav class="flex mb-4" aria-label="Breadcrumb">
-      <ol role="list" class="flex items-center space-x-4">
-        <li>
-          <div>
-            <%= link_to products_path, class: "text-gray-600 hover:text-gray-700" do %>
-              <svg class="h-5 w-5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fill-rule="evenodd" d="M9.293 2.293a1 1 0 011.414 0l7 7A1 1 0 0117 11h-1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-3a1 1 0 00-1-1H9a1 1 0 00-1 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-6H3a1 1 0 01-.707-1.707l7-7z" clip-rule="evenodd" />
-              </svg>
-              <span class="sr-only">Home</span>
-            <% end %>
-          </div>
-        </li>
-        <li>
-          <div class="flex items-center">
-            <svg class="h-5 w-5 flex-shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-              <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+  <nav class="flex mb-4" aria-label="Breadcrumb">
+    <ol role="list" class="flex items-center space-x-4">
+      <li>
+        <div>
+          <%= link_to products_path, class: "text-gray-600 hover:text-gray-700" do %>
+            <svg class="h-5 w-5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M9.293 2.293a1 1 0 011.414 0l7 7A1 1 0 0117 11h-1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-3a1 1 0 00-1-1H9a1 1 0 00-1 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-6H3a1 1 0 01-.707-1.707l7-7z" clip-rule="evenodd" />
             </svg>
-            <%= link_to "Products", products_path, class: "ml-4 text-sm font-medium text-gray-500 hover:text-gray-700" %>
-          </div>
-        </li>
-        <li>
-          <div class="flex items-center">
-            <svg class="h-5 w-5 flex-shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-              <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
-            </svg>
-            <span class="ml-4 text-sm font-medium text-gray-500" aria-current="page"><%= @product.sku %></span>
-          </div>
-        </li>
-      </ol>
-    </nav>
+            <span class="sr-only">Home</span>
+          <% end %>
+        </div>
+      </li>
+      <li>
+        <div class="flex items-center">
+          <svg class="h-5 w-5 flex-shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+          </svg>
+          <%= link_to "Products", products_path, class: "ml-4 text-sm font-medium text-gray-500 hover:text-gray-700" %>
+        </div>
+      </li>
+      <li>
+        <div class="flex items-center">
+          <svg class="h-5 w-5 flex-shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+          </svg>
+          <span class="ml-4 text-sm font-medium text-gray-500" aria-current="page"><%= @product.sku %></span>
+        </div>
+      </li>
+    </ol>
+  </nav>
 
-    <div class="sm:flex sm:items-center sm:justify-between">
-      <div>
-        <h1 class="text-3xl font-semibold leading-6 text-gray-900"><%= @product.name %></h1>
-        <p class="mt-2 text-sm text-gray-700">
-          SKU: <%= @product.sku %>
-        </p>
-      </div>
-      <div class="mt-4 sm:mt-0 flex gap-x-3">
-        <%= render Ui::ButtonComponent.new(
-          href: edit_product_path(@product),
-          variant: :secondary
-        ) do %>
-          <svg class="-ml-0.5 mr-1.5 h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-            <path d="M2.695 14.763l-1.262 3.154a.5.5 0 00.65.65l3.155-1.262a4 4 0 001.343-.885L17.5 5.5a2.121 2.121 0 00-3-3L3.58 13.42a4 4 0 00-.885 1.343z" />
-          </svg>
-          Edit
-        <% end %>
-        <%= render Ui::ButtonComponent.new(
-          href: product_product_assets_path(@product),
-          variant: :secondary
-        ) do %>
-          <svg class="-ml-0.5 mr-1.5 h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-            <path fill-rule="evenodd" d="M4.5 2A1.5 1.5 0 003 3.5v13A1.5 1.5 0 004.5 18h11a1.5 1.5 0 001.5-1.5V7.621a1.5 1.5 0 00-.44-1.06l-4.12-4.122A1.5 1.5 0 0011.378 2H4.5zm2.25 8.5a.75.75 0 000 1.5h6.5a.75.75 0 000-1.5h-6.5zm0 3a.75.75 0 000 1.5h6.5a.75.75 0 000-1.5h-6.5z" clip-rule="evenodd" />
-          </svg>
-          Assets
-        <% end %>
-        <%= render Ui::ButtonComponent.new(
-          href: duplicate_product_path(@product),
-          variant: :secondary,
-          data: { turbo_method: :post, turbo_frame: "_top" }
-        ) do %>
-          <svg class="-ml-0.5 mr-1.5 h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-            <path d="M7 3.5A1.5 1.5 0 018.5 2h3.879a1.5 1.5 0 011.06.44l3.122 3.12A1.5 1.5 0 0117 6.622V12.5a1.5 1.5 0 01-1.5 1.5h-1v-3.379a3 3 0 00-.879-2.121L10.5 5.379A3 3 0 008.379 4.5H7v-1z" />
-            <path d="M4.5 6A1.5 1.5 0 003 7.5v9A1.5 1.5 0 004.5 18h7a1.5 1.5 0 001.5-1.5v-5.879a1.5 1.5 0 00-.44-1.06L9.44 6.439A1.5 1.5 0 008.378 6H4.5z" />
-          </svg>
-          Duplicate
-        <% end %>
-        <%= button_to product_path(@product),
-          method: :delete,
-          form: { data: { turbo_confirm: "Are you sure you want to delete #{@product.name}?" } },
-          class: "inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500" do %>
-          <svg class="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-            <path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clip-rule="evenodd" />
-          </svg>
-          Delete
-        <% end %>
-      </div>
-    </div>
-  </div>
+  <%= turbo_frame_tag "product-header-#{@product.id}", target: "_top" do %>
+    <%= render Products::HeaderComponent.new(product: @product) %>
+  <% end %>
 
-  <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-    <div class="lg:col-span-2 space-y-6">
+  <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+    <div class="lg:col-span-2 space-y-4">
       <%= render Products::ImagesComponent.new(product: @product) %>
-      <%= render Products::BasicInfoComponent.new(product: @product) %>
-      <%= render Products::ConfigurableCardComponent.new(product: @product) %>
 
       <%= turbo_frame_tag "catalog-tabs-#{@product.id}" do %>
         <%= render Products::CatalogTabsComponent.new(
@@ -100,11 +51,9 @@
       <%= render Products::LabelsComponent.new(product: @product) %>
     </div>
 
-    <div class="space-y-6">
-      <%= turbo_frame_tag "product-status-#{@product.id}" do %>
-        <%= render Products::StatusCardComponent.new(product: @product) %>
-      <% end %>
+    <div class="space-y-4 lg:sticky lg:top-20 lg:self-start">
       <%= render Products::InventorySummaryComponent.new(product: @product) %>
+      <%= render Products::ConfigurableCardComponent.new(product: @product) %>
 
       <% shopify_catalogs = @product.catalog_items.includes(:catalog)
            .select { |ci| ci.catalog.shopify_connected? } %>

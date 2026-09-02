@@ -1,6 +1,6 @@
-<%= turbo_stream.replace "product-status-#{@product.id}" do %>
-  <%= turbo_frame_tag "product-status-#{@product.id}" do %>
-    <%= render Products::StatusCardComponent.new(product: @product) %>
+<%= turbo_stream.replace "product-header-#{@product.id}" do %>
+  <%= turbo_frame_tag "product-header-#{@product.id}", target: "_top" do %>
+    <%= render Products::HeaderComponent.new(product: @product) %>
   <% end %>
 <% end %>
 
