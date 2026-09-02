@@ -1,29 +1,46 @@
+<%# Single Product-tab attribute row. The root id is what
+    ProductAttributeValuesController#update replaces via turbo_stream.
+    Locals: attribute (ProductAttribute), value (ProductAttributeValue or nil), product %>
 <% has_value = value.present? && value.value.present? %>
-
-<div class="group" data-controller="inline-editor" data-inline-editor-url-value="<%= product_attribute_value_path(product, attribute) %>">
-  <div class="flex items-start justify-between" data-inline-editor-target="display">
-    <dl class="flex-1">
-      <dt class="text-base font-semibold text-gray-700"><%= attribute.name %></dt>
-      <dd class="mt-1 text-sm <%= has_value ? 'text-gray-900' : 'text-gray-500 italic' %>">
+<% unset_mandatory = !has_value && attribute.mandatory? %>
+<% value_classes = if has_value
+     "text-gray-900"
+   elsif unset_mandatory
+     "text-amber-700 italic"
+   else
+     "text-gray-400 italic"
+   end %>
+<div id="<%= dom_id(attribute, :value) %>"
+     class="group px-6 py-2 border-b border-gray-100"
+     data-controller="inline-editor"
+     data-inline-editor-url-value="<%= product_attribute_value_path(product, attribute) %>">
+  <div class="flex items-start gap-x-4" data-inline-editor-target="display">
+    <dl class="flex flex-1 min-w-0 items-start gap-x-4">
+      <dt class="flex w-44 shrink-0 items-center gap-2 text-sm font-medium text-gray-500"
+          <% if attribute.description.present? %>title="<%= attribute.description %>"<% end %>>
+        <span class="truncate"><%= attribute.name %></span>
+        <% if unset_mandatory %>
+          <%= render Ui::BadgeComponent.new(variant: :warning, size: :sm) do %>Required<% end %>
+        <% end %>
+      </dt>
+      <dd class="flex-1 min-w-0 text-sm <%= attribute.patype_rich_text? ? 'line-clamp-2' : 'truncate' %> <%= value_classes %>"
+          <% if has_value %>title="<%= value.value %>"<% end %>>
         <%= has_value ? value.value : 'Not set' %>
       </dd>
-      <% if attribute.description.present? %>
-        <dd class="mt-1 text-xs text-gray-500"><%= attribute.description %></dd>
-      <% end %>
     </dl>
-    <div class="ml-4">
+    <div class="flex shrink-0 items-center gap-1">
       <%= button_tag type: "button",
-          class: "p-1 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-gray-600 rounded hover:bg-gray-100",
+          class: "p-1 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity text-gray-400 hover:text-gray-600 rounded hover:bg-gray-100",
           data: { action: "click->inline-editor#edit" },
           aria: { label: "Edit #{attribute.name}" } do %>
-        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
         </svg>
       <% end %>
     </div>
   </div>
 
-  <div class="hidden" data-inline-editor-target="editor">
+  <div class="hidden mt-2" data-inline-editor-target="editor">
     <%= form_with url: product_attribute_value_path(product, attribute),
         method: :patch,
         data: {
