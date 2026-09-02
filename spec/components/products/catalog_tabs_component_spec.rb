@@ -73,4 +73,53 @@ RSpec.describe Products::CatalogTabsComponent, type: :component do
       expect(page).not_to have_css("##{dom_id(brand_attribute, :value)} dd", text: "Manufacturer brand", visible: :all)
     end
   end
+
+  describe "catalog tab" do
+    let(:catalog) { create(:catalog, company: company, name: "European Webshop") }
+    let!(:catalog_item) { create(:catalog_item, catalog: catalog, product: product) }
+    let(:short_description) { company.product_attributes.find_by!(code: "short_description") }
+    let(:panel) { "#panel-#{catalog.code}" }
+
+    it "renders a one-line catalog header with view and remove actions" do
+      render_component(product.reload)
+
+      expect(page).to have_css("#{panel} h4", text: "European Webshop")
+      expect(page).to have_css("#{panel} a", text: "View catalog")
+      expect(page).to have_css("#{panel} button", text: "Remove")
+      expect(page).not_to have_css("#{panel} button", text: "Remove from Catalog")
+    end
+
+    it "marks inherited product values with an inherited tag and no editor" do
+      create(:product_attribute_value, product: product, product_attribute: brand_attribute, value: "Acme")
+      render_component(product.reload)
+
+      expect(page).to have_css("#{panel} dd", text: "Acme")
+      expect(page).to have_css("#{panel} span.text-gray-400", text: "inherited")
+      expect(page).not_to have_text("Inherited from product")
+    end
+
+    it "renders overrides with the Override badge and edit/remove controls" do
+      override = create(:catalog_item_attribute_value, catalog_item: catalog_item, product_attribute: short_description, value: "EU copy")
+      render_component(product.reload)
+
+      row = "##{dom_id(override, :value)}"
+      expect(page).to have_css("#{row} dd", text: "EU copy")
+      expect(page).to have_css("#{row} span.bg-blue-100", text: "Override")
+      expect(page).to have_css("#{row}[data-controller='inline-editor']")
+      expect(page).to have_css("#{row} button[aria-label='Edit #{short_description.name}']")
+      expect(page).to have_css("#{row} button[aria-label='Remove override for #{short_description.name}']")
+    end
+
+    it "omits attributes with neither an override nor a product value" do
+      render_component(product.reload)
+
+      expect(page).not_to have_css("#{panel} dt", text: brand_attribute.name)
+    end
+
+    it "still offers the Add Attribute Override action" do
+      render_component(product.reload)
+
+      expect(page).to have_css("#{panel} button", text: "Add Attribute Override")
+    end
+  end
 end
