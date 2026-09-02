@@ -98,21 +98,22 @@ The component renders for every product type. No `render?` guard.
 
 The component class is unchanged. The component template keeps the tab bar and only drops the `p-6` wrapper around the panels, so rows can carry their own horizontal padding. The two panel partials change layout, and row markup is consolidated.
 
-**Row layout (both tabs).** Each row is one `div` that is both the inline-editor controller element and a CSS grid:
+**Row layout (both tabs).** Each row is one `div` that is the inline-editor controller element. Columns are aligned with a fixed-width name cell rather than CSS grid, so the `dl` only ever contains `dt` and `dd` and the editor block stays outside it:
 
 ```
-div#<row id>.group.grid.grid-cols-[minmax(9rem,1fr)_2fr_auto].items-start.gap-x-4.px-6.py-2.border-b.border-gray-100
+div#<row id>.group.px-6.py-2.border-b.border-gray-100
   [data-controller="inline-editor" data-inline-editor-url-value=...]      (editable rows only)
-  ├─ dl.contents [data-inline-editor-target="display"]
-  │    ├─ dt   (column 1)
-  │    ├─ dd   (column 2)
-  │    └─ div  (column 3, actions)
-  └─ div.hidden.col-span-3 [data-inline-editor-target="editor"]  (editable rows only; existing form markup)
+  ├─ div.flex.items-start.gap-x-4 [data-inline-editor-target="display"]
+  │    ├─ dl.flex.flex-1.min-w-0.items-start.gap-x-4
+  │    │    ├─ dt.w-44.shrink-0   (column 1: name and badges)
+  │    │    └─ dd.flex-1.min-w-0  (column 2: value)
+  │    └─ div.flex.shrink-0.items-center.gap-1  (column 3: actions, or the "inherited" tag)
+  └─ div.hidden.mt-2 [data-inline-editor-target="editor"]  (editable rows only; existing form markup)
 ```
 
-The `display` wrapper uses `contents` so its three children become grid cells while the controller can still hide it as one element. The editor is a direct grid child spanning all three columns. Rows without an editor (inherited values on catalog tabs) omit the controller attributes and the editor block.
+The controller hides the `display` wrapper as one element and reveals the editor below it, which then takes the full row width. Rows without an editor (inherited values on catalog tabs) omit the controller attributes and the editor block.
 
-- Column 1 (`dt`, `text-sm font-medium text-gray-500`): attribute name. Suffixes: blue "Override" badge on catalog overrides; amber "Required" badge (`Ui::BadgeComponent` `:warning`, `size: :sm`) on mandatory attributes with no value. Attribute `description`, when present, becomes a `title` tooltip on the name instead of a third line.
+- Column 1 (`dt`, `w-44 shrink-0 text-sm font-medium text-gray-500`, name in a `truncate` span): attribute name. Suffixes: blue "Override" badge on catalog overrides; amber "Required" badge (`Ui::BadgeComponent` `:warning`, `size: :sm`) on mandatory attributes with no value. Attribute `description`, when present, becomes a `title` tooltip on the name instead of a third line.
 - Column 2 (`dd`, `text-sm text-gray-900`): the value, `truncate` for single-line types, `line-clamp-2` for `patype_rich_text`; full value in `title`. Unset shows "Not set" in `text-gray-400 italic`, or `text-amber-700 italic` when mandatory.
 - Column 3 (`flex items-center gap-1`): on catalog tabs, either a grey `inherited` tag (`text-xs text-gray-400`) or the override's edit and remove icon buttons (existing markup, hover-revealed). On the Product tab, the edit icon button (existing markup, hover-revealed).
 
@@ -127,7 +128,8 @@ The `display` wrapper uses `contents` so its three children become grid cells wh
 - Header row compacts to one line: catalog name and state badge on the left; on the right a text link "View catalog" (`catalog_items_path`, `data-turbo-frame="_top"`) and a red text `button_to "Remove"` with the existing `turbo_confirm` and frame target. The large buttons are removed.
 - Attribute rows use the shared row layout. The current skip rule stays: attributes with neither an override nor a product value are not rendered on catalog tabs.
 - The override row markup is extracted to `products/catalog_tabs/_catalog_override_row.html.erb` (locals: `catalog_override`, `product_attribute`, `product_value`, `catalog_item`, `product`). It includes the outer row `div` with `id: dom_id(catalog_override, :value)`; the `turbo_frame_tag` is dropped for the same reason as above. The inherited row markup is inline in `_catalog_attributes` (no editor).
-- "Product value: X" for an override that differs from the product value moves to a `title` tooltip on the value and a small `text-xs text-gray-400` line inside the editor form only.
+- "Product value: X" for an override that differs from the product value moves to a `title` tooltip on the value and a small `text-xs text-gray-500` line inside the editor form only.
+- The remove-override `button_to` gains a proper `aria: { label: }` in place of the current `aria_label:` option, which rendered an invalid `aria_label` attribute.
 - The "Add Attribute Override" modal and its trigger button stay, trigger rendered `size: :sm` right-aligned in a `px-6 py-3` footer row.
 
 **Override update response.** `app/views/catalog_item_attribute_values/update.turbo_stream.erb` stops inlining row markup and instead replaces the whole panel exactly like `create.turbo_stream.erb` and `destroy.turbo_stream.erb` already do (panel replace plus tab badge update).
