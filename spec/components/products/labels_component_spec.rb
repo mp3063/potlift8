@@ -15,6 +15,32 @@ RSpec.describe Products::LabelsComponent, type: :component do
     expect(page).to have_text("Labels")
   end
 
+  describe "layout" do
+    before { label1 }
+
+    it "wraps the whole card in the label manager controller" do
+      render_inline(described_class.new(product: product))
+
+      expect(page).to have_css("[data-controller='product-label-manager'] [data-controller='modal']")
+      expect(page).to have_css("[data-controller='product-label-manager'] [data-product-label-manager-target='selectedContainer']")
+    end
+
+    it "offers an Add trigger in the card header that opens the picker modal" do
+      render_inline(described_class.new(product: product))
+
+      expect(page).to have_css("[data-action='click->modal#open'] button", text: "Add")
+      expect(page).to have_css("[data-controller='modal'] input[data-product-label-manager-target='searchInput']")
+      expect(page).to have_css("[data-controller='modal'] [data-product-label-manager-target='labelList']")
+    end
+
+    it "does not render the picker outside the modal" do
+      render_inline(described_class.new(product: product))
+
+      expect(page).not_to have_text("Select Labels")
+      expect(page).not_to have_text("Selected Labels")
+    end
+  end
+
   context "with no labels" do
     it "displays no labels selected message" do
       label1 # Create at least one available label

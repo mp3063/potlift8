@@ -1,16 +1,22 @@
-<%= render Ui::CardComponent.new do |card| %>
-  <% card.with_header do %>
-    <h3 class="text-base font-semibold leading-6 text-gray-900">Labels</h3>
-  <% end %>
+<div data-controller="product-label-manager" data-product-label-manager-product-id-value="<%= product.id %>">
+  <%= render Ui::CardComponent.new(padding: :sm) do |card| %>
+    <% card.with_header do %>
+      <h3 class="text-base font-semibold leading-6 text-gray-900">Labels</h3>
+    <% end %>
+    <% card.with_action do %>
+      <%= render Ui::ModalComponent.new(size: :md, modal_id: "add-label-modal-#{product.id}") do |modal| %>
+        <% modal.with_trigger do %>
+          <%= render Ui::ButtonComponent.new(variant: :secondary, size: :sm) do %>
+            Add
+          <% end %>
+        <% end %>
 
-  <div data-controller="product-label-manager" data-product-label-manager-product-id-value="<%= product.id %>">
-    <div class="space-y-4">
-      <div>
-        <label class="block text-sm font-medium text-gray-900 mb-2">
-          Select Labels
-        </label>
+        <% modal.with_header do %>
+          Add labels
+        <% end %>
+
         <p class="text-xs text-gray-600 mb-3">
-          Choose labels to categorize this product. Click on a label to add it.
+          Click a label to add it to this product.
         </p>
 
         <div class="relative mb-3">
@@ -30,7 +36,7 @@
           </div>
         </div>
 
-        <div class="max-h-48 overflow-y-auto border border-gray-200 rounded-lg bg-gray-50 p-3" data-product-label-manager-target="labelList">
+        <div class="max-h-64 overflow-y-auto border border-gray-200 rounded-lg bg-gray-50 p-3" data-product-label-manager-target="labelList">
           <% if available_labels.any? %>
             <div class="space-y-1">
               <% available_labels.each do |label| %>
@@ -57,40 +63,41 @@
           <% end %>
         </div>
 
-        <div class="hidden max-h-48 border border-gray-200 rounded-lg bg-gray-50 p-3" data-product-label-manager-target="emptyState">
+        <div class="hidden max-h-64 border border-gray-200 rounded-lg bg-gray-50 p-3" data-product-label-manager-target="emptyState">
           <p class="text-sm text-gray-500 text-center py-4">No labels found matching your search.</p>
         </div>
-      </div>
 
-      <div>
-        <label class="block text-sm font-medium text-gray-900 mb-2">
-          Selected Labels
-        </label>
-        <div class="flex flex-wrap gap-2 min-h-[2.5rem] p-3 border border-gray-200 rounded-lg bg-white" data-product-label-manager-target="selectedContainer" aria-label="Selected labels">
-          <% if has_labels? %>
-            <% product.labels.each do |label| %>
-              <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm bg-blue-100 text-blue-800 border border-blue-200" data-label-id="<%= label.id %>" data-label-name="<%= label.full_name %>" data-label-code="<%= label.code %>" data-label-color="<%= label.info&.dig('color') || '#2563eb' %>" role="listitem">
-                <span class="h-2 w-2 rounded-full flex-shrink-0" style="background-color: <%= label.info&.dig('color') || '#2563eb' %>" aria-hidden="true"></span>
-                <span class="font-medium"><%= label.full_name %></span>
-                <button
-                  type="button"
-                  class="ml-1 inline-flex items-center justify-center h-4 w-4 rounded-full hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-colors"
-                  data-action="click->product-label-manager#removeLabel"
-                  data-label-id="<%= label.id %>"
-                  aria-label="Remove label <%= label.full_name %>"
-                >
-                  <span class="sr-only">Remove label <%= label.full_name %></span>
-                  <svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
-                  </svg>
-                </button>
-              </span>
-            <% end %>
-          <% else %>
-            <p class="text-sm text-gray-500 py-1" data-product-label-manager-target="emptyMessage">No labels selected. Click on labels above to add them.</p>
+        <% modal.with_footer do %>
+          <%= render Ui::ButtonComponent.new(variant: :secondary, data: { action: "click->modal#close" }) do %>
+            Close
           <% end %>
-        </div>
-      </div>
+        <% end %>
+      <% end %>
+    <% end %>
+
+    <div class="flex flex-wrap gap-2 min-h-[1.75rem]" data-product-label-manager-target="selectedContainer" aria-label="Selected labels">
+      <% if has_labels? %>
+        <% product.labels.each do |label| %>
+          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm bg-blue-100 text-blue-800 border border-blue-200" data-label-id="<%= label.id %>" data-label-name="<%= label.full_name %>" data-label-code="<%= label.code %>" data-label-color="<%= label.info&.dig('color') || '#2563eb' %>" role="listitem">
+            <span class="h-2 w-2 rounded-full flex-shrink-0" style="background-color: <%= label.info&.dig('color') || '#2563eb' %>" aria-hidden="true"></span>
+            <span class="font-medium"><%= label.full_name %></span>
+            <button
+              type="button"
+              class="ml-1 inline-flex items-center justify-center h-4 w-4 rounded-full hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-colors"
+              data-action="click->product-label-manager#removeLabel"
+              data-label-id="<%= label.id %>"
+              aria-label="Remove label <%= label.full_name %>"
+            >
+              <span class="sr-only">Remove label <%= label.full_name %></span>
+              <svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+              </svg>
+            </button>
+          </span>
+        <% end %>
+      <% else %>
+        <p class="text-sm text-gray-500 py-1" data-product-label-manager-target="emptyMessage">No labels selected. Use Add to attach one.</p>
+      <% end %>
     </div>
-  </div>
-<% end %>
+  <% end %>
+</div>
