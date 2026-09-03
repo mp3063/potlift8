@@ -37,6 +37,8 @@ RSpec.describe Products::ConfigurableCardComponent, type: :component do
       expect(page).to have_css("dt", text: "Color")
       expect(page).to have_css("dd span", text: "Small")
       expect(page).to have_css("dd span", text: "Red")
+      expect(page).to have_css("dt.w-20[title='Size']", text: "Size")
+      expect(page).not_to have_css("dt[title='size']")
       expect(page).not_to have_css("div.bg-gray-50.rounded-lg.p-4")
     end
 
