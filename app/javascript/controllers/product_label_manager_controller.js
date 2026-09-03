@@ -244,7 +244,7 @@ export default class extends Controller {
   updateEmptyMessages() {
     const selectedLabels = this.selectedContainerTarget.querySelectorAll('[data-label-id]')
     if (selectedLabels.length === 0) {
-      const emptyMessage = `<p class="text-sm text-gray-500 py-1" data-product-label-manager-target="emptyMessage">No labels selected. Click on labels above to add them.</p>`
+      const emptyMessage = `<p class="text-sm text-gray-500 py-1" data-product-label-manager-target="emptyMessage">No labels selected. Use Add to attach one.</p>`
       this.selectedContainerTarget.innerHTML = emptyMessage
     }
 

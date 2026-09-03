@@ -39,6 +39,12 @@ RSpec.describe Products::LabelsComponent, type: :component do
       expect(page).not_to have_text("Select Labels")
       expect(page).not_to have_text("Selected Labels")
     end
+
+    it "keeps the client-injected empty message in sync with the server-rendered one" do
+      js = File.read(Rails.root.join("app/javascript/controllers/product_label_manager_controller.js"))
+      expect(js).to include("No labels selected. Use Add to attach one.")
+      expect(js).not_to include("Click on labels above")
+    end
   end
 
   context "with no labels" do
