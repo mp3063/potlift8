@@ -12,7 +12,7 @@ module Products
 
     def recent_activities
       @recent_activities ||= begin
-        versions = product.versions.order(id: :desc).limit(5)
+        versions = product.versions.order(id: :desc).limit(3)
 
         activities = versions.map do |version|
           changed_fields = begin

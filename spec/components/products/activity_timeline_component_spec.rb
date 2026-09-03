@@ -63,13 +63,13 @@ RSpec.describe Products::ActivityTimelineComponent, type: :component do
       expect(texts.join).to include("sku")
     end
 
-    it "limits to 5 entries" do
+    it "limits to 3 entries" do
       PaperTrail.request.whodunnit = "Jane Doe"
       5.times { |i| product.update!(name: "Name #{i}") }
 
       render_inline(described_class.new(product: product.reload))
 
-      expect(page).to have_css("li", maximum: 5)
+      expect(page).to have_css("li", count: 3)
     end
   end
 
