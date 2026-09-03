@@ -27,6 +27,8 @@ RSpec.describe Products::ImagesComponent, type: :component do
 
     expect(page).to have_css("label[for='file-upload']", text: "Upload")
     expect(page).to have_css("input#file-upload[type='file'][multiple][accept='image/*'].sr-only")
+    expect(page).to have_css("#product_images_card.group")
+    expect(page).to have_css("label[for='file-upload'][class*='group-has-[#file-upload:focus-visible]:ring-2']")
   end
 
   it "keeps the image-upload controller on the form with dropzone and progress targets inside it" do
