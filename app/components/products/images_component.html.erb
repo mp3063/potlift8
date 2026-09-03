@@ -1,4 +1,4 @@
-<div id="product_images_card" class="group">
+<div id="product_images_card" class="group/upload">
 <%= render Ui::CardComponent.new(padding: :sm) do |card| %>
   <% card.with_header do %>
     <div class="flex items-center gap-2">
@@ -11,7 +11,7 @@
     </div>
   <% end %>
   <% card.with_action do %>
-    <label for="file-upload" class="inline-flex cursor-pointer items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 group-has-[#file-upload:focus-visible]:ring-2 group-has-[#file-upload:focus-visible]:ring-blue-500 group-has-[#file-upload:focus-visible]:ring-offset-2">
+    <label for="file-upload" class="inline-flex cursor-pointer items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 group-has-[#file-upload:focus-visible]/upload:ring-2 group-has-[#file-upload:focus-visible]/upload:ring-blue-500 group-has-[#file-upload:focus-visible]/upload:ring-offset-2">
       Upload
     </label>
   <% end %>
