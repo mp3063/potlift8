@@ -1,17 +1,65 @@
 <div id="product_images_card">
-<%= render Ui::CardComponent.new do |card| %>
+<%= render Ui::CardComponent.new(padding: :sm) do |card| %>
   <% card.with_header do %>
-    <div class="flex items-center justify-between">
+    <div class="flex items-center gap-2">
       <h3 class="text-base font-semibold leading-6 text-gray-900">Images</h3>
       <% if has_images? %>
         <%= render Ui::BadgeComponent.new(variant: :gray) do %>
-          <%= images.count %> <%= images.count == 1 ? 'image' : 'images' %>
+          <%= images.count %>
         <% end %>
       <% end %>
     </div>
   <% end %>
+  <% card.with_action do %>
+    <label for="file-upload" class="inline-flex cursor-pointer items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2">
+      Upload
+    </label>
+  <% end %>
+
+  <%= form_with url: product_images_path(product), method: :post, multipart: true, data: { controller: "image-upload", turbo: false } do |form| %>
+    <div class="rounded-md border border-transparent p-1 transition-colors"
+         data-image-upload-target="dropzone"
+         data-action="drop->image-upload#handleDrop dragover->image-upload#handleDragOver dragleave->image-upload#handleDragLeave">
+      <% if has_images? %>
+        <div class="flex gap-2 overflow-x-auto">
+          <% strip_images.each_with_index do |image, index| %>
+            <div class="relative h-16 w-16 shrink-0 overflow-hidden rounded">
+              <%= image_tag image.variant(resize_to_fill: [128, 128]), class: "h-full w-full object-cover", alt: image.blob.metadata&.dig(:alt_text) || "#{product.name} - Image #{index + 1}" %>
+              <% if index == 0 %>
+                <span class="absolute left-1 top-1 rounded-full bg-yellow-500 p-0.5 text-white" title="Primary image">
+                  <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                    <path d="M10 15.27L16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z" />
+                  </svg>
+                  <span class="sr-only">Primary image</span>
+                </span>
+              <% end %>
+            </div>
+          <% end %>
+          <% if overflow_count > 0 %>
+            <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded bg-gray-100 text-sm font-medium text-gray-600">+<%= overflow_count %></div>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="text-sm text-gray-500">No images yet. Upload or drop files here.</p>
+      <% end %>
+    </div>
+
+    <%= form.file_field :images,
+        multiple: true,
+        accept: "image/*",
+        class: "sr-only",
+        id: "file-upload",
+        data: {
+          image_upload_target: "input",
+          action: "change->image-upload#handleFiles"
+        } %>
+    <div class="mt-2 space-y-2" data-image-upload-target="progressContainer"></div>
+  <% end %>
 
   <% if has_images? %>
+    <details class="mt-3">
+      <summary class="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-500">Manage images</summary>
+      <div class="mt-3">
     <div data-controller="product-images bulk-images image-reorder image-metadata"
          data-product-id="<%= product.id %>"
          data-image-metadata-product-id-value="<%= product.id %>"
@@ -150,38 +198,8 @@
 
       <%= render "product_images/metadata_modal", product: product %>
     </div>
-  <% end %>
-
-  <div class="mt-4">
-    <%= form_with url: product_images_path(product), method: :post, multipart: true, data: { controller: "image-upload", turbo: false } do |form| %>
-      <div class="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-blue-400 transition-colors"
-           data-image-upload-target="dropzone"
-           data-action="drop->image-upload#handleDrop dragover->image-upload#handleDragOver dragleave->image-upload#handleDragLeave">
-        <div class="space-y-1 text-center">
-          <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-          <div class="flex text-sm text-gray-600">
-            <label for="file-upload" class="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-              <span>Upload files</span>
-              <%= form.file_field :images,
-                  multiple: true,
-                  accept: "image/*",
-                  class: "sr-only",
-                  id: "file-upload",
-                  data: {
-                    image_upload_target: "input",
-                    action: "change->image-upload#handleFiles"
-                  } %>
-            </label>
-            <p class="pl-1">or drag and drop</p>
-          </div>
-          <p class="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
-        </div>
       </div>
-
-      <div class="mt-4 space-y-2" data-image-upload-target="progressContainer"></div>
-    <% end %>
-  </div>
+    </details>
+  <% end %>
 <% end %>
 </div>

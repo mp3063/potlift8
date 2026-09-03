@@ -6,139 +6,100 @@ RSpec.describe Products::ImagesComponent, type: :component do
   let(:company) { create(:company) }
   let(:product) { create(:product, company: company) }
 
-  it "renders images header" do
-    render_inline(described_class.new(product: product))
-
-    expect(page).to have_text("Images")
+  def attach_images(count)
+    count.times do |i|
+      product.images.attach(
+        io: File.open(Rails.root.join("spec", "fixtures", "files", "test_image.png")),
+        filename: "test-#{i}.png",
+        content_type: "image/png"
+      )
+    end
   end
 
-  it "renders upload area" do
+  it "renders the images header" do
     render_inline(described_class.new(product: product))
 
-    expect(page).to have_text("Upload files")
-    expect(page).to have_text("or drag and drop")
-    expect(page).to have_text("PNG, JPG, GIF up to 10MB")
+    expect(page).to have_css("h3", text: "Images")
   end
 
-  it "renders file input with correct attributes" do
+  it "renders an Upload label bound to the hidden multi-file input" do
     render_inline(described_class.new(product: product))
 
-    expect(page).to have_css("input[type='file'][multiple='multiple'][accept='image/*']", visible: false)
+    expect(page).to have_css("label[for='file-upload']", text: "Upload")
+    expect(page).to have_css("input#file-upload[type='file'][multiple][accept='image/*'].sr-only")
+  end
+
+  it "keeps the image-upload controller on the form with dropzone and progress targets inside it" do
+    render_inline(described_class.new(product: product))
+
+    expect(page).to have_css("form[data-controller='image-upload']")
+    expect(page).to have_css("form [data-image-upload-target='dropzone'][data-action*='drop->image-upload#handleDrop']")
+    expect(page).to have_css("form [data-image-upload-target='progressContainer']")
+    expect(page).to have_css("form input[data-image-upload-target='input'][data-action='change->image-upload#handleFiles']")
   end
 
   context "without images" do
-    it "does not render main image area" do
+    it "shows the one-line empty state and no gallery toggle" do
       render_inline(described_class.new(product: product))
 
-      expect(page).not_to have_css("[data-product-images-target='mainImage']")
+      expect(page).to have_text("No images yet. Upload or drop files here.")
+      expect(page).not_to have_css("details")
+      expect(page).not_to have_css("[data-controller*='product-images']")
     end
 
-    it "does not render thumbnail grid" do
+    it "does not show a count badge" do
       render_inline(described_class.new(product: product))
 
-      expect(page).not_to have_css("[data-product-images-target='thumbnails']")
+      expect(page).not_to have_css("h3 ~ span.rounded-full")
     end
   end
 
-  context "with images attached", skip: "Requires ActiveStorage setup in test" do
-    before do
-      # This would require ActiveStorage configuration and fixture files
-      # Skip for now, implement when ActiveStorage is configured in test env
+  context "with images attached" do
+    before { attach_images(3) }
+
+    it "shows the image count next to the header" do
+      render_inline(described_class.new(product: product))
+
+      expect(page).to have_css("span.rounded-full", text: "3")
     end
 
-    it "renders main image"
-    it "renders thumbnail grid"
-    it "displays position indicators"
-    it "shows delete button on hover"
-    it "includes proper alt text"
-  end
+    it "renders a thumbnail strip with the primary marker on the first image only" do
+      render_inline(described_class.new(product: product))
 
-  it "includes Stimulus controller data attributes" do
-    render_inline(described_class.new(product: product))
-
-    expect(page).to have_css("[data-controller='image-upload']")
-    expect(page).to have_css("[data-image-upload-target='dropzone']")
-    expect(page).to have_css("[data-image-upload-target='input']")
-    expect(page).to have_css("[data-image-upload-target='progressContainer']")
-  end
-
-  it "includes drag and drop event handlers" do
-    render_inline(described_class.new(product: product))
-
-    expect(page).to have_css("[data-action*='drop->image-upload#handleDrop']")
-    expect(page).to have_css("[data-action*='dragover->image-upload#handleDragOver']")
-    expect(page).to have_css("[data-action*='dragleave->image-upload#handleDragLeave']")
-  end
-
-  it "uses blue-600 color scheme for hover states" do
-    render_inline(described_class.new(product: product))
-
-    expect(page).to have_css(".hover\\:border-blue-400")
-    expect(page).to have_css(".text-blue-600")
-  end
-
-  it "includes focus ring with blue-500" do
-    render_inline(described_class.new(product: product))
-
-    expect(page).to have_css(".focus-within\\:ring-blue-500")
-  end
-
-  describe "thumbnail interactions" do
-    # Note: These tests verify the HTML template structure even without images
-    # The actual functionality requires ActiveStorage configuration in test env
-
-    it "template includes group-hover classes for overlay" do
-      # Read the template file directly to verify classes exist
-      template_path = Rails.root.join("app/components/products/images_component.html.erb")
-      template_content = File.read(template_path)
-
-      expect(template_content).to include("group-hover:opacity-100")
-      expect(template_content).to include("group transition-all")
+      expect(page).to have_css("[data-image-upload-target='dropzone'] img", count: 3)
+      expect(page).to have_css("[data-image-upload-target='dropzone'] .sr-only", text: "Primary image", count: 1)
     end
 
-    it "template has z-index for delete button visibility" do
-      template_path = Rails.root.join("app/components/products/images_component.html.erb")
-      template_content = File.read(template_path)
+    it "puts the full gallery behind a Manage images toggle, outside the upload form" do
+      render_inline(described_class.new(product: product))
 
-      expect(template_content).to include("z-10")
+      expect(page).to have_css("details summary", text: "Manage images")
+      # Capybara treats non-summary children of a closed <details> as invisible,
+      # and collapsed-by-default is the requirement, so match regardless of visibility.
+      expect(page).to have_css("details [data-controller='product-images bulk-images image-reorder image-metadata']", visible: :all)
+      expect(page).not_to have_css("form details")
     end
+  end
 
-    it "template has red hover color for delete button" do
-      template_path = Rails.root.join("app/components/products/images_component.html.erb")
-      template_content = File.read(template_path)
+  context "with more than eight images" do
+    before { attach_images(10) }
 
-      expect(template_content).to include("hover:bg-red-600")
-      expect(template_content).not_to include("hover:bg-black/50")
+    it "shows seven thumbnails and a +3 overflow tile" do
+      render_inline(described_class.new(product: product))
+
+      expect(page).to have_css("[data-image-upload-target='dropzone'] img", count: 7)
+      expect(page).to have_css("[data-image-upload-target='dropzone'] div", text: "+3")
     end
+  end
 
-    it "template selectImage action does not have :stop modifier" do
-      template_path = Rails.root.join("app/components/products/images_component.html.erb")
-      template_content = File.read(template_path)
+  describe "gallery template" do
+    let(:template_content) { File.read(Rails.root.join("app/components/products/images_component.html.erb")) }
 
+    it "keeps selectImage and deleteImage actions without :stop modifiers" do
       expect(template_content).to include("click->product-images#selectImage")
       expect(template_content).not_to include("click->product-images#selectImage:stop")
-    end
-
-    it "template deleteImage action does not have :stop modifier" do
-      template_path = Rails.root.join("app/components/products/images_component.html.erb")
-      template_content = File.read(template_path)
-
       expect(template_content).to include("click->product-images#deleteImage")
       expect(template_content).not_to include("click->product-images#deleteImage:stop")
-    end
-
-    it "template has focus ring styles for accessibility" do
-      template_path = Rails.root.join("app/components/products/images_component.html.erb")
-      template_content = File.read(template_path)
-
-      expect(template_content).to include("focus:ring-red-500")
-    end
-
-    it "template has matching transition duration for smooth effects" do
-      template_path = Rails.root.join("app/components/products/images_component.html.erb")
-      template_content = File.read(template_path)
-
-      expect(template_content).to include("transition-opacity duration-200")
     end
   end
 end
