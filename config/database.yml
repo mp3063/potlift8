@@ -16,6 +16,7 @@ default: &default
   adapter: postgresql
   encoding: unicode
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  gssencmode: disable
   host: localhost
   username: <%= ENV.fetch("POSTGRES_USER") { "potlift" } %>
   password: <%= ENV.fetch("POSTGRES_PASSWORD") { "password" } %>
