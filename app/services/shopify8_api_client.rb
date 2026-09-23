@@ -49,9 +49,10 @@ class Shopify8ApiClient
     get(path)
   end
 
-  def get_sync_tasks(shop_id:, limit: 5, status: nil)
+  def get_sync_tasks(shop_id:, limit: 5, status: nil, unresolved: false)
     params = "shop_id=#{shop_id}&limit=#{limit}"
     params += "&status=#{status}" if status.present?
+    params += "&unresolved=true" if unresolved
     get("/api/v1/sync_tasks?#{params}")
   end
 

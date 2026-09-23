@@ -101,6 +101,28 @@ RSpec.describe Shopify8ApiClient, type: :service do
     end
   end
 
+  describe '#get_sync_tasks' do
+    it 'asks for unresolved failures only when requested' do
+      stub = stub_request(:get, "#{base_url}/api/v1/sync_tasks?shop_id=7&limit=1&status=failed&unresolved=true")
+               .to_return(status: 200, body: { success: true, data: { sync_tasks: [], total: 0 } }.to_json,
+                          headers: { 'Content-Type' => 'application/json' })
+
+      client.get_sync_tasks(shop_id: 7, limit: 1, status: 'failed', unresolved: true)
+
+      expect(stub).to have_been_requested
+    end
+
+    it 'leaves the unresolved filter off by default' do
+      stub = stub_request(:get, "#{base_url}/api/v1/sync_tasks?shop_id=7&limit=5")
+               .to_return(status: 200, body: { success: true, data: { sync_tasks: [], total: 0 } }.to_json,
+                          headers: { 'Content-Type' => 'application/json' })
+
+      client.get_sync_tasks(shop_id: 7)
+
+      expect(stub).to have_been_requested
+    end
+  end
+
   describe '#create_shop' do
     let(:shop_params) do
       {

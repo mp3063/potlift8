@@ -11,7 +11,7 @@
           </p>
         </div>
         <% shopify8_url = ENV.fetch("SHOPIFY8_URL", "http://localhost:3245") %>
-        <a href="<%= shopify8_url %>/dashboard/sync_tasks?shop_id=<%= catalog.shop_id %>&status=failed"
+        <a href="<%= shopify8_url %>/dashboard/sync_tasks?shop_id=<%= catalog.shop_id %>&status=failed&unresolved=true"
            target="_blank"
            rel="noopener noreferrer"
            class="text-sm font-medium text-red-700 hover:text-red-900 underline flex-shrink-0 ml-4"

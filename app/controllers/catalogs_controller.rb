@@ -299,7 +299,8 @@ class CatalogsController < ApplicationController
     if @catalog.shopify_connected?
       client = build_shopify8_client
       if client
-        result = client.get_sync_tasks(shop_id: @catalog.shop_id, status: "failed", limit: 1)
+        # Failures already fixed by a later successful sync of the same product don't count
+        result = client.get_sync_tasks(shop_id: @catalog.shop_id, status: "failed", limit: 1, unresolved: true)
         @failed_count = result.success? ? (result.data[:total] || 0) : 0
       end
     end
