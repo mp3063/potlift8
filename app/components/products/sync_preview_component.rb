@@ -78,7 +78,7 @@ module Products
       when true, false
         tag.span(value.to_s, class: value ? "text-green-600 font-medium" : "text-red-600 font-medium")
       when Hash
-        tag.code(value.to_json.truncate(120), class: "text-xs font-mono bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded")
+        tag.code(value.to_json.truncate(120), class: "text-xs font-mono bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded break-all")
       when Array
         tag.span("#{value.size} items", class: "text-gray-500")
       when String
