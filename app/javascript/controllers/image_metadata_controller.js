@@ -50,7 +50,7 @@ export default class extends Controller {
         method: "PATCH",
         headers: {
           "X-CSRF-Token": csrfToken,
-          "Accept": "application/json"
+          "Accept": "text/vnd.turbo-stream.html"
         },
         body: formData
       })
@@ -64,10 +64,9 @@ export default class extends Controller {
           modalController.close()
         }
 
-        window.location.reload()
+        Turbo.renderStreamMessage(await response.text())
       } else {
-        const errorData = await response.json()
-        alert(`Failed to update metadata: ${errorData.error || 'Unknown error'}`)
+        alert("Failed to update metadata. Please try again.")
       }
     } catch (error) {
       console.error("Error updating image metadata:", error)

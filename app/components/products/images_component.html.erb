@@ -57,7 +57,7 @@
   <% end %>
 
   <% if has_images? %>
-    <details class="mt-3">
+    <%= tag.details class: "mt-3", open: @gallery_open do %>
       <summary class="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-500">Manage images</summary>
       <div class="mt-3">
     <div data-controller="product-images bulk-images image-reorder image-metadata"
@@ -130,6 +130,7 @@
                   image.id,
                   false,
                   data: { bulk_images_target: "checkbox", action: "change->bulk-images#toggle click->event#stopPropagation" },
+                  aria: { label: "Select image #{index + 1}" },
                   class: "h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded shadow-sm" %>
             </div>
 
@@ -199,7 +200,7 @@
       <%= render "product_images/metadata_modal", product: product %>
     </div>
       </div>
-    </details>
+    <% end %>
   <% end %>
 <% end %>
 </div>

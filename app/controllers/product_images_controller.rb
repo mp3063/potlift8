@@ -61,7 +61,7 @@ class ProductImagesController < ApplicationController
       format.turbo_stream do
         flash.now[notice_type] = message
         render turbo_stream: [
-          turbo_stream.replace("product_images", partial: "products/images", locals: { product: @product }),
+          turbo_stream.replace("product_images_card", partial: "products/images", locals: { product: @product }),
           turbo_stream.update("flash", partial: "shared/flash", locals: { flash: flash })
         ]
       end
@@ -117,7 +117,7 @@ class ProductImagesController < ApplicationController
       format.turbo_stream do
         flash.now[:notice] = "Images reordered successfully"
         render turbo_stream: [
-          turbo_stream.replace("product_images_card", partial: "products/images", locals: { product: @product }),
+          turbo_stream.replace("product_images_card", partial: "products/images", locals: { product: @product, gallery_open: true }),
           turbo_stream.update("flash", partial: "shared/flash", locals: { flash: flash })
         ]
       end
@@ -141,7 +141,7 @@ class ProductImagesController < ApplicationController
       format.turbo_stream do
         flash.now[:notice] = "Image metadata updated successfully."
         render turbo_stream: [
-          turbo_stream.replace("product_images", partial: "products/images", locals: { product: @product }),
+          turbo_stream.replace("product_images_card", partial: "products/images", locals: { product: @product, gallery_open: true }),
           turbo_stream.update("flash", partial: "shared/flash", locals: { flash: flash })
         ]
       end
@@ -159,7 +159,7 @@ class ProductImagesController < ApplicationController
       format.turbo_stream do
         flash.now[:notice] = "Image '#{filename}' deleted successfully."
         render turbo_stream: [
-          turbo_stream.replace("product_images", partial: "products/images", locals: { product: @product }),
+          turbo_stream.replace("product_images_card", partial: "products/images", locals: { product: @product, gallery_open: true }),
           turbo_stream.update("flash", partial: "shared/flash", locals: { flash: flash })
         ]
       end
@@ -196,7 +196,7 @@ class ProductImagesController < ApplicationController
       format.turbo_stream do
         flash.now[:notice] = message
         render turbo_stream: [
-          turbo_stream.replace("product_images", partial: "products/images", locals: { product: @product }),
+          turbo_stream.replace("product_images_card", partial: "products/images", locals: { product: @product, gallery_open: true }),
           turbo_stream.update("flash", partial: "shared/flash", locals: { flash: flash })
         ]
       end

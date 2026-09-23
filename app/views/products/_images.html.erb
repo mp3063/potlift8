@@ -1,1 +1,1 @@
-<%= render Products::ImagesComponent.new(product: product) %>
+<%= render Products::ImagesComponent.new(product: product, gallery_open: local_assigns.fetch(:gallery_open, false)) %>

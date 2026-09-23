@@ -70,7 +70,7 @@ export default class extends Controller {
       headers: {
         "Content-Type": "application/json",
         "X-CSRF-Token": csrfToken,
-        "Accept": "application/json"
+        "Accept": "text/vnd.turbo-stream.html"
       },
       body: JSON.stringify({ image_ids: selectedIds })
     })
@@ -78,10 +78,10 @@ export default class extends Controller {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
-      return response.json()
+      return response.text()
     })
-    .then(data => {
-      window.location.reload()
+    .then(html => {
+      Turbo.renderStreamMessage(html)
     })
     .catch(error => {
       console.error("Error deleting images:", error)

@@ -59,6 +59,26 @@ RSpec.describe Products::ImagesComponent, type: :component do
   context "with images attached" do
     before { attach_images(3) }
 
+    it "keeps the gallery collapsed by default" do
+      render_inline(described_class.new(product: product))
+
+      expect(page).to have_css("details:not([open])")
+    end
+
+    it "renders the gallery open when asked, so in-gallery actions do not collapse it" do
+      render_inline(described_class.new(product: product, gallery_open: true))
+
+      expect(page).to have_css("details[open]")
+    end
+
+    it "gives each selection checkbox an accessible name" do
+      render_inline(described_class.new(product: product))
+
+      (1..3).each do |n|
+        expect(page).to have_css("input[type='checkbox'][name='image_ids[]'][aria-label='Select image #{n}']", visible: :all)
+      end
+    end
+
     it "shows the image count next to the header" do
       render_inline(described_class.new(product: product))
 

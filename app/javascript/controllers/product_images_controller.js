@@ -48,12 +48,12 @@ export default class extends Controller {
       headers: {
         "Content-Type": "application/json",
         "X-CSRF-Token": csrfToken,
-        "Accept": "application/json"
+        "Accept": "text/vnd.turbo-stream.html"
       }
     })
-    .then(response => {
+    .then(async response => {
       if (response.ok) {
-        window.location.reload()
+        Turbo.renderStreamMessage(await response.text())
       } else {
         alert("Failed to delete image. Please try again.")
       }

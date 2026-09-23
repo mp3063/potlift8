@@ -160,6 +160,16 @@ RSpec.describe '/products/:product_id/images', type: :request do
       end
     end
 
+    context 'turbo_stream format' do
+      it 'replaces the images card, leaving the gallery collapsed' do
+        post product_images_path(product), params: { images: [ test_image ] }, headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+        expect(response.media_type).to eq('text/vnd.turbo-stream.html')
+        expect(response.body).to include('target="product_images_card"')
+        expect(response.body).not_to match(/<details[^>]*\bopen\b/)
+      end
+    end
+
     context 'with ActiveStorage Direct Upload (signed_blob_id)' do
       let(:blob) do
         ActiveStorage::Blob.create_and_upload!(
@@ -225,6 +235,22 @@ RSpec.describe '/products/:product_id/images', type: :request do
       follow_redirect!
       expect(response.body).to include('Image')
       expect(response.body).to include('deleted successfully')
+    end
+
+    context 'turbo_stream format' do
+      it 'replaces the images card with the gallery open and shows a flash' do
+        # A second image keeps the gallery rendered after the delete
+        product.images.attach(io: File.open(Rails.root.join('spec', 'fixtures', 'files', 'test_image.png')),
+                              filename: 'second.png', content_type: 'image/png')
+
+        delete product_image_path(product, attached_image), headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+        expect(response.media_type).to eq('text/vnd.turbo-stream.html')
+        expect(response.body).to include('target="product_images_card"')
+        expect(response.body).to match(/<details[^>]*\bopen\b/)
+        expect(response.body).to include('target="flash"')
+        expect(response.body).to include('deleted successfully')
+      end
     end
 
     context 'with non-existent image' do
@@ -374,6 +400,14 @@ RSpec.describe '/products/:product_id/images', type: :request do
         expect(response.body).to include('target="product_images_card"')
       end
 
+      it 'keeps the gallery open in the re-rendered card' do
+        patch reorder_product_images_path(product),
+              params: { image_ids: [ image3.id, image1.id, image2.id ] },
+              headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+        expect(response.body).to match(/<details[^>]*\bopen\b/)
+      end
+
       it 'preserves metadata during reorder' do
         # Add metadata to an image
         image1.blob.update(metadata: { alt_text: 'First image', caption: 'Test caption' })
@@ -411,6 +445,19 @@ RSpec.describe '/products/:product_id/images', type: :request do
       expect(response).to have_http_status(:ok)
       attached_image.blob.reload
       expect(attached_image.blob.metadata[:alt_text]).to eq('Product main view')
+    end
+
+    context 'turbo_stream format' do
+      it 'replaces the images card with the gallery open and shows a flash' do
+        patch product_image_path(product, attached_image),
+              params: { alt_text: 'Product main view' },
+              headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+        expect(response.media_type).to eq('text/vnd.turbo-stream.html')
+        expect(response.body).to include('target="product_images_card"')
+        expect(response.body).to match(/<details[^>]*\bopen\b/)
+        expect(response.body).to include('Image metadata updated successfully.')
+      end
     end
 
     it 'updates image caption' do
@@ -493,6 +540,19 @@ RSpec.describe '/products/:product_id/images', type: :request do
         content_type: 'image/png'
       )
       product.images.last
+    end
+
+    context 'turbo_stream format' do
+      it 'replaces the images card with the gallery open and shows a flash' do
+        delete bulk_destroy_product_images_path(product),
+               params: { image_ids: [ image1.id ] },
+               headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+        expect(response.media_type).to eq('text/vnd.turbo-stream.html')
+        expect(response.body).to include('target="product_images_card"')
+        expect(response.body).to match(/<details[^>]*\bopen\b/)
+        expect(response.body).to include('1 image deleted successfully.')
+      end
     end
 
     it 'deletes multiple images successfully' do

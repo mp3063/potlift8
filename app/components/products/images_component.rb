@@ -6,8 +6,10 @@ module Products
 
     attr_reader :product
 
-    def initialize(product:)
+    # gallery_open: re-renders triggered from inside the gallery keep it expanded
+    def initialize(product:, gallery_open: false)
       @product = product
+      @gallery_open = gallery_open
     end
 
     private
