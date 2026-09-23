@@ -25,7 +25,6 @@ export default class extends Controller {
 
     this.sortable = Sortable.create(this.containerTarget, {
       animation: 150,
-      handle: ".drag-handle",
       ghostClass: "sortable-ghost",
       dragClass: "sortable-drag",
       onEnd: this.handleReorder.bind(this)
