@@ -114,6 +114,17 @@ RSpec.describe 'Performance Integration', type: :request do
         # Expected: Single query per association type
         expect(queries).to be <= 30
       end
+
+      it "computes each HTTP-cache timestamp once" do
+        max_queries = []
+        callback = ->(*, payload) { max_queries << payload[:sql] if payload[:sql].match?(/SELECT MAX\(.*updated_at/) }
+
+        ActiveSupport::Notifications.subscribed(callback, "sql.active_record") do
+          get product_path(product)
+        end
+
+        expect(max_queries.size).to eq(max_queries.uniq.size)
+      end
     end
   end
 

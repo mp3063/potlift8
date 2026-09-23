@@ -70,25 +70,19 @@ class ProductsController < ApplicationController
     # IMPORTANT: Include CSRF token in ETag to prevent token mismatch errors
     # When the session changes (e.g., token refresh), cached HTML with old CSRF
     # tokens would cause InvalidAuthenticityToken errors on form submissions
+    # Computed once: each is a MAX query, shared by the ETag and Last-Modified
+    association_timestamps = [
+      @product.product_attribute_values.maximum(:updated_at),
+      @product.labels.maximum(:updated_at),
+      @product.catalog_items.maximum(:updated_at),
+      @product.configurations.maximum(:updated_at),
+      @product.subproducts.maximum(:updated_at)
+      # TODO: Add inventories.maximum(:updated_at) when inventory is displayed
+    ]
+
     fresh_when(
-      etag: [
-        @product,
-        @product.product_attribute_values.maximum(:updated_at),
-        @product.labels.maximum(:updated_at),
-        @product.catalog_items.maximum(:updated_at),
-        @product.configurations.maximum(:updated_at),
-        @product.subproducts.maximum(:updated_at),
-        form_authenticity_token
-      ],
-      last_modified: [
-        @product.updated_at,
-        @product.product_attribute_values.maximum(:updated_at),
-        @product.labels.maximum(:updated_at),
-        @product.catalog_items.maximum(:updated_at),
-        @product.configurations.maximum(:updated_at),
-        @product.subproducts.maximum(:updated_at)
-        # TODO: Add inventories.maximum(:updated_at) when inventory is displayed
-      ].compact.max,
+      etag: [ @product, *association_timestamps, form_authenticity_token ],
+      last_modified: [ @product.updated_at, *association_timestamps ].compact.max,
       public: false # Don't cache in public CDNs (multi-tenant data)
     )
   end
