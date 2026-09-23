@@ -106,6 +106,19 @@ RSpec.describe Products::ImagesComponent, type: :component do
   context "with more than eight images" do
     before { attach_images(10) }
 
+    it "loads the images once, without per-image or count queries" do
+      fresh_product = Product.find(product.id)
+      queries = []
+      counter = ->(*, payload) { queries << payload[:sql] unless %w[SCHEMA CACHE].include?(payload[:name]) }
+
+      ActiveSupport::Notifications.subscribed(counter, "sql.active_record") do
+        render_inline(described_class.new(product: fresh_product))
+      end
+
+      expect(queries.grep(/SELECT COUNT/)).to be_empty
+      expect(queries.size).to be <= 4
+    end
+
     it "shows seven thumbnails and a +3 overflow tile" do
       render_inline(described_class.new(product: product))
 

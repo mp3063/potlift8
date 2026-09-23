@@ -15,18 +15,17 @@ module Products
     private
 
     def main_image
-      product.images.first
+      images.first
     end
 
+    # Loaded once with blobs; the strip, badge and gallery all read this array,
+    # so counts and lookups stay in memory instead of hitting the database.
     def images
-      product.images
+      @images ||= product.images.includes(:blob).to_a
     end
 
-    # Memoized: the template checks this in three places, each an EXISTS query.
     def has_images?
-      return @has_images if defined?(@has_images)
-
-      @has_images = product.images.attached?
+      images.any?
     end
 
     # Thumbnails shown in the collapsed strip. When more than STRIP_LIMIT images
