@@ -10,12 +10,12 @@
   <div class="flex items-start gap-x-4" data-inline-editor-target="display">
     <dl class="flex flex-1 min-w-0 items-start gap-x-4">
       <dt class="flex w-44 shrink-0 items-center gap-2 text-sm font-medium text-gray-500"
-          <% if product_attribute.description.present? %>title="<%= product_attribute.description %>"<% end %>>
+          title="<%= [ product_attribute.name, product_attribute.description.presence ].compact.join(" — ") %>">
         <span class="truncate"><%= product_attribute.name %></span>
         <span class="inline-flex shrink-0 items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">Override</span>
       </dt>
       <dd class="flex-1 min-w-0 text-sm text-gray-900 <%= product_attribute.patype_rich_text? ? 'line-clamp-2' : 'truncate' %>"
-          title="<%= differs_from_product ? "Product value: #{product_value.value}" : catalog_override.value %>">
+          title="<%= differs_from_product ? "#{catalog_override.value} (product value: #{product_value.value})" : catalog_override.value %>">
         <%= catalog_override.value %>
       </dd>
     </dl>

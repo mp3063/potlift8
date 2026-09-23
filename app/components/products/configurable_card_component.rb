@@ -45,10 +45,6 @@ module Products
       configurations_count > 0
     end
 
-    def has_variants?
-      variants_count > 0
-    end
-
     def can_generate_variants?
       configurations.any? { |c| c.configuration_values.any? }
     end
@@ -56,7 +52,7 @@ module Products
     def possible_combinations
       return 0 unless has_configurations?
 
-      configurations.map { |c| c.configuration_values.count }.reduce(1, :*)
+      configurations.map { |c| c.configuration_values.size }.reduce(1, :*)
     end
   end
 end

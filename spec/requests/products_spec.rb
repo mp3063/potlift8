@@ -712,6 +712,32 @@ RSpec.describe '/products', type: :request do
     end
   end
 
+  describe 'header re-render over Turbo Stream' do
+    let(:turbo) { { 'Accept' => 'text/vnd.turbo-stream.html' } }
+
+    it 'replaces the header frame (breaking out to _top) and flashes after toggle_active' do
+      product = create(:product, company: company, product_status: :active)
+
+      patch toggle_active_product_path(product), headers: turbo
+
+      expect(response.media_type).to eq('text/vnd.turbo-stream.html')
+      expect(response.body).to include(%(target="product-header-#{product.id}"))
+      expect(response.body).to match(/<turbo-frame[^>]*id="product-header-#{product.id}"[^>]*target="_top"/)
+      expect(response.body).to include('Activate')
+      expect(response.body).to include('Product deactivated successfully')
+    end
+
+    it 'replaces the header frame and flashes after activate_variants' do
+      product = create(:product, :configurable_variant, company: company)
+
+      patch activate_variants_product_path(product), headers: turbo
+
+      expect(response.media_type).to eq('text/vnd.turbo-stream.html')
+      expect(response.body).to include(%(target="product-header-#{product.id}"))
+      expect(response.body).to include('All variants are already active.')
+    end
+  end
+
   # Catalog operations tests moved to spec/requests/product_catalogs_spec.rb
 
   describe 'authentication requirements' do

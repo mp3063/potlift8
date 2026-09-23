@@ -17,7 +17,7 @@
   <div class="flex items-start gap-x-4" data-inline-editor-target="display">
     <dl class="flex flex-1 min-w-0 items-start gap-x-4">
       <dt class="flex w-44 shrink-0 items-center gap-2 text-sm font-medium text-gray-500"
-          <% if attribute.description.present? %>title="<%= attribute.description %>"<% end %>>
+          title="<%= [ attribute.name, attribute.description.presence ].compact.join(" — ") %>">
         <span class="truncate"><%= attribute.name %></span>
         <% if unset_mandatory %>
           <%= render Ui::BadgeComponent.new(variant: :warning, size: :sm) do %>Required<% end %>

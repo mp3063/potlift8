@@ -75,7 +75,7 @@
       <% end %>
     <% end %>
 
-    <div class="flex flex-wrap gap-2 min-h-[1.75rem]" data-product-label-manager-target="selectedContainer" aria-label="Selected labels">
+    <div class="flex flex-wrap gap-2 min-h-[1.75rem]" data-product-label-manager-target="selectedContainer" role="list" aria-label="Selected labels">
       <% if has_labels? %>
         <% product.labels.each do |label| %>
           <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm bg-blue-100 text-blue-800 border border-blue-200" data-label-id="<%= label.id %>" data-label-name="<%= label.full_name %>" data-label-code="<%= label.code %>" data-label-color="<%= label.info&.dig('color') || '#2563eb' %>" role="listitem">
@@ -96,7 +96,7 @@
           </span>
         <% end %>
       <% else %>
-        <p class="text-sm text-gray-500 py-1" data-product-label-manager-target="emptyMessage">No labels selected. Use Add to attach one.</p>
+        <p class="text-sm text-gray-500 py-1" data-product-label-manager-target="emptyMessage" role="listitem">No labels selected. Use Add to attach one.</p>
       <% end %>
     </div>
   <% end %>

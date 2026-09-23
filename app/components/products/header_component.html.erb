@@ -2,7 +2,7 @@
   <div class="sm:flex sm:items-start sm:justify-between sm:gap-4">
     <div class="min-w-0">
       <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <h1 class="truncate text-2xl font-semibold leading-tight text-gray-900"><%= product.name %></h1>
+        <h1 class="min-w-0 break-words text-2xl font-semibold leading-tight text-gray-900"><%= product.name %></h1>
         <%= render Ui::BadgeComponent.new(variant: status_badge_variant, size: :md, dot: true) do %>
           <%= status_label %>
         <% end %>

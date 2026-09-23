@@ -175,6 +175,7 @@ RSpec.describe Products::LabelsComponent, type: :component do
   it "includes selected container target" do
     render_inline(described_class.new(product: product))
 
+    expect(page).to have_css("[data-product-label-manager-target='selectedContainer'][role='list']")
     expect(page).to have_css("[data-product-label-manager-target='selectedContainer']")
   end
 

@@ -17,7 +17,7 @@
         <div class="flex items-start gap-x-2">
           <dt class="w-20 shrink-0 truncate pt-0.5 text-xs font-medium text-gray-500" title="<%= config.name %>"><%= config.name %></dt>
           <dd class="flex flex-wrap gap-1">
-            <% config.configuration_values.order(:position).each do |value| %>
+            <% config.configuration_values.sort_by(&:position).each do |value| %>
               <span class="inline-flex items-center rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-800"><%= value.value %></span>
             <% end %>
             <% if config.configuration_values.empty? %>

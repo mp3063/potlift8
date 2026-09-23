@@ -69,7 +69,8 @@ RSpec.describe Products::CatalogTabsComponent, type: :component do
       brand_attribute.update!(description: "Manufacturer brand")
       render_component(product)
 
-      expect(page).to have_css("##{dom_id(brand_attribute, :value)} dt[title='Manufacturer brand']", visible: :all)
+      # The tooltip leads with the full name so a truncated name stays readable
+      expect(page).to have_css("##{dom_id(brand_attribute, :value)} dt[title='#{brand_attribute.name} — Manufacturer brand']", visible: :all)
       expect(page).not_to have_css("##{dom_id(brand_attribute, :value)} dd", text: "Manufacturer brand", visible: :all)
     end
   end

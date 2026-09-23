@@ -761,4 +761,20 @@ RSpec.describe '/catalogs', type: :request do
       end
     end
   end
+
+  describe 'GET /catalogs/:code/sync_alerts' do
+    it 'asks Shopify8 only for failures no later sync has fixed' do
+      catalog = create(:catalog, company: company, info: { 'shop_id' => 7, 'shopify_api_token' => 'tok' })
+      client = instance_double(Shopify8ApiClient)
+      allow(Shopify8ApiClient).to receive(:new).and_return(client)
+      allow(client).to receive(:get_sync_tasks)
+        .with(shop_id: 7, status: 'failed', limit: 1, unresolved: true)
+        .and_return(Shopify8ApiClient::Result.new(success: true, data: { total: 2 }, error: nil))
+
+      get sync_alerts_catalog_path(catalog)
+
+      expect(response.body).to include('2 sync tasks failed for this catalog')
+      expect(response.body).to include('status=failed&unresolved=true')
+    end
+  end
 end

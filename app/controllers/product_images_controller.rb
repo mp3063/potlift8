@@ -215,7 +215,10 @@ class ProductImagesController < ApplicationController
   rescue ActiveRecord::RecordNotFound
     respond_to do |format|
       format.html { redirect_to @product, alert: "Image not found." }
-      format.turbo_stream { flash.now[:alert] = "Image not found." }
+      format.turbo_stream do
+        flash.now[:alert] = "Image not found."
+        render turbo_stream: turbo_stream.update("flash", partial: "shared/flash", locals: { flash: flash }), status: :not_found
+      end
       format.json { render json: { error: "Image not found" }, status: :not_found }
     end
   end

@@ -52,7 +52,8 @@ export default class extends Controller {
       }
     })
     .then(async response => {
-      if (response.ok) {
+      // A 404 (image already gone) still carries a Turbo Stream flash
+      if (response.headers.get("Content-Type")?.includes("turbo-stream")) {
         Turbo.renderStreamMessage(await response.text())
       } else {
         alert("Failed to delete image. Please try again.")

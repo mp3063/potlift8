@@ -261,6 +261,14 @@ RSpec.describe '/products/:product_id/images', type: :request do
         follow_redirect!
         expect(response.body).to include('Image not found')
       end
+
+      it 'answers a turbo_stream request with a 404 flash instead of failing' do
+        delete product_image_path(product, 99999), headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+        expect(response).to have_http_status(:not_found)
+        expect(response.body).to include('target="flash"')
+        expect(response.body).to include('Image not found')
+      end
     end
 
     context 'multi-tenant security' do

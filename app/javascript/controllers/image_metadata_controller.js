@@ -65,6 +65,8 @@ export default class extends Controller {
         }
 
         Turbo.renderStreamMessage(await response.text())
+      } else if (response.headers.get("Content-Type")?.includes("turbo-stream")) {
+        Turbo.renderStreamMessage(await response.text())
       } else {
         alert("Failed to update metadata. Please try again.")
       }

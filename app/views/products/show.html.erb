@@ -89,9 +89,11 @@
         </div>
       <% end %>
 
-      <turbo-frame id="sync-preview-drawer"></turbo-frame>
-
       <%= render Products::ActivityTimelineComponent.new(product: @product) %>
     </div>
   </div>
+
+  <%# Outside the sticky sidebar: sticky creates a stacking context that would trap the
+      drawer's z-50 below the fixed navbar. %>
+  <turbo-frame id="sync-preview-drawer"></turbo-frame>
 </div>

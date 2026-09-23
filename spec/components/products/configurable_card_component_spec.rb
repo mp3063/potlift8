@@ -42,6 +42,21 @@ RSpec.describe Products::ConfigurableCardComponent, type: :component do
       expect(page).not_to have_css("div.bg-gray-50.rounded-lg.p-4")
     end
 
+    it "reads configuration values from the preload, in position order" do
+      size = create(:configuration, :size, product: product, position: 1)
+      create(:configuration, :color, product: product, position: 2)
+      size.configuration_values.find_by!(value: "Small").update!(position: 9)
+      value_queries = []
+      counter = ->(*, payload) { value_queries << payload[:sql] if payload[:sql].match?(/FROM "configuration_values"/) }
+
+      ActiveSupport::Notifications.subscribed(counter, "sql.active_record") do
+        render_inline(described_class.new(product: product.reload))
+      end
+
+      expect(value_queries.size).to eq(1)
+      expect(page.all("dd span").map(&:text).first(3)).to eq(%w[Medium Large Small])
+    end
+
     it "shows the combinations hint when fewer variants exist than combinations" do
       create(:configuration, :size, product: product)
       render_inline(described_class.new(product: product.reload))

@@ -9,7 +9,7 @@
                locals: {
                  catalog_item: @catalog_item,
                  product: @product,
-                 attribute_values: @product.product_attribute_values.index_by(&:product_attribute),
+                 attribute_values: @product.product_attribute_values.includes(:product_attribute).index_by(&:product_attribute),
                  all_attributes: @product.company.product_attributes
                } %>
   </div>

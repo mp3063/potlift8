@@ -38,7 +38,7 @@
             <div class="flex items-start gap-x-4">
               <dl class="flex flex-1 min-w-0 items-start gap-x-4">
                 <dt class="w-44 shrink-0 truncate text-sm font-medium text-gray-500"
-                    <% if product_attribute.description.present? %>title="<%= product_attribute.description %>"<% end %>>
+                    title="<%= [ product_attribute.name, product_attribute.description.presence ].compact.join(" — ") %>">
                   <%= product_attribute.name %>
                 </dt>
                 <dd class="flex-1 min-w-0 text-sm text-gray-900 <%= product_attribute.patype_rich_text? ? 'line-clamp-2' : 'truncate' %>"

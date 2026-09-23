@@ -33,7 +33,24 @@ RSpec.describe "/catalog_item_attribute_values", type: :request do
       expect(response.body).to include(%(target="panel-#{catalog.code}"))
       expect(response.body).to include("New copy")
       expect(response.body).to include("Override")
+      expect(response.body).to match(/<dt[^>]*title="#{Regexp.escape(attribute.name)}/)
       expect(override.reload.value).to eq("New copy")
+    end
+
+    it "loads the product's attribute definitions in one query, not one per value" do
+      %w[short_description description_html].each do |code|
+        attr = company.product_attributes.find_by!(code: code)
+        create(:product_attribute_value, product: product, product_attribute: attr, value: "Copy for #{code}")
+      end
+      attribute_lookups = []
+      counter = ->(*, payload) { attribute_lookups << payload[:sql] if payload[:sql].match?(/FROM "product_attributes" WHERE "product_attributes"\."id" = /) }
+
+      ActiveSupport::Notifications.subscribed(counter, "sql.active_record") do
+        patch catalog_item_attribute_value_path(override, format: :turbo_stream), params: { value: "New copy" }
+      end
+
+      # At most the edited override's own attribute; never one per product value
+      expect(attribute_lookups.size).to be <= 1
     end
   end
 end

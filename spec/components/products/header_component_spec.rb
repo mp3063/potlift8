@@ -12,6 +12,20 @@ RSpec.describe Products::HeaderComponent, type: :component do
     expect(page).to have_css("h1", text: "Test Product")
   end
 
+  it "lets a long product name wrap instead of clipping it" do
+    render_inline(described_class.new(product: product))
+
+    expect(page).to have_css("h1.break-words")
+    expect(page).not_to have_css("h1.truncate")
+  end
+
+  it "asks for confirmation before Deactivate and Delete" do
+    render_inline(described_class.new(product: product))
+
+    expect(page).to have_css("form[data-turbo-confirm*='deactivate'] button", text: "Deactivate")
+    expect(page).to have_css("form[data-turbo-confirm*='delete'] button", text: "Delete", visible: :all)
+  end
+
   describe "status badge" do
     it "renders a success badge with a dot for active products" do
       render_inline(described_class.new(product: product))
