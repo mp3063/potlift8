@@ -115,7 +115,7 @@ RSpec.describe 'Performance Integration', type: :request do
         expect(queries).to be <= 30
       end
 
-      it "computes each HTTP-cache timestamp once" do
+      it "runs no HTTP-cache validator queries" do
         max_queries = []
         callback = ->(*, payload) { max_queries << payload[:sql] if payload[:sql].match?(/SELECT MAX\(.*updated_at/) }
 
@@ -123,7 +123,7 @@ RSpec.describe 'Performance Integration', type: :request do
           get product_path(product)
         end
 
-        expect(max_queries.size).to eq(max_queries.uniq.size)
+        expect(max_queries).to be_empty
       end
     end
   end

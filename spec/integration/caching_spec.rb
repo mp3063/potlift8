@@ -157,63 +157,29 @@ RSpec.describe 'Caching Integration', type: :request do
     end
   end
 
-  describe "HTTP caching with ETags" do
+  describe "HTTP conditional GET" do
+    # Product and catalog pages render live inventory, activity and sync state that no
+    # cheap validator covers, so they don't use fresh_when. The only ETag left is
+    # Rack::ETag's digest of the rendered body, which can't go stale.
     let!(:product) { create(:product, company: company, name: 'Test Product', sku: 'TEST-1') }
 
-    it "returns ETag header for product show page" do
+    it "shows changed stock to a client revalidating with If-Modified-Since" do
+      inventory = create(:inventory, product: product, storage: create(:storage, company: company), value: 5)
       get product_path(product)
 
-      expect(response.headers['ETag']).to be_present
+      inventory.update!(value: 4321)
+      get product_path(product), headers: { 'HTTP_IF_MODIFIED_SINCE' => 1.minute.from_now.httpdate }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('4321')
     end
 
-    it "returns 200 OK with new ETag when CSRF token changes between requests" do
-      # Note: The ETag includes the CSRF token to prevent InvalidAuthenticityToken errors
-      # when cached HTML contains stale CSRF tokens. This means each new request with a
-      # different session will get a fresh response even with If-None-Match header.
-      # This is intentional behavior for security (see commit 1356f7d).
+    it "renders the catalog items page in full for a conditional request" do
+      catalog = create(:catalog, company: company)
 
-      # First request
-      get product_path(product)
-      etag = response.headers['ETag']
+      get catalog_items_path(catalog), headers: { 'HTTP_IF_MODIFIED_SINCE' => 1.minute.from_now.httpdate }
 
-      expect(response).to have_http_status(:success)
-
-      # Second request with If-None-Match header
-      # Because CSRF token changes between requests in test environment,
-      # we expect a 200 response with new content (not 304)
-      get product_path(product), headers: { 'HTTP_IF_NONE_MATCH' => etag }
-
-      expect(response).to have_http_status(:success)
-      # ETag should be different because CSRF token changed
-      expect(response.headers['ETag']).to be_present
-    end
-
-    it "returns 200 OK with new content when ETag does not match" do
-      # First request
-      get product_path(product)
-      old_etag = response.headers['ETag']
-
-      # Update product
-      product.update(name: 'Updated Product')
-
-      # Second request with old ETag
-      get product_path(product), headers: { 'HTTP_IF_NONE_MATCH' => old_etag }
-
-      expect(response).to have_http_status(:success)
-      expect(response.headers['ETag']).not_to eq(old_etag)
-      expect(response.body).to include('Updated Product')
-    end
-
-    it "generates different ETags for different products" do
-      product2 = create(:product, company: company, name: 'Another Product', sku: 'TEST-2')
-
-      get product_path(product)
-      etag1 = response.headers['ETag']
-
-      get product_path(product2)
-      etag2 = response.headers['ETag']
-
-      expect(etag1).not_to eq(etag2)
+      expect(response).to have_http_status(:ok)
     end
   end
 

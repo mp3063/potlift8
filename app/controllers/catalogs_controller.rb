@@ -34,12 +34,6 @@ class CatalogsController < ApplicationController
     respond_to do |format|
       format.html do
         @pagy, @catalog_items = pagy(@catalog_items, items: params[:per_page] || 25)
-
-        fresh_when(
-          etag: [ @catalog, @catalog_items.maximum(:updated_at), params[:page], params[:q], form_authenticity_token ],
-          last_modified: [ @catalog.updated_at, @catalog_items.maximum(:updated_at) ].compact.max,
-          public: false
-        )
       end
 
       format.turbo_stream do
