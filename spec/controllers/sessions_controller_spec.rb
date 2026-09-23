@@ -391,10 +391,13 @@ RSpec.describe SessionsController, type: :controller do
 
   describe 'POST #destroy (Logout)' do
     let(:user) { create(:user) }
+    let(:authlift_logout_url) { 'https://authlift8.test/auth/logout?token=access_token' }
 
     before do
       allow(authlift_client).to receive(:decode_jwt).and_return({})
-      allow(authlift_client).to receive(:revoke_token)
+      allow(authlift_client).to receive(:logout_url)
+        .with(token: 'access_token', return_to: 'http://test.host/auth/login')
+        .and_return(authlift_logout_url)
       session[:user_id] = user.id
       session[:access_token] = 'access_token'
       session[:refresh_token] = 'refresh_token'
@@ -412,10 +415,16 @@ RSpec.describe SessionsController, type: :controller do
       expect(session[:company_id]).to be_nil
     end
 
-    it 'redirects to login path' do
+    it 'redirects to Authlift8 remote logout so the Authlift session ends too' do
       post :destroy
 
-      expect(response).to redirect_to(auth_login_path)
+      expect(response).to redirect_to(authlift_logout_url)
+    end
+
+    it 'does not revoke the token first (remote logout rejects revoked tokens)' do
+      expect(authlift_client).not_to receive(:revoke_token)
+
+      post :destroy
     end
 
     it 'displays success message' do
@@ -426,14 +435,13 @@ RSpec.describe SessionsController, type: :controller do
 
     context 'when logout error occurs' do
       it 'handles gracefully and still redirects' do
-        # Mock revoke_token to raise an error (a more realistic error scenario)
-        allow(authlift_client).to receive(:revoke_token).and_raise(StandardError, 'Token revocation error')
+        allow(authlift_client).to receive(:logout_url).and_raise(StandardError, 'Logout URL error')
 
         post :destroy
 
-        # Should still redirect to login despite token revocation failure
+        expect(session[:user_id]).to be_nil
         expect(response).to redirect_to(auth_login_path)
-        expect(flash[:notice]).to eq('Successfully signed out.')
+        expect(flash[:notice]).to eq('Signed out.')
       end
     end
 
@@ -457,7 +465,7 @@ RSpec.describe SessionsController, type: :controller do
 
     before do
       allow(authlift_client).to receive(:decode_jwt).and_return({})
-      allow(authlift_client).to receive(:revoke_token)
+      allow(authlift_client).to receive(:logout_url).and_return('https://authlift8.test/auth/logout')
       session[:user_id] = user.id
       session[:access_token] = 'access_token'
       session[:authenticated_at] = Time.now.to_i
@@ -468,7 +476,7 @@ RSpec.describe SessionsController, type: :controller do
       delete :destroy
 
       expect(session[:user_id]).to be_nil
-      expect(response).to redirect_to(auth_login_path)
+      expect(response).to redirect_to('https://authlift8.test/auth/logout')
       expect(flash[:notice]).to eq('Successfully signed out.')
     end
   end
@@ -518,7 +526,7 @@ RSpec.describe SessionsController, type: :controller do
         session[:oauth_initiated_at] = Time.now.to_i
         allow(authlift_client).to receive(:exchange_code).and_return(tokens)
         allow(authlift_client).to receive(:decode_jwt).and_return({})
-        allow(authlift_client).to receive(:revoke_token)
+        allow(authlift_client).to receive(:logout_url).and_return('https://authlift8.test/auth/logout')
 
         get :create, params: { code: 'code', state: 'state123' }
 

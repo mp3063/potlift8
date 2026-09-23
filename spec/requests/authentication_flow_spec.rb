@@ -199,15 +199,13 @@ RSpec.describe 'Authentication Flow', type: :request do
 
     before do
       authenticate_user(user)
-      # Mock revoke_token to avoid external calls
-      allow(authlift_client).to receive(:revoke_token)
+      allow(authlift_client).to receive(:logout_url).and_return('https://authlift8.test/auth/logout')
     end
 
-    it 'clears session and redirects' do
+    it 'clears session and redirects to Authlift8 remote logout' do
       delete auth_logout_path
 
-      # SessionsController redirects to auth_login_path, not root_path
-      expect(response).to redirect_to(auth_login_path)
+      expect(response).to redirect_to('https://authlift8.test/auth/logout')
       expect(flash[:notice]).to eq('Successfully signed out.')
       expect(session[:user_id]).to be_nil
       expect(session[:access_token]).to be_nil

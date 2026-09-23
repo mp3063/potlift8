@@ -230,6 +230,18 @@ module Authlift
       Time.now >= (expiry_time - buffer_seconds)
     end
 
+    # Build Authlift8 remote logout URL
+    #
+    # Authlift8 destroys the user's tokens, ends its own sign-in session and
+    # redirects back to return_to (which must be an allowed host).
+    #
+    # @param token [String] JWT access token identifying the user
+    # @param return_to [String] URL to return to after logout
+    # @return [String] Remote logout URL
+    def logout_url(token:, return_to:)
+      "#{site}/auth/logout?#{URI.encode_www_form(token: token, return_to: return_to)}"
+    end
+
     # Revoke access token at Authlift8
     #
     # Security:

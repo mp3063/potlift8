@@ -51,6 +51,16 @@ RSpec.describe Authlift::Client do
     end
   end
 
+  describe '#logout_url' do
+    it 'builds the Authlift8 remote logout URL with token and return_to' do
+      url = client.logout_url(token: 'jwt.token.value', return_to: 'https://potlift.test/auth/login')
+
+      expect(url).to eq(
+        'https://authlift8.test/auth/logout?token=jwt.token.value&return_to=https%3A%2F%2Fpotlift.test%2Fauth%2Flogin'
+      )
+    end
+  end
+
   describe '#authorization_url' do
     let(:state) { SecureRandom.hex(32) }
 

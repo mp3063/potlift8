@@ -130,31 +130,21 @@ class SessionsController < ApplicationController
   end
 
   # Security:
-  # - Revokes access token at Authlift8
   # - Clears all session data
   # - Invalidates session ID
-  # - Redirects to Authlift8 logout for complete logout
+  # - Redirects to Authlift8 remote logout, which destroys the user's tokens and
+  #   ends the Authlift8 session; otherwise /auth/login would sign straight back in
   def destroy
     user_id = session[:user_id]
     access_token = session[:access_token]
-
-    # Revoke access token at Authlift8 (best-effort, don't fail logout if revocation fails)
-    if access_token.present?
-      begin
-        authlift_client.revoke_token(access_token)
-      rescue StandardError => e
-        Rails.logger.error("Token revocation failed: #{e.message}")
-      end
-    end
 
     reset_session
 
     Rails.logger.info("User logged out: #{user_id}")
 
-    # Redirect to login page
-    # Note: We've revoked the token at Authlift8, so the session is invalidated
-    # Next login will require re-authentication at Authlift8
-    redirect_to auth_login_path, notice: "Successfully signed out."
+    # Don't revoke the token first: remote logout rejects revoked tokens
+    logout_url = authlift_client.logout_url(token: access_token, return_to: auth_login_url)
+    redirect_to logout_url, allow_other_host: true, notice: "Successfully signed out."
   rescue StandardError => e
     Rails.logger.error("Logout error: #{e.class} - #{e.message}")
     reset_session
