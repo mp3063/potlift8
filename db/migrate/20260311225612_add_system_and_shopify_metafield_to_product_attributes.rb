@@ -5,6 +5,6 @@ class AddSystemAndShopifyMetafieldToProductAttributes < ActiveRecord::Migration[
     add_column :product_attributes, :shopify_metafield_key, :string
     add_column :product_attributes, :shopify_metafield_type, :string
 
-    add_index :product_attributes, [:company_id, :system]
+    add_index :product_attributes, [ :company_id, :system ]
   end
 end

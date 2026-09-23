@@ -41,7 +41,7 @@ class StoragesController < ApplicationController
 
       @inventories = @inventories.where(
         "products.sku ILIKE :term OR products.name ILIKE :term OR products.id IN (:sub_ids)",
-        term: search_term, sub_ids: subproduct_ids.presence || [0]
+        term: search_term, sub_ids: subproduct_ids.presence || [ 0 ]
       )
     end
 

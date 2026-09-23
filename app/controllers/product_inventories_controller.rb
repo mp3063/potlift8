@@ -162,9 +162,9 @@ class ProductInventoriesController < ApplicationController
   def storages_with_inventory
     product_ids = if @product.product_type_configurable?
                     @subproducts&.map(&:id) || @product.subproducts.pluck(:id)
-                  else
+    else
                     [ @product.id ]
-                  end
+    end
 
     storage_ids = Inventory.where(product_id: product_ids).distinct.pluck(:storage_id)
     @all_storages.where(id: storage_ids)
@@ -174,7 +174,7 @@ class ProductInventoriesController < ApplicationController
     if @product.product_type_configurable?
       @product.subproducts.pluck(:id).to_set
     else
-      Set[ @product.id ]
+      Set[@product.id]
     end
   end
 end

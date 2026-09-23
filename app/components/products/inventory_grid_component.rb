@@ -29,7 +29,7 @@ module Products
     end
 
     def cell_inventory(subproduct_id, storage_id)
-      inventory_matrix[[subproduct_id, storage_id]]
+      inventory_matrix[[ subproduct_id, storage_id ]]
     end
 
     def cell_value(subproduct_id, storage_id)

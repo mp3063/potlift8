@@ -12,8 +12,8 @@ RSpec.describe Products::SyncPreviewComponent, type: :component do
     {
       product: { sku: "TEST-SKU-001", name: "Test Product", status: "active" },
       attributes: { color: "Red", size: "Large", weight: "500g" },
-      labels: [{ name: "New Arrival" }, { name: "Sale" }],
-      inventory: { total_saldo: 100, warehouses: [{ name: "Main", quantity: 100 }] }
+      labels: [ { name: "New Arrival" }, { name: "Sale" } ],
+      inventory: { total_saldo: 100, warehouses: [ { name: "Main", quantity: 100 } ] }
     }
   end
 
@@ -180,7 +180,7 @@ RSpec.describe Products::SyncPreviewComponent, type: :component do
     end
 
     it "formats arrays with item count" do
-      result = component.format_value([1, 2, 3])
+      result = component.format_value([ 1, 2, 3 ])
       expect(result.to_s).to include("3 items")
     end
 

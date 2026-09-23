@@ -621,7 +621,7 @@ RSpec.describe SyncTaskProcessor do
 
         expect(result[:result][:catalog_items_reset]).to eq(2)
 
-        [catalog_item, catalog_item2].each do |ci|
+        [ catalog_item, catalog_item2 ].each do |ci|
           ci.reload
           expect(ci.sync_status).to eq('never_synced')
           expect(ci.last_synced_at).to be_nil

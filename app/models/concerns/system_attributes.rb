@@ -48,7 +48,7 @@ module SystemAttributes
       scope: :product_scope,
       name: "VAT Group",
       description: "Tax classification for the product. Maps to Shopify tags via custom handler.",
-      options: ["standard", "reduced 9", "reduced 14", "zero"]
+      options: [ "standard", "reduced 9", "reduced 14", "zero" ]
     },
 
     ean: {

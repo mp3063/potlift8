@@ -15,14 +15,14 @@ RSpec.describe "Cross-tenant reorder isolation", type: :request do
 
     it "rejects reorder with foreign ProductConfiguration IDs" do
       expect {
-        patch reorder_product_variants_path(product_a), params: { order: [config_b.id] }
+        patch reorder_product_variants_path(product_a), params: { order: [ config_b.id ] }
       }.to raise_error(ActiveRecord::RecordNotFound)
       expect(config_b.reload.configuration_position).to eq(5)
     end
 
     it "allows reorder with own ProductConfiguration IDs" do
       own_config = create(:product_configuration, superproduct: product_a, subproduct: create(:product, company: company_a), configuration_position: 1)
-      patch reorder_product_variants_path(product_a), params: { order: [own_config.id] }
+      patch reorder_product_variants_path(product_a), params: { order: [ own_config.id ] }
       expect(response).to have_http_status(:ok)
       expect(own_config.reload.configuration_position).to eq(1)
     end
@@ -35,14 +35,14 @@ RSpec.describe "Cross-tenant reorder isolation", type: :request do
 
     it "rejects reorder with foreign ProductConfiguration IDs" do
       expect {
-        patch reorder_product_bundle_products_path(bundle_a), params: { order: [config_b.id] }
+        patch reorder_product_bundle_products_path(bundle_a), params: { order: [ config_b.id ] }
       }.to raise_error(ActiveRecord::RecordNotFound)
       expect(config_b.reload.configuration_position).to eq(5)
     end
 
     it "allows reorder with own ProductConfiguration IDs" do
       own_config = create(:product_configuration, :bundle_item, superproduct: bundle_a, subproduct: create(:product, company: company_a), configuration_position: 1)
-      patch reorder_product_bundle_products_path(bundle_a), params: { order: [own_config.id] }
+      patch reorder_product_bundle_products_path(bundle_a), params: { order: [ own_config.id ] }
       expect(response).to have_http_status(:ok)
       expect(own_config.reload.configuration_position).to eq(1)
     end
@@ -53,14 +53,14 @@ RSpec.describe "Cross-tenant reorder isolation", type: :request do
 
     it "rejects reorder with foreign RelatedProduct IDs" do
       expect {
-        patch reorder_product_related_products_path(product_a), params: { order: [related_b.id] }
+        patch reorder_product_related_products_path(product_a), params: { order: [ related_b.id ] }
       }.to raise_error(ActiveRecord::RecordNotFound)
       expect(related_b.reload.position).to eq(5)
     end
 
     it "allows reorder with own RelatedProduct IDs" do
       own_related = create(:related_product, product: product_a, related_to: create(:product, company: company_a), position: 1)
-      patch reorder_product_related_products_path(product_a), params: { order: [own_related.id] }
+      patch reorder_product_related_products_path(product_a), params: { order: [ own_related.id ] }
       expect(response).to have_http_status(:ok)
       expect(own_related.reload.position).to eq(1)
     end

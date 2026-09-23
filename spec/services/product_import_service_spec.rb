@@ -320,11 +320,11 @@ RSpec.describe ProductImportService do
       it 'calls the callback after each batch with processed and total counts' do
         progress_calls = []
         service = described_class.new(company, csv_content, user, on_progress: ->(processed, total) {
-          progress_calls << [processed, total]
+          progress_calls << [ processed, total ]
         })
         service.import!
 
-        expect(progress_calls).to eq([[100, 100]])
+        expect(progress_calls).to eq([ [ 100, 100 ] ])
       end
 
       it 'calls the callback multiple times for multiple batches' do
@@ -334,11 +334,11 @@ RSpec.describe ProductImportService do
 
         progress_calls = []
         service = described_class.new(company, large_csv, user, on_progress: ->(processed, total) {
-          progress_calls << [processed, total]
+          progress_calls << [ processed, total ]
         })
         service.import!
 
-        expect(progress_calls).to eq([[100, 250], [200, 250], [250, 250]])
+        expect(progress_calls).to eq([ [ 100, 250 ], [ 200, 250 ], [ 250, 250 ] ])
       end
 
       it 'works without a callback (default nil)' do

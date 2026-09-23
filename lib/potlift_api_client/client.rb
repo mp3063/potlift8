@@ -170,8 +170,8 @@ module PotliftApiClient
       Faraday.new(url: "#{base_url}/api/v1") do |f|
         f.request :json
         f.request :retry, max: 3, interval: 0.5, backoff_factor: 2,
-          exceptions: [Faraday::ConnectionFailed, Faraday::TimeoutError],
-          retry_statuses: [502, 503, 504]
+          exceptions: [ Faraday::ConnectionFailed, Faraday::TimeoutError ],
+          retry_statuses: [ 502, 503, 504 ]
         f.response :json, content_type: /\bjson$/
         f.options.timeout = timeout
         f.options.open_timeout = open_timeout

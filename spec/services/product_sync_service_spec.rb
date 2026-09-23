@@ -1065,7 +1065,6 @@ RSpec.describe ProductSyncService, type: :service do
         result = service.sync_to_external_system
         expect(result.success?).to be true
       end
-
     end
 
     context 'handling different product types' do

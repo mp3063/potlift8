@@ -459,8 +459,8 @@ class ProductSyncService
       connection = Faraday.new(url: url) do |faraday|
         faraday.request :json
         faraday.request :retry, max: 3, interval: 0.5, backoff_factor: 2,
-          exceptions: [Faraday::ConnectionFailed, Faraday::TimeoutError],
-          retry_statuses: [502, 503, 504]
+          exceptions: [ Faraday::ConnectionFailed, Faraday::TimeoutError ],
+          retry_statuses: [ 502, 503, 504 ]
         faraday.response :json
         faraday.adapter Faraday.default_adapter
         faraday.options.timeout = READ_TIMEOUT

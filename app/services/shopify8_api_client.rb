@@ -8,8 +8,8 @@ class Shopify8ApiClient
     max: 3,
     interval: 0.5,
     backoff_factor: 2,
-    exceptions: [Faraday::ConnectionFailed, Faraday::TimeoutError],
-    retry_statuses: [502, 503, 504]
+    exceptions: [ Faraday::ConnectionFailed, Faraday::TimeoutError ],
+    retry_statuses: [ 502, 503, 504 ]
   }.freeze
 
   Result = Struct.new(:success, :data, :error, keyword_init: true) do

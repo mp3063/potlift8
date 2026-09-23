@@ -56,11 +56,11 @@ namespace :sync do
     shopify8_products = JSON.parse(response.body)
     shopify8_skus = if shopify8_products.is_a?(Hash) && shopify8_products["data"]
                       shopify8_products["data"].map { |p| p["sku"] }
-                    elsif shopify8_products.is_a?(Array)
+    elsif shopify8_products.is_a?(Array)
                       shopify8_products.map { |p| p["sku"] }
-                    else
+    else
                       []
-                    end
+    end
 
     puts "Products in Shopify8: #{shopify8_skus.size}"
     puts "SKUs: #{shopify8_skus.join(', ')}" if shopify8_skus.size <= 20
