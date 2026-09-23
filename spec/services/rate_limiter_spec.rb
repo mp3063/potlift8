@@ -128,13 +128,18 @@ RSpec.describe RateLimiter, type: :service do
     end
 
     it 'decreases over time' do
-      rate_limiter.allowed?
-      initial_ttl = rate_limiter.time_until_reset
+      # Freeze app time so both reads use the same fixed window key; otherwise the
+      # sleep can cross a window boundary and read a fresh key (full period).
+      # Redis TTL keeps counting down in real time.
+      travel_to(Time.current) do
+        rate_limiter.allowed?
+        initial_ttl = rate_limiter.time_until_reset
 
-      sleep 1.5 # Use 1.5s to ensure at least 1 full second passes (Redis TTL is integer)
+        sleep 1.5 # Use 1.5s to ensure at least 1 full second passes (Redis TTL is integer)
 
-      new_ttl = rate_limiter.time_until_reset
-      expect(new_ttl).to be < initial_ttl
+        new_ttl = rate_limiter.time_until_reset
+        expect(new_ttl).to be < initial_ttl
+      end
     end
   end
 
