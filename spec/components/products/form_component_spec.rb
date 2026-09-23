@@ -61,6 +61,12 @@ RSpec.describe Products::FormComponent, type: :component do
       expect(page).to have_button('Cancel')
     end
 
+    it 'cancels back to the products list' do
+      render_inline(described_class.new(product: product, url: url, method: method))
+
+      expect(page).to have_css("button[onclick=\"window.location.href='/products'\"]", text: 'Cancel')
+    end
+
     it 'sets Stimulus controller' do
       render_inline(described_class.new(product: product, url: url, method: method))
 
@@ -87,6 +93,12 @@ RSpec.describe Products::FormComponent, type: :component do
     end
     let(:url) { "/products/#{product.id}" }
     let(:method) { :patch }
+
+    it 'cancels back to the product page' do
+      render_inline(described_class.new(product: product, url: url, method: method))
+
+      expect(page).to have_css("button[onclick=\"window.location.href='/products/#{product.to_param}'\"]", text: 'Cancel')
+    end
 
     it 'pre-fills SKU field' do
       render_inline(described_class.new(product: product, url: url, method: method))

@@ -236,7 +236,7 @@
   <% end %>
 
   <div class="flex justify-end gap-2">
-    <%= render Ui::ButtonComponent.new(variant: :secondary, type: "button", onclick: "window.location.href='#{helpers.products_path}'") do %>
+    <%= render Ui::ButtonComponent.new(variant: :secondary, type: "button", onclick: "window.location.href='#{product.persisted? ? helpers.product_path(product) : helpers.products_path}'") do %>
       Cancel
     <% end %>
     <%= render Ui::ButtonComponent.new(variant: :primary, type: "submit") do %>
