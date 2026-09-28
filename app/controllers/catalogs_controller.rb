@@ -448,12 +448,17 @@ class CatalogsController < ApplicationController
         "EAN",
         "Labels",
         "Price",
+        "Price Currency",
         "Weight",
         "Stock"
       ]
 
       catalog_items.each do |item|
         product = item.product
+        # Overrides are in the catalog currency; the inherited product price is the EUR base
+        override = item.catalog_item_attribute_values.joins(:product_attribute)
+                       .find_by(product_attributes: { code: "price" })&.value.presence
+        price, currency = override ? [ override, @catalog.currency_code ] : [ product.read_attribute_value("price"), "eur" ]
 
         csv << [
           item.priority,
@@ -464,7 +469,8 @@ class CatalogsController < ApplicationController
           product.product_status,
           product.ean,
           product.labels.map(&:name).join(", "),
-          item.effective_attribute_value("price"),
+          Cents.to_decimal(price),
+          (currency.upcase if price.present?),
           item.effective_attribute_value("weight"),
           product.inventories.sum(:value)
         ]

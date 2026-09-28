@@ -99,9 +99,9 @@ RSpec.describe ProductImportService do
 
       let(:csv_content) do
         <<~CSV
-          sku,name,attr_price,attr_color,attr_weight
-          ABC123,Widget,1999,blue,500
-          DEF456,Gadget,2499,red,750
+          sku,name,attr_price_eur,attr_color,attr_weight
+          ABC123,Widget,19.99,blue,500
+          DEF456,Gadget,24.99,red,750
         CSV
       end
 
@@ -136,6 +136,49 @@ RSpec.describe ProductImportService do
         product = company.products.find_by(sku: 'ABC123')
         expect(product).to be_present
         expect(result[:imported_count]).to eq(1)
+      end
+
+      it 'stores money columns given in euros as cents' do
+        csv = <<~CSV
+          sku,name,attr_special_price_eur,attr_purchase_price_eur
+          ABC123,Widget,"1 234,5",40
+        CSV
+
+        described_class.new(company, csv, user).import!
+
+        product = company.products.find_by(sku: 'ABC123')
+        expect(product.read_attribute_value('special_price')).to eq('123450')
+        expect(product.read_attribute_value('purchase_price')).to eq('4000')
+      end
+
+      it 'rejects the whole file when a money column has no currency suffix' do
+        csv = <<~CSV
+          sku,name,attr_price
+          ABC123,Widget,1999
+        CSV
+
+        result = described_class.new(company, csv, user).import!
+
+        expect(result[:imported_count]).to eq(0)
+        expect(company.products.find_by(sku: 'ABC123')).to be_nil
+        expect(result[:errors]).to eq([
+          { row: 0, error: 'Column attr_price is no longer supported: prices are now in euros, use attr_price_eur (e.g. 19.99)' }
+        ])
+      end
+
+      it 'reports an invalid amount as a row error' do
+        csv = <<~CSV
+          sku,name,attr_price_eur
+          ABC123,Widget,19.999
+          DEF456,Gadget,24.99
+        CSV
+
+        result = described_class.new(company, csv, user).import!
+
+        expect(result[:errors]).to eq([ { row: 2, error: '19.999 is not a valid amount (use e.g. 40,00 or 40.00)' } ])
+        expect(result[:imported_count]).to eq(1)
+        expect(company.products.find_by(sku: 'ABC123')).to be_nil
+        expect(company.products.find_by(sku: 'DEF456').read_attribute_value('price')).to eq('2499')
       end
     end
 

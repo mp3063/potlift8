@@ -1,5 +1,6 @@
 class ProductImportService
   BATCH_SIZE = 100
+  MONEY_COLUMN_SUFFIX = "_eur" # product-level money is in the base currency
 
   attr_reader :company, :file_content, :user, :errors, :imported_count, :updated_count
 
@@ -15,6 +16,12 @@ class ProductImportService
 
   def import!
     rows = parse_csv
+
+    if (legacy_error = legacy_money_column_error(rows.headers))
+      @errors << { row: 0, error: legacy_error }
+      return { imported_count: 0, updated_count: 0, errors: @errors }
+    end
+
     total = rows.size
     processed = 0
 
@@ -44,6 +51,27 @@ class ProductImportService
     CSV.parse(@file_content, headers: true, header_converters: :symbol)
   end
 
+  def money_codes
+    @money_codes ||= @company.product_attributes.select(&:money?).map(&:code)
+  end
+
+  # Old files held cents in attr_<code>; importing them as euros would be 100x off.
+  def legacy_money_column_error(headers)
+    code = money_codes.find { |c| headers.include?(:"attr_#{c}") }
+    return unless code
+
+    "Column attr_#{code} is no longer supported: prices are now in euros, " \
+      "use attr_#{code}#{MONEY_COLUMN_SUFFIX} (e.g. 19.99)"
+  end
+
+  # Raises Cents::InvalidAmount, which becomes a row error.
+  def parse_money_columns(row)
+    money_codes.each_with_object({}) do |code, values|
+      cents = Cents.parse(row[:"attr_#{code}#{MONEY_COLUMN_SUFFIX}"])
+      values[code] = cents.to_s if cents
+    end
+  end
+
   def process_batch(batch)
     batch.each_with_index do |row, index|
       process_row(row, index)
@@ -62,6 +90,8 @@ class ProductImportService
       @errors << { row: index + 2, error: "Name is required" }
       return
     end
+
+    money_values = parse_money_columns(row)
 
     product = find_or_initialize_product(row[:sku])
     is_new = product.new_record?
@@ -84,7 +114,7 @@ class ProductImportService
     if product.save
       import_labels(product, row) if row[:labels].present?
 
-      import_attributes(product, row)
+      import_attributes(product, row, money_values)
 
       if is_new
         @imported_count += 1
@@ -126,10 +156,13 @@ class ProductImportService
     Rails.logger.error("Failed to import labels for product #{product.sku}: #{e.message}")
   end
 
-  def import_attributes(product, row)
+  def import_attributes(product, row, money_values)
+    money_values.each { |code, cents| product.write_attribute_value(code, cents) }
+    money_columns = money_codes.map { |code| :"attr_#{code}#{MONEY_COLUMN_SUFFIX}" }
+
     row.to_h.each do |key, value|
       next unless key.to_s.start_with?("attr_")
-      next if value.blank?
+      next if value.blank? || money_columns.include?(key)
 
       attr_code = key.to_s.sub("attr_", "")
       attribute = @company.product_attributes.find_by(code: attr_code)

@@ -173,7 +173,8 @@ RSpec.describe CatalogImportsController, type: :controller do
     end
 
     context 'with price overrides' do
-      let(:price_attribute) { create(:product_attribute, company: company, code: 'price', name: 'Price') }
+      # 'price' is an auto-seeded system attribute; reuse it instead of creating a duplicate
+      let(:price_attribute) { company.product_attributes.find_by(code: 'price') }
 
       let(:csv_content) do
         CSV.generate do |csv|
@@ -189,11 +190,29 @@ RSpec.describe CatalogImportsController, type: :controller do
         price_attribute
       end
 
-      it 'sets price overrides for catalog items' do
+      it 'stores price overrides given in the catalog currency as cents' do
         post :create, params: { catalog_code: catalog.code, file: csv_file }
 
         catalog_item = catalog.catalog_items.find_by(product: product1)
-        expect(catalog_item.effective_attribute_value('price')).to eq('29.99')
+        expect(catalog_item.effective_attribute_value('price')).to eq('2999')
+      end
+
+      context 'with an invalid amount' do
+        let(:csv_content) do
+          CSV.generate do |csv|
+            csv << [ 'product_sku', 'price_override' ]
+            csv << [ 'PROD-001', '29.999' ]
+            csv << [ 'PROD-002', '9.50' ]
+          end
+        end
+
+        it 'reports a row error and skips that row' do
+          post :create, params: { catalog_code: catalog.code, file: csv_file }
+
+          expect(flash[:alert]).to include('Row 2: 29.999 is not a valid amount (use e.g. 40,00 or 40.00)')
+          expect(catalog.catalog_items.find_by(product: product1)).to be_nil
+          expect(catalog.catalog_items.find_by(product: product2).effective_attribute_value('price')).to eq('950')
+        end
       end
     end
   end

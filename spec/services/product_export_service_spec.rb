@@ -424,14 +424,14 @@ RSpec.describe ProductExportService do
       csv_data = CSV.parse(csv_export, headers: true)
 
       # Should have base headers + sorted attribute codes
-      expect(csv_data.headers).to include('attr_color', 'attr_price', 'attr_weight')
+      expect(csv_data.headers).to include('attr_color', 'attr_price_eur', 'attr_weight')
     end
 
     it 'exports attribute values for products' do
       csv_data = CSV.parse(csv_export, headers: true)
 
       product1_row = csv_data.find { |row| row['SKU'] == 'ATTR001' }
-      expect(product1_row['attr_price']).to eq('1999')
+      expect(product1_row['attr_price_eur']).to eq('19.99')
       expect(product1_row['attr_color']).to eq('blue')
       expect(product1_row['attr_weight']).to eq('') # Not set for this product
     end
@@ -440,7 +440,7 @@ RSpec.describe ProductExportService do
       csv_data = CSV.parse(csv_export, headers: true)
 
       product2_row = csv_data.find { |row| row['SKU'] == 'ATTR002' }
-      expect(product2_row['attr_price']).to eq('2499')
+      expect(product2_row['attr_price_eur']).to eq('24.99')
       expect(product2_row['attr_weight']).to eq('500g')
       expect(product2_row['attr_color']).to eq('') # Not set for this product
     end
@@ -449,7 +449,7 @@ RSpec.describe ProductExportService do
       csv_data = CSV.parse(csv_export, headers: true)
 
       product3_row = csv_data.find { |row| row['SKU'] == 'ATTR003' }
-      expect(product3_row['attr_price']).to eq('')
+      expect(product3_row['attr_price_eur']).to eq('')
       expect(product3_row['attr_color']).to eq('')
       expect(product3_row['attr_weight']).to eq('')
     end
@@ -458,7 +458,7 @@ RSpec.describe ProductExportService do
       csv_data = CSV.parse(csv_export, headers: true)
 
       # All three attributes should be present even though no single product has all three
-      expect(csv_data.headers).to include('attr_price', 'attr_color', 'attr_weight')
+      expect(csv_data.headers).to include('attr_price_eur', 'attr_color', 'attr_weight')
     end
 
     it 'sorts attribute columns alphabetically by code' do
@@ -468,7 +468,7 @@ RSpec.describe ProductExportService do
       attr_headers = csv_data.headers.select { |h| h.start_with?('attr_') }
 
       # Should be sorted: color, price, weight
-      expect(attr_headers).to eq([ 'attr_color', 'attr_price', 'attr_weight' ])
+      expect(attr_headers).to eq([ 'attr_color', 'attr_price_eur', 'attr_weight' ])
     end
 
     context 'with special characters in attribute values' do

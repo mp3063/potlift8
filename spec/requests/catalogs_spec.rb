@@ -158,6 +158,32 @@ RSpec.describe '/catalogs', type: :request do
     end
   end
 
+  describe 'GET /catalogs/:code/export.csv' do
+    let(:catalog) { create(:catalog, :sek, company: company, code: 'WEB-SEK') }
+    let!(:product) { create(:product, company: company, sku: 'PROD001') }
+    let!(:catalog_item) { create(:catalog_item, catalog: catalog, product: product) }
+
+    it 'exports a catalog price override as an amount in the catalog currency' do
+      catalog_item.write_catalog_attribute_value('price', '29900')
+
+      get export_catalog_path(catalog, format: :csv)
+
+      row = CSV.parse(response.body, headers: true).first
+      expect(row['Price']).to eq('299.00')
+      expect(row['Price Currency']).to eq('SEK')
+    end
+
+    it 'exports the inherited product price in euros' do
+      product.write_attribute_value('price', '1999')
+
+      get export_catalog_path(catalog, format: :csv)
+
+      row = CSV.parse(response.body, headers: true).first
+      expect(row['Price']).to eq('19.99')
+      expect(row['Price Currency']).to eq('EUR')
+    end
+  end
+
   describe 'GET /catalogs/new' do
     it 'returns successful response' do
       get new_catalog_path

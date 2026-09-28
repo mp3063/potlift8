@@ -154,7 +154,7 @@ class ImportsController < ApplicationController
         "product_type",
         "product_status",
         "restock_level",
-        "attr_price",
+        "attr_price_eur",
         "attr_weight",
         "attr_color"
       ]
@@ -180,7 +180,7 @@ class ImportsController < ApplicationController
         "# product_type: sellable, configurable, or bundle",
         "# product_status: draft, active, discontinued",
         "# restock_level: minimum inventory level",
-        "# attr_* columns are product attributes",
+        "# attr_* columns are product attributes; prices use attr_<code>_eur in euros (19.99)",
         "",
         ""
       ]
@@ -193,8 +193,8 @@ class ImportsController < ApplicationController
         "product_sku",
         "catalog_code",
         "status",
-        "attr_price",
-        "attr_special_price"
+        "attr_price_eur",
+        "attr_special_price_eur"
       ]
 
       csv << [

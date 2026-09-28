@@ -2,6 +2,7 @@ require "csv"
 
 class ProductExportService
   BATCH_SIZE = 100
+  MONEY_COLUMN_SUFFIX = "_eur" # product-level money is in the base currency
 
   def initialize(products)
     @products = products
@@ -9,7 +10,8 @@ class ProductExportService
 
   # Uses find_each for memory-efficient batch processing.
   # Automatically eager loads associations to prevent N+1 queries.
-  # Includes product attributes as "attr_[code]" columns.
+  # Includes product attributes as "attr_[code]" columns; money attributes as
+  # "attr_[code]_eur" with amounts in euros (e.g. 19.99).
   def to_csv
     products_with_data = @products.includes(
       :labels,
@@ -65,10 +67,12 @@ class ProductExportService
 
   def collect_attribute_codes(products_relation)
     codes = Set.new
+    @money_codes = Set.new
 
     products_relation.each do |product|
       product.product_attribute_values.each do |pav|
         codes << pav.product_attribute.code
+        @money_codes << pav.product_attribute.code if pav.product_attribute.money?
       end
     end
 
@@ -88,7 +92,9 @@ class ProductExportService
       "Updated At"
     ]
 
-    attribute_headers = attribute_codes.map { |code| "attr_#{code}" }
+    attribute_headers = attribute_codes.map do |code|
+      @money_codes.include?(code) ? "attr_#{code}#{MONEY_COLUMN_SUFFIX}" : "attr_#{code}"
+    end
 
     base_headers + attribute_headers
   end
@@ -107,7 +113,9 @@ class ProductExportService
     ]
 
     attribute_values = attribute_codes.map do |code|
-      product.read_attribute_value(code) || ""
+      value = product.read_attribute_value(code)
+      value = Cents.to_decimal(value) if @money_codes.include?(code)
+      value || ""
     end
 
     base_row + attribute_values

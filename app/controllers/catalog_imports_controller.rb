@@ -122,6 +122,9 @@ class CatalogImportsController < ApplicationController
             next
           end
 
+          # Amounts are in the catalog currency; invalid ones raise before anything is written
+          price_cents = Cents.parse(row[:price_override])
+
           existing_catalog_item = @catalog.catalog_items.find_by(product: product)
 
           if existing_catalog_item
@@ -143,9 +146,7 @@ class CatalogImportsController < ApplicationController
             if updated && existing_catalog_item.save
               result[:updated] += 1
 
-              if row[:price_override].present?
-                update_price_override(existing_catalog_item, row[:price_override].strip)
-              end
+              update_price_override(existing_catalog_item, price_cents) if price_cents
             else
               result[:skipped] += 1
             end
@@ -164,9 +165,7 @@ class CatalogImportsController < ApplicationController
             if catalog_item.save
               result[:success] += 1
 
-              if row[:price_override].present?
-                update_price_override(catalog_item, row[:price_override].strip)
-              end
+              update_price_override(catalog_item, price_cents) if price_cents
             else
               result[:failed] += 1
               result[:errors] << "Row #{row_number}: #{catalog_item.errors.full_messages.join(', ')}"
@@ -182,10 +181,10 @@ class CatalogImportsController < ApplicationController
     result
   end
 
-  def update_price_override(catalog_item, price_value)
+  def update_price_override(catalog_item, price_cents)
     price_attribute = current_potlift_company.product_attributes.find_by(code: "price")
     return unless price_attribute
 
-    catalog_item.write_catalog_attribute_value("price", price_value)
+    catalog_item.write_catalog_attribute_value("price", price_cents.to_s)
   end
 end
