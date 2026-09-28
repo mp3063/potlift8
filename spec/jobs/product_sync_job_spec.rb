@@ -7,6 +7,7 @@ RSpec.describe ProductSyncJob, type: :job do
   let(:product) { create(:product, company: company) }
   let(:catalog) { create(:catalog, :shop_connected, company: company) }
   let(:timestamp) { Time.current }
+  let!(:catalog_item) { create(:catalog_item, catalog: catalog, product: product) }
 
   describe 'queue configuration' do
     it 'is enqueued on the default queue' do
@@ -25,6 +26,16 @@ RSpec.describe ProductSyncJob, type: :job do
       it 'skips sync and logs warning' do
         expect(ProductSyncService).not_to receive(:new)
         expect(Rails.logger).to receive(:warn).with(/sync locked/)
+
+        described_class.perform_now(product, catalog, timestamp)
+      end
+    end
+
+    context 'when the product is no longer in the catalog' do
+      before { catalog_item.destroy! }
+
+      it 'skips sync so a queued sync cannot recreate a removed product' do
+        expect(ProductSyncService).not_to receive(:new)
 
         described_class.perform_now(product, catalog, timestamp)
       end

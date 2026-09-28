@@ -45,6 +45,12 @@ class ProductSyncJob < ApplicationJob
       return
     end
 
+    # A sync queued before the product left the catalog would recreate it in the shop
+    unless CatalogItem.exists?(catalog: catalog, product: product)
+      Rails.logger.info("Product #{product.sku} is no longer in catalog #{catalog.code}. Skipping sync.")
+      return
+    end
+
     begin
       sync_product(product, catalog, timestamp)
     rescue StandardError => e

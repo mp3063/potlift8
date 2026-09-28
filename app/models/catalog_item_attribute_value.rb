@@ -49,6 +49,9 @@ class CatalogItemAttributeValue < ApplicationRecord
   end
 
   def enqueue_sync_job
+    # Removed with its catalog item: CatalogItem sends the removal instead
+    return if destroyed_by_association
+
     catalog_item = self.catalog_item
     return unless catalog_item
 

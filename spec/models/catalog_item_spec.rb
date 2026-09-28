@@ -465,6 +465,18 @@ RSpec.describe CatalogItem, type: :model do
       expect { catalog_item.destroy }.not_to have_enqueued_job(ProductRemovalJob)
     end
 
+    it 'sends only the removal when the item has catalog overrides' do
+      catalog.update!(info: catalog.info.merge('sync_target' => 'shopify8'))
+      special = company.product_attributes.find_by!(code: 'special_price')
+      special.update!(product_attribute_scope: :product_and_catalog_scope)
+      create(:catalog_item_attribute_value, catalog_item: catalog_item, product_attribute: special, value: '900')
+      clear_enqueued_jobs
+
+      catalog_item.destroy
+
+      expect(enqueued_jobs.map { |j| j['job_class'] || j[:job].to_s }).to eq([ 'ProductRemovalJob' ])
+    end
+
     it 'sends nothing when destroyed together with its product' do
       expect { product.destroy }.to have_enqueued_job(ProductRemovalJob).exactly(:once)
     end
