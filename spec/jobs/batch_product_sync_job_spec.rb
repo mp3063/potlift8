@@ -4,7 +4,7 @@ require 'rails_helper'
 
 RSpec.describe BatchProductSyncJob, type: :job do
   let(:company) { create(:company) }
-  let(:catalog) { create(:catalog, company: company) }
+  let(:catalog) { create(:catalog, :shop_connected, company: company) }
   let(:products) { create_list(:product, 5, company: company) }
   let(:product_ids) { products.map(&:id) }
 
@@ -57,6 +57,16 @@ RSpec.describe BatchProductSyncJob, type: :job do
       expect {
         described_class.perform_now(product_ids, catalog.id)
       }.to make_database_queries(count: 10..70) # Eager loading + per-item sync_status updates + broadcast counts
+    end
+
+    context 'when catalog is not connected to a shop' do
+      before { catalog.update!(info: {}) }
+
+      it 'skips the sync' do
+        expect_any_instance_of(ProductSyncService).not_to receive(:sync_to_external_system)
+
+        described_class.perform_now(product_ids, catalog.id)
+      end
     end
 
     context 'when catalog has sync paused' do

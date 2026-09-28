@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe ProductSyncJob, type: :job do
   let(:company) { create(:company) }
   let(:product) { create(:product, company: company) }
-  let(:catalog) { create(:catalog, company: company) }
+  let(:catalog) { create(:catalog, :shop_connected, company: company) }
   let(:timestamp) { Time.current }
 
   describe 'queue configuration' do
@@ -25,6 +25,16 @@ RSpec.describe ProductSyncJob, type: :job do
       it 'skips sync and logs warning' do
         expect(ProductSyncService).not_to receive(:new)
         expect(Rails.logger).to receive(:warn).with(/sync locked/)
+
+        described_class.perform_now(product, catalog, timestamp)
+      end
+    end
+
+    context 'when catalog is not connected to a shop' do
+      before { catalog.update!(info: {}) }
+
+      it 'skips sync' do
+        expect(ProductSyncService).not_to receive(:new)
 
         described_class.perform_now(product, catalog, timestamp)
       end

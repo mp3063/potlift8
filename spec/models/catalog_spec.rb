@@ -91,6 +91,17 @@ RSpec.describe Catalog, type: :model do
   end
 
   # Test #minimum_ratio method
+  describe '#shop_connected?' do
+    it 'is true when the catalog has a shop_id' do
+      expect(build(:catalog, info: { 'shop_id' => 2 }).shop_connected?).to be true
+    end
+
+    it 'is false without a shop_id' do
+      expect(build(:catalog, info: {}).shop_connected?).to be false
+      expect(build(:catalog, info: { 'shop_id' => '' }).shop_connected?).to be false
+    end
+  end
+
   describe '#minimum_ratio' do
     it 'returns 1.5 for SEK' do
       catalog = build(:catalog, currency_code: 'sek')

@@ -37,6 +37,12 @@ class Catalog < ApplicationRecord
     code
   end
 
+  # Only catalogs linked to a Shopify8 shop are synced. Without a shop_id,
+  # Shopify8 falls back to the company's first shop (the wrong one).
+  def shop_connected?
+    info&.dig("shop_id").present?
+  end
+
   def requires_minimum_ratio?
     MINIMUM_CURRENCY_RATIO.key?(currency_code.to_sym)
   end

@@ -37,6 +37,11 @@ FactoryBot.define do
       association :sync_lock
     end
 
+    # Catalog linked to a shop in Shopify8; only these are synced
+    trait :shop_connected do
+      info { { 'shop_id' => 1 } }
+    end
+
     # Trait with custom info
     trait :with_info do
       info do

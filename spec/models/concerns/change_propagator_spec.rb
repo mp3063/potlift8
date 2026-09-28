@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe ChangePropagator, type: :model do
   let(:company) { create(:company) }
   let(:product) { create(:product, company: company) }
-  let(:catalog) { create(:catalog, company: company) }
+  let(:catalog) { create(:catalog, :shop_connected, company: company) }
   let!(:catalog_item) { create(:catalog_item, catalog: catalog, product: product) }
 
   describe 'change propagation on update' do
@@ -36,8 +36,16 @@ RSpec.describe ChangePropagator, type: :model do
       end.not_to have_enqueued_job(ProductSyncJob)
     end
 
+    it 'skips catalogs that are not connected to a shop' do
+      catalog.update!(info: {})
+
+      expect do
+        product.update!(name: 'Changed')
+      end.not_to have_enqueued_job(ProductSyncJob)
+    end
+
     it 'propagates to multiple catalogs' do
-      catalog2 = create(:catalog, company: company, code: 'CAT002')
+      catalog2 = create(:catalog, :shop_connected, company: company, code: 'CAT002')
       create(:catalog_item, catalog: catalog2, product: product)
 
       expect do
@@ -157,6 +165,12 @@ RSpec.describe ChangePropagator, type: :model do
       expect { product.destroy }.not_to have_enqueued_job(ProductRemovalJob)
     end
 
+    it 'sends no removal for catalogs that are not connected to a shop' do
+      catalog.update!(info: {})
+
+      expect { product.destroy }.not_to have_enqueued_job(ProductRemovalJob)
+    end
+
     it 'sends one removal per shop when catalogs share a shop' do
       catalog.update!(info: { 'shop_id' => 2 })
       catalog2 = create(:catalog, company: company, code: 'CAT002', info: { 'shop_id' => 2 })
@@ -214,7 +228,7 @@ RSpec.describe ChangePropagator, type: :model do
   describe 'performance optimization' do
     it 'eager loads catalogs to prevent N+1 queries' do
       5.times do |i|
-        cat = create(:catalog, company: company, code: "CAT#{i + 10}")
+        cat = create(:catalog, :shop_connected, company: company, code: "CAT#{i + 10}")
         create(:catalog_item, catalog: cat, product: product)
       end
 
@@ -319,7 +333,7 @@ RSpec.describe ChangePropagator, type: :model do
     end
 
     it 'logs catalog count' do
-      create(:catalog_item, catalog: create(:catalog, company: company, code: 'CAT2'), product: product)
+      create(:catalog_item, catalog: create(:catalog, :shop_connected, company: company, code: 'CAT2'), product: product)
 
       allow(Rails.logger).to receive(:info).and_call_original
       expect(Rails.logger).to receive(:info).with(/Propagating changes to 2 catalog/).and_call_original
