@@ -3,6 +3,9 @@
             product_value (ProductAttributeValue or nil), catalog_item, product %>
 <% product_has_value = product_value.present? && product_value.value.present? %>
 <% differs_from_product = product_has_value && catalog_override.value != product_value.value %>
+<% currency = catalog_item.catalog.currency_code %>
+<% override_display = attribute_display_value(product_attribute, catalog_override.value, currency: currency) %>
+<% product_display = product_has_value ? attribute_display_value(product_attribute, product_value.value) : nil %>
 <div id="<%= dom_id(catalog_override, :value) %>"
      class="group px-6 py-2 border-b border-gray-100"
      data-controller="inline-editor"
@@ -15,8 +18,8 @@
         <span class="inline-flex shrink-0 items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">Override</span>
       </dt>
       <dd class="flex-1 min-w-0 text-sm text-gray-900 <%= product_attribute.patype_rich_text? ? 'line-clamp-2' : 'truncate' %>"
-          title="<%= differs_from_product ? "#{catalog_override.value} (product value: #{product_value.value})" : catalog_override.value %>">
-        <%= catalog_override.value %>
+          title="<%= differs_from_product ? "#{override_display} (product value: #{product_display})" : override_display %>">
+        <%= override_display %>
       </dd>
     </dl>
     <div class="flex shrink-0 items-center gap-1">
@@ -72,6 +75,13 @@
             <%= form.check_box :value,
                 { checked: catalog_override.value == 'true' },
                 class: "h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" %>
+          <% elsif product_attribute.money? %>
+            <%= form.text_field :value,
+                value: attribute_input_value(product_attribute, catalog_override.value),
+                inputmode: "decimal",
+                class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
+                placeholder: "0,00" %>
+            <p class="mt-1 text-xs text-gray-500">Amount in <%= currency.upcase %>, e.g. 40,00</p>
           <% elsif product_attribute.patype_number? %>
             <%= form.number_field :value,
                 value: catalog_override.value,
@@ -95,7 +105,7 @@
           <% end %>
           <% if differs_from_product %>
             <p class="mt-1 text-xs text-gray-500">
-              Product value: <%= product_value.value %>
+              Product value: <%= product_display %>
             </p>
           <% end %>
         </div>

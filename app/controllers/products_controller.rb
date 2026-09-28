@@ -289,8 +289,13 @@ class ProductsController < ApplicationController
     end
 
     value = @product.read_attribute_value(code)
+    attribute = current_potlift_company.product_attributes.find_by(code: code)
 
-    render json: { value: value }
+    render json: {
+      value: value,
+      input_value: attribute ? helpers.attribute_input_value(attribute, value) : value,
+      display: attribute ? helpers.attribute_display_value(attribute, value) : value
+    }
   end
 
   private

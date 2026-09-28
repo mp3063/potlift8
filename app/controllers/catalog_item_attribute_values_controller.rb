@@ -27,7 +27,11 @@ class CatalogItemAttributeValuesController < ApplicationController
       product_attribute: @product_attribute
     )
 
-    @catalog_item_attribute_value.value = params[:value]
+    begin
+      @catalog_item_attribute_value.value = submitted_value(@product_attribute)
+    rescue Cents::InvalidAmount => e
+      return respond_with_invalid_amount("Failed to create override: #{e.message}", @catalog_item.product)
+    end
     @catalog_item_attribute_value.ready = true
 
     if @catalog_item_attribute_value.save
@@ -52,7 +56,13 @@ class CatalogItemAttributeValuesController < ApplicationController
   def update
     authorize :catalog_item_attribute_value, :update?
 
-    if @catalog_item_attribute_value.update(value: params[:value])
+    begin
+      value = submitted_value(@catalog_item_attribute_value.product_attribute)
+    rescue Cents::InvalidAmount => e
+      return respond_with_invalid_amount("Failed to update override: #{e.message}", @catalog_item_attribute_value.product)
+    end
+
+    if @catalog_item_attribute_value.update(value: value)
       @catalog_item = @catalog_item_attribute_value.catalog_item
       @catalog_item.reload
       @product = @catalog_item.product
@@ -100,6 +110,23 @@ class CatalogItemAttributeValuesController < ApplicationController
   end
 
   private
+
+  # Money is typed as "40,00" but stored in cents.
+  def submitted_value(product_attribute)
+    return params[:value] unless product_attribute.money?
+
+    Cents.parse(params[:value])&.to_s
+  end
+
+  def respond_with_invalid_amount(message, product)
+    respond_to do |format|
+      format.html { redirect_back fallback_location: product_path(product), alert: message }
+      format.turbo_stream do
+        flash.now[:alert] = message
+        render :error, status: :unprocessable_entity
+      end
+    end
+  end
 
   def set_catalog_item
     catalog_item_id = params[:catalog_item_id]

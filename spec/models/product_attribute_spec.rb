@@ -308,6 +308,17 @@ RSpec.describe ProductAttribute, type: :model do
       end
     end
 
+    describe '#money?' do
+      it 'is true for price and special price formats' do
+        expect(build(:product_attribute, view_format: :view_format_price)).to be_money
+        expect(build(:product_attribute, view_format: :view_format_special_price)).to be_money
+      end
+
+      it 'is false for other number formats' do
+        expect(build(:product_attribute, view_format: :view_format_weight)).not_to be_money
+      end
+    end
+
     describe '#avjson' do
       let(:company) { create(:company) }
       let(:product) { create(:product, company: company) }

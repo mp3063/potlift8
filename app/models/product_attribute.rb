@@ -85,6 +85,11 @@ class ProductAttribute < ApplicationRecord
     info&.dig("options") || []
   end
 
+  # Values stored in cents; see Cents
+  def money?
+    view_format_price? || view_format_special_price?
+  end
+
   def avjson(av)
     case view_format.to_sym
     when :view_format_general

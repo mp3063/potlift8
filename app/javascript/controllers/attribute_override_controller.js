@@ -34,8 +34,8 @@ export default class extends Controller {
       const data = await response.json()
 
       if (data.value) {
-        this.valueInputTarget.value = data.value
-        this.productValueHintTarget.textContent = `Product value: ${data.value}`
+        this.valueInputTarget.value = data.input_value
+        this.productValueHintTarget.textContent = `Product value: ${data.display}`
         this.productValueHintTarget.classList.remove("text-gray-500")
         this.productValueHintTarget.classList.add("text-blue-600")
       } else {

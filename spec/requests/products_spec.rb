@@ -294,6 +294,28 @@ RSpec.describe '/products', type: :request do
     end
   end
 
+  describe 'GET /products/:id/attribute_value' do
+    let(:product) { create(:product, company: company) }
+    let(:price) { company.product_attributes.find_by!(code: 'price') }
+    let(:brand) { company.product_attributes.find_by!(code: 'brand') }
+
+    it 'returns money in cents plus an input-ready amount and a euro display string' do
+      create(:product_attribute_value, product: product, product_attribute: price, value: '4050')
+
+      get attribute_value_product_path(product, code: 'price'), as: :json
+
+      expect(response.parsed_body).to eq('value' => '4050', 'input_value' => '40,50', 'display' => '40,50 €')
+    end
+
+    it 'passes non-money values through unchanged' do
+      create(:product_attribute_value, product: product, product_attribute: brand, value: 'Acme')
+
+      get attribute_value_product_path(product, code: 'brand'), as: :json
+
+      expect(response.parsed_body).to eq('value' => 'Acme', 'input_value' => 'Acme', 'display' => 'Acme')
+    end
+  end
+
   describe 'GET /show' do
     let(:product) { create(:product, company: company, sku: 'SHOW001', name: 'Show Product') }
     let(:other_company_product) { create(:product, company: other_company) }
@@ -332,7 +354,7 @@ RSpec.describe '/products', type: :request do
 
         expect(response).to be_successful
         expect(response.body).to include('Price')
-        expect(response.body).to include('1999')
+        expect(response.body).to include('19,99 €')
       end
     end
   end

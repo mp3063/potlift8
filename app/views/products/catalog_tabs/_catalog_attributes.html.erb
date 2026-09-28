@@ -41,9 +41,10 @@
                     title="<%= [ product_attribute.name, product_attribute.description.presence ].compact.join(" — ") %>">
                   <%= product_attribute.name %>
                 </dt>
+                <% inherited_display = attribute_display_value(product_attribute, product_value.value) %>
                 <dd class="flex-1 min-w-0 text-sm text-gray-900 <%= product_attribute.patype_rich_text? ? 'line-clamp-2' : 'truncate' %>"
-                    title="<%= product_value.value %>">
-                  <%= product_value.value %>
+                    title="<%= inherited_display %>">
+                  <%= inherited_display %>
                 </dd>
               </dl>
               <span class="shrink-0 text-xs text-gray-400">inherited</span>

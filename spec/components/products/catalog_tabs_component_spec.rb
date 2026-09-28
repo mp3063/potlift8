@@ -65,6 +65,27 @@ RSpec.describe Products::CatalogTabsComponent, type: :component do
       expect(page).to have_css("#{row} button[aria-label='Edit #{price_attribute.name}']")
     end
 
+    it "shows money in euros and edits it as a decimal amount" do
+      create(:product_attribute_value, product: product, product_attribute: price_attribute, value: "4050")
+      render_component(product)
+
+      row = "##{dom_id(price_attribute, :value)}"
+      expect(page).to have_css("#{row} dd", text: "40,50 €")
+      expect(page).to have_css("#{row} input[type='text'][name='value'][value='40,50'][inputmode='decimal'][placeholder='0,00']", visible: :all)
+      expect(page).to have_css("#{row} p", text: "Amount in EUR", visible: :all)
+    end
+
+    it "edits a special price by its amount only" do
+      special_price = company.product_attributes.find_by!(code: "special_price")
+      create(:product_attribute_value, product: product, product_attribute: special_price, value: "3500",
+             info: { "special_price" => { "amount" => "3500", "from" => "2026-10-01", "until" => "2026-10-31" } })
+      render_component(product)
+
+      row = "##{dom_id(special_price, :value)}"
+      expect(page).to have_css("#{row} dd", text: "35,00 € (2026-10-01 – 2026-10-31)")
+      expect(page).to have_css("#{row} input[name='value'][value='35,00']", visible: :all)
+    end
+
     it "puts the attribute description on the name as a tooltip instead of a third line" do
       brand_attribute.update!(description: "Manufacturer brand")
       render_component(product)
@@ -109,6 +130,29 @@ RSpec.describe Products::CatalogTabsComponent, type: :component do
       expect(page).to have_css("#{row}[data-controller='inline-editor']")
       expect(page).to have_css("#{row} button[aria-label='Edit #{short_description.name}']")
       expect(page).to have_css("#{row} button[aria-label='Remove override for #{short_description.name}']")
+    end
+
+    context "with money values in a SEK catalog" do
+      let(:catalog) { create(:catalog, :sek, company: company, name: "Swedish Webshop") }
+
+      before { create(:product_attribute_value, product: product, product_attribute: price_attribute, value: "4000") }
+
+      it "shows an inherited price in the base currency (EUR)" do
+        render_component(product.reload)
+
+        expect(page).to have_css("#{panel} dd", text: "40,00 €")
+      end
+
+      it "shows an overridden price formatted and edits it as a decimal amount" do
+        override = create(:catalog_item_attribute_value, catalog_item: catalog_item, product_attribute: price_attribute, value: "6000")
+        render_component(product.reload)
+
+        row = "##{dom_id(override, :value)}"
+        expect(page).to have_css("#{row} dd", text: "60,00 SEK")
+        expect(page).to have_css("#{row} dd[title='60,00 SEK (product value: 40,00 €)']")
+        expect(page).to have_css("#{row} input[type='text'][value='60,00'][inputmode='decimal']", visible: :all)
+        expect(page).to have_css("#{row} p", text: "Product value: 40,00 €", visible: :all)
+      end
     end
 
     it "omits attributes with neither an override nor a product value" do

@@ -53,4 +53,43 @@ RSpec.describe "/catalog_item_attribute_values", type: :request do
       expect(attribute_lookups.size).to be <= 1
     end
   end
+
+  describe "money overrides" do
+    let(:price) { company.product_attributes.find_by!(code: "price") }
+
+    it "stores a typed amount as cents on create" do
+      post catalog_item_attribute_values_path(format: :turbo_stream),
+           params: { catalog_item_id: catalog_item.id, product_attribute_id: price.id, value: "40,50" }
+
+      expect(catalog_item.catalog_item_attribute_values.find_by(product_attribute: price).value).to eq("4050")
+    end
+
+    it "rejects an invalid amount on create without saving" do
+      post catalog_item_attribute_values_path(format: :turbo_stream),
+           params: { catalog_item_id: catalog_item.id, product_attribute_id: price.id, value: "abc" }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("Failed to create override: abc is not a valid amount (use e.g. 40,00 or 40.00)")
+      expect(catalog_item.catalog_item_attribute_values.find_by(product_attribute: price)).to be_nil
+    end
+
+    context "with an existing price override" do
+      let!(:price_override) { create(:catalog_item_attribute_value, catalog_item: catalog_item, product_attribute: price, value: "4000") }
+
+      it "stores a typed amount as cents on update and shows it formatted" do
+        patch catalog_item_attribute_value_path(price_override, format: :turbo_stream), params: { value: "45.00" }
+
+        expect(price_override.reload.value).to eq("4500")
+        expect(response.body).to include("45,00 €")
+      end
+
+      it "rejects an invalid amount on update without saving" do
+        patch catalog_item_attribute_value_path(price_override, format: :turbo_stream), params: { value: "4x" }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.body).to include("Failed to update override: 4x is not a valid amount")
+        expect(price_override.reload.value).to eq("4000")
+      end
+    end
+  end
 end
