@@ -130,6 +130,20 @@ RSpec.describe ProductSyncService, type: :service do
     end
   end
 
+  describe '#build_attribute_entry' do
+    it 'flags money attributes' do
+      price_attr = company.product_attributes.find_by!(code: 'price')
+
+      expect(service.send(:build_attribute_entry, price_attr, '4000')).to include(value: '4000', money: true)
+    end
+
+    it 'does not flag other attributes' do
+      weight_attr = create(:product_attribute, company: company, code: 'net_weight', view_format: :view_format_weight)
+
+      expect(service.send(:build_attribute_entry, weight_attr, '250')).not_to have_key(:money)
+    end
+  end
+
   describe '#build_inventory_payload' do
     let(:storage1) { create(:storage, company: company, code: 'MAIN') }
     let(:storage2) { create(:storage, company: company, code: 'BACKUP') }

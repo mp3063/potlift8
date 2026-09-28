@@ -187,6 +187,7 @@ class ProductSyncService
     end
 
     entry[:system] = true if product_attribute.system?
+    entry[:money] = true if product_attribute.money?
     entry[:unit] = product_attribute.info["unit"] if product_attribute.info&.key?("unit")
     entry
   end
