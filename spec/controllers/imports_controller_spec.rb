@@ -83,6 +83,19 @@ RSpec.describe ImportsController, type: :request do
       end
     end
 
+    context 'with the catalog_items type, which has no importer' do
+      it 'rejects it instead of creating an import that never runs' do
+        upload = build_upload(csv_content)
+
+        expect {
+          post imports_path, params: { file: upload, import_type: "catalog_items" }
+        }.not_to change { Import.count }
+
+        expect(response).to redirect_to(new_import_path)
+        expect(flash[:alert]).to match(/Unknown import type/)
+      end
+    end
+
     context 'with a valid CSV' do
       it 'creates an Import record, attaches the file, and enqueues the job with only the import id' do
         upload = build_upload(csv_content)
@@ -186,10 +199,10 @@ RSpec.describe ImportsController, type: :request do
       expect(response.body).to include("sku,name,description")
     end
 
-    it 'downloads the catalog_items CSV template' do
+    it 'offers no catalog_items template (catalog items import from the catalog page)' do
       get download_template_imports_path(type: "catalog_items")
-      expect(response).to have_http_status(:success)
-      expect(response.body).to include("product_sku,catalog_code")
+      expect(response).to redirect_to(new_import_path)
+      expect(flash[:alert]).to match(/Unknown import type/)
     end
   end
 end

@@ -38,12 +38,6 @@ class CatalogItemAttributeValue < ApplicationRecord
     ready? && value.present?
   end
 
-  def formatted_value
-    product_attribute.avjson(self)
-  rescue StandardError => e
-    { value: value, display: value, error: e.message }
-  end
-
   private
 
   def attribute_allows_catalog_scope

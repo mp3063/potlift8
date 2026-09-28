@@ -31,7 +31,7 @@ class ImportsController < ApplicationController
 
     import_type = params[:import_type] || "products"
 
-    unless %w[products catalog_items].include?(import_type)
+    unless import_type == "products"
       redirect_to new_import_path, alert: "Unknown import type: #{import_type}"
       return
     end
@@ -66,8 +66,6 @@ class ImportsController < ApplicationController
     csv_data = case type
     when "products"
                  generate_product_template
-    when "catalog_items"
-                 generate_catalog_items_template
     else
                  redirect_to new_import_path, alert: "Unknown import type: #{type}"
                  return
@@ -182,34 +180,6 @@ class ImportsController < ApplicationController
         "# restock_level: minimum inventory level",
         "# attr_* columns are product attributes; prices use attr_<code>_eur in euros (19.99)",
         "",
-        ""
-      ]
-    end
-  end
-
-  def generate_catalog_items_template
-    CSV.generate do |csv|
-      csv << [
-        "product_sku",
-        "catalog_code",
-        "status",
-        "attr_price_eur",
-        "attr_special_price_eur"
-      ]
-
-      csv << [
-        "EXAMPLE-001",
-        "WEB-EUR",
-        "active",
-        "24.99",
-        "19.99"
-      ]
-
-      csv << [
-        "# product_sku: SKU of existing product (required)",
-        "# catalog_code: Code of existing catalog (required)",
-        "# status: active or inactive",
-        "# attr_* columns are catalog-specific attribute overrides",
         ""
       ]
     end
