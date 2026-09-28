@@ -143,10 +143,12 @@ class CatalogImportsController < ApplicationController
               updated = true
             end
 
-            if updated && existing_catalog_item.save
-              result[:updated] += 1
+            saved = updated && existing_catalog_item.save
+            # A row may change only the price override
+            price_written = price_cents && (saved || !updated) && update_price_override(existing_catalog_item, price_cents)
 
-              update_price_override(existing_catalog_item, price_cents) if price_cents
+            if saved || price_written
+              result[:updated] += 1
             else
               result[:skipped] += 1
             end

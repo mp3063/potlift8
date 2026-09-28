@@ -26,7 +26,7 @@ class ProductImportService
     processed = 0
 
     rows.each_slice(BATCH_SIZE) do |batch|
-      process_batch(batch)
+      process_batch(batch, processed)
       processed += batch.size
       @on_progress&.call(processed, total)
     end
@@ -72,11 +72,12 @@ class ProductImportService
     end
   end
 
-  def process_batch(batch)
+  # offset: rows handled in earlier batches; +2 turns a 0-based data index into a file row (header is row 1)
+  def process_batch(batch, offset)
     batch.each_with_index do |row, index|
-      process_row(row, index)
+      process_row(row, offset + index)
     rescue StandardError => e
-      @errors << { row: index + 2, error: e.message }
+      @errors << { row: offset + index + 2, error: e.message }
     end
   end
 

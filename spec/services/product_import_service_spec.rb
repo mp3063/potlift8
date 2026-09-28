@@ -180,6 +180,15 @@ RSpec.describe ProductImportService do
         expect(company.products.find_by(sku: 'ABC123')).to be_nil
         expect(company.products.find_by(sku: 'DEF456').read_attribute_value('price')).to eq('2499')
       end
+
+      it 'reports file row numbers for rows after the first batch' do
+        rows = (1..150).map { |i| i == 130 ? "ROW#{i}," : "ROW#{i},Name #{i}" }
+        csv = ([ 'sku,name' ] + rows).join("\n")
+
+        result = described_class.new(company, csv, user).import!
+
+        expect(result[:errors]).to eq([ { row: 131, error: 'Name is required' } ])
+      end
     end
 
     context 'with batch processing' do
