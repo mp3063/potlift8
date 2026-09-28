@@ -51,6 +51,31 @@ class ProductSyncService
     failure_result("Unexpected error: #{e.message}")
   end
 
+  # Works without a product: used after the product has been destroyed
+  def remove_from_external_system(sku)
+    target_url = determine_target_url
+    return failure_result("No sync target configured for catalog") if target_url.nil?
+
+    payload = {
+      sync_task: {
+        shop_id: @catalog.info&.dig("shop_id"),
+        event_type: "product_removed",
+        origin_event_id: "potlift8_removed_#{sku}_#{Time.current.to_i}",
+        origin_target_id: sku,
+        direction: "inbound",
+        info: { load: { "sku" => sku } }
+      }
+    }
+
+    response = send_to_target(target_url, payload, get_api_token_for_target("shopify8"))
+
+    if response.success?
+      success_result(response.body)
+    else
+      failure_result("API error: #{response.status} - #{response.body}")
+    end
+  end
+
   def build_payload
     {
       product: build_product_data,

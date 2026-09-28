@@ -170,9 +170,8 @@ class SyncTaskProcessor
 
     product = company.products.find_by(sku: sku)
 
-    unless product
-      return { error: "Product not found: #{sku}" }
-    end
+    # Nothing to reset: this is the echo of a removal Potlift itself started
+    return { sku: sku, catalog_items_reset: 0 } unless product
 
     reset_count = 0
     product.catalog_items.find_each do |catalog_item|

@@ -609,6 +609,16 @@ RSpec.describe SyncTaskProcessor do
         expect(catalog_item.last_sync_error).to eq('Product deleted from Shopify')
       end
 
+      it 'succeeds when Potlift already deleted the product' do
+        params[:key] = 'ALREADY-GONE'
+        params[:load] = { 'data' => { 'sku' => 'ALREADY-GONE' } }
+
+        result = service.process(**params)
+
+        expect(result[:success]).to be true
+        expect(result[:result]).to eq({ sku: 'ALREADY-GONE', catalog_items_reset: 0 })
+      end
+
       it 'resets multiple catalog items for the same product' do
         catalog2 = create(:catalog, company: company)
         catalog_item2 = create(:catalog_item,
@@ -662,16 +672,6 @@ RSpec.describe SyncTaskProcessor do
 
         expect(result[:success]).to be false
         expect(result[:error]).to include('SKU is required')
-      end
-
-      it 'returns error when product is not found' do
-        params[:key] = 'NONEXISTENT-SKU'
-        params[:load] = { 'sku' => 'NONEXISTENT-SKU' }
-
-        result = service.process(**params)
-
-        expect(result[:success]).to be false
-        expect(result[:error]).to include('Product not found')
       end
 
       it 'does not affect catalog items of other products' do

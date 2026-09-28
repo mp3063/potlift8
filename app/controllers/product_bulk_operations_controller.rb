@@ -13,7 +13,7 @@ class ProductBulkOperationsController < ApplicationController
     products = current_potlift_company.products
                  .where(id: product_ids)
                  .includes(:product_attribute_values, :labels, :inventories,
-                           :product_assets, :catalog_items,
+                           :product_assets, :catalog_items, :catalogs,
                            :product_configurations_as_super, :product_configurations_as_sub,
                            images_attachments: :blob)
 

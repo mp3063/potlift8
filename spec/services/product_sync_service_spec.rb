@@ -370,6 +370,44 @@ RSpec.describe ProductSyncService, type: :service do
     end
   end
 
+  describe '#remove_from_external_system' do
+    let(:catalog) { create(:catalog, company: company, info: { 'shop_id' => 2, 'shopify_api_token' => 'tok' }) }
+    let(:service) { ProductSyncService.new(nil, catalog) }
+    let(:mock_response) { instance_double(Faraday::Response, success?: true, status: 201, body: { 'id' => 1 }) }
+
+    it 'sends a product_removed task for the sku to the catalog shop' do
+      expect(service).to receive(:send_to_target).with(
+        'https://shopify8.example.com/api/v1/sync_tasks',
+        { sync_task: hash_including(
+          shop_id: 2,
+          event_type: 'product_removed',
+          origin_target_id: 'GONE-1',
+          direction: 'inbound',
+          info: { load: { 'sku' => 'GONE-1' } }
+        ) },
+        'tok'
+      ).and_return(mock_response)
+
+      expect(service.remove_from_external_system('GONE-1').success?).to be true
+    end
+
+    it 'returns a failure when Shopify8 rejects the task' do
+      allow(service).to receive(:send_to_target)
+        .and_return(instance_double(Faraday::Response, success?: false, status: 422, body: 'nope'))
+
+      result = service.remove_from_external_system('GONE-1')
+
+      expect(result.success?).to be false
+      expect(result.error).to include('422')
+    end
+
+    it 'returns a failure when no sync target is configured' do
+      ENV.delete('SHOPIFY8_URL')
+
+      expect(service.remove_from_external_system('GONE-1').success?).to be false
+    end
+  end
+
   describe '#send_to_target' do
     let(:url) { 'https://api.example.com/sync' }
     let(:payload) { { product: { sku: 'TEST123' } } }

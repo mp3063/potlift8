@@ -134,6 +134,7 @@ RSpec.describe ChangePropagator, type: :model do
 
   describe 'destroy propagation' do
     it 'logs destroy events' do
+      allow(Rails.logger).to receive(:info).and_call_original
       expect(Rails.logger).to receive(:info).with(/Propagating destroy/)
       expect(Rails.logger).to receive(:info).with(/"event":"product_destroyed"/)
       product.destroy
@@ -141,6 +142,33 @@ RSpec.describe ChangePropagator, type: :model do
 
     it 'handles destroy gracefully' do
       expect { product.destroy }.not_to raise_error
+    end
+
+    it 'enqueues a removal for each catalog the product was in' do
+      sku = product.sku
+
+      expect { product.destroy }
+        .to have_enqueued_job(ProductRemovalJob).with(sku, catalog.id).exactly(:once)
+    end
+
+    it 'skips catalogs with sync_paused flag' do
+      catalog.update!(info: { 'sync_paused' => true })
+
+      expect { product.destroy }.not_to have_enqueued_job(ProductRemovalJob)
+    end
+
+    it 'sends one removal per shop when catalogs share a shop' do
+      catalog.update!(info: { 'shop_id' => 2 })
+      catalog2 = create(:catalog, company: company, code: 'CAT002', info: { 'shop_id' => 2 })
+      create(:catalog_item, catalog: catalog2, product: product)
+
+      expect { product.destroy }.to have_enqueued_job(ProductRemovalJob).exactly(:once)
+    end
+
+    it 'sends nothing for a product in no catalogs' do
+      catalog_item.destroy!
+
+      expect { product.destroy }.not_to have_enqueued_job(ProductRemovalJob)
     end
   end
 

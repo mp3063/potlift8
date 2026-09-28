@@ -21,6 +21,8 @@ module ChangePropagator
     # This prevents syncing changes that might be rolled back
     after_commit :propagate_changes_on_update, on: :update
     after_commit :propagate_changes_on_destroy, on: :destroy
+    # prepend: catalog_items are destroyed (dependent: :destroy) before after_commit
+    before_destroy :capture_removal_catalog_ids, prepend: true
   end
 
   private
@@ -54,17 +56,24 @@ module ChangePropagator
 
     timestamp = Time.current
 
-    # Note: We can't use associations after destroy, so we need to
-    # handle this differently. For now, just log the event.
-    # In a real implementation, you might want to capture catalog IDs
-    # before destroy or handle cleanup differently.
-
     Rails.logger.info({
       event: "product_destroyed",
       product_id: id,
       product_sku: try(:sku),
       destroyed_at: timestamp
     }.to_json)
+
+    Array(@removal_catalog_ids).each do |catalog_id|
+      ProductRemovalJob.perform_later(sku, catalog_id)
+    end
+  end
+
+  # One removal per shop: several catalogs can point at the same shop
+  def capture_removal_catalog_ids
+    @removal_catalog_ids = catalogs
+      .reject { |catalog| catalog.info&.dig("sync_paused") }
+      .uniq { |catalog| [ catalog.info&.dig("shopify_api_token"), catalog.info&.dig("shop_id") ] }
+      .map(&:id)
   end
 
   def propagate_to_catalogs(timestamp)
