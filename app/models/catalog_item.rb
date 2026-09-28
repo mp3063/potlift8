@@ -27,6 +27,8 @@ class CatalogItem < ApplicationRecord
 
   validates :catalog_id, uniqueness: { scope: :product_id }
 
+  after_destroy_commit :remove_from_shop
+
   default_scope { order(Arel.sql("catalog_items.priority DESC NULLS LAST, catalog_items.id ASC")) }
   scope :active_items, -> { where(catalog_item_state: :active) }
   scope :inactive_items, -> { where(catalog_item_state: :inactive) }
@@ -87,5 +89,22 @@ class CatalogItem < ApplicationRecord
     validator = CatalogItemValidator.new(self)
     validator.valid?
     validator.errors
+  end
+
+  private
+
+  # Taking a product out of a catalog removes it from that catalog's shop,
+  # unless another of the product's catalogs still feeds the same shop.
+  # Product destroys send their own removal (ChangePropagator).
+  def remove_from_shop
+    return if destroyed_by_association
+    return if catalog.info&.dig("sync_paused") || !catalog.shop_connected?
+    return if product.catalogs.reload.any? { |other| shop_key(other) == shop_key(catalog) }
+
+    ProductRemovalJob.perform_later(product.sku, catalog_id)
+  end
+
+  def shop_key(a_catalog)
+    [ a_catalog.info&.dig("shopify_api_token"), a_catalog.info&.dig("shop_id") ]
   end
 end

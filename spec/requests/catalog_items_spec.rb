@@ -190,6 +190,13 @@ RSpec.describe 'CatalogItems', type: :request do
         expect(response.body).to include('Product removed from catalog.')
       end
 
+      it "removes the product from the catalog's shop" do
+        catalog.update!(info: { 'shop_id' => 1 })
+
+        expect { delete catalog_item_path(catalog.code, product1.id) }
+          .to have_enqueued_job(ProductRemovalJob).with(product1.sku, catalog.id)
+      end
+
       it 'responds to turbo_stream format' do
         delete catalog_item_path(catalog.code, product1.id), headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
 

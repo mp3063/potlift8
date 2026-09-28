@@ -435,4 +435,38 @@ RSpec.describe CatalogItem, type: :model do
       end
     end
   end
+
+  describe 'removal from the shop on destroy' do
+    let(:company) { create(:company) }
+    let(:product) { create(:product, company: company) }
+    let(:catalog) { create(:catalog, :shop_connected, company: company) }
+    let!(:catalog_item) { create(:catalog_item, catalog: catalog, product: product) }
+
+    it 'enqueues a removal for its shop when destroyed' do
+      expect { catalog_item.destroy }.to have_enqueued_job(ProductRemovalJob).with(product.sku, catalog.id)
+    end
+
+    it 'keeps the product in a shop another of its catalogs still uses' do
+      other = create(:catalog, company: company, info: catalog.info)
+      create(:catalog_item, catalog: other, product: product)
+
+      expect { catalog_item.destroy }.not_to have_enqueued_job(ProductRemovalJob)
+    end
+
+    it 'sends nothing when the catalog sync is paused' do
+      catalog.update!(info: catalog.info.merge('sync_paused' => true))
+
+      expect { catalog_item.destroy }.not_to have_enqueued_job(ProductRemovalJob)
+    end
+
+    it 'sends nothing when the catalog is not connected to a shop' do
+      catalog.update!(info: {})
+
+      expect { catalog_item.destroy }.not_to have_enqueued_job(ProductRemovalJob)
+    end
+
+    it 'sends nothing when destroyed together with its product' do
+      expect { product.destroy }.to have_enqueued_job(ProductRemovalJob).exactly(:once)
+    end
+  end
 end

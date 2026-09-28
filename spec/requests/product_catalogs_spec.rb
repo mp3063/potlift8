@@ -97,6 +97,13 @@ RSpec.describe "Product Catalogs", type: :request do
       expect(product.catalogs.reload).not_to include(catalog)
     end
 
+    it "removes the product from the catalog's shop" do
+      catalog.update!(info: { "shop_id" => 1 })
+
+      expect { delete product_catalog_path(product, catalog) }
+        .to have_enqueued_job(ProductRemovalJob).with(product.sku, catalog.id)
+    end
+
     it "redirects to product with success message" do
       delete product_catalog_path(product, catalog)
 
