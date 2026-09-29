@@ -37,12 +37,6 @@ class Catalog < ApplicationRecord
     code
   end
 
-  # Only catalogs linked to a Shopify8 shop are synced. Without a shop_id,
-  # Shopify8 falls back to the company's first shop (the wrong one).
-  def shop_connected?
-    info&.dig("shop_id").present?
-  end
-
   def requires_minimum_ratio?
     MINIMUM_CURRENCY_RATIO.key?(currency_code.to_sym)
   end
@@ -192,6 +186,14 @@ class Catalog < ApplicationRecord
     end
   end
 
+  # Two catalogs feed the same shop iff their shop_keys are equal and non-nil.
+  # shop_id may be stored as integer or string, so compare it as a string.
+  def shop_key
+    shop_id.to_s.presence
+  end
+
+  # Only catalogs linked to a Shopify8 shop are synced. Without a shop_id,
+  # Shopify8 falls back to the company's first shop (the wrong one).
   def shopify_connected?
     shop_id.present?
   end

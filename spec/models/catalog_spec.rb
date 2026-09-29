@@ -91,14 +91,25 @@ RSpec.describe Catalog, type: :model do
   end
 
   # Test #minimum_ratio method
-  describe '#shop_connected?' do
+  describe '#shopify_connected?' do
     it 'is true when the catalog has a shop_id' do
-      expect(build(:catalog, info: { 'shop_id' => 2 }).shop_connected?).to be true
+      expect(build(:catalog, info: { 'shop_id' => 2 }).shopify_connected?).to be true
     end
 
     it 'is false without a shop_id' do
-      expect(build(:catalog, info: {}).shop_connected?).to be false
-      expect(build(:catalog, info: { 'shop_id' => '' }).shop_connected?).to be false
+      expect(build(:catalog, info: {}).shopify_connected?).to be false
+      expect(build(:catalog, info: { 'shop_id' => '' }).shopify_connected?).to be false
+    end
+  end
+
+  describe '#shop_key' do
+    it 'is the shop_id as a string, whether stored as integer or string' do
+      expect(build(:catalog, info: { 'shop_id' => 1 }).shop_key).to eq('1')
+      expect(build(:catalog, info: { 'shop_id' => '1' }).shop_key).to eq('1')
+    end
+
+    it 'is nil without a shop_id' do
+      expect(build(:catalog, info: {}).shop_key).to be_nil
     end
   end
 

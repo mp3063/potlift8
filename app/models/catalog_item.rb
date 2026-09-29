@@ -98,13 +98,9 @@ class CatalogItem < ApplicationRecord
   # Product destroys send their own removal (ChangePropagator).
   def remove_from_shop
     return if destroyed_by_association
-    return if catalog.info&.dig("sync_paused") || !catalog.shop_connected?
-    return if product.catalogs.reload.any? { |other| shop_key(other) == shop_key(catalog) }
+    return if catalog.info&.dig("sync_paused") || !catalog.shopify_connected?
+    return if product.catalogs.reload.any? { |other| other.shop_key == catalog.shop_key }
 
     ProductRemovalJob.perform_later(product.sku, catalog_id)
-  end
-
-  def shop_key(a_catalog)
-    [ a_catalog.info&.dig("shopify_api_token"), a_catalog.info&.dig("shop_id") ]
   end
 end

@@ -179,6 +179,15 @@ RSpec.describe ChangePropagator, type: :model do
       expect { product.destroy }.to have_enqueued_job(ProductRemovalJob).exactly(:once)
     end
 
+    it 'sends one removal when catalogs share a shop_id but only one has a token' do
+      catalog.update!(info: { 'shop_id' => 2 })
+      catalog2 = create(:catalog, company: company, code: 'CAT002',
+                                  info: { 'shop_id' => 2, 'shopify_api_token' => 'x' })
+      create(:catalog_item, catalog: catalog2, product: product)
+
+      expect { product.destroy }.to have_enqueued_job(ProductRemovalJob).exactly(:once)
+    end
+
     it 'sends nothing for a product in no catalogs' do
       catalog_item.destroy!
 

@@ -40,7 +40,7 @@ class ProductSyncJob < ApplicationJob
       return
     end
 
-    unless catalog.shop_connected?
+    unless catalog.shopify_connected?
       Rails.logger.info("Catalog #{catalog.code} is not connected to a shop. Skipping sync for product #{product.sku}.")
       return
     end

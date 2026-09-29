@@ -453,6 +453,27 @@ RSpec.describe CatalogItem, type: :model do
       expect { catalog_item.destroy }.not_to have_enqueued_job(ProductRemovalJob)
     end
 
+    it 'removes the product when its other catalog uses a different shop' do
+      other = create(:catalog, company: company, info: { 'shop_id' => 2 })
+      create(:catalog_item, catalog: other, product: product)
+
+      expect { catalog_item.destroy }.to have_enqueued_job(ProductRemovalJob).with(product.sku, catalog.id)
+    end
+
+    it 'treats the same shop_id with and without a token as one shop' do
+      other = create(:catalog, company: company, info: catalog.info.merge('shopify_api_token' => 'x'))
+      create(:catalog_item, catalog: other, product: product)
+
+      expect { catalog_item.destroy }.not_to have_enqueued_job(ProductRemovalJob)
+    end
+
+    it 'treats shop_id 1 and "1" as one shop' do
+      other = create(:catalog, company: company, info: { 'shop_id' => '1' })
+      create(:catalog_item, catalog: other, product: product)
+
+      expect { catalog_item.destroy }.not_to have_enqueued_job(ProductRemovalJob)
+    end
+
     it 'sends nothing when the catalog sync is paused' do
       catalog.update!(info: catalog.info.merge('sync_paused' => true))
 

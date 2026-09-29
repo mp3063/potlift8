@@ -7,7 +7,7 @@ class ProductRemovalJob < ApplicationJob
 
   def perform(sku, catalog_id)
     catalog = Catalog.find_by(id: catalog_id)
-    return unless catalog&.shop_connected?
+    return unless catalog&.shopify_connected?
 
     result = ProductSyncService.new(nil, catalog).remove_from_external_system(sku)
     raise "Removing #{sku} from catalog #{catalog.code} failed: #{result.error}" unless result.success?
