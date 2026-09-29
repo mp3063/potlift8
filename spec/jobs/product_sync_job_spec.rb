@@ -10,7 +10,13 @@ RSpec.describe ProductSyncJob, type: :job do
   let!(:catalog_item) { create(:catalog_item, catalog: catalog, product: product) }
 
   # Adding the item to a connected catalog enqueues its own sync; start clean.
-  before { clear_enqueued_jobs }
+  # Ids restart each run, so a dedup lock from a run under 30s ago would match this one.
+  before do
+    clear_enqueued_jobs
+    redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
+    keys = redis.keys("job_dedup:*")
+    redis.del(*keys) if keys.any?
+  end
 
   describe 'queue configuration' do
     it 'is enqueued on the default queue' do
@@ -106,9 +112,6 @@ RSpec.describe ProductSyncJob, type: :job do
       let(:params) { { product_id: product.id, catalog_id: catalog.id } }
 
       before do
-        redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
-        keys = redis.keys("job_dedup:*")
-        redis.del(*keys) if keys.any?
         allow(ProductSyncService).to receive(:new).with(product, catalog).and_return(mock_service)
       end
 
@@ -194,6 +197,26 @@ RSpec.describe ProductSyncJob, type: :job do
         expect(ProductSyncJob).to have_been_enqueued.exactly(:once)
       end
 
+      context "when the job skips because the catalog is paused" do
+        before { catalog.update!(info: catalog.info.merge("sync_paused" => true)) }
+
+        it "takes no sync lock" do
+          described_class.perform_now(product, catalog, timestamp)
+
+          expect(JobDeduplicator.new(job_name: "ProductSyncJob", params: params, bucketed: false).unique?).to be true
+        end
+
+        it "does not drop an earlier-queued duplicate that runs after unpausing" do
+          freeze_time do
+            described_class.perform_now(product, catalog, Time.current)
+            catalog.update!(info: catalog.info.except("sync_paused"))
+            described_class.perform_now(product, catalog, 10.seconds.ago)
+          end
+
+          expect(mock_service).to have_received(:sync_to_external_system).once
+        end
+      end
+
       it "still syncs when Redis is down" do
         allow_any_instance_of(Redis).to receive(:set).and_raise(Redis::CannotConnectError)
 
@@ -246,9 +269,6 @@ RSpec.describe ProductSyncJob, type: :job do
       let(:params) { { product_id: product.id, catalog_id: catalog.id } }
 
       before do
-        redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
-        keys = redis.keys("job_dedup:*")
-        redis.del(*keys) if keys.any?
         allow(ProductSyncService).to receive(:new).with(product, catalog).and_return(mock_service)
         allow(mock_service).to receive(:sync_to_external_system)
           .and_return(SyncLockable::SyncLockResult.new(success: false, error: "Shopify8 unavailable"))
@@ -292,9 +312,6 @@ RSpec.describe ProductSyncJob, type: :job do
       let(:params) { { product_id: product.id, catalog_id: catalog.id } }
 
       before do
-        redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
-        keys = redis.keys("job_dedup:*")
-        redis.del(*keys) if keys.any?
         catalog_item.update!(sync_status: :pending, last_sync_error: "earlier error")
         allow(ProductSyncService).to receive(:new).with(product, catalog).and_return(mock_service)
         allow(mock_service).to receive(:sync_to_external_system)

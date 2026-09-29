@@ -24,16 +24,8 @@ class ProductSyncJob < ApplicationJob
       "to Catalog #{catalog.id} (#{catalog.code}), triggered at #{timestamp}"
     )
 
-    # Trailing dedup: the first job syncs now; a change inside the window
-    # schedules one sync for when the window ends instead of being dropped.
-    # The lock stores when the leading sync started, so duplicates it already covers are dropped.
-    lock = sync_lock(product, catalog)
-    unless lock.unique?(value: Time.current.to_f.to_s)
-      schedule_trailing_sync(product, catalog, lock, timestamp)
-      return
-    end
-    trailing_marker(product, catalog).clear!
-
+    # Skip checks come before the lock: a job that sends nothing must not record a
+    # start time, or duplicates queued just before it would count as covered.
     if product.sync_locked?
       Rails.logger.warn(
         "Product #{product.id} (#{product.sku}) is sync locked. Skipping sync to catalog #{catalog.code}."
@@ -58,6 +50,16 @@ class ProductSyncJob < ApplicationJob
       Rails.logger.info("Product #{product.sku} is no longer in catalog #{catalog.code}. Skipping sync.")
       return
     end
+
+    # Trailing dedup: the first job syncs now; a change inside the window
+    # schedules one sync for when the window ends instead of being dropped.
+    # The lock stores when the leading sync started, so duplicates it already covers are dropped.
+    lock = sync_lock(product, catalog)
+    unless lock.unique?(value: Time.current.to_f.to_s)
+      schedule_trailing_sync(product, catalog, lock, timestamp)
+      return
+    end
+    trailing_marker(product, catalog).clear!
 
     begin
       sync_product(product, catalog, timestamp)
