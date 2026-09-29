@@ -100,18 +100,16 @@ class CatalogImportsController < ApplicationController
     }
 
     csv_content = file.read.force_encoding("UTF-8")
-    csv = CSV.parse(csv_content, headers: true, header_converters: :symbol)
+    rows = CsvWithLines.parse(csv_content, header_converters: :symbol)
 
     required_headers = [ :product_sku ]
-    missing_headers = required_headers - csv.headers
-    if missing_headers.any?
+    missing_headers = required_headers - (rows.first&.first&.headers || [])
+    if rows.any? && missing_headers.any? # a header-only file imports nothing, so it needs no check
       raise "Missing required headers: #{missing_headers.join(', ')}"
     end
 
     ActiveRecord::Base.transaction do
-      csv.each_with_index do |row, index|
-        row_number = index + 2 # +2 because index is 0-based and we skip header row
-
+      rows.each do |row, row_number|
         begin
           next if row[:product_sku].blank?
 

@@ -189,6 +189,14 @@ RSpec.describe ProductImportService do
 
         expect(result[:errors]).to eq([ { row: 131, error: 'Name is required' } ])
       end
+
+      it "reports physical file lines after a multi-line quoted field" do
+        csv = "sku,name\nABC123,\"Two-line\nWidget\"\nDEF456,\n"
+
+        result = described_class.new(company, csv, user).import!
+
+        expect(result[:errors]).to eq([ { row: 4, error: 'Name is required' } ])
+      end
     end
 
     context 'with batch processing' do

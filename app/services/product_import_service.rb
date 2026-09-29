@@ -17,7 +17,7 @@ class ProductImportService
   def import!
     rows = parse_csv
 
-    if (legacy_error = legacy_money_column_error(rows.headers))
+    if (legacy_error = legacy_money_column_error(rows.first&.first&.headers || []))
       @errors << { row: 0, error: legacy_error }
       return { imported_count: 0, updated_count: 0, errors: @errors }
     end
@@ -26,7 +26,7 @@ class ProductImportService
     processed = 0
 
     rows.each_slice(BATCH_SIZE) do |batch|
-      process_batch(batch, processed)
+      process_batch(batch)
       processed += batch.size
       @on_progress&.call(processed, total)
     end
@@ -48,7 +48,7 @@ class ProductImportService
   private
 
   def parse_csv
-    CSV.parse(@file_content, headers: true, header_converters: :symbol)
+    CsvWithLines.parse(@file_content, header_converters: :symbol)
   end
 
   def money_codes
@@ -72,23 +72,23 @@ class ProductImportService
     end
   end
 
-  # offset: rows handled in earlier batches; +2 turns a 0-based data index into a file row (header is row 1)
-  def process_batch(batch, offset)
-    batch.each_with_index do |row, index|
-      process_row(row, offset + index)
+  # Each entry is [row, physical file line the row starts on]
+  def process_batch(batch)
+    batch.each do |row, line|
+      process_row(row, line)
     rescue StandardError => e
-      @errors << { row: offset + index + 2, error: e.message }
+      @errors << { row: line, error: e.message }
     end
   end
 
-  def process_row(row, index)
+  def process_row(row, line)
     unless row[:sku].present?
-      @errors << { row: index + 2, error: "SKU is required" }
+      @errors << { row: line, error: "SKU is required" }
       return
     end
 
     unless row[:name].present?
-      @errors << { row: index + 2, error: "Name is required" }
+      @errors << { row: line, error: "Name is required" }
       return
     end
 
@@ -106,7 +106,7 @@ class ProductImportService
     if row[:active].present?
       parsed = parse_boolean(row[:active])
       if parsed.nil?
-        @errors << { row: index + 2, error: "Unrecognized active value: '#{row[:active]}'. Use true/false/yes/no/1/0" }
+        @errors << { row: line, error: "Unrecognized active value: '#{row[:active]}'. Use true/false/yes/no/1/0" }
       else
         product.active = parsed
       end
@@ -123,7 +123,7 @@ class ProductImportService
         @updated_count += 1
       end
     else
-      @errors << { row: index + 2, error: product.errors.full_messages.join(", ") }
+      @errors << { row: line, error: product.errors.full_messages.join(", ") }
     end
   end
 
