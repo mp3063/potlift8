@@ -13,9 +13,9 @@ class ProductSyncJob < ApplicationJob
   # with jitter so a rate-limited bulk add does not come back all at once
   retry_on RateLimiter::RateLimitExceededError,
            wait: ->(_executions) { ProductSyncService::DEFAULT_RATE_LIMIT_PERIOD + rand(0..30) },
-           attempts: 10 do |job, error|
+           attempts: 10 do |job, _error|
     # Retries ran out; without this the item stays pending, which reads as sent
-    job.send(:mark_rate_limit_exhausted, error)
+    job.send(:mark_rate_limit_exhausted)
   end
 
   def perform(product, catalog, timestamp)
@@ -110,12 +110,15 @@ class ProductSyncJob < ApplicationJob
     raise e
   end
 
-  def mark_rate_limit_exhausted(error)
+  def mark_rate_limit_exhausted
     product, catalog = arguments
     return unless product && catalog
 
     catalog_item = CatalogItem.find_by(catalog: catalog, product: product)
-    catalog_item&.update!(sync_status: :failed, last_sync_error: sanitize_sync_error(error))
+    catalog_item&.update!(
+      sync_status: :failed,
+      last_sync_error: "Rate limit reached: sync gave up after 10 attempts. Use Sync to try again."
+    )
 
     Rails.logger.error(
       "Product sync gave up after #{executions} rate-limited attempts: " \

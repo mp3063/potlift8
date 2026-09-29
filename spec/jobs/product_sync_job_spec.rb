@@ -352,8 +352,8 @@ RSpec.describe ProductSyncJob, type: :job do
         expect(enqueued_jobs).to be_empty
         catalog_item.reload
         expect(catalog_item).to be_sync_failed
-        expect(catalog_item.last_sync_error).to be_present
-        expect(catalog_item.last_sync_error).not_to eq("earlier error")
+        expect(catalog_item.last_sync_error)
+          .to eq("Rate limit reached: sync gave up after 10 attempts. Use Sync to try again.")
       end
 
       it "gives up quietly when the catalog item is gone once retries run out" do
