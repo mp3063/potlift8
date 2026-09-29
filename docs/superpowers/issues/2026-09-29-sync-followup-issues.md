@@ -1,6 +1,8 @@
 # Open Issues — Sync & Cleanup Follow-ups (2026-09-29)
 
-Issues discovered while executing `docs/superpowers/plans/2026-09-28-sync-and-cleanup-followups.md` (Tasks 1–5, 9 and the manual checks). None of these are fixed. Each one needs its own plan or a decision.
+Issues discovered while executing `docs/superpowers/plans/2026-09-28-sync-and-cleanup-followups.md` (Tasks 1–5, 9 and the manual checks). Most were fixed on branch `fix/sync-followups` in Potlift8 and Shopify8 (plan `docs/superpowers/plans/2026-09-29-sync-followup-fixes.md`). The Status column shows what is fixed, decided or still open. The descriptions below are kept as they were when the issue was found.
+
+Test runs after the fixes: Potlift8 at `c555203`: 5101 examples, 0 failures, 85 pending. Shopify8 at `0919348`: 712 examples, 0 failures.
 
 **Source** says how each issue was found:
 - **verified live**: reproduced against the dev servers and the Shopify test shop.
@@ -11,27 +13,34 @@ Paths are relative to `Ozz-Rails-8/`.
 
 ## Summary
 
-| ID | Issue | App | Severity | Source |
-|----|-------|-----|----------|--------|
-| SYNC-01 | Status changes (disable, discontinue, delete) never sync to Shopify | Potlift8 | High | verified live |
-| SYNC-02 | Adding a product to a catalog does not sync it | Potlift8 | High | verified live |
-| SYNC-03 | Sync deduplication drops a second change instead of delaying it | Potlift8 | High | verified live |
-| SYNC-04 | `ProductSyncJob` ignores a failed sync result; the item stays "pending" and is never retried | Potlift8 | High | code |
-| UI-01 | Inline attribute edit: the row keeps the old value until the page is reloaded | Potlift8 | Medium | verified live |
-| SYNC-05 | Shopify8 sends tasks without a shop to the company's first shop | Shopify8 | Medium | verified live |
-| SYNC-06 | Deleting a whole catalog leaves its products in Shopify | Potlift8 | Medium (decision) | review |
-| SYNC-07 | Removals made while a catalog's sync is paused are never replayed | Potlift8 | Low (decision) | review |
-| SYNC-08 | An inactive item in another catalog keeps the product in that shop | Potlift8 | Low (decision) | review |
-| SYNC-09 | Money metafield currency is wrong for non-EUR catalogs without overrides | Shopify8 | Low (future) | review |
-| SYNC-10 | Money attributes without a metafield mapping are still sent as cents | Shopify8 | Low | review |
-| SYNC-11 | The same shop with and without an API token counts as two shops | Potlift8 | Low | review |
-| IMP-01 | Catalog import counts a failed price-override write as "skipped" | Potlift8 | Low | review |
-| IMP-02 | Product import row numbers are wrong for CSVs with multi-line quoted fields | Potlift8 | Low | review |
-| UI-02 | Every inline editor input has `id="value"` (duplicate ids) | Potlift8 | Low | verified live |
-| CODE-01 | `Catalog#shop_connected?` duplicates `Catalog#shopify_connected?` | Potlift8 | Low | review |
-| CODE-02 | `ProductDiscontinuedJob` is a TODO stub | Potlift8 | Low | code |
-| CODE-03 | The imports page still mentions "catalog items" | Potlift8 | Low | review |
-| TEST-01 | No test that a removal is sent when the product's other catalog uses a different shop | Potlift8 | Low | review |
+| ID | Issue | App | Severity | Source | Status |
+|----|-------|-----|----------|--------|--------|
+| SYNC-01 | Status changes (disable, discontinue, delete) never sync to Shopify | Potlift8 | High | verified live | Fixed (2c479df) |
+| SYNC-02 | Adding a product to a catalog does not sync it | Potlift8 | High | verified live | Fixed (9f3efcd) |
+| SYNC-03 | Sync deduplication drops a second change instead of delaying it | Potlift8 | High | verified live | Fixed (8b5485b + dba0cbc) |
+| SYNC-04 | `ProductSyncJob` ignores a failed sync result; the item stays "pending" and is never retried | Potlift8 | High | code | Fixed (4ca48be) |
+| UI-01 | Inline attribute edit: the row keeps the old value until the page is reloaded | Potlift8 | Medium | verified live | Closed: not reproducible |
+| SYNC-05 | Shopify8 sends tasks without a shop to the company's first shop | Shopify8 | Medium | verified live | Fixed (Shopify8 05251c5) |
+| SYNC-06 | Deleting a whole catalog leaves its products in Shopify | Potlift8 | Medium (decision) | review | Won't fix: the shop is kept |
+| SYNC-07 | Removals made while a catalog's sync is paused are never replayed | Potlift8 | Low (decision) | review | Decided: reconcile on resume (needs a Shopify8 list endpoint) |
+| SYNC-08 | An inactive item in another catalog keeps the product in that shop | Potlift8 | Low (decision) | review | Decided: inactive items leave the shop |
+| SYNC-09 | Money metafield currency is wrong for non-EUR catalogs without overrides | Shopify8 | Low (future) | review | Open |
+| SYNC-10 | Money attributes without a metafield mapping are still sent as cents | Shopify8 | Low | review | Fixed (Shopify8 0919348) |
+| SYNC-11 | The same shop with and without an API token counts as two shops | Potlift8 | Low | review | Fixed (ed6e0f2 + 441866b) |
+| IMP-01 | Catalog import counts a failed price-override write as "skipped" | Potlift8 | Low | review | Fixed (f9ed931) |
+| IMP-02 | Product import row numbers are wrong for CSVs with multi-line quoted fields | Potlift8 | Low | review | Fixed (a8b70b0 + ea91d97) |
+| UI-02 | Every inline editor input has `id="value"` (duplicate ids) | Potlift8 | Low | verified live | Fixed (c555203) |
+| CODE-01 | `Catalog#shop_connected?` duplicates `Catalog#shopify_connected?` | Potlift8 | Low | review | Fixed (ed6e0f2 + 441866b) |
+| CODE-02 | `ProductDiscontinuedJob` is a TODO stub | Potlift8 | Low | code | Open |
+| CODE-03 | The imports page still mentions "catalog items" | Potlift8 | Low | review | Fixed (f9ed931) |
+| TEST-01 | No test that a removal is sent when the product's other catalog uses a different shop | Potlift8 | Low | review | Fixed (ed6e0f2 + 441866b) |
+| JOB-01 | `retry_on` / `discard_on` in job subclasses never ran | Potlift8 | Medium | found in fix plan | Fixed (7c97cea) |
+| SYNC-12 | `ProductBatchSync#sync_to_catalog(force: false)` drops its own job | Potlift8 | Low | review | Open |
+| SYNC-13 | The Shopify8 API accepts a `shop_id` from another company | Shopify8 | Low | review | Open |
+| UI-03 | Nested duplicate `<turbo-frame id="catalog-tabs-N">` | Potlift8 | Low | review | Open |
+| SYNC-14 | Saving an unchanged attribute value still touches `products.updated_at` and queues a sync | Potlift8 | Low | review | Open |
+| UI-04 | The boolean inline editor posts the CSS class string | Potlift8 | Medium | review | Open |
+| TEST-02 | Potlift8 SimpleCov line coverage is 79.5%, below the 80% minimum | Potlift8 | Low | full suite run | Open |
 
 Also in this document: [planned work that was decided but not started](#planned-work-decided-not-started) and [a tooling note](#tooling-note).
 
@@ -106,6 +115,8 @@ Only `activate!` reaches Shopify, and only because its `after:` hook queues `Pro
 
 ### UI-01 — Inline attribute edit: the row keeps the old value until the page is reloaded
 
+**Status:** Closed, not reproducible. A headless-Chrome system spec (`Potlift8/spec/system/inline_attribute_edit_spec.rb`, `c555203`) updates the row without a reload. The dev log for 2026-09-28 shows that the 21:44:31 and 21:45:04 PATCHes wrote no new value: the typed text never reached the input under Orca.
+
 **Where:**
 - `Potlift8/app/views/products/_attribute_value.html.erb` (the row, `dom_id(attribute, :value)`)
 - `Potlift8/app/controllers/product_attribute_values_controller.rb:27-39`
@@ -145,6 +156,8 @@ Yet the new node shows the value from page load: 12,35 was saved but the row sho
 
 ### SYNC-06 — Deleting a whole catalog leaves its products in Shopify (decision needed)
 
+**Status:** Won't fix: the shop is kept.
+
 **Where:**
 - `Potlift8/app/models/catalog.rb:11` (`has_many :catalog_items, dependent: :destroy`)
 - `Potlift8/app/models/catalog_item.rb:100` (`return if destroyed_by_association`)
@@ -159,6 +172,8 @@ Yet the new node shows the value from page load: 12,35 was saved but the row sho
 
 ### SYNC-07 — Removals made while sync is paused are never replayed (decision needed)
 
+**Status:** Decided: reconcile on resume (needs a Shopify8 list endpoint). Not started.
+
 **Where:**
 - `Potlift8/app/models/catalog_item.rb:101`
 - `Potlift8/app/controllers/catalogs_controller.rb:200` (`toggle_sync_pause`)
@@ -168,6 +183,8 @@ Yet the new node shows the value from page load: 12,35 was saved but the row sho
 **Suggested fix:** on resume, compare catalog SKUs with the shop's products and remove the extras, or record pending removals while paused.
 
 ### SYNC-08 — An inactive item in another catalog keeps the product in that shop (decision needed)
+
+**Status:** Decided: inactive items leave the shop. Not started.
 
 **Where:** `Potlift8/app/models/catalog_item.rb:102`
 
@@ -194,6 +211,8 @@ Yet the new node shows the value from page load: 12,35 was saved but the row sho
 **Suggested fix:** apply `money_metafield_value` in that branch too.
 
 ### SYNC-11 — The same shop with and without an API token counts as two shops
+
+**Naming rule (product owner, Task 2b):** generic Potlift sync concepts say "shop": `Catalog#shop_connected?`, and `Catalog#shop_key` = `"<sync_target>:<shop_id>"`. Only Shopify8-specific code or UI says "shopify": `Catalog#shopify_connected?` = `shop_connected?` && the sync target is shopify8.
 
 **Where:**
 - `Potlift8/app/models/catalog_item.rb:107` (`shop_key`)
@@ -252,6 +271,76 @@ Yet the new node shows the value from page load: 12,35 was saved but the row sho
 **Where:** `Potlift8/spec/models/catalog_item_spec.rb` ("removal from the shop on destroy")
 
 **Problem:** the tests cover same shop → no removal, but not other catalog on a different shop → removal sent. That positive case is what proves the shop comparison works.
+
+---
+
+### JOB-01 — `retry_on` / `discard_on` in job subclasses never ran
+
+**Status:** Fixed (`7c97cea`). Found while executing the fix plan. Renamed `:exponentially_longer` to `:polynomially_longer` (needed in Rails 8.0.3), so the subclass handlers take effect.
+
+### SYNC-12 — `ProductBatchSync#sync_to_catalog(force: false)` drops its own job
+
+**Where:** `Potlift8/app/models/concerns/product_batch_sync.rb`
+
+**Problem:** it takes the bucketed dedup key before queueing, so the job it queues sees the key as taken and is skipped. It is unused in `app/`.
+
+**Suggested fix:** take the key inside the job, or delete the method.
+
+### SYNC-13 — The Shopify8 API accepts a `shop_id` from another company
+
+**Where:** `Shopify8/app/controllers/api/v1/sync_tasks_controller.rb` and `Shopify8/app/models/sync_task.rb`
+
+**Problem:** the task is now refused at run time (`05251c5`), but the API still answers 201. There is no 422.
+
+**Suggested fix:** validate that `shop_id` belongs to the company when the task is created, and return 422.
+
+### UI-03 — Nested duplicate `<turbo-frame id="catalog-tabs-N">`
+
+**Where:** `Potlift8/app/views/products/show.html.erb:42` and `Potlift8/app/components/products/catalog_tabs_component.html.erb:1`
+
+**Problem:** both render a frame with the same id, one inside the other. Duplicate ids are invalid HTML and can confuse Turbo.
+
+**Suggested fix:** keep one of the two frames.
+
+### SYNC-14 — Saving an unchanged attribute value still touches `products.updated_at` and queues a sync
+
+**Where:** `Potlift8/app/controllers/product_attribute_values_controller.rb`
+
+**Problem:** the inline editor saves even when the value did not change. That touches `products.updated_at` and queues a sync.
+
+**Suggested fix:** skip the save and the sync when the value is unchanged.
+
+### UI-04 — The boolean inline editor posts the CSS class string
+
+**Where:** `Potlift8/app/views/products/_attribute_value.html.erb` and `Potlift8/app/views/products/catalog_tabs/_catalog_override_row.html.erb`
+
+**Problem:** `form.check_box :value, {checked: …}, class: "…"` passes the class hash as `checked_value`. A checked box submits `"class h-4 …"` instead of `1`.
+
+**Suggested fix:** put `class:` inside the options hash, and add a system spec for a boolean row.
+
+### TEST-02 — Potlift8 SimpleCov line coverage is 79.5%
+
+**Where:** `Potlift8/spec/spec_helper.rb` (SimpleCov minimum coverage)
+
+**Problem:** line coverage is 79.5%, below the 80% minimum, so a full `bundle exec rspec` exits with status 2 even with 0 failures. It is not known whether this predates the fix plan.
+
+**Suggested fix:** add tests in the least-covered files, or check the baseline on `main` and adjust the minimum.
+
+## Deferred minors
+
+Small points noted in review and not done:
+- `Potlift8/app/jobs/application_job.rb`: unused private `retryable_error?` (pre-existing).
+- `Potlift8/spec/models/catalog_spec.rb`: stale "# Test #minimum_ratio method" comment above `describe '#shopify_connected?'`.
+- Removal is still skipped when the product's other same-shop catalog is paused (pre-existing, related to SYNC-07).
+- `ProductSyncService:29` uses `|| "shopify8"` instead of `Catalog#sync_target`, so an empty-string target diverges. The `sync_target` comparison is case-sensitive.
+- `last_sync_error` shows a sanitized "Sync failed (ref: …)". Add a sanitizer pattern so outage reasons such as "Shopify8 unavailable" show.
+- `clear!` in the `ProductSyncJob` rescue could mask the error if Redis raises (likely moot, `JobDeduplicator#clear!` rescues Redis errors).
+- No test that an unconnected catalog gets nothing on `disable!`.
+- `Gemfile`: `after_commit_everywhere` has no comment.
+- Catalog import: an item save that succeeds followed by a failed price write reports the row as failed although the state/priority change is committed. No tests for an existing-item save failure or a missing price attribute.
+- CSV import: a header with an embedded line break shifts line numbers.
+- Inline editor id specs cover only text and money rows, and there is no page-wide id-uniqueness assertion.
+- Shopify8: a mismatched `load.shop.name` on a single-shop company resolves to that shop.
 
 ---
 
