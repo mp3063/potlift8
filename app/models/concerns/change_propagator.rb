@@ -25,6 +25,13 @@ module ChangePropagator
     before_destroy :capture_removal_catalog_ids, prepend: true
   end
 
+  # AASM persists status with update_all, which skips the after_commit above,
+  # so status events call this from their own after_commit hook.
+  def propagate_status_change
+    propagate_to_catalogs(Time.current)
+    touch_superproducts
+  end
+
   private
 
   def propagate_changes_on_update

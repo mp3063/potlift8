@@ -21,16 +21,16 @@ module ProductStateMachine
                     after: :notify_activation
       end
 
-      event :discontinue do
+      event :discontinue, after_commit: :propagate_status_change do
         transitions from: :active, to: :discontinuing,
                     after: :notify_discontinuation
       end
 
-      event :finish_discontinuation do
+      event :finish_discontinuation, after_commit: :propagate_status_change do
         transitions from: :discontinuing, to: :discontinued
       end
 
-      event :disable do
+      event :disable, after_commit: :propagate_status_change do
         transitions from: :active, to: :disabled
       end
 
@@ -38,7 +38,7 @@ module ProductStateMachine
       # From: draft, disabled, discontinued
       # To: deleted
       # Note: Using 'mark_as_deleted' instead of 'delete' to avoid conflict with ActiveRecord
-      event :mark_as_deleted do
+      event :mark_as_deleted, after_commit: :propagate_status_change do
         transitions from: [ :draft, :disabled, :discontinued ], to: :deleted
       end
     end

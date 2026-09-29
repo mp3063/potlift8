@@ -79,6 +79,9 @@ GEM
       activesupport (>= 6.1)
     addressable (2.8.7)
       public_suffix (>= 2.0.2, < 7.0)
+    after_commit_everywhere (1.6.0)
+      activerecord (>= 4.2)
+      activesupport
     ast (2.4.3)
     axe-core-api (4.10.3)
       dumb_delegator
@@ -555,6 +558,7 @@ PLATFORMS
 DEPENDENCIES
   aasm (~> 5.5)
   acts_as_list (~> 1.2)
+  after_commit_everywhere (~> 1.0)
   axe-core-rspec
   bootsnap
   brakeman

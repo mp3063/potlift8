@@ -653,4 +653,39 @@ RSpec.describe ProductStateMachine, type: :model do
       expect(product.reload.product_status).to eq(original_state)
     end
   end
+
+  describe 'syncing status transitions to shops' do
+    let(:catalog) { create(:catalog, :shop_connected, company: company) }
+
+    {
+      disable!: :active,
+      discontinue!: :active,
+      finish_discontinuation!: :discontinuing,
+      mark_as_deleted!: :disabled
+    }.each do |event, from_status|
+      it "enqueues a product sync for #{event} from #{from_status}" do
+        product = create(:product, from_status, :sellable, company: company)
+        create(:catalog_item, catalog: catalog, product: product)
+
+        expect { product.public_send(event) }
+          .to have_enqueued_job(ProductSyncJob).with(product, catalog, anything)
+      end
+    end
+
+    it "sends nothing for a paused catalog" do
+      catalog.update!(info: catalog.info.merge('sync_paused' => true))
+      product = create(:product, :active, :sellable, company: company)
+      create(:catalog_item, catalog: catalog, product: product)
+
+      expect { product.disable! }.not_to have_enqueued_job(ProductSyncJob)
+    end
+
+    it "does not add a direct sync to activate!" do
+      product = create(:product, :draft, :sellable, company: company)
+      create(:catalog_item, catalog: catalog, product: product)
+
+      expect { product.activate! }.to have_enqueued_job(ProductActivatedJob)
+      expect(ProductSyncJob).not_to have_been_enqueued
+    end
+  end
 end

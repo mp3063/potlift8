@@ -38,6 +38,7 @@ gem "faraday-retry", "~> 2.0"
 gem "dotenv-rails", groups: [ :development, :test ]
 # State machine for product lifecycle management
 gem "aasm", "~> 5.5"
+gem "after_commit_everywhere", "~> 1.0"
 # Authorization framework for role-based access control
 gem "pundit", "~> 2.4"
 # Structured request logging
