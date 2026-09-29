@@ -216,6 +216,7 @@ Rails.application.routes.draw do
       get :sync_status
       get :sync_alerts
       post "sync_product/:product_id", action: :sync_product, as: :sync_product
+      delete "sync_run", action: :dismiss_sync_run, as: :sync_run
     end
 
     # Catalog Items (add/remove products from catalog)

@@ -61,6 +61,58 @@ RSpec.describe BatchProductSyncJob, type: :job do
       }.to make_database_queries(count: 10..70) # Eager loading + per-item sync_status updates + broadcast counts
     end
 
+    context 'with a Sync All run on the catalog' do
+      let(:started_at) { 1.minute.ago.iso8601(6) }
+
+      before do
+        # As CatalogsController#sync_all leaves them before queueing
+        catalog.catalog_items.update_all(sync_status: CatalogItem.sync_statuses[:pending])
+        catalog.update!(info: catalog.info.merge('sync_run' => { 'started_at' => started_at, 'total' => 5, 'handed_off_at' => nil }))
+      end
+
+      it 'records the hand-off and broadcasts the summary card once' do
+        expect_any_instance_of(Catalog).to receive(:broadcast_sync_summary).once
+
+        freeze_time do
+          described_class.perform_now(product_ids, catalog.id)
+
+          run = catalog.reload.info['sync_run']
+          expect(Time.zone.parse(run['handed_off_at'])).to eq(Time.current)
+          expect(run).to include('started_at' => started_at, 'total' => 5)
+          expect(catalog.info['shop_id']).to eq(1)
+        end
+      end
+
+      it 'keeps the first hand-off when another batch finishes later' do
+        catalog.update!(info: catalog.info.deep_merge('sync_run' => { 'handed_off_at' => started_at }))
+        expect_any_instance_of(Catalog).not_to receive(:broadcast_sync_summary)
+
+        described_class.perform_now(product_ids, catalog.id)
+
+        expect(catalog.reload.info.dig('sync_run', 'handed_off_at')).to eq(started_at)
+      end
+
+      it 'leaves the run alone when sync is paused' do
+        catalog.update!(info: catalog.info.merge('sync_paused' => true))
+        expect_any_instance_of(Catalog).not_to receive(:broadcast_sync_summary)
+
+        described_class.perform_now(product_ids, catalog.id)
+
+        expect(catalog.reload.info.dig('sync_run', 'handed_off_at')).to be_nil
+      end
+    end
+
+    context 'without a Sync All run' do
+      it 'does not broadcast the summary card or write a run' do
+        catalog.catalog_items.update_all(sync_status: CatalogItem.sync_statuses[:pending])
+        expect_any_instance_of(Catalog).not_to receive(:broadcast_sync_summary)
+
+        described_class.perform_now(product_ids, catalog.id)
+
+        expect(catalog.reload.info).not_to have_key('sync_run')
+      end
+    end
+
     context 'when catalog is not connected to a shop' do
       before { catalog.update!(info: {}) }
 

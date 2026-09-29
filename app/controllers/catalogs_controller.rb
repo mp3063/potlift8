@@ -1,7 +1,7 @@
 # URL Parameter:
 # - Uses catalog 'code' instead of 'id' for cleaner URLs
 class CatalogsController < ApplicationController
-  before_action :set_catalog, only: [ :show, :edit, :update, :destroy, :items, :reorder_items, :export, :shopify_connection, :connect_shopify, :disconnect_shopify, :sync_all, :sync_product, :toggle_sync_pause, :sync_preview, :sync_status, :sync_alerts ]
+  before_action :set_catalog, only: [ :show, :edit, :update, :destroy, :items, :reorder_items, :export, :shopify_connection, :connect_shopify, :disconnect_shopify, :sync_all, :dismiss_sync_run, :sync_product, :toggle_sync_pause, :sync_preview, :sync_status, :sync_alerts ]
 
   def index
     authorize Catalog
@@ -27,8 +27,13 @@ class CatalogsController < ApplicationController
                                      .where("products.name ILIKE ? OR products.sku ILIKE ?", search_term, search_term)
     end
 
+    if CatalogItem.sync_statuses.key?(params[:sync_status])
+      @sync_status_filter = params[:sync_status]
+      @catalog_items = @catalog_items.where(sync_status: @sync_status_filter)
+    end
+
     if @catalog.shopify_connected?
-      @sync_counts = compute_sync_counts(@catalog)
+      @sync_counts = @catalog.sync_counts
     end
 
     respond_to do |format|
@@ -185,15 +190,33 @@ class CatalogsController < ApplicationController
   def sync_all
     authorize @catalog
     product_count = @catalog.catalog_items.count
-    @catalog.batch_sync_all_products
+    # Mark pending before queueing, so the job can't answer an item first
     @catalog.catalog_items.update_all(sync_status: CatalogItem.sync_statuses[:pending])
+    @catalog.info ||= {}
+    @catalog.info["sync_run"] = { "started_at" => Time.current.iso8601(6), "total" => product_count, "handed_off_at" => nil }
+    @catalog.save!
+    @catalog.batch_sync_all_products
 
     respond_to do |format|
       format.turbo_stream do
         flash.now[:notice] = "Sync started for all #{product_count} products."
-        render turbo_stream: turbo_stream.update("flash", partial: "shared/flash", locals: { flash: flash })
+        render turbo_stream: [
+          turbo_stream.update("flash", partial: "shared/flash", locals: { flash: flash }),
+          sync_summary_card_stream
+        ]
       end
       format.html { redirect_to catalog_items_path(@catalog), notice: "Sync started for all #{product_count} products." }
+    end
+  end
+
+  def dismiss_sync_run
+    authorize @catalog
+    @catalog.info&.delete("sync_run")
+    @catalog.save!
+
+    respond_to do |format|
+      format.turbo_stream { render turbo_stream: sync_summary_card_stream }
+      format.html { redirect_to catalog_items_path(@catalog) }
     end
   end
 
@@ -207,11 +230,10 @@ class CatalogsController < ApplicationController
 
     respond_to do |format|
       format.turbo_stream do
-        @sync_counts = compute_sync_counts(@catalog)
         flash.now[:notice] = "Auto-sync #{status} for #{@catalog.name}."
         render turbo_stream: [
           turbo_stream.update("flash", partial: "shared/flash", locals: { flash: flash }),
-          turbo_stream.replace("sync_summary_#{@catalog.id}", partial: "catalogs/sync_summary_card", locals: { catalog: @catalog, sync_counts: @sync_counts })
+          sync_summary_card_stream
         ]
       end
       format.html { redirect_to catalog_items_path(@catalog), notice: "Auto-sync #{status} for #{@catalog.name}." }
@@ -355,22 +377,16 @@ class CatalogsController < ApplicationController
 
   private
 
+  def sync_summary_card_stream
+    turbo_stream.replace("sync_summary_#{@catalog.id}", partial: "catalogs/sync_summary_card",
+                         locals: { catalog: @catalog, sync_counts: @catalog.sync_counts })
+  end
+
   def build_shopify8_client
     api_token = @catalog.info&.dig("shopify_api_token") || ENV["SHOPIFY8_API_TOKEN"]
     return nil unless api_token.present?
 
     Shopify8ApiClient.new(api_token: api_token)
-  end
-
-  def compute_sync_counts(catalog)
-    items = catalog.catalog_items
-    {
-      synced: items.sync_synced.where("last_synced_at > ?", 1.hour.ago).count,
-      outdated: items.sync_synced.where("last_synced_at <= ?", 1.hour.ago).count,
-      pending: items.sync_pending.count,
-      failed: items.sync_failed.count,
-      never: items.sync_never_synced.count
-    }
   end
 
   def fetch_shopify_comparison(sku)

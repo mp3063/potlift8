@@ -141,6 +141,145 @@ RSpec.describe Catalog, type: :model do
     end
   end
 
+  describe '#sync_counts' do
+    let(:company) { create(:company) }
+    let(:catalog) { create(:catalog, company: company) }
+
+    def add_item(**attrs)
+      create(:catalog_item, catalog: catalog, product: create(:product, company: company), **attrs)
+    end
+
+    it 'counts items per sync state, including pending' do
+      add_item(sync_status: :synced, last_synced_at: 30.minutes.ago)
+      add_item(sync_status: :synced, last_synced_at: 2.hours.ago)
+      add_item(sync_status: :pending)
+      add_item(sync_status: :pending)
+      add_item(sync_status: :failed)
+      add_item(sync_status: :never_synced)
+
+      expect(catalog.sync_counts).to eq(synced: 1, outdated: 1, pending: 2, failed: 1, never: 1)
+    end
+  end
+
+  describe '#broadcast_sync_summary' do
+    include Turbo::Broadcastable::TestHelper
+
+    let(:catalog) { create(:catalog) }
+
+    it 'morphs the summary card for viewers of the items page' do
+      broadcasts = capture_turbo_stream_broadcasts([ catalog, 'sync_status' ]) { catalog.broadcast_sync_summary }
+
+      expect(broadcasts.size).to eq(1)
+      expect(broadcasts.first['action']).to eq('replace')
+      expect(broadcasts.first['method']).to eq('morph')
+      expect(broadcasts.first['target']).to eq("sync_summary_#{catalog.id}")
+      expect(broadcasts.first.to_html).to include('Shopify Sync')
+    end
+  end
+
+  describe '#sync_run_progress' do
+    let(:company) { create(:company) }
+    let(:catalog) { create(:catalog, company: company) }
+    let(:started_at) { Time.zone.parse('2026-09-29 12:00:00') }
+
+    def add_item(**attrs)
+      create(:catalog_item, catalog: catalog, product: create(:product, company: company), **attrs)
+    end
+
+    def start_run(total:, handed_off_at: nil)
+      catalog.update!(info: catalog.info.merge(
+        'sync_run' => { 'started_at' => started_at.iso8601(6), 'total' => total,
+                        'handed_off_at' => handed_off_at&.iso8601(6) }
+      ))
+    end
+
+    around { |example| travel_to(started_at - 1.minute) { example.run } }
+
+    it 'is nil without a run' do
+      expect(catalog.sync_run_progress).to be_nil
+    end
+
+    context 'with a run' do
+      let!(:old_synced) { add_item(sync_status: :synced, last_synced_at: started_at - 1.minute) }
+      let!(:old_failed) { add_item(sync_status: :failed) }
+      let!(:confirmed_item) { add_item(sync_status: :pending) }
+      let!(:failed_item) { add_item(sync_status: :pending) }
+      let!(:waiting_item) { add_item(sync_status: :pending) }
+
+      before do
+        start_run(total: 5)
+        travel_to(started_at + 30.seconds)
+        confirmed_item.update!(sync_status: :synced, last_synced_at: Time.current)
+        travel_to(started_at + 40.seconds)
+        failed_item.update!(sync_status: :failed, last_sync_error: 'boom')
+      end
+
+      it 'counts answers given since the run started, ignoring older ones' do
+        progress = catalog.sync_run_progress
+
+        expect(progress.total).to eq(5)
+        expect(progress.confirmed).to eq(1)
+        expect(progress.failed).to eq(1)
+        expect(progress.waiting).to eq(3)
+        expect(progress.started_at).to eq(started_at)
+        expect(progress).not_to be_finished
+        expect(progress).not_to be_handed_off
+      end
+
+      it 'clamps waiting at zero' do
+        start_run(total: 1)
+        expect(catalog.sync_run_progress.waiting).to eq(0)
+      end
+
+      it 'is handed off once the batch job recorded it' do
+        start_run(total: 5, handed_off_at: started_at + 5.seconds)
+        expect(catalog.sync_run_progress).to be_handed_off
+      end
+
+      it 'is finished when every item has an answer, with elapsed up to the last answer' do
+        start_run(total: 2)
+        travel_to(started_at + 3.minutes)
+
+        progress = catalog.sync_run_progress
+        expect(progress).to be_finished
+        expect(progress.elapsed).to eq(40)
+      end
+
+      it 'counts elapsed up to now while running' do
+        travel_to(started_at + 90.seconds)
+        expect(catalog.sync_run_progress.elapsed).to eq(90)
+      end
+
+      it 'is stalled after 10 minutes without activity' do
+        travel_to(started_at + 40.seconds + 9.minutes)
+        expect(catalog.sync_run_progress).not_to be_stalled
+
+        travel_to(started_at + 40.seconds + 11.minutes)
+        expect(catalog.sync_run_progress).to be_stalled
+      end
+
+      it 'is never stalled once finished' do
+        start_run(total: 2)
+        travel_to(started_at + 1.hour)
+        expect(catalog.sync_run_progress).not_to be_stalled
+      end
+
+      it 'is visible while running, however long ago' do
+        travel_to(started_at + 1.hour)
+        expect(catalog.sync_run_progress).to be_visible
+      end
+
+      it 'is visible within 5 minutes of finishing, and not after' do
+        start_run(total: 2)
+        travel_to(started_at + 40.seconds + 4.minutes)
+        expect(catalog.sync_run_progress).to be_visible
+
+        travel_to(started_at + 40.seconds + 6.minutes)
+        expect(catalog.sync_run_progress).not_to be_visible
+      end
+    end
+  end
+
   describe '#minimum_ratio' do
     it 'returns 1.5 for SEK' do
       catalog = build(:catalog, currency_code: 'sek')

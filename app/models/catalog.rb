@@ -215,6 +215,56 @@ class Catalog < ApplicationRecord
     info&.dig("shopify_domain_cache")
   end
 
+  def sync_counts
+    items = catalog_items
+    {
+      synced: items.sync_synced.where("last_synced_at > ?", 1.hour.ago).count,
+      outdated: items.sync_synced.where("last_synced_at <= ?", 1.hour.ago).count,
+      pending: items.sync_pending.count,
+      failed: items.sync_failed.count,
+      never: items.sync_never_synced.count
+    }
+  end
+
+  # Progress of the latest Sync All run (info["sync_run"]), or nil without one
+  def sync_run_progress
+    run = info&.dig("sync_run")
+    return nil if run.blank? || run["started_at"].blank?
+
+    started_at = Time.zone.parse(run["started_at"])
+    handed_off_at = run["handed_off_at"].presence && Time.zone.parse(run["handed_off_at"])
+    items = catalog_items.reorder(nil)
+
+    answers = items.where(
+      "(sync_status = :synced AND last_synced_at >= :since) OR (sync_status = :failed AND updated_at >= :since)",
+      synced: CatalogItem.sync_statuses[:synced], failed: CatalogItem.sync_statuses[:failed], since: started_at
+    ).group(:sync_status).count
+
+    latest_item_activity = items.where("updated_at >= :since OR last_synced_at >= :since", since: started_at)
+                                .maximum(Arel.sql("GREATEST(updated_at, last_synced_at)"))
+
+    Catalog::SyncRunProgress.new(
+      total: run["total"].to_i,
+      confirmed: answers["synced"].to_i,
+      failed: answers["failed"].to_i,
+      started_at: started_at,
+      handed_off_at: handed_off_at,
+      last_activity_at: [ started_at, handed_off_at, latest_item_activity ].compact.max
+    )
+  end
+
+  # Refreshes the Shopify sync summary card for everyone on the items page.
+  # Morphs so the progress bar widths animate instead of jumping.
+  def broadcast_sync_summary
+    broadcast_replace_to(
+      self, "sync_status",
+      target: "sync_summary_#{id}",
+      partial: "catalogs/sync_summary_card",
+      locals: { catalog: self, sync_counts: sync_counts },
+      attributes: { method: :morph }
+    )
+  end
+
   private
 
   def currency_ratio_compliance

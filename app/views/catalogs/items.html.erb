@@ -126,16 +126,24 @@
   </div>
 <% end %>
 
-<% if @catalog_items.any? || params[:q].present? %>
+<% if @catalog_items.any? || params[:q].present? || @sync_status_filter %>
   <div class="mb-6">
     <%= form_with url: catalog_items_path(@catalog), method: :get, class: "flex gap-3" do |form| %>
+      <% if @sync_status_filter %>
+        <%= hidden_field_tag :sync_status, @sync_status_filter %>
+      <% end %>
       <%= render Ui::SearchInputComponent.new(
         name: :q,
         value: params[:q],
         placeholder: "Search by product name or SKU...",
         label: "Search products in catalog"
       ) %>
-      <% if params[:q].present? %>
+      <% if @sync_status_filter %>
+        <span class="inline-flex items-center self-center whitespace-nowrap px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+          Sync status: <%= @sync_status_filter.humanize.downcase %>
+        </span>
+      <% end %>
+      <% if params[:q].present? || @sync_status_filter %>
         <%= link_to catalog_items_path(@catalog), class: "inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" do %>
           Clear
         <% end %>
@@ -289,11 +297,15 @@
   <%= render Shared::PaginationComponent.new(pagy: @pagy, variant: :table) %>
 <% else %>
   <div class="text-center py-12 bg-white rounded-lg border border-gray-200 shadow-sm">
-    <% if params[:q].present? %>
+    <% if params[:q].present? || @sync_status_filter %>
       <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
       </svg>
-      <h3 class="mt-4 text-sm font-medium text-gray-900">No results for "<%= params[:q] %>"</h3>
+      <% if params[:q].present? %>
+        <h3 class="mt-4 text-sm font-medium text-gray-900">No results for "<%= params[:q] %>"</h3>
+      <% else %>
+        <h3 class="mt-4 text-sm font-medium text-gray-900">No items with sync status "<%= @sync_status_filter.humanize.downcase %>"</h3>
+      <% end %>
       <p class="mt-2 text-sm text-gray-500">Try a different search term or clear the search.</p>
       <div class="mt-6">
         <%= link_to catalog_items_path(@catalog), class: "inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200" do %>

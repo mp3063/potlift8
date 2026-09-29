@@ -37,6 +37,10 @@ class CatalogPolicy < ApplicationPolicy
     user_context.can_write?
   end
 
+  def dismiss_sync_run?
+    user_context.can_write?
+  end
+
   def sync_product?
     user_context.can_write?
   end

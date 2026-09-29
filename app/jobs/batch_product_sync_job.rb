@@ -85,6 +85,7 @@ class BatchProductSyncJob < ApplicationJob
       errors
     )
 
+    mark_sync_run_handed_off(catalog)
   rescue ActiveRecord::RecordNotFound => e
     Rails.logger.error("[BatchProductSyncJob] Catalog #{catalog_id} not found: #{e.message}")
     raise e
@@ -97,6 +98,15 @@ class BatchProductSyncJob < ApplicationJob
   end
 
   private
+
+  # Completes the "Sending to Shopify8" step of a Sync All run, once. Written
+  # in SQL so it can't clobber other info keys changed while the batch ran.
+  def mark_sync_run_handed_off(catalog)
+    marked = Catalog.where(id: catalog.id)
+                    .where("info->'sync_run' IS NOT NULL AND info->'sync_run'->>'handed_off_at' IS NULL")
+                    .update_all([ "info = jsonb_set(info, '{sync_run,handed_off_at}', to_jsonb(?::text))", Time.current.iso8601(6) ])
+    catalog.reload.broadcast_sync_summary if marked.positive?
+  end
 
   def sync_single_product(product, catalog)
     if product.sync_locked?

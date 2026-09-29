@@ -121,6 +121,26 @@ RSpec.describe '/catalogs', type: :request do
       end
     end
 
+    context 'with sync_status filter' do
+      before do
+        catalog_item1.update!(sync_status: :failed, last_sync_error: 'boom')
+        catalog_item2.update!(sync_status: :synced, last_synced_at: Time.current)
+      end
+
+      it 'shows only items with that sync status' do
+        get catalog_items_path(catalog), params: { sync_status: 'failed' }
+        expect(response).to be_successful
+        expect(response.body).to include('PROD001')
+        expect(response.body).not_to include('PROD002')
+      end
+
+      it 'ignores unknown statuses' do
+        get catalog_items_path(catalog), params: { sync_status: 'bogus' }
+        expect(response.body).to include('PROD001')
+        expect(response.body).to include('PROD002')
+      end
+    end
+
     context 'with pagination' do
       before do
         # Create 30 catalog items for pagination testing
@@ -759,6 +779,73 @@ RSpec.describe '/catalogs', type: :request do
       it 'falls back to redirect for HTML format' do
         post sync_all_catalog_path(catalog.code)
         expect(response).to redirect_to(catalog_items_path(catalog))
+      end
+
+      it 'marks every item pending before queueing the batch job' do
+        other_item = create(:catalog_item, catalog: catalog, product: create(:product, company: company),
+                            sync_status: :synced, last_synced_at: 1.day.ago)
+        statuses_when_queued = nil
+        allow_any_instance_of(Catalog).to receive(:batch_sync_all_products) do |queued_catalog|
+          statuses_when_queued = queued_catalog.catalog_items.pluck(:sync_status).uniq
+        end
+
+        post sync_all_catalog_path(catalog.code), as: :turbo_stream
+
+        expect(statuses_when_queued).to eq([ 'pending' ])
+        expect(other_item.reload).to be_sync_pending
+      end
+
+      it 'records the run on the catalog, replacing any previous one' do
+        catalog.update!(info: { 'sync_run' => { 'started_at' => 1.day.ago.iso8601, 'total' => 9, 'handed_off_at' => 1.day.ago.iso8601 } })
+
+        freeze_time do
+          post sync_all_catalog_path(catalog.code), as: :turbo_stream
+
+          run = catalog.reload.info['sync_run']
+          expect(run['total']).to eq(1)
+          expect(Time.zone.parse(run['started_at'])).to eq(Time.current)
+          expect(run['handed_off_at']).to be_nil
+        end
+      end
+
+      it 'replaces the summary card with one showing the progress panel' do
+        post sync_all_catalog_path(catalog.code), as: :turbo_stream
+
+        expect(response.body).to include(%(<turbo-stream action="replace" target="sync_summary_#{catalog.id}">))
+        expect(response.body).to include("sync_progress_#{catalog.id}")
+        expect(response.body).to include('0 of 1 confirmed')
+        expect(response.body).to include('flash')
+      end
+    end
+
+    describe 'DELETE /catalogs/:code/sync_run' do
+      before do
+        catalog.update!(info: { 'sync_paused' => false, 'sync_run' => { 'started_at' => Time.current.iso8601, 'total' => 1 } })
+      end
+
+      it 'clears the run and replaces the summary card without the panel' do
+        delete sync_run_catalog_path(catalog.code), as: :turbo_stream
+
+        expect(response.media_type).to eq('text/vnd.turbo-stream.html')
+        expect(catalog.reload.info).to eq('sync_paused' => false)
+        expect(response.body).to include(%(<turbo-stream action="replace" target="sync_summary_#{catalog.id}">))
+        expect(response.body).not_to include("sync_progress_#{catalog.id}")
+      end
+
+      it 'falls back to redirect for HTML format' do
+        delete sync_run_catalog_path(catalog.code)
+        expect(response).to redirect_to(catalog_items_path(catalog))
+        expect(catalog.reload.info).not_to have_key('sync_run')
+      end
+
+      it 'cannot touch another company catalog' do
+        other_catalog = create(:catalog, company: other_company,
+                               info: { 'sync_run' => { 'started_at' => Time.current.iso8601, 'total' => 1 } })
+
+        expect {
+          delete sync_run_catalog_path(other_catalog.code), as: :turbo_stream
+        }.to raise_error(ActiveRecord::RecordNotFound)
+        expect(other_catalog.reload.info).to have_key('sync_run')
       end
     end
 

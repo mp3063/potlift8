@@ -24,21 +24,6 @@ module SyncBroadcastable
       locals: { catalog_item: self }
     )
 
-    broadcast_replace_to(
-      catalog, "sync_status",
-      target: "sync_summary_#{catalog_id}",
-      partial: "catalogs/sync_summary_card",
-      locals: { catalog: catalog, sync_counts: compute_sync_counts }
-    )
-  end
-
-  def compute_sync_counts
-    items = catalog.catalog_items
-    {
-      synced: items.sync_synced.where("last_synced_at > ?", 1.hour.ago).count,
-      outdated: items.sync_synced.where("last_synced_at <= ?", 1.hour.ago).count,
-      failed: items.sync_failed.count,
-      never: items.sync_never_synced.count
-    }
+    catalog.broadcast_sync_summary
   end
 end
