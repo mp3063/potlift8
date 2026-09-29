@@ -244,19 +244,19 @@ RSpec.describe BatchProductSyncJob, type: :job do
     end
 
     context 'when catalog not found' do
-      it 'raises ActiveRecord::RecordNotFound' do
+      it 'is discarded by ApplicationJob' do
         expect {
           described_class.perform_now(product_ids, 99999)
-        }.to raise_error(ActiveRecord::RecordNotFound)
+        }.not_to raise_error
+
+        expect(enqueued_jobs).to be_empty
       end
 
       it 'logs error' do
         # The error log comes from BatchProductSyncJob
         allow(Rails.logger).to receive(:error).and_call_original
 
-        expect {
-          described_class.perform_now(product_ids, 99999)
-        }.to raise_error(ActiveRecord::RecordNotFound)
+        described_class.perform_now(product_ids, 99999)
 
         # Verify error was logged
         expect(Rails.logger).to have_received(:error).with(/Catalog .* not found/)

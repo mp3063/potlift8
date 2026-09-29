@@ -148,7 +148,9 @@ RSpec.describe ProductSyncJob, type: :job do
 
         expect do
           described_class.perform_now(product, catalog, timestamp)
-        end.to raise_error(Faraday::ConnectionFailed)
+        end.not_to raise_error
+
+        expect(described_class).to have_been_enqueued.with(product, catalog, timestamp)
       end
 
       it 'retries on Faraday::TimeoutError' do
@@ -157,7 +159,9 @@ RSpec.describe ProductSyncJob, type: :job do
 
         expect do
           described_class.perform_now(product, catalog, timestamp)
-        end.to raise_error(Faraday::TimeoutError)
+        end.not_to raise_error
+
+        expect(described_class).to have_been_enqueued.with(product, catalog, timestamp)
       end
     end
 

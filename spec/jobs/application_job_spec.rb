@@ -78,6 +78,33 @@ RSpec.describe ApplicationJob, type: :job do
         failing_job.perform_now
       }.to raise_error(StandardError)
     end
+
+    def job_raising(error)
+      Class.new(ApplicationJob) do
+        define_method(:perform) { raise error }
+      end
+    end
+
+    it "re-enqueues on Faraday::TimeoutError" do
+      job_class = job_raising(Faraday::TimeoutError.new("Timeout"))
+
+      expect { job_class.perform_now }.not_to raise_error
+      expect(enqueued_jobs.size).to eq(1)
+    end
+
+    it "discards on ActiveRecord::RecordNotFound" do
+      job_class = job_raising(ActiveRecord::RecordNotFound.new("gone"))
+
+      expect { job_class.perform_now }.not_to raise_error
+      expect(enqueued_jobs).to be_empty
+    end
+
+    it "re-raises other errors" do
+      job_class = job_raising(RuntimeError.new("boom"))
+
+      expect { job_class.perform_now }.to raise_error(RuntimeError, "boom")
+      expect(enqueued_jobs).to be_empty
+    end
   end
 
   describe "argument logging" do

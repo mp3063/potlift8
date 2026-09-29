@@ -116,10 +116,12 @@ RSpec.describe ProductImportJob, type: :job do
     end
 
     context 'with missing import record' do
-      it 'raises (and is discarded by ApplicationJob)' do
+      it 'is discarded by ApplicationJob' do
         expect {
           described_class.perform_now(999_999)
-        }.to raise_error(ActiveRecord::RecordNotFound)
+        }.not_to raise_error
+
+        expect(enqueued_jobs).to be_empty
       end
     end
 

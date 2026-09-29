@@ -1,26 +1,36 @@
 # frozen_string_literal: true
 
 class ApplicationJob < ActiveJob::Base
+  # Must stay first: Rails checks handlers last-declared-first, so the specific ones below win.
+  rescue_from StandardError do |exception|
+    Rails.logger.error(
+      "Job error in #{self.class.name} (Job ID: #{job_id}): " \
+      "#{exception.class} - #{exception.message}\n" \
+      "Backtrace:\n#{exception.backtrace.join("\n")}"
+    )
+    raise exception
+  end
+
   # Automatically retry jobs that encountered a deadlock
   # Deadlocks are transient and usually resolve on retry
   retry_on ActiveRecord::Deadlocked,
-           wait: :exponentially_longer,
+           wait: :polynomially_longer,
            attempts: 5
 
   retry_on ActiveRecord::ConnectionNotEstablished,
-           wait: :exponentially_longer,
+           wait: :polynomially_longer,
            attempts: 5
 
   retry_on ActiveRecord::LockWaitTimeout,
-           wait: :exponentially_longer,
+           wait: :polynomially_longer,
            attempts: 5
 
   retry_on Faraday::ConnectionFailed,
-           wait: :exponentially_longer,
+           wait: :polynomially_longer,
            attempts: 5
 
   retry_on Faraday::TimeoutError,
-           wait: :exponentially_longer,
+           wait: :polynomially_longer,
            attempts: 3
 
   # Most jobs are safe to ignore if the underlying records are no longer available
@@ -37,15 +47,6 @@ class ApplicationJob < ActiveJob::Base
       "Job discarded - record not found: #{job.class.name} " \
       "(Job ID: #{job.job_id}). Error: #{error.message}"
     )
-  end
-
-  rescue_from StandardError do |exception|
-    Rails.logger.error(
-      "Job error in #{self.class.name} (Job ID: #{job_id}): " \
-      "#{exception.class} - #{exception.message}\n" \
-      "Backtrace:\n#{exception.backtrace.join("\n")}"
-    )
-    raise exception
   end
 
   around_perform do |job, block|
