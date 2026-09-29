@@ -9,6 +9,11 @@ class ProductSyncJob < ApplicationJob
   queue_as :default
 
   retry_on SyncFailed, wait: :polynomially_longer, attempts: 5
+  # Retry after the limiter window (per-catalog overrides are not visible here),
+  # with jitter so a rate-limited bulk add does not come back all at once
+  retry_on RateLimiter::RateLimitExceededError,
+           wait: ->(_executions) { ProductSyncService::DEFAULT_RATE_LIMIT_PERIOD + rand(0..30) },
+           attempts: 10
 
   def perform(product, catalog, timestamp)
     Rails.logger.info(
@@ -83,6 +88,10 @@ class ProductSyncJob < ApplicationJob
     )
 
     log_sync_metric(product, catalog, duration, success: true)
+  rescue RateLimiter::RateLimitExceededError
+    # Not a sync failure: keep the item's status and error, release the lock, and let retry_on wait
+    sync_lock(product, catalog).clear!
+    raise
   rescue StandardError => e
     duration = (Time.current - start_time).round(2)
 

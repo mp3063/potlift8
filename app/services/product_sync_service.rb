@@ -9,6 +9,7 @@ class ProductSyncService
   CONNECT_TIMEOUT = 10
   READ_TIMEOUT = 30
   WRITE_TIMEOUT = 30
+  DEFAULT_RATE_LIMIT_PERIOD = 60
 
   attr_reader :product, :catalog, :errors
 
@@ -47,6 +48,9 @@ class ProductSyncService
     failure_result("Request timeout: #{e.message}")
   rescue Faraday::ConnectionFailed => e
     failure_result("Connection failed: #{e.message}")
+  rescue RateLimiter::RateLimitExceededError
+    # Not a failure: the caller retries once the limiter window has passed
+    raise
   rescue StandardError => e
     failure_result("Unexpected error: #{e.message}")
   end
@@ -551,7 +555,7 @@ class ProductSyncService
     env_period = ENV[env_key]
     return env_period.to_i if env_period.present? && env_period.to_i > 0
 
-    60
+    DEFAULT_RATE_LIMIT_PERIOD
   end
 
   def success_result(data)

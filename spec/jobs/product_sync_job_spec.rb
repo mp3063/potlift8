@@ -244,6 +244,54 @@ RSpec.describe ProductSyncJob, type: :job do
       end
     end
 
+    context 'when the sync is rate limited' do
+      let(:mock_service) { instance_double(ProductSyncService) }
+      let(:params) { { product_id: product.id, catalog_id: catalog.id } }
+
+      before do
+        redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
+        keys = redis.keys("job_dedup:*")
+        redis.del(*keys) if keys.any?
+        catalog_item.update!(sync_status: :pending, last_sync_error: "earlier error")
+        allow(ProductSyncService).to receive(:new).with(product, catalog).and_return(mock_service)
+        allow(mock_service).to receive(:sync_to_external_system)
+          .and_raise(RateLimiter::RateLimitExceededError, "Rate limit exceeded")
+      end
+
+      it "re-enqueues itself after the limiter window" do
+        freeze_time do
+          described_class.perform_now(product, catalog, timestamp)
+
+          expect(ProductSyncJob).to have_been_enqueued.with(product, catalog, timestamp).exactly(:once)
+          expect(enqueued_jobs.last[:at]).to be >= (Time.current + 60).to_f
+        end
+      end
+
+      it "leaves the catalog item pending with its previous error" do
+        described_class.perform_now(product, catalog, timestamp)
+
+        catalog_item.reload
+        expect(catalog_item).to be_sync_pending
+        expect(catalog_item.last_sync_error).to eq("earlier error")
+      end
+
+      it "releases the dedup lock so the retry syncs" do
+        described_class.perform_now(product, catalog, timestamp)
+
+        expect(JobDeduplicator.new(job_name: "ProductSyncJob", params: params, bucketed: false).unique?).to be true
+      end
+
+      it "stops after 10 attempts" do
+        perform_enqueued_jobs do
+          expect do
+            ProductSyncJob.perform_later(product, catalog, Time.current)
+          end.to raise_error(RateLimiter::RateLimitExceededError)
+        end
+
+        expect(mock_service).to have_received(:sync_to_external_system).exactly(10).times
+      end
+    end
+
     context 'with transient errors' do
       let(:mock_service) { instance_double(ProductSyncService) }
 

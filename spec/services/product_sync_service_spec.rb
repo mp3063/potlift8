@@ -370,6 +370,18 @@ RSpec.describe ProductSyncService, type: :service do
       end
     end
 
+    context 'when the catalog is rate limited' do
+      before do
+        allow(service).to receive(:send_to_target)
+          .and_raise(RateLimiter::RateLimitExceededError, 'Rate limit exceeded')
+      end
+
+      it 'raises instead of returning a failure result, so the job can wait out the limit' do
+        expect { service.sync_to_external_system }
+          .to raise_error(RateLimiter::RateLimitExceededError, 'Rate limit exceeded')
+      end
+    end
+
     context 'when unexpected error occurs' do
       before do
         allow(service).to receive(:build_payload).and_raise(StandardError, 'Unexpected error')
