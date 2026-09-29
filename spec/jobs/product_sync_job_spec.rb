@@ -132,6 +132,20 @@ RSpec.describe ProductSyncJob, type: :job do
         expect(mock_service).to have_received(:sync_to_external_system).twice
         marker = JobDeduplicator.new(job_name: "ProductSyncJob:trailing", params: params, bucketed: false)
         expect(marker.executed_recently?).to be false
+
+        described_class.perform_now(product, catalog, timestamp)
+        expect(ProductSyncJob).to have_been_enqueued.exactly(:twice)
+      end
+
+      it "schedules the trailing sync at least 1s past the lock's expiry" do
+        freeze_time do
+          2.times { described_class.perform_now(product, catalog, timestamp) }
+
+          lock_ttl = JobDeduplicator.new(job_name: "ProductSyncJob", params: params, bucketed: false)
+                                    .time_until_executable
+          expect(lock_ttl).to be > 0
+          expect(enqueued_jobs.last[:at]).to be >= (Time.current + lock_ttl + 1).to_f
+        end
       end
 
       it "still syncs when Redis is down" do

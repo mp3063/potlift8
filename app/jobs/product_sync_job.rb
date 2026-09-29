@@ -136,7 +136,8 @@ class ProductSyncJob < ApplicationJob
   def schedule_trailing_sync(product, catalog, lock)
     return unless trailing_marker(product, catalog).unique?
 
-    wait = [ lock.time_until_executable, 1 ].max
+    # TTL is whole seconds, so add 1s or the trailing job can start while the lock still holds
+    wait = [ lock.time_until_executable, 1 ].max + 1
     self.class.set(wait: wait.seconds).perform_later(product, catalog, Time.current)
     Rails.logger.info(
       "Sync for Product #{product.id} (#{product.sku}) to Catalog #{catalog.code} ran recently. " \
