@@ -31,6 +31,25 @@ RSpec.describe 'CatalogImports', type: :request do
       expect(flash[:notice]).not_to match(/skipped/)
     end
 
+    it 'accepts a header-only file' do
+      post catalog_imports_path(catalog.code), params: { file: upload("product_sku,priority\n") }
+
+      expect(flash[:notice]).to eq('Import completed: 0 products added')
+    end
+
+    it 'rejects an empty file as missing its headers' do
+      post catalog_imports_path(catalog.code), params: { file: upload('') }
+
+      expect(flash[:alert]).to eq('Import failed: Missing required headers: product_sku')
+    end
+
+    it 'reports physical file lines after a multi-line quoted field' do
+      product
+      post catalog_imports_path(catalog.code), params: { file: upload("product_sku,note\nPROD1,\"two\nlines\"\nMISSING,x\n") }
+
+      expect(flash[:alert]).to match(/Row 4: Product not found with SKU 'MISSING'/)
+    end
+
     context 'when the price attribute is not catalog-scoped' do
       before do
         company.product_attributes.find_by(code: 'price').update_column(:product_attribute_scope, ProductAttribute.product_attribute_scopes[:product_scope])

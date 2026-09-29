@@ -15,9 +15,9 @@ class ProductImportService
   end
 
   def import!
-    rows = parse_csv
+    headers, rows = parse_csv
 
-    if (legacy_error = legacy_money_column_error(rows.first&.first&.headers || []))
+    if (legacy_error = legacy_money_column_error(headers))
       @errors << { row: 0, error: legacy_error }
       return { imported_count: 0, updated_count: 0, errors: @errors }
     end

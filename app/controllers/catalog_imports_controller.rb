@@ -100,11 +100,11 @@ class CatalogImportsController < ApplicationController
     }
 
     csv_content = file.read.force_encoding("UTF-8")
-    rows = CsvWithLines.parse(csv_content, header_converters: :symbol)
+    headers, rows = CsvWithLines.parse(csv_content, header_converters: :symbol)
 
     required_headers = [ :product_sku ]
-    missing_headers = required_headers - (rows.first&.first&.headers || [])
-    if rows.any? && missing_headers.any? # a header-only file imports nothing, so it needs no check
+    missing_headers = required_headers - headers
+    if missing_headers.any?
       raise "Missing required headers: #{missing_headers.join(', ')}"
     end
 

@@ -166,6 +166,14 @@ RSpec.describe ProductImportService do
         ])
       end
 
+      it 'rejects a legacy money column in a header-only file' do
+        result = described_class.new(company, "sku,name,attr_price\n", user).import!
+
+        expect(result[:errors]).to eq([
+          { row: 0, error: 'Column attr_price is no longer supported: prices are now in euros, use attr_price_eur (e.g. 19.99)' }
+        ])
+      end
+
       it 'reports an invalid amount as a row error' do
         csv = <<~CSV
           sku,name,attr_price_eur

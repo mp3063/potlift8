@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe CsvWithLines do
   def lines_of(content)
-    described_class.parse(content).map(&:last)
+    described_class.parse(content).last.map(&:last)
   end
 
   it 'gives the physical line each row starts on' do
@@ -18,8 +18,17 @@ RSpec.describe CsvWithLines do
   end
 
   it 'passes CSV options through' do
-    row, = described_class.parse("SKU,Name\nA,x\n", header_converters: :symbol).first
+    headers, rows = described_class.parse("SKU,Name\nA,x\n", header_converters: :symbol)
 
-    expect(row[:sku]).to eq('A')
+    expect(headers).to eq([ :sku, :name ])
+    expect(rows.first.first[:sku]).to eq('A')
+  end
+
+  it 'gives the headers of a header-only file and no rows' do
+    expect(described_class.parse("sku,name\n")).to eq([ [ 'sku', 'name' ], [] ])
+  end
+
+  it 'gives no headers and no rows for an empty file' do
+    expect(described_class.parse('')).to eq([ [], [] ])
   end
 end
