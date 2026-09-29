@@ -460,6 +460,19 @@ RSpec.describe CatalogItem, type: :model do
       expect { catalog_item.destroy }.to have_enqueued_job(ProductRemovalJob).with(product.sku, catalog.id)
     end
 
+    it 'removes the product when its other catalog uses the same shop_id on another target' do
+      other = create(:catalog, company: company, info: { 'shop_id' => 1, 'sync_target' => 'bizcart' })
+      create(:catalog_item, catalog: other, product: product)
+
+      expect { catalog_item.destroy }.to have_enqueued_job(ProductRemovalJob).with(product.sku, catalog.id)
+    end
+
+    it 'removes from a non-Shopify shop' do
+      catalog.update!(info: { 'shop_id' => 5, 'sync_target' => 'bizcart' })
+
+      expect { catalog_item.destroy }.to have_enqueued_job(ProductRemovalJob).with(product.sku, catalog.id)
+    end
+
     it 'treats the same shop_id with and without a token as one shop' do
       other = create(:catalog, company: company, info: catalog.info.merge('shopify_api_token' => 'x'))
       create(:catalog_item, catalog: other, product: product)

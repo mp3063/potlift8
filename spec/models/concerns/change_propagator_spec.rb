@@ -44,6 +44,14 @@ RSpec.describe ChangePropagator, type: :model do
       end.not_to have_enqueued_job(ProductSyncJob)
     end
 
+    it 'propagates to a catalog that feeds a non-Shopify shop' do
+      catalog.update!(info: { 'shop_id' => 5, 'sync_target' => 'bizcart' })
+
+      expect do
+        product.update!(name: 'Changed')
+      end.to have_enqueued_job(ProductSyncJob).with(product, catalog, kind_of(Time))
+    end
+
     it 'propagates to multiple catalogs' do
       catalog2 = create(:catalog, :shop_connected, company: company, code: 'CAT002')
       create(:catalog_item, catalog: catalog2, product: product)
@@ -186,6 +194,15 @@ RSpec.describe ChangePropagator, type: :model do
       create(:catalog_item, catalog: catalog2, product: product)
 
       expect { product.destroy }.to have_enqueued_job(ProductRemovalJob).exactly(:once)
+    end
+
+    it 'sends one removal per target when catalogs share a shop_id on different targets' do
+      catalog.update!(info: { 'shop_id' => 2 })
+      catalog2 = create(:catalog, company: company, code: 'CAT002',
+                                  info: { 'shop_id' => 2, 'sync_target' => 'bizcart' })
+      create(:catalog_item, catalog: catalog2, product: product)
+
+      expect { product.destroy }.to have_enqueued_job(ProductRemovalJob).exactly(2).times
     end
 
     it 'sends nothing for a product in no catalogs' do

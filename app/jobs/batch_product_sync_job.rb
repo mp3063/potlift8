@@ -30,7 +30,7 @@ class BatchProductSyncJob < ApplicationJob
       return
     end
 
-    unless catalog.shopify_connected?
+    unless catalog.shop_connected?
       Rails.logger.info("[BatchProductSyncJob] Catalog #{catalog.code} is not connected to a shop. Skipping batch sync.")
       return
     end

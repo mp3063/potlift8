@@ -272,6 +272,30 @@ RSpec.describe CatalogItemAttributeValue, type: :model do
   end
 
   # Integration tests
+  describe 'sync on save' do
+    let(:company) { create(:company) }
+    let(:product) { create(:product, company: company) }
+    let(:attr) { create(:product_attribute, company: company, product_attribute_scope: :catalog_scope) }
+
+    def save_override(catalog)
+      catalog_item = create(:catalog_item, catalog: catalog, product: product)
+      clear_enqueued_jobs
+      create(:catalog_item_attribute_value, catalog_item: catalog_item, product_attribute: attr, value: '900')
+    end
+
+    it 'syncs the product when the catalog feeds a shop, even without an explicit sync_target' do
+      catalog = create(:catalog, company: company, info: { 'shop_id' => 1 })
+
+      expect { save_override(catalog) }.to have_enqueued_job(ProductSyncJob)
+    end
+
+    it 'does not sync when the catalog feeds no shop' do
+      catalog = create(:catalog, company: company, info: {})
+
+      expect { save_override(catalog) }.not_to have_enqueued_job(ProductSyncJob)
+    end
+  end
+
   describe 'integration' do
     let(:company) { create(:company) }
     let(:catalog) { create(:catalog, company: company) }

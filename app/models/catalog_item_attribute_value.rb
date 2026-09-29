@@ -56,7 +56,7 @@ class CatalogItemAttributeValue < ApplicationRecord
     return unless catalog_item
 
     catalog = catalog_item.catalog
-    return unless catalog&.info&.dig("sync_target").present?
+    return unless catalog&.shop_connected?
     return if catalog.info&.dig("sync_paused")
 
     ProductSyncJob.perform_later(catalog_item.product, catalog, Time.current)

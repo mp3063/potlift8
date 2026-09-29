@@ -72,7 +72,7 @@ module ChangePropagator
   def capture_removal_catalog_ids
     @removal_catalog_ids = catalogs
       .reject { |catalog| catalog.info&.dig("sync_paused") }
-      .select(&:shopify_connected?)
+      .select(&:shop_connected?)
       .uniq(&:shop_key)
       .map(&:id)
   end
@@ -99,7 +99,7 @@ module ChangePropagator
         )
         next
       end
-      next unless catalog.shopify_connected?
+      next unless catalog.shop_connected?
 
       ProductSyncJob.perform_later(self, catalog, timestamp)
     end

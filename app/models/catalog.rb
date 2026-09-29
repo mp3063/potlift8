@@ -186,16 +186,27 @@ class Catalog < ApplicationRecord
     end
   end
 
+  # The external system this catalog syncs to (same default as ProductSyncService)
+  def sync_target
+    info&.dig("sync_target").presence || "shopify8"
+  end
+
+  # Whether this catalog feeds a shop at all, on any target. Gates every
+  # sync, removal and propagation. Without a shop_id, Shopify8 falls back to
+  # the company's first shop (the wrong one).
+  def shop_connected?
+    shop_id.present?
+  end
+
+  # Whether the shop this catalog feeds is a Shopify store (via Shopify8)
+  def shopify_connected?
+    shop_connected? && sync_target == "shopify8"
+  end
+
   # Two catalogs feed the same shop iff their shop_keys are equal and non-nil.
   # shop_id may be stored as integer or string, so compare it as a string.
   def shop_key
-    shop_id.to_s.presence
-  end
-
-  # Only catalogs linked to a Shopify8 shop are synced. Without a shop_id,
-  # Shopify8 falls back to the company's first shop (the wrong one).
-  def shopify_connected?
-    shop_id.present?
+    "#{sync_target}:#{shop_id}" if shop_connected?
   end
 
   # This is cached locally to avoid API calls just for display.

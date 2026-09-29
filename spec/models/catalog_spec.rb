@@ -91,21 +91,49 @@ RSpec.describe Catalog, type: :model do
   end
 
   # Test #minimum_ratio method
-  describe '#shopify_connected?' do
-    it 'is true when the catalog has a shop_id' do
-      expect(build(:catalog, info: { 'shop_id' => 2 }).shopify_connected?).to be true
+  describe '#sync_target' do
+    it 'defaults to shopify8 when blank' do
+      expect(build(:catalog, info: {}).sync_target).to eq('shopify8')
+      expect(build(:catalog, info: { 'sync_target' => '' }).sync_target).to eq('shopify8')
+    end
+
+    it 'is the stored target otherwise' do
+      expect(build(:catalog, info: { 'sync_target' => 'bizcart' }).sync_target).to eq('bizcart')
+    end
+  end
+
+  describe '#shop_connected?' do
+    it 'is true when the catalog has a shop_id, whatever the target' do
+      expect(build(:catalog, info: { 'shop_id' => 1 }).shop_connected?).to be true
+      expect(build(:catalog, info: { 'shop_id' => 1, 'sync_target' => 'bizcart' }).shop_connected?).to be true
     end
 
     it 'is false without a shop_id' do
+      expect(build(:catalog, info: {}).shop_connected?).to be false
+      expect(build(:catalog, info: { 'shop_id' => '' }).shop_connected?).to be false
+    end
+  end
+
+  describe '#shopify_connected?' do
+    it 'is true when the catalog feeds a shop through Shopify8' do
+      expect(build(:catalog, info: { 'shop_id' => 1 }).shopify_connected?).to be true
+      expect(build(:catalog, info: { 'shop_id' => 1, 'sync_target' => 'shopify8' }).shopify_connected?).to be true
+    end
+
+    it 'is false for another target or without a shop_id' do
+      expect(build(:catalog, info: { 'shop_id' => 1, 'sync_target' => 'bizcart' }).shopify_connected?).to be false
       expect(build(:catalog, info: {}).shopify_connected?).to be false
-      expect(build(:catalog, info: { 'shop_id' => '' }).shopify_connected?).to be false
     end
   end
 
   describe '#shop_key' do
-    it 'is the shop_id as a string, whether stored as integer or string' do
-      expect(build(:catalog, info: { 'shop_id' => 1 }).shop_key).to eq('1')
-      expect(build(:catalog, info: { 'shop_id' => '1' }).shop_key).to eq('1')
+    it 'combines the target and the shop_id, whether stored as integer or string' do
+      expect(build(:catalog, info: { 'shop_id' => 1 }).shop_key).to eq('shopify8:1')
+      expect(build(:catalog, info: { 'shop_id' => '1' }).shop_key).to eq('shopify8:1')
+    end
+
+    it 'differs for the same shop_id under another target' do
+      expect(build(:catalog, info: { 'shop_id' => 1, 'sync_target' => 'bizcart' }).shop_key).to eq('bizcart:1')
     end
 
     it 'is nil without a shop_id' do
