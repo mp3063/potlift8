@@ -225,6 +225,19 @@ RSpec.describe JobDeduplicator, type: :service do
     end
   end
 
+  describe 'unbucketed keys' do
+    it "uses a key without a time bucket when bucketed: false" do
+      dedup = described_class.new(job_name: job_name, params: { product_id: 2, catalog_id: 1 }, bucketed: false)
+
+      expect(dedup.info[:dedup_key]).to end_with(":catalog_id:1:product_id:2")
+
+      expect(dedup.unique?).to be true
+      expect(dedup.unique?).to be false
+      dedup.clear!
+      expect(dedup.unique?).to be true
+    end
+  end
+
   describe 'different parameter deduplication' do
     it 'treats different params as different jobs' do
       params1 = { product_id: 123, catalog_id: 456 }

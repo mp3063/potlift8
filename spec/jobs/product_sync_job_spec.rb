@@ -98,6 +98,52 @@ RSpec.describe ProductSyncJob, type: :job do
       end
     end
 
+    context 'with repeated changes inside the dedup window' do
+      let(:mock_service) { instance_double(ProductSyncService, sync_to_external_system: { success: true }) }
+      let(:params) { { product_id: product.id, catalog_id: catalog.id } }
+
+      before do
+        redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
+        keys = redis.keys("job_dedup:*")
+        redis.del(*keys) if keys.any?
+        allow(ProductSyncService).to receive(:new).with(product, catalog).and_return(mock_service)
+      end
+
+      it "schedules one trailing sync for a change inside the window" do
+        2.times { described_class.perform_now(product, catalog, timestamp) }
+
+        expect(mock_service).to have_received(:sync_to_external_system).once
+        expect(ProductSyncJob).to have_been_enqueued.with(product, catalog, anything).exactly(:once)
+      end
+
+      it "schedules only one trailing sync for many changes" do
+        4.times { described_class.perform_now(product, catalog, timestamp) }
+
+        expect(mock_service).to have_received(:sync_to_external_system).once
+        expect(ProductSyncJob).to have_been_enqueued.exactly(:once)
+      end
+
+      it "lets the trailing run sync and re-arm" do
+        described_class.perform_now(product, catalog, timestamp)
+        described_class.perform_now(product, catalog, timestamp)
+        JobDeduplicator.new(job_name: "ProductSyncJob", params: params, bucketed: false).clear!
+        described_class.perform_now(product, catalog, timestamp)
+
+        expect(mock_service).to have_received(:sync_to_external_system).twice
+        marker = JobDeduplicator.new(job_name: "ProductSyncJob:trailing", params: params, bucketed: false)
+        expect(marker.executed_recently?).to be false
+      end
+
+      it "still syncs when Redis is down" do
+        allow_any_instance_of(Redis).to receive(:set).and_raise(Redis::CannotConnectError)
+
+        described_class.perform_now(product, catalog, timestamp)
+
+        expect(mock_service).to have_received(:sync_to_external_system).once
+        expect(ProductSyncJob).not_to have_been_enqueued
+      end
+    end
+
     context 'when sync fails' do
       let(:mock_service) { instance_double(ProductSyncService) }
       let(:error_message) { 'External API error' }

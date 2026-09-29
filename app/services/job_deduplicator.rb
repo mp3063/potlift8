@@ -16,10 +16,13 @@ class JobDeduplicator
 
   DEFAULT_WINDOW = 30
 
-  def initialize(job_name:, params:, window: DEFAULT_WINDOW)
+  # bucketed: false drops the time bucket from the key, so one key lives for the
+  # whole window and clear!/time_until_executable always refer to it.
+  def initialize(job_name:, params:, window: DEFAULT_WINDOW, bucketed: true)
     @job_name = job_name
     @params = params.sort.to_h
     @window = window
+    @bucketed = bucketed
     @redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
   end
 
@@ -103,11 +106,12 @@ class JobDeduplicator
   private
 
   def build_deduplication_key
-    time_bucket = (Time.current.to_i / @window).floor
-
     param_string = @params.map { |k, v| "#{k}:#{v}" }.join(":")
+    key = "job_dedup:#{@job_name}:#{param_string}"
+    return key unless @bucketed
 
-    "job_dedup:#{@job_name}:#{param_string}:#{time_bucket}"
+    time_bucket = (Time.current.to_i / @window).floor
+    "#{key}:#{time_bucket}"
   end
 
   def log_unique_job(dedup_key)

@@ -11,20 +11,14 @@ class ProductSyncJob < ApplicationJob
       "to Catalog #{catalog.id} (#{catalog.code}), triggered at #{timestamp}"
     )
 
-    # Apply job deduplication to prevent duplicate syncs
-    deduplicator = JobDeduplicator.new(
-      job_name: "ProductSyncJob",
-      params: { product_id: product.id, catalog_id: catalog.id },
-      window: deduplication_window
-    )
-
-    unless deduplicator.unique?
-      Rails.logger.info(
-        "Skipping duplicate sync for Product #{product.id} (#{product.sku}) " \
-        "to Catalog #{catalog.code}. Job executed recently."
-      )
+    # Trailing dedup: the first job syncs now; a change inside the window
+    # schedules one sync for when the window ends instead of being dropped.
+    lock = sync_lock(product, catalog)
+    unless lock.unique?
+      schedule_trailing_sync(product, catalog, lock)
       return
     end
+    trailing_marker(product, catalog).clear!
 
     if product.sync_locked?
       Rails.logger.warn(
@@ -117,6 +111,37 @@ class ProductSyncJob < ApplicationJob
         "to Catalog #{catalog.code} took #{duration}s"
       )
     end
+  end
+
+  def sync_lock(product, catalog)
+    JobDeduplicator.new(
+      job_name: "ProductSyncJob",
+      params: { product_id: product.id, catalog_id: catalog.id },
+      window: deduplication_window,
+      bucketed: false
+    )
+  end
+
+  # Set while a trailing sync is queued, so later duplicates are dropped:
+  # the trailing job builds its payload when it runs.
+  def trailing_marker(product, catalog)
+    JobDeduplicator.new(
+      job_name: "ProductSyncJob:trailing",
+      params: { product_id: product.id, catalog_id: catalog.id },
+      window: deduplication_window * 2,
+      bucketed: false
+    )
+  end
+
+  def schedule_trailing_sync(product, catalog, lock)
+    return unless trailing_marker(product, catalog).unique?
+
+    wait = [ lock.time_until_executable, 1 ].max
+    self.class.set(wait: wait.seconds).perform_later(product, catalog, Time.current)
+    Rails.logger.info(
+      "Sync for Product #{product.id} (#{product.sku}) to Catalog #{catalog.code} ran recently. " \
+      "Scheduled a trailing sync in #{wait}s."
+    )
   end
 
   def deduplication_window
