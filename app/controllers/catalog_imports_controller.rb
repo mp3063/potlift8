@@ -143,11 +143,13 @@ class CatalogImportsController < ApplicationController
               updated = true
             end
 
-            saved = updated && existing_catalog_item.save
-            # A row may change only the price override
-            price_written = price_cents && (saved || !updated) && update_price_override(existing_catalog_item, price_cents)
-
-            if saved || price_written
+            if updated && !existing_catalog_item.save
+              result[:failed] += 1
+              result[:errors] << "Row #{row_number}: #{existing_catalog_item.errors.full_messages.to_sentence}"
+            elsif price_cents && !update_price_override(existing_catalog_item, price_cents)
+              result[:failed] += 1
+              result[:errors] << "Row #{row_number}: price override could not be saved"
+            elsif updated || price_cents
               result[:updated] += 1
             else
               result[:skipped] += 1
@@ -165,9 +167,12 @@ class CatalogImportsController < ApplicationController
             )
 
             if catalog_item.save
-              result[:success] += 1
-
-              update_price_override(catalog_item, price_cents) if price_cents
+              if price_cents && !update_price_override(catalog_item, price_cents)
+                result[:failed] += 1
+                result[:errors] << "Row #{row_number}: added, but the price override could not be saved"
+              else
+                result[:success] += 1
+              end
             else
               result[:failed] += 1
               result[:errors] << "Row #{row_number}: #{catalog_item.errors.full_messages.join(', ')}"
@@ -185,7 +190,7 @@ class CatalogImportsController < ApplicationController
 
   def update_price_override(catalog_item, price_cents)
     price_attribute = current_potlift_company.product_attributes.find_by(code: "price")
-    return unless price_attribute
+    return false unless price_attribute
 
     catalog_item.write_catalog_attribute_value("price", price_cents.to_s)
   end

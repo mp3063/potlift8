@@ -23,7 +23,7 @@
       <% if @imports.empty? %>
         <%= render Shared::EmptyStateComponent.new(
           title: "No imports yet",
-          description: "Start by uploading a CSV file to import products or catalog items.",
+          description: "Start by uploading a CSV file to import products.",
           action_text: "Import Products",
           action_path: new_import_path
         ) %>

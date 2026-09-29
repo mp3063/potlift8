@@ -30,5 +30,28 @@ RSpec.describe 'CatalogImports', type: :request do
       expect(flash[:notice]).to match(/1 updated/)
       expect(flash[:notice]).not_to match(/skipped/)
     end
+
+    context 'when the price attribute is not catalog-scoped' do
+      before do
+        company.product_attributes.find_by(code: 'price').update_column(:product_attribute_scope, ProductAttribute.product_attribute_scopes[:product_scope])
+      end
+
+      it 'counts a failed price override on an existing item as failed' do
+        catalog.catalog_items.create!(product: product, catalog_item_state: :active)
+
+        post catalog_imports_path(catalog.code), params: { file: upload("product_sku,price_override\nPROD1,29.99\n") }
+
+        expect(flash[:alert]).to match(/1 failed/)
+        expect(flash[:alert]).to match(/Row 2: price override could not be saved/)
+      end
+
+      it 'reports a new item whose price override failed' do
+        product
+        post catalog_imports_path(catalog.code), params: { file: upload("product_sku,price_override\nPROD1,29.99\n") }
+
+        expect(flash[:alert]).to match(/Row 2: added, but the price override could not be saved/)
+        expect(catalog.catalog_items.exists?(product: product)).to be(true)
+      end
+    end
   end
 end
