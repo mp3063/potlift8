@@ -69,7 +69,7 @@ RSpec.describe ProductSyncJob, type: :job do
 
     context 'when conditions are met for sync' do
       let(:mock_service) { instance_double(ProductSyncService) }
-      let(:sync_result) { { success: true, synced_at: Time.current } }
+      let(:sync_result) { SyncLockable::SyncLockResult.new(success: true, data: {}) }
 
       before do
         allow(ProductSyncService).to receive(:new).with(product, catalog).and_return(mock_service)
@@ -99,7 +99,7 @@ RSpec.describe ProductSyncJob, type: :job do
     end
 
     context 'with repeated changes inside the dedup window' do
-      let(:mock_service) { instance_double(ProductSyncService, sync_to_external_system: { success: true }) }
+      let(:mock_service) { instance_double(ProductSyncService, sync_to_external_system: SyncLockable::SyncLockResult.new(success: true, data: {})) }
       let(:params) { { product_id: product.id, catalog_id: catalog.id } }
 
       before do
@@ -195,6 +195,52 @@ RSpec.describe ProductSyncJob, type: :job do
       end
     end
 
+    context 'when the sync result is a failure' do
+      let(:mock_service) { instance_double(ProductSyncService) }
+      let(:params) { { product_id: product.id, catalog_id: catalog.id } }
+
+      before do
+        redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
+        keys = redis.keys("job_dedup:*")
+        redis.del(*keys) if keys.any?
+        allow(ProductSyncService).to receive(:new).with(product, catalog).and_return(mock_service)
+        allow(mock_service).to receive(:sync_to_external_system)
+          .and_return(SyncLockable::SyncLockResult.new(success: false, error: "Shopify8 unavailable"))
+      end
+
+      it "marks the catalog item failed with the error" do
+        described_class.perform_now(product, catalog, timestamp)
+
+        catalog_item.reload
+        expect(catalog_item).to be_sync_failed
+        # The raw error is sanitized before storage; "Shopify8 unavailable" maps to the generic message
+        expect(catalog_item.last_sync_error).to match(/\ASync failed \(ref: \h{8}\)\z/)
+      end
+
+      it "re-enqueues itself for a retry" do
+        described_class.perform_now(product, catalog, timestamp)
+
+        expect(ProductSyncJob).to have_been_enqueued.exactly(:once)
+      end
+
+      it "releases the dedup lock so the retry is not turned into a trailing sync" do
+        described_class.perform_now(product, catalog, timestamp)
+
+        expect(JobDeduplicator.new(job_name: "ProductSyncJob", params: params, bucketed: false).unique?).to be true
+      end
+
+      it "stops after 5 attempts" do
+        # Rails wraps errors that escape perform_enqueued_jobs, so assert inside the block
+        perform_enqueued_jobs do
+          expect do
+            ProductSyncJob.perform_later(product, catalog, Time.current)
+          end.to raise_error(ProductSyncJob::SyncFailed, "Shopify8 unavailable")
+        end
+
+        expect(mock_service).to have_received(:sync_to_external_system).exactly(5).times
+      end
+    end
+
     context 'with transient errors' do
       let(:mock_service) { instance_double(ProductSyncService) }
 
@@ -262,7 +308,7 @@ RSpec.describe ProductSyncJob, type: :job do
         .and_call_original
 
       allow_any_instance_of(ProductSyncService).to receive(:sync_to_external_system)
-        .and_return({ success: true })
+        .and_return(SyncLockable::SyncLockResult.new(success: true, data: {}))
 
       described_class.perform_now(product, catalog, timestamp)
     end

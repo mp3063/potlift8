@@ -3,7 +3,12 @@
 class ProductSyncJob < ApplicationJob
   include SyncErrorSanitizer
 
+  # The sync service returned a failure result instead of raising
+  class SyncFailed < StandardError; end
+
   queue_as :default
+
+  retry_on SyncFailed, wait: :polynomially_longer, attempts: 5
 
   def perform(product, catalog, timestamp)
     Rails.logger.info(
@@ -64,6 +69,7 @@ class ProductSyncJob < ApplicationJob
 
     service = ProductSyncService.new(product, catalog)
     result = service.sync_to_external_system
+    raise SyncFailed, result.error unless result.success?
 
     duration = (Time.current - start_time).round(2)
 
@@ -84,6 +90,8 @@ class ProductSyncJob < ApplicationJob
     catalog_item&.update!(sync_status: :failed, last_sync_error: sanitize_sync_error(e))
 
     log_sync_metric(product, catalog, duration, success: false, error: e)
+    # Release the dedup lock so the retry syncs instead of becoming a trailing sync
+    sync_lock(product, catalog).clear!
     raise e
   end
 
