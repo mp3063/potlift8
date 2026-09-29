@@ -324,14 +324,34 @@ RSpec.describe ProductSyncJob, type: :job do
         expect(JobDeduplicator.new(job_name: "ProductSyncJob", params: params, bucketed: false).unique?).to be true
       end
 
-      it "stops after 10 attempts" do
+      it "stops after 10 attempts and marks the catalog item failed" do
         perform_enqueued_jobs do
           expect do
             ProductSyncJob.perform_later(product, catalog, Time.current)
-          end.to raise_error(RateLimiter::RateLimitExceededError)
+          end.not_to raise_error
         end
 
         expect(mock_service).to have_received(:sync_to_external_system).exactly(10).times
+        expect(enqueued_jobs).to be_empty
+        catalog_item.reload
+        expect(catalog_item).to be_sync_failed
+        expect(catalog_item.last_sync_error).to be_present
+        expect(catalog_item.last_sync_error).not_to eq("earlier error")
+      end
+
+      it "gives up quietly when the catalog item is gone once retries run out" do
+        # The item can leave the catalog between the last attempt's check and the give-up handler
+        allow(CatalogItem).to receive(:find_by).and_call_original
+        allow(CatalogItem).to receive(:find_by).with(catalog: catalog, product: product).and_return(nil)
+
+        perform_enqueued_jobs do
+          expect do
+            ProductSyncJob.perform_later(product, catalog, Time.current)
+          end.not_to raise_error
+        end
+
+        expect(mock_service).to have_received(:sync_to_external_system).exactly(10).times
+        expect(catalog_item.reload).to be_sync_pending
       end
     end
 
