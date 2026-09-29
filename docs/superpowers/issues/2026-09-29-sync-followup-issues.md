@@ -35,7 +35,7 @@ Paths are relative to `Ozz-Rails-8/`.
 | CODE-03 | The imports page still mentions "catalog items" | Potlift8 | Low | review | Fixed (f9ed931) |
 | TEST-01 | No test that a removal is sent when the product's other catalog uses a different shop | Potlift8 | Low | review | Fixed (ed6e0f2 + 441866b) |
 | JOB-01 | `retry_on` / `discard_on` in job subclasses never ran | Potlift8 | Medium | found in fix plan | Fixed (7c97cea) |
-| SYNC-12 | `ProductBatchSync#sync_to_catalog(force: false)` drops its own job | Potlift8 | Low | review | Open |
+| SYNC-12 | `ProductBatchSync#sync_to_catalog(force: false)` drops repeat calls within its bucket | Potlift8 | Low | review | Open |
 | SYNC-13 | The Shopify8 API accepts a `shop_id` from another company | Shopify8 | Low | review | Open |
 | UI-03 | Nested duplicate `<turbo-frame id="catalog-tabs-N">` | Potlift8 | Low | review | Open |
 | SYNC-14 | Saving an unchanged attribute value still touches `products.updated_at` and queues a sync | Potlift8 | Low | review | Open |
@@ -278,13 +278,13 @@ Yet the new node shows the value from page load: 12,35 was saved but the row sho
 
 **Status:** Fixed (`7c97cea`). Found while executing the fix plan. Renamed `:exponentially_longer` to `:polynomially_longer` (needed in Rails 8.0.3), so the subclass handlers take effect.
 
-### SYNC-12 — `ProductBatchSync#sync_to_catalog(force: false)` drops its own job
+### SYNC-12 — `ProductBatchSync#sync_to_catalog(force: false)` drops repeat calls within its bucket
 
 **Where:** `Potlift8/app/models/concerns/product_batch_sync.rb`
 
-**Problem:** it takes the bucketed dedup key before queueing, so the job it queues sees the key as taken and is skipped. It is unused in `app/`.
+**Problem:** it takes a bucketed `ProductSyncJob` dedup key before queueing. `ProductSyncJob` now uses its own unbucketed lock, so the queued job is no longer skipped. The check is only a leading dedup: a second call in the same 30 s bucket is dropped, not deferred to a trailing sync, so its change can be missed. It is unused in `app/`.
 
-**Suggested fix:** take the key inside the job, or delete the method.
+**Suggested fix:** delete the method, or remove the pre-check and rely on `ProductSyncJob`'s trailing dedup.
 
 ### SYNC-13 — The Shopify8 API accepts a `shop_id` from another company
 
@@ -304,7 +304,7 @@ Yet the new node shows the value from page load: 12,35 was saved but the row sho
 
 ### SYNC-14 — Saving an unchanged attribute value still touches `products.updated_at` and queues a sync
 
-**Where:** `Potlift8/app/models/concerns/attribute_values.rb:57-64` (`propagate_change`, run from `after_commit` in `Potlift8/app/models/product_attribute_value.rb:12`)
+**Where:** `Potlift8/app/models/concerns/attribute_values.rb:58-92` (`propagate_change`, run from `after_commit` in `Potlift8/app/models/product_attribute_value.rb:12`)
 
 **Problem:** saving an unchanged value still runs `propagate_change`. It calls `product.touch` (so `products.updated_at` changes) and enqueues `ProductSyncJob` for each catalog. The inline editor in `Potlift8/app/controllers/product_attribute_values_controller.rb` saves even when the value did not change.
 
