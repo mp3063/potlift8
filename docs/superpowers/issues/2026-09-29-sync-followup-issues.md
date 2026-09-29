@@ -304,9 +304,9 @@ Yet the new node shows the value from page load: 12,35 was saved but the row sho
 
 ### SYNC-14 — Saving an unchanged attribute value still touches `products.updated_at` and queues a sync
 
-**Where:** `Potlift8/app/controllers/product_attribute_values_controller.rb`
+**Where:** `Potlift8/app/models/concerns/attribute_values.rb:57-64` (`propagate_change`, run from `after_commit` in `Potlift8/app/models/product_attribute_value.rb:12`)
 
-**Problem:** the inline editor saves even when the value did not change. That touches `products.updated_at` and queues a sync.
+**Problem:** saving an unchanged value still runs `propagate_change`. It calls `product.touch` (so `products.updated_at` changes) and enqueues `ProductSyncJob` for each catalog. The inline editor in `Potlift8/app/controllers/product_attribute_values_controller.rb` saves even when the value did not change.
 
 **Suggested fix:** skip the save and the sync when the value is unchanged.
 
@@ -320,7 +320,7 @@ Yet the new node shows the value from page load: 12,35 was saved but the row sho
 
 ### TEST-02 — Potlift8 SimpleCov line coverage is 79.5%
 
-**Where:** `Potlift8/spec/spec_helper.rb` (SimpleCov minimum coverage)
+**Where:** `Potlift8/.simplecov:23` (`minimum_coverage 80`; `minimum_coverage_by_file 50` is at `:24`)
 
 **Problem:** line coverage is 79.5%, below the 80% minimum, so a full `bundle exec rspec` exits with status 2 even with 0 failures. It is not known whether this predates the fix plan.
 
