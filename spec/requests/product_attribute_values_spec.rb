@@ -107,6 +107,17 @@ RSpec.describe '/products/:product_id/attribute_values', type: :request do
 
         expect(response.body).to include('19,99 €')
       end
+
+      it 're-renders an existing value with the new amount' do
+        create(:product_attribute_value, product: product, product_attribute: product_attribute, value: '1234')
+
+        patch product_attribute_value_path(product, product_attribute),
+              params: { value: '12,35' }, as: :turbo_stream
+
+        expect(response.media_type).to eq('text/vnd.turbo-stream.html')
+        expect(response.body).to include('12,35 €')
+        expect(response.body).not_to include('12,34 €')
+      end
     end
 
     context 'with a special price' do
@@ -257,6 +268,26 @@ RSpec.describe '/products/:product_id/attribute_values', type: :request do
         expect(response).to have_http_status(:unprocessable_entity)
         expect(response.media_type).to eq('text/vnd.turbo-stream.html')
         expect(response.body).to include('Failed to update Price')
+      end
+    end
+  end
+
+  describe 'GET /products/:id inline editors' do
+    it 'gives each inline input a unique id' do
+      create(:product_attribute_value, product: product, product_attribute: product_attribute, value: '1234')
+      short_description = company.product_attributes.find_by!(code: 'short_description')
+      create(:product_attribute_value, product: product, product_attribute: short_description, value: 'Short copy')
+
+      get product_path(product)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include('id="value"')
+      doc = Nokogiri::HTML(response.body)
+      [ product_attribute, short_description ].each do |attribute|
+        row = doc.at_css("##{ActionView::RecordIdentifier.dom_id(attribute, :value)}")
+        label_for = row.at_css('form label')['for']
+        expect(label_for).to eq("#{ActionView::RecordIdentifier.dom_id(attribute, :value)}_input")
+        expect(row.css("[name='value']").map { |input| input['id'] }.uniq).to eq([ label_for ])
       end
     end
   end

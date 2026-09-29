@@ -54,6 +54,25 @@ RSpec.describe "/catalog_item_attribute_values", type: :request do
     end
   end
 
+  describe "GET /products/:id override editors" do
+    it "gives each inline input a unique id" do
+      price = company.product_attributes.find_by!(code: "price")
+      price_override = create(:catalog_item_attribute_value, catalog_item: catalog_item, product_attribute: price, value: "4000")
+
+      get product_path(product)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include('id="value"')
+      doc = Nokogiri::HTML(response.body)
+      [ override, price_override ].each do |catalog_override|
+        row = doc.at_css("##{ActionView::RecordIdentifier.dom_id(catalog_override, :value)}")
+        label_for = row.at_css("form label")["for"]
+        expect(label_for).to eq("#{ActionView::RecordIdentifier.dom_id(catalog_override, :value)}_input")
+        expect(row.css("[name='value']").map { |input| input["id"] }.uniq).to eq([ label_for ])
+      end
+    end
+  end
+
   describe "money overrides" do
     let(:price) { company.product_attributes.find_by!(code: "price") }
 

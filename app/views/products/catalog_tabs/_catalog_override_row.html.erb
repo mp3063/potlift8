@@ -6,6 +6,7 @@
 <% currency = catalog_item.catalog.currency_code %>
 <% override_display = attribute_display_value(product_attribute, catalog_override.value, currency: currency) %>
 <% product_display = product_has_value ? attribute_display_value(product_attribute, product_value.value) : nil %>
+<% input_id = "#{dom_id(catalog_override, :value)}_input" %>
 <div id="<%= dom_id(catalog_override, :value) %>"
      class="group px-6 py-2 border-b border-gray-100"
      data-controller="inline-editor"
@@ -54,7 +55,7 @@
         } do |form| %>
       <div class="space-y-3">
         <div>
-          <label class="block text-sm font-medium text-gray-700">
+          <label for="<%= input_id %>" class="block text-sm font-medium text-gray-700">
             <%= product_attribute.name %>
             <span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 ml-2">
               Override
@@ -64,19 +65,22 @@
             <%= form.select :value,
                 options_for_select(product_attribute.options, catalog_override.value),
                 { prompt: "Select an option" },
+                id: input_id,
                 class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" %>
           <% elsif product_attribute.patype_multiselect? %>
             <%= form.select :value,
                 options_for_select(product_attribute.options, catalog_override.value),
                 { prompt: "Select options" },
+                id: input_id,
                 multiple: true,
                 class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" %>
           <% elsif product_attribute.patype_boolean? %>
             <%= form.check_box :value,
-                { checked: catalog_override.value == 'true' },
+                { checked: catalog_override.value == 'true', id: input_id },
                 class: "h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" %>
           <% elsif product_attribute.money? %>
             <%= form.text_field :value,
+                id: input_id,
                 value: attribute_input_value(product_attribute, catalog_override.value),
                 inputmode: "decimal",
                 class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
@@ -84,21 +88,25 @@
             <p class="mt-1 text-xs text-gray-500">Amount in <%= currency.upcase %>, e.g. 40,00</p>
           <% elsif product_attribute.patype_number? %>
             <%= form.number_field :value,
+                id: input_id,
                 value: catalog_override.value,
                 class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
                 placeholder: "Enter #{product_attribute.name.downcase}" %>
           <% elsif product_attribute.patype_date? %>
             <%= form.date_field :value,
+                id: input_id,
                 value: catalog_override.value,
                 class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" %>
           <% elsif product_attribute.patype_rich_text? %>
             <%= form.text_area :value,
+                id: input_id,
                 value: catalog_override.value,
                 rows: 4,
                 class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
                 placeholder: "Enter #{product_attribute.name.downcase}" %>
           <% else %>
             <%= form.text_field :value,
+                id: input_id,
                 value: catalog_override.value,
                 class: "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
                 placeholder: "Enter #{product_attribute.name.downcase}" %>
