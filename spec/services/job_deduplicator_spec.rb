@@ -75,6 +75,31 @@ RSpec.describe JobDeduplicator, type: :service do
     end
   end
 
+  describe '#stored_value' do
+    it 'returns the value the first unique? call stored' do
+      deduplicator.unique?(value: '1700000000.5')
+      deduplicator.unique?(value: 'later')
+
+      expect(deduplicator.stored_value).to eq('1700000000.5')
+    end
+
+    it 'stores "1" by default' do
+      deduplicator.unique?
+
+      expect(deduplicator.stored_value).to eq('1')
+    end
+
+    it 'returns nil when the key is not set' do
+      expect(deduplicator.stored_value).to be_nil
+    end
+
+    it 'returns nil when Redis is unavailable' do
+      allow_any_instance_of(Redis).to receive(:get).and_raise(Redis::ConnectionError.new('Connection refused'))
+
+      expect(deduplicator.stored_value).to be_nil
+    end
+  end
+
   describe '#execute_once' do
     context 'when job is unique' do
       it 'executes the block' do

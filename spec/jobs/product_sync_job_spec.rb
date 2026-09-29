@@ -151,6 +151,49 @@ RSpec.describe ProductSyncJob, type: :job do
         end
       end
 
+      context "when the duplicate was queued before the running sync started" do
+        it "schedules nothing, because the running sync already covers the change" do
+          freeze_time do
+            described_class.perform_now(product, catalog, Time.current)
+            described_class.perform_now(product, catalog, 10.seconds.ago)
+          end
+
+          expect(mock_service).to have_received(:sync_to_external_system).once
+          expect(ProductSyncJob).not_to have_been_enqueued
+        end
+
+        it "still schedules the trailing sync when the lock's start time cannot be read" do
+          freeze_time do
+            described_class.perform_now(product, catalog, Time.current)
+            allow_any_instance_of(Redis).to receive(:get).and_raise(Redis::CannotConnectError)
+            described_class.perform_now(product, catalog, 10.seconds.ago)
+          end
+
+          expect(ProductSyncJob).to have_been_enqueued.exactly(:once)
+        end
+
+        it "still schedules the trailing sync when the lock holds the legacy value" do
+          freeze_time do
+            JobDeduplicator.new(job_name: "ProductSyncJob", params: params, window: 30, bucketed: false).unique?
+            described_class.perform_now(product, catalog, 10.seconds.ago)
+          end
+
+          expect(mock_service).not_to have_received(:sync_to_external_system)
+          expect(ProductSyncJob).to have_been_enqueued.exactly(:once)
+        end
+      end
+
+      it "schedules the trailing sync for a duplicate queued after the running sync started" do
+        freeze_time do
+          described_class.perform_now(product, catalog, Time.current)
+          travel 5.seconds
+          described_class.perform_now(product, catalog, Time.current)
+        end
+
+        expect(mock_service).to have_received(:sync_to_external_system).once
+        expect(ProductSyncJob).to have_been_enqueued.exactly(:once)
+      end
+
       it "still syncs when Redis is down" do
         allow_any_instance_of(Redis).to receive(:set).and_raise(Redis::CannotConnectError)
 

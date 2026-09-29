@@ -26,10 +26,11 @@ class JobDeduplicator
     @redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
   end
 
-  def unique?
+  # value: what the winning call stores in the key; read it back with stored_value.
+  def unique?(value: "1")
     dedup_key = build_deduplication_key
 
-    result = @redis.set(dedup_key, "1", ex: @window, nx: true)
+    result = @redis.set(dedup_key, value, ex: @window, nx: true)
 
     if result
       log_unique_job(dedup_key)
@@ -69,6 +70,16 @@ class JobDeduplicator
     Rails.logger.error(
       "[JobDeduplicator] Redis error clearing '#{@job_name}': #{e.message}"
     )
+  end
+
+  # The value stored by the unique? call that took the key; nil if unset or Redis fails.
+  def stored_value
+    @redis.get(build_deduplication_key)
+  rescue Redis::BaseError => e
+    Rails.logger.error(
+      "[JobDeduplicator] Redis error reading '#{@job_name}': #{e.message}"
+    )
+    nil
   end
 
   def executed_recently?

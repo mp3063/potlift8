@@ -23,9 +23,10 @@ class ProductSyncJob < ApplicationJob
 
     # Trailing dedup: the first job syncs now; a change inside the window
     # schedules one sync for when the window ends instead of being dropped.
+    # The lock stores when the leading sync started, so duplicates it already covers are dropped.
     lock = sync_lock(product, catalog)
-    unless lock.unique?
-      schedule_trailing_sync(product, catalog, lock)
+    unless lock.unique?(value: Time.current.to_f.to_s)
+      schedule_trailing_sync(product, catalog, lock, timestamp)
       return
     end
     trailing_marker(product, catalog).clear!
@@ -150,7 +151,14 @@ class ProductSyncJob < ApplicationJob
     )
   end
 
-  def schedule_trailing_sync(product, catalog, lock)
+  def schedule_trailing_sync(product, catalog, lock, timestamp)
+    if covered_by_running_sync?(lock, timestamp)
+      Rails.logger.info(
+        "Sync for Product #{product.id} (#{product.sku}) to Catalog #{catalog.code} was queued before " \
+        "the running sync started. Its change is in that sync; skipping."
+      )
+      return
+    end
     return unless trailing_marker(product, catalog).unique?
 
     # TTL is whole seconds, so add 1s or the trailing job can start while the lock still holds
@@ -160,6 +168,19 @@ class ProductSyncJob < ApplicationJob
       "Sync for Product #{product.id} (#{product.sku}) to Catalog #{catalog.code} ran recently. " \
       "Scheduled a trailing sync in #{wait}s."
     )
+  end
+
+  # Jobs are queued after commit, and the running sync reads the product after it starts,
+  # so a job queued before that start is already in its payload. The 2s margin covers
+  # clock skew between hosts. An unreadable start (missing, Redis error, or the legacy
+  # "1", which parses as 1.0) never drops the job.
+  def covered_by_running_sync?(lock, timestamp)
+    return false unless timestamp.is_a?(Time)
+
+    started_at = Float(lock.stored_value, exception: false)
+    return false if started_at.nil?
+
+    timestamp.to_f < started_at - 2
   end
 
   def deduplication_window
