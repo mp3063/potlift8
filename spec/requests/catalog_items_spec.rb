@@ -118,6 +118,16 @@ RSpec.describe 'CatalogItems', type: :request do
         expect(response.body).to match(/Successfully added 2 products/)
       end
 
+      it 'syncs each added product to the catalog shop' do
+        catalog.update!(info: { 'shop_id' => 1 })
+
+        expect {
+          post catalog_products_path(catalog.code), params: { product_ids: [ product1.id, product2.id ] }
+        }.to have_enqueued_job(ProductSyncJob).with(product1, catalog, anything)
+          .and have_enqueued_job(ProductSyncJob).with(product2, catalog, anything)
+        expect(enqueued_jobs.count { |j| (j['job_class'] || j[:job].to_s) == 'ProductSyncJob' }).to eq(2)
+      end
+
       it 'sets default state to active' do
         post catalog_products_path(catalog.code), params: { product_ids: [ product1.id ] }
 

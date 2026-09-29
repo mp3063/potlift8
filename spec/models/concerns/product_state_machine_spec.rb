@@ -683,6 +683,7 @@ RSpec.describe ProductStateMachine, type: :model do
     it "does not add a direct sync to activate!" do
       product = create(:product, :draft, :sellable, company: company)
       create(:catalog_item, catalog: catalog, product: product)
+      clear_enqueued_jobs
 
       expect { product.activate! }.to have_enqueued_job(ProductActivatedJob)
       expect(ProductSyncJob).not_to have_been_enqueued

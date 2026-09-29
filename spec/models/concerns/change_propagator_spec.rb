@@ -8,6 +8,9 @@ RSpec.describe ChangePropagator, type: :model do
   let(:catalog) { create(:catalog, :shop_connected, company: company) }
   let!(:catalog_item) { create(:catalog_item, catalog: catalog, product: product) }
 
+  # Adding the item to a connected catalog enqueues its own sync; start clean.
+  before { clear_enqueued_jobs }
+
   describe 'change propagation on update' do
     it 'propagates changes when product is updated' do
       expect do

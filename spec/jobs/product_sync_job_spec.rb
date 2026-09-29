@@ -9,6 +9,9 @@ RSpec.describe ProductSyncJob, type: :job do
   let(:timestamp) { Time.current }
   let!(:catalog_item) { create(:catalog_item, catalog: catalog, product: product) }
 
+  # Adding the item to a connected catalog enqueues its own sync; start clean.
+  before { clear_enqueued_jobs }
+
   describe 'queue configuration' do
     it 'is enqueued on the default queue' do
       queue_name = ProductSyncJob.new.queue_name

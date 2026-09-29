@@ -23,6 +23,13 @@ RSpec.describe "Product Catalogs", type: :request do
       expect(product.catalogs.reload).to include(catalog)
     end
 
+    it "syncs the product to the catalog's shop" do
+      catalog.update!(info: { "shop_id" => 1 })
+
+      expect { post product_catalogs_path(product), params: { catalog_id: catalog.id } }
+        .to have_enqueued_job(ProductSyncJob).with(product, catalog, anything)
+    end
+
     it "redirects to product with success message" do
       post product_catalogs_path(product), params: { catalog_id: catalog.id }
 

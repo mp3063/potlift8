@@ -27,6 +27,7 @@ class CatalogItem < ApplicationRecord
 
   validates :catalog_id, uniqueness: { scope: :product_id }
 
+  after_create_commit :sync_to_shop
   after_destroy_commit :remove_from_shop
 
   default_scope { order(Arel.sql("catalog_items.priority DESC NULLS LAST, catalog_items.id ASC")) }
@@ -92,6 +93,13 @@ class CatalogItem < ApplicationRecord
   end
 
   private
+
+  # Adding a product to a shop-connected catalog pushes it to that shop.
+  def sync_to_shop
+    return if catalog.info&.dig("sync_paused") || !catalog.shop_connected?
+
+    ProductSyncJob.perform_later(product, catalog, Time.current)
+  end
 
   # Taking a product out of a catalog removes it from that catalog's shop,
   # unless another of the product's catalogs still feeds the same shop.

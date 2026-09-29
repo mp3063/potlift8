@@ -13,6 +13,8 @@ RSpec.describe BatchProductSyncJob, type: :job do
     products.each do |product|
       create(:catalog_item, catalog: catalog, product: product)
     end
+    # Adding items to a connected catalog enqueues their own syncs; start clean.
+    clear_enqueued_jobs
   end
 
   # Mock ProductSyncService

@@ -436,6 +436,29 @@ RSpec.describe CatalogItem, type: :model do
     end
   end
 
+  describe 'sync to the shop on create' do
+    let(:company) { create(:company) }
+    let(:product) { create(:product, company: company) }
+    let(:catalog) { create(:catalog, :shop_connected, company: company) }
+
+    it 'enqueues a product sync for a shop-connected catalog' do
+      expect { create(:catalog_item, catalog: catalog, product: product) }
+        .to have_enqueued_job(ProductSyncJob).with(product, catalog, anything)
+    end
+
+    it 'sends nothing when the catalog sync is paused' do
+      catalog.update!(info: catalog.info.merge('sync_paused' => true))
+
+      expect { create(:catalog_item, catalog: catalog, product: product) }.not_to have_enqueued_job(ProductSyncJob)
+    end
+
+    it 'sends nothing when the catalog is not connected to a shop' do
+      catalog.update!(info: {})
+
+      expect { create(:catalog_item, catalog: catalog, product: product) }.not_to have_enqueued_job(ProductSyncJob)
+    end
+  end
+
   describe 'removal from the shop on destroy' do
     let(:company) { create(:company) }
     let(:product) { create(:product, company: company) }
