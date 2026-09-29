@@ -342,6 +342,24 @@ Small points noted in review and not done:
 - Inline editor id specs cover only text and money rows, and there is no page-wide id-uniqueness assertion.
 - Shopify8: a mismatched `load.shop.name` on a single-shop company resolves to that shop.
 
+From the final branch review and the Sync All progress panel:
+- `ProductSyncJob` rate-limit retries always wait about 60 s. A catalog with a longer custom period (`info.rate_limit.period`) retries too early, because Rails 8.0 passes only the attempt count to the wait proc. Fixing it needs `rescue_from` + `retry_job(wait:)`.
+- The sync lock has no owner. A failing job's `clear!` can delete a lock another job now holds, so retry chains can overlap (extra syncs only).
+- Every `JobDeduplicator` opens its own Redis client. `ProductSyncJob` builds two or three per run.
+- `ProductRemovalJob` doesn't re-check whether the SKU is back in a catalog with the same shop key, so a quick remove + re-add can end with the product deleted in Shopify.
+- A variant's status change doesn't re-sync its parent (`touch_superproducts` only changes `updated_at`). Harmless while Shopify8 ignores subproduct status.
+- Permanent failures (4xx, validation errors) still go through all 5 `SyncFailed` retries, and a hanging Shopify8 can tie up the 3 worker threads.
+- `ProductImportJob` now retries on deadlock or connection errors and re-runs the whole import.
+- No spec that a status event inside a rolled-back outer transaction enqueues nothing.
+- `BatchProductSyncJob` still marks rate-limited items failed without a retry. `SyncLockable#with_sync_lock` has no callers, so the `sync_locked?` checks never fire.
+- Shopify8 `ProductChangedExecutor#follow_up_tasks_exist?` skips the confirmation callback when a newer `product_changed` exists for the same SKU, and that query isn't scoped by shop or company. A Sync All run can then wait on that item until it shows as stalled.
+- Sync All panel:
+  - `Catalog#freeze_sync_run` has no rescue, so a DB error there would fail the page render or broadcast.
+  - Items added to the catalog during a run count as confirmed, so a run can finish early.
+  - An open page never switches to stalled or hides the finished panel on its own; that only happens on the next broadcast or reload.
+  - The elapsed timer resets on a Turbo snapshot restore.
+  - The inline `style` widths would need `style-src` if a CSP is added to Potlift8.
+
 ---
 
 ## Planned work (decided, not started)
