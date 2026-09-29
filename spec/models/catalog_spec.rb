@@ -277,6 +277,49 @@ RSpec.describe Catalog, type: :model do
         travel_to(started_at + 40.seconds + 6.minutes)
         expect(catalog.sync_run_progress).not_to be_visible
       end
+
+      context 'once seen finished' do
+        before do
+          start_run(total: 2)
+          travel_to(started_at + 1.minute)
+          catalog.sync_run_progress
+        end
+
+        it 'stores the finish time and final counts on the run' do
+          expect(catalog.reload.info['sync_run']).to include(
+            'finished_at' => (started_at + 40.seconds).iso8601(6), 'confirmed' => 1, 'failed' => 1
+          )
+        end
+
+        it 'stays finished when an item goes pending again later' do
+          travel_to(started_at + 2.days)
+          confirmed_item.update!(sync_status: :pending)
+
+          progress = catalog.reload.sync_run_progress
+          expect(progress).to be_finished
+          expect(progress).not_to be_stalled
+          expect(progress.confirmed).to eq(1)
+          expect(progress.failed).to eq(1)
+          expect(progress.elapsed).to eq(40)
+        end
+
+        it 'does not stall when an answered item is removed' do
+          confirmed_item.destroy!
+          travel_to(started_at + 20.minutes)
+
+          progress = catalog.reload.sync_run_progress
+          expect(progress).to be_finished
+          expect(progress).not_to be_stalled
+        end
+
+        it 'is hidden 5 minutes after the finish' do
+          travel_to(started_at + 40.seconds + 4.minutes)
+          expect(catalog.reload.sync_run_progress).to be_visible
+
+          travel_to(started_at + 40.seconds + 6.minutes)
+          expect(catalog.reload.sync_run_progress).not_to be_visible
+        end
+      end
     end
   end
 

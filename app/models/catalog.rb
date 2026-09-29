@@ -226,13 +226,24 @@ class Catalog < ApplicationRecord
     }
   end
 
-  # Progress of the latest Sync All run (info["sync_run"]), or nil without one
+  # Progress of the latest Sync All run (info["sync_run"]), or nil without one.
+  # The first time it is seen finished, the run is frozen (see #freeze_sync_run).
   def sync_run_progress
     run = info&.dig("sync_run")
     return nil if run.blank? || run["started_at"].blank?
 
     started_at = Time.zone.parse(run["started_at"])
     handed_off_at = run["handed_off_at"].presence && Time.zone.parse(run["handed_off_at"])
+
+    if run["finished_at"].present?
+      finished_at = Time.zone.parse(run["finished_at"])
+      return Catalog::SyncRunProgress.new(
+        total: run["total"].to_i, confirmed: run["confirmed"].to_i, failed: run["failed"].to_i,
+        started_at: started_at, handed_off_at: handed_off_at,
+        last_activity_at: finished_at, finished_at: finished_at
+      )
+    end
+
     items = catalog_items.reorder(nil)
 
     answers = items.where(
@@ -243,7 +254,7 @@ class Catalog < ApplicationRecord
     latest_item_activity = items.where("updated_at >= :since OR last_synced_at >= :since", since: started_at)
                                 .maximum(Arel.sql("GREATEST(updated_at, last_synced_at)"))
 
-    Catalog::SyncRunProgress.new(
+    progress = Catalog::SyncRunProgress.new(
       total: run["total"].to_i,
       confirmed: answers["synced"].to_i,
       failed: answers["failed"].to_i,
@@ -251,6 +262,8 @@ class Catalog < ApplicationRecord
       handed_off_at: handed_off_at,
       last_activity_at: [ started_at, handed_off_at, latest_item_activity ].compact.max
     )
+    freeze_sync_run(progress) if progress.finished?
+    progress
   end
 
   # Refreshes the Shopify sync summary card for everyone on the items page.
@@ -266,6 +279,26 @@ class Catalog < ApplicationRecord
   end
 
   private
+
+  # Stores the finish time and final counts, once, so later pending writes or
+  # item removals can't reopen a finished run. Guarded SQL, like the hand-off.
+  def freeze_sync_run(progress)
+    frozen = {
+      "finished_at" => progress.finish_time.iso8601(6),
+      "confirmed" => progress.confirmed,
+      "failed" => progress.failed
+    }
+    # Matching started_at keeps a stale instance from freezing a newer run
+    Catalog.where(id: id)
+           .where("info->'sync_run'->>'started_at' = ? AND info->'sync_run'->>'finished_at' IS NULL", info["sync_run"]["started_at"])
+           .update_all([ "info = jsonb_set(info, '{sync_run}', (info->'sync_run') || ?::jsonb)", frozen.to_json ])
+
+    # Mirror it in memory, unless info carries unsaved edits of its own
+    return if info_changed?
+
+    self.info = info.merge("sync_run" => info["sync_run"].merge(frozen))
+    clear_attribute_changes([ :info ])
+  end
 
   def currency_ratio_compliance
   end

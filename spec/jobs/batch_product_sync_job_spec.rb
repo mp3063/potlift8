@@ -83,6 +83,15 @@ RSpec.describe BatchProductSyncJob, type: :job do
         end
       end
 
+      it 'still finishes the job when the summary broadcast fails' do
+        allow_any_instance_of(Catalog).to receive(:broadcast_sync_summary).and_raise(ActionView::Template::Error, 'boom')
+        allow(Rails.logger).to receive(:error).and_call_original
+
+        expect { described_class.perform_now(product_ids, catalog.id) }.not_to raise_error
+        expect(catalog.reload.info.dig('sync_run', 'handed_off_at')).to be_present
+        expect(Rails.logger).to have_received(:error).with(/Sync All summary broadcast failed/)
+      end
+
       it 'keeps the first hand-off when another batch finishes later' do
         catalog.update!(info: catalog.info.deep_merge('sync_run' => { 'handed_off_at' => started_at }))
         expect_any_instance_of(Catalog).not_to receive(:broadcast_sync_summary)
@@ -171,6 +180,14 @@ RSpec.describe BatchProductSyncJob, type: :job do
 
         # Should sync 4 products (5 - 1 locked)
         expect(sync_count).to eq(4)
+      end
+
+      it 'marks the skipped item failed so a Sync All run can finish' do
+        described_class.perform_now(product_ids, catalog.id)
+
+        locked_item = catalog.catalog_items.find_by(product: products.first)
+        expect(locked_item).to be_sync_failed
+        expect(locked_item.last_sync_error).to eq('Skipped: product is sync-locked')
       end
 
       it 'logs skipped products' do

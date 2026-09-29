@@ -191,10 +191,14 @@ class CatalogsController < ApplicationController
     authorize @catalog
     product_count = @catalog.catalog_items.count
     # Mark pending before queueing, so the job can't answer an item first
-    @catalog.catalog_items.update_all(sync_status: CatalogItem.sync_statuses[:pending])
-    @catalog.info ||= {}
-    @catalog.info["sync_run"] = { "started_at" => Time.current.iso8601(6), "total" => product_count, "handed_off_at" => nil }
-    @catalog.save!
+    # (and clear old errors, so the job's no-op write can't erase a new one)
+    @catalog.catalog_items.update_all(sync_status: CatalogItem.sync_statuses[:pending], last_sync_error: nil)
+    # A run that could never finish isn't worth tracking
+    if product_count.positive? && !@catalog.info&.dig("sync_paused")
+      @catalog.info ||= {}
+      @catalog.info["sync_run"] = { "started_at" => Time.current.iso8601(6), "total" => product_count, "handed_off_at" => nil }
+      @catalog.save!
+    end
     @catalog.batch_sync_all_products
 
     respond_to do |format|
@@ -378,7 +382,7 @@ class CatalogsController < ApplicationController
   private
 
   def sync_summary_card_stream
-    turbo_stream.replace("sync_summary_#{@catalog.id}", partial: "catalogs/sync_summary_card",
+    turbo_stream.replace("sync_summary_#{@catalog.id}", method: :morph, partial: "catalogs/sync_summary_card",
                          locals: { catalog: @catalog, sync_counts: @catalog.sync_counts })
   end
 

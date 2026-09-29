@@ -1,6 +1,6 @@
 <section id="sync_progress_<%= catalog.id %>" class="mb-4 rounded-lg border p-4 <%= panel_classes %>" aria-label="Sync All progress">
   <div class="flex items-start justify-between gap-4">
-    <h4 class="flex items-center gap-2 text-sm font-semibold <%= running? ? "text-blue-700" : text_classes %>">
+    <p class="flex items-center gap-2 text-sm font-semibold <%= running? ? "text-blue-700" : text_classes %>">
       <% if state == :succeeded %>
         <svg class="h-5 w-5 shrink-0 text-green-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
           <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
@@ -11,7 +11,7 @@
         </svg>
       <% end %>
       <%= heading %>
-    </h4>
+    </p>
 
     <div class="flex items-center gap-3">
       <% if running? %>

@@ -105,18 +105,27 @@ class BatchProductSyncJob < ApplicationJob
     marked = Catalog.where(id: catalog.id)
                     .where("info->'sync_run' IS NOT NULL AND info->'sync_run'->>'handed_off_at' IS NULL")
                     .update_all([ "info = jsonb_set(info, '{sync_run,handed_off_at}', to_jsonb(?::text))", Time.current.iso8601(6) ])
-    catalog.reload.broadcast_sync_summary if marked.positive?
+    return unless marked.positive?
+
+    begin
+      catalog.reload.broadcast_sync_summary
+    rescue StandardError => e
+      # The hand-off is recorded; a failed render must not retry the whole batch
+      Rails.logger.error("[BatchProductSyncJob] Sync All summary broadcast failed for catalog #{catalog.id}: #{e.class} - #{e.message}")
+    end
   end
 
   def sync_single_product(product, catalog)
+    catalog_item = catalog.catalog_items.find_by(product: product)
+
     if product.sync_locked?
       Rails.logger.debug(
         "[BatchProductSyncJob] Product #{product.id} (#{product.sku}) is sync locked. Skipping."
       )
+      # An answer, so a Sync All run can finish instead of waiting forever
+      catalog_item&.update!(sync_status: :failed, last_sync_error: "Skipped: product is sync-locked")
       return { status: :skipped, reason: "sync_locked" }
     end
-
-    catalog_item = catalog.catalog_items.find_by(product: product)
 
     service = ProductSyncService.new(product, catalog)
     result = service.sync_to_external_system

@@ -808,10 +808,36 @@ RSpec.describe '/catalogs', type: :request do
         end
       end
 
+      it 'clears old sync errors along with marking items pending' do
+        catalog_item.update!(sync_status: :failed, last_sync_error: 'old error')
+
+        post sync_all_catalog_path(catalog.code), as: :turbo_stream
+
+        expect(catalog_item.reload.last_sync_error).to be_nil
+      end
+
+      it 'records no run when the catalog has no items' do
+        catalog_item.destroy!
+
+        post sync_all_catalog_path(catalog.code), as: :turbo_stream
+
+        expect(response).to be_successful
+        expect(catalog.reload.info).not_to have_key('sync_run')
+      end
+
+      it 'records no run while sync is paused, but still marks items pending' do
+        catalog.update!(info: { 'sync_paused' => true })
+
+        post sync_all_catalog_path(catalog.code), as: :turbo_stream
+
+        expect(catalog.reload.info).not_to have_key('sync_run')
+        expect(catalog_item.reload).to be_sync_pending
+      end
+
       it 'replaces the summary card with one showing the progress panel' do
         post sync_all_catalog_path(catalog.code), as: :turbo_stream
 
-        expect(response.body).to include(%(<turbo-stream action="replace" target="sync_summary_#{catalog.id}">))
+        expect(response.body).to include(%(<turbo-stream method="morph" action="replace" target="sync_summary_#{catalog.id}">))
         expect(response.body).to include("sync_progress_#{catalog.id}")
         expect(response.body).to include('0 of 1 confirmed')
         expect(response.body).to include('flash')
@@ -828,7 +854,7 @@ RSpec.describe '/catalogs', type: :request do
 
         expect(response.media_type).to eq('text/vnd.turbo-stream.html')
         expect(catalog.reload.info).to eq('sync_paused' => false)
-        expect(response.body).to include(%(<turbo-stream action="replace" target="sync_summary_#{catalog.id}">))
+        expect(response.body).to include(%(<turbo-stream method="morph" action="replace" target="sync_summary_#{catalog.id}">))
         expect(response.body).not_to include("sync_progress_#{catalog.id}")
       end
 

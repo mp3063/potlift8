@@ -25,7 +25,8 @@ RSpec.describe Catalogs::SyncProgressComponent, type: :component do
     before { render_progress(progress(confirmed: 0, failed: 0, handed_off: false)) }
 
     it "shows both steps in progress" do
-      expect(page).to have_text("Syncing WEB-EUR to Shopify")
+      expect(page).to have_css("p", text: "Syncing WEB-EUR to Shopify")
+      expect(page).not_to have_css("h1, h2, h3, h4, h5, h6")
       expect(page).to have_text("Sending to Shopify8")
       expect(page).not_to have_text("Sent to Shopify8")
       expect(page).to have_text("Confirming in Shopify…")
