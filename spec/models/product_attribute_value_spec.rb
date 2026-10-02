@@ -163,6 +163,30 @@ RSpec.describe ProductAttributeValue, type: :model do
           .with(product, catalog, kind_of(Time))
       end
 
+      # The parent's payload carries each variant's attributes, so a variant edit must re-sync the parent
+      it 'enqueues ProductSyncJob for the catalogs of a configurable parent' do
+        parent = create(:product, :configurable_variant, company: product.company)
+        parent_catalog = create(:catalog, company: product.company)
+        create(:catalog_item, catalog: parent_catalog, product: parent)
+        create(:product_configuration, superproduct: parent, subproduct: product)
+        ActiveJob::Base.queue_adapter.enqueued_jobs.clear
+
+        expect { pav.update(value: 'variant value') }
+          .to have_enqueued_job(ProductSyncJob)
+          .with(parent, parent_catalog, kind_of(Time))
+      end
+
+      it 'does not re-sync a bundle that contains the product' do
+        bundle = create(:product, :bundle, company: product.company)
+        bundle_catalog = create(:catalog, company: product.company)
+        create(:catalog_item, catalog: bundle_catalog, product: bundle)
+        create(:product_configuration, superproduct: bundle, subproduct: product)
+        ActiveJob::Base.queue_adapter.enqueued_jobs.clear
+
+        expect { pav.update(value: 'component value') }
+          .not_to have_enqueued_job(ProductSyncJob).with(bundle, anything, anything)
+      end
+
       it 'does not enqueue job when product has no catalogs' do
         CatalogItem.where(product: product).destroy_all
         product.reload

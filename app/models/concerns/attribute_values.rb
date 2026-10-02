@@ -65,9 +65,11 @@ module AttributeValues
 
     timestamp = Time.current
 
-    catalogs_to_sync = product.catalogs.to_a
+    # A configurable parent's payload carries each variant's attributes, so a variant edit re-syncs it too
+    targets = ([ product ] + Product.where(id: ProductConfiguration.unscoped.where(subproduct_id: product.id).select(:superproduct_id)).product_type_configurable)
+      .flat_map { |target| target.catalogs.map { |catalog| [ target, catalog ] } }
 
-    if catalogs_to_sync.empty?
+    if targets.empty?
       Rails.logger.debug(
         "ProductAttributeValue change for Product #{product.id}: no catalogs to sync"
       )
@@ -76,10 +78,10 @@ module AttributeValues
 
     Rails.logger.info(
       "ProductAttributeValue change for Product #{product.id} (#{product.sku}). " \
-      "Propagating to #{catalogs_to_sync.size} catalog(s)"
+      "Propagating to #{targets.size} catalog sync(s)"
     )
 
-    catalogs_to_sync.each do |catalog|
+    targets.each do |target, catalog|
       if catalog.info&.dig("sync_paused")
         Rails.logger.debug(
           "Catalog #{catalog.code} has sync paused. Skipping propagation."
@@ -87,7 +89,7 @@ module AttributeValues
         next
       end
 
-      ProductSyncJob.perform_later(product, catalog, timestamp)
+      ProductSyncJob.perform_later(target, catalog, timestamp)
     end
   end
 end
