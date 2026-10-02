@@ -294,6 +294,12 @@ RSpec.describe '/product_attributes', type: :request do
         expect(attribute.mandatory).to be true
       end
 
+      it 'saves the copy-to-new-variants flag' do
+        patch product_attribute_path(attribute.code), params: { product_attribute: { subproduct_mandatory: '1' } }
+
+        expect(attribute.reload.subproduct_mandatory).to be true
+      end
+
       it 'redirects to attributes list' do
         patch product_attribute_path(attribute.code), params: { product_attribute: new_attributes }
         expect(response).to redirect_to(product_attributes_path)

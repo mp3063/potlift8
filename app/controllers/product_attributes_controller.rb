@@ -125,6 +125,7 @@ class ProductAttributesController < ApplicationController
       :view_format,
       :attribute_group_id,
       :mandatory,
+      :subproduct_mandatory,
       :help_text,
       :default_value,
       :pa_type,
