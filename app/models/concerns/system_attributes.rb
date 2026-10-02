@@ -28,6 +28,7 @@ module SystemAttributes
       group: :pricing,
       shopify_field: :cost,
       scope: :product_scope,
+      subproduct_mandatory: true,
       name: "Purchase Price",
       description: "Supplier/wholesale cost in cents"
     },
@@ -118,6 +119,7 @@ module SystemAttributes
       shopify_field: :weight,
       shopify_weight_unit: "GRAMS",
       scope: :product_scope,
+      subproduct_mandatory: true,
       name: "Weight",
       description: "Product weight in grams for shipping calculations"
     },
@@ -156,6 +158,7 @@ module SystemAttributes
             pa_type: config[:pa_type],
             view_format: config[:view_format],
             mandatory: config.fetch(:mandatory, false),
+            subproduct_mandatory: config.fetch(:subproduct_mandatory, false),
             product_attribute_scope: config.fetch(:scope, :product_scope),
             attribute_group: group,
             attribute_position: index + 1,

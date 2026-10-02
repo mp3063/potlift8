@@ -25,6 +25,9 @@ class ProductConfiguration < ApplicationRecord
   validate :validate_superproduct_type
   validate :validate_subproduct_type
 
+  # New variants start with the parent's subproduct_mandatory values (pot3 add_mandatory_attributes)
+  after_create :inherit_variant_attributes, if: -> { superproduct.product_type_configurable? }
+
   # Default scope for ordering - matches pot3 implementation
   default_scope {
     joins(:subproduct)
@@ -42,6 +45,10 @@ class ProductConfiguration < ApplicationRecord
   end
 
   private
+
+  def inherit_variant_attributes
+    VariantAttributeInheritance.new(superproduct: superproduct, subproduct: subproduct).call
+  end
 
   # Prevent a product from being its own subproduct (circular dependency)
   def prevent_circular_dependency

@@ -112,6 +112,12 @@ RSpec.describe SystemAttributes, type: :model do
       expect(brand.mandatory).to be false
     end
 
+    it 'flags weight and purchase_price to copy into new variants' do
+      flagged = company.product_attributes.where(subproduct_mandatory: true).pluck(:code)
+
+      expect(flagged).to contain_exactly('weight', 'purchase_price')
+    end
+
     it 'sets rules correctly for price attribute' do
       price = company.product_attributes.find_by(code: 'price')
       expect(price.has_rules).to be true
