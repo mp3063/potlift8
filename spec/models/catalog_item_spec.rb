@@ -61,6 +61,12 @@ RSpec.describe CatalogItem, type: :model do
 
   # Test enums
   describe 'enums' do
+    it 'separates queued (pending) from sent and awaiting confirmation (syncing)' do
+      expect(CatalogItem.sync_statuses).to eq(
+        'never_synced' => 0, 'synced' => 1, 'pending' => 2, 'failed' => 3, 'syncing' => 4
+      )
+    end
+
     describe 'catalog_item_state' do
       it 'defines all 2 states' do
         expect(CatalogItem.catalog_item_states).to eq({
@@ -179,7 +185,7 @@ RSpec.describe CatalogItem, type: :model do
     end
 
     it 'is false unless synced' do
-      %i[pending failed never_synced].each do |status|
+      %i[pending syncing failed never_synced].each do |status|
         expect(build(:catalog_item, sync_status: status, content_changed_at: 1.hour.ago)).not_to be_out_of_date
       end
     end

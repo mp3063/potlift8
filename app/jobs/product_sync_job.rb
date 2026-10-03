@@ -14,7 +14,7 @@ class ProductSyncJob < ApplicationJob
   retry_on RateLimiter::RateLimitExceededError,
            wait: ->(_executions) { ProductSyncService::DEFAULT_RATE_LIMIT_PERIOD + rand(0..30) },
            attempts: 10 do |job, _error|
-    # Retries ran out; without this the item stays pending, which reads as sent
+    # Retries ran out; without this the item stays queued forever
     job.send(:mark_rate_limit_exhausted)
   end
 
@@ -85,7 +85,7 @@ class ProductSyncJob < ApplicationJob
     duration = (Time.current - start_time).round(2)
 
     catalog_item = CatalogItem.find_by(catalog: catalog, product: product)
-    catalog_item&.update!(sync_status: :pending, last_sync_error: nil)
+    catalog_item&.update!(sync_status: :syncing, last_sync_error: nil)
 
     Rails.logger.info(
       "Product sync completed: Product #{product.id} (#{product.sku}) " \

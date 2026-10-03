@@ -42,7 +42,7 @@ RSpec.describe SyncBroadcastable, type: :model do
         catalog, "sync_status",
         target: "sync_summary_#{catalog.id}",
         partial: "catalogs/sync_summary_card",
-        locals: { catalog: catalog, sync_counts: a_hash_including(:synced, :outdated, :pending, :failed, :never) },
+        locals: { catalog: catalog, sync_counts: a_hash_including(:synced, :outdated, :pending, :syncing, :failed, :never) },
         attributes: { method: :morph }
       )
 
@@ -51,6 +51,19 @@ RSpec.describe SyncBroadcastable, type: :model do
   end
 
   describe 'summary card broadcast' do
+    it 'renders queued and syncing counts separately' do
+      create(:catalog_item, catalog: catalog, product: create(:product, company: company), sync_status: :pending)
+      rendered = nil
+      allow(catalog).to receive(:broadcast_replace_to) do |*_args, partial:, locals:, **|
+        rendered = ApplicationController.render(partial: partial, locals: locals)
+      end
+
+      catalog_item.update!(sync_status: :syncing)
+
+      expect(rendered).to match(%r{>1</div>\s*<div class="text-xs text-gray-500">Queued})
+      expect(rendered).to match(%r{>1</div>\s*<div class="text-xs text-gray-500">Syncing})
+    end
+
     it 'renders the card with the pending count' do
       create(:catalog_item, catalog: catalog, product: create(:product, company: company), sync_status: :pending)
       rendered = nil
@@ -61,7 +74,7 @@ RSpec.describe SyncBroadcastable, type: :model do
       catalog_item.update!(sync_status: :pending)
 
       expect(rendered).to include("sync_summary_#{catalog.id}")
-      expect(rendered).to match(%r{>2</div>\s*<div class="text-xs text-gray-500">Pending})
+      expect(rendered).to match(%r{>2</div>\s*<div class="text-xs text-gray-500">Queued})
     end
   end
 end

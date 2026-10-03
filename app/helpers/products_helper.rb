@@ -55,7 +55,7 @@ module ProductsHelper
   end
 
   def sync_status_filter_label(filter)
-    filter == "out_of_date" ? "changed since sync" : filter.humanize.downcase
+    { "out_of_date" => "changed since sync", "pending" => "queued" }.fetch(filter) { filter.humanize.downcase }
   end
 
   def sync_status_badge_for(catalog_item)
@@ -72,7 +72,11 @@ module ProductsHelper
       end
     when "pending"
       render Ui::BadgeComponent.new(variant: :info, dot: true) do
-        "Pending"
+        "Queued"
+      end
+    when "syncing"
+      render Ui::BadgeComponent.new(variant: :purple, dot: :pulse) do
+        "Syncing"
       end
     when "failed"
       render Ui::BadgeComponent.new(variant: :danger, dot: true) do

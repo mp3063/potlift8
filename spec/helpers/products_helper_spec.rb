@@ -158,8 +158,17 @@ RSpec.describe ProductsHelper, type: :helper do
       expect(html).to include('bg-yellow-100').and include('Changed since sync')
     end
 
-    it 'renders pending, failed and never-synced badges' do
-      expect(helper.sync_status_badge_for(build(:catalog_item, sync_status: :pending))).to include('Pending')
+    it 'renders a queued item as Queued' do
+      expect(helper.sync_status_badge_for(build(:catalog_item, sync_status: :pending))).to include('Queued').and include('bg-blue-100')
+    end
+
+    it 'renders a sent item as Syncing with a pulsing dot' do
+      html = helper.sync_status_badge_for(build(:catalog_item, sync_status: :syncing))
+
+      expect(html).to include('Syncing').and include('animate-pulse')
+    end
+
+    it 'renders failed and never-synced badges' do
       expect(helper.sync_status_badge_for(build(:catalog_item, sync_status: :failed))).to include('Failed')
       expect(helper.sync_status_badge_for(build(:catalog_item, sync_status: :never_synced))).to include('Not synced')
     end

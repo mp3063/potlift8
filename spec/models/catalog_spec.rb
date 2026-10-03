@@ -199,10 +199,11 @@ RSpec.describe Catalog, type: :model do
       add_item(sync_status: :synced, last_synced_at: 2.hours.ago, content_changed_at: 1.hour.ago)
       add_item(sync_status: :pending)
       add_item(sync_status: :pending)
+      add_item(sync_status: :syncing)
       add_item(sync_status: :failed)
       add_item(sync_status: :never_synced)
 
-      expect(catalog.sync_counts).to eq(synced: 1, outdated: 1, pending: 2, failed: 1, never: 1)
+      expect(catalog.sync_counts).to eq(synced: 1, outdated: 1, pending: 2, syncing: 1, failed: 1, never: 1)
     end
 
     it 'counts an old sync with no change since as synced' do
@@ -263,6 +264,12 @@ RSpec.describe Catalog, type: :model do
         confirmed_item.update!(sync_status: :synced, last_synced_at: Time.current)
         travel_to(started_at + 40.seconds)
         failed_item.update!(sync_status: :failed, last_sync_error: 'boom')
+      end
+
+      it 'does not count a sent item awaiting confirmation as done' do
+        waiting_item.update!(sync_status: :syncing)
+
+        expect(catalog.sync_run_progress.waiting).to eq(3)
       end
 
       it 'counts answers given since the run started, ignoring older ones' do

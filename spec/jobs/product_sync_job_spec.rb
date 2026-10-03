@@ -90,6 +90,14 @@ RSpec.describe ProductSyncJob, type: :job do
         described_class.perform_now(product, catalog, timestamp)
       end
 
+      it 'marks the catalog item syncing once Shopify8 has it' do
+        catalog_item.update!(sync_status: :pending, last_sync_error: 'old')
+
+        described_class.perform_now(product, catalog, timestamp)
+
+        expect(catalog_item.reload).to have_attributes(sync_status: 'syncing', last_sync_error: nil)
+      end
+
       it 'logs sync start and completion' do
         allow(Rails.logger).to receive(:info).and_call_original
 

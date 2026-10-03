@@ -181,6 +181,18 @@ RSpec.describe '/catalogs', type: :request do
         expect(response.body).not_to include('sync_status=out_of_date')
       end
 
+      it 'filters syncing items and labels queued ones as queued' do
+        catalog_item1.update!(sync_status: :syncing)
+        catalog_item2.update!(sync_status: :pending)
+
+        get catalog_items_path(catalog), params: { sync_status: 'syncing' }
+        expect(response.body).to include('PROD001')
+        expect(response.body).not_to include('PROD002')
+
+        get catalog_items_path(catalog), params: { sync_status: 'pending' }
+        expect(response.body).to include('Sync status: queued')
+      end
+
       it 'ignores unknown statuses' do
         get catalog_items_path(catalog), params: { sync_status: 'bogus' }
         expect(response.body).to include('PROD001')

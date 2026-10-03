@@ -22,7 +22,8 @@ class CatalogItem < ApplicationRecord
     never_synced: 0,
     synced: 1,
     pending: 2,
-    failed: 3
+    failed: 3,
+    syncing: 4
   }, prefix: :sync
 
   validates :catalog_id, uniqueness: { scope: :product_id }
@@ -42,7 +43,7 @@ class CatalogItem < ApplicationRecord
     sync_synced.where("catalog_items.content_changed_at IS NULL OR catalog_items.content_changed_at <= catalog_items.last_synced_at")
   }
 
-  # Known limit: a late confirmation can hide a newer edit until its trailing sync re-marks the item pending
+  # Known limit: a late confirmation can hide a newer edit until its trailing sync re-marks the item syncing
   def out_of_date?
     sync_synced? && content_changed_at.present? &&
       (last_synced_at.nil? || content_changed_at > last_synced_at)

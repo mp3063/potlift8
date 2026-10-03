@@ -556,6 +556,34 @@ RSpec.describe SyncTaskProcessor do
       end
     end
 
+    context 'with shopify_sync_confirmed and shopify_sync_failed events' do
+      let(:catalog) { create(:catalog, company: company, code: 'WEB-EUR') }
+      let!(:catalog_item) { create(:catalog_item, catalog: catalog, product: product) }
+
+      def answer(event_type, data = {})
+        service.process(origin_event_id: "evt_#{SecureRandom.hex(4)}", direction: 'inbound', event_type: event_type,
+                        key: product.sku, load: { 'data' => { 'catalog_code' => 'WEB-EUR' }.merge(data) })
+      end
+
+      %i[syncing pending].each do |status|
+        it "confirms an item that is #{status}" do
+          catalog_item.update!(sync_status: status)
+
+          answer('shopify_sync_confirmed')
+
+          expect(catalog_item.reload).to have_attributes(sync_status: 'synced', last_synced_at: be_present)
+        end
+
+        it "fails an item that is #{status}" do
+          catalog_item.update!(sync_status: status)
+
+          answer('shopify_sync_failed', 'error' => 'boom')
+
+          expect(catalog_item.reload).to have_attributes(sync_status: 'failed', last_sync_error: 'boom')
+        end
+      end
+    end
+
     context 'with shopify_product_deleted event' do
       let(:catalog) { create(:catalog, company: company) }
       let!(:catalog_item) do

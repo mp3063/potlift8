@@ -230,6 +230,7 @@ class Catalog < ApplicationRecord
       synced: items.sync_synced.count - outdated,
       outdated: outdated,
       pending: items.sync_pending.count,
+      syncing: items.sync_syncing.count,
       failed: items.sync_failed.count,
       never: items.sync_never_synced.count
     }

@@ -24,6 +24,14 @@ RSpec.describe BatchProductSyncJob, type: :job do
   end
 
   describe '#perform' do
+    it 'marks each sent item syncing' do
+      catalog.catalog_items.update_all(sync_status: CatalogItem.sync_statuses[:pending])
+
+      described_class.perform_now(product_ids, catalog.id)
+
+      expect(catalog.catalog_items.pluck(:sync_status).uniq).to eq([ 'syncing' ])
+    end
+
     it 'syncs all products in the batch' do
       # Allow multiple instances to receive the message
       allow_any_instance_of(ProductSyncService).to receive(:sync_to_external_system)
@@ -68,6 +76,8 @@ RSpec.describe BatchProductSyncJob, type: :job do
         # As CatalogsController#sync_all leaves them before queueing
         catalog.catalog_items.update_all(sync_status: CatalogItem.sync_statuses[:pending])
         catalog.update!(info: catalog.info.merge('sync_run' => { 'started_at' => started_at, 'total' => 5, 'handed_off_at' => nil }))
+        # Each item's move to syncing broadcasts on its own; these examples count the job's hand-off broadcast
+        allow_any_instance_of(CatalogItem).to receive(:broadcast_sync_status)
       end
 
       it 'records the hand-off and broadcasts the summary card once' do
@@ -114,6 +124,7 @@ RSpec.describe BatchProductSyncJob, type: :job do
     context 'without a Sync All run' do
       it 'does not broadcast the summary card or write a run' do
         catalog.catalog_items.update_all(sync_status: CatalogItem.sync_statuses[:pending])
+        allow_any_instance_of(CatalogItem).to receive(:broadcast_sync_status)
         expect_any_instance_of(Catalog).not_to receive(:broadcast_sync_summary)
 
         described_class.perform_now(product_ids, catalog.id)

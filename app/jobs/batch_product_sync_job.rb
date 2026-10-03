@@ -131,7 +131,7 @@ class BatchProductSyncJob < ApplicationJob
     result = service.sync_to_external_system
 
     if result.success?
-      catalog_item&.update!(sync_status: :pending, last_sync_error: nil)
+      catalog_item&.update!(sync_status: :syncing, last_sync_error: nil)
       { status: :success }
     else
       catalog_item&.update!(sync_status: :failed, last_sync_error: sanitize_sync_error(result.error))
