@@ -18,7 +18,7 @@ class ProductSyncJob < ApplicationJob
     job.send(:mark_rate_limit_exhausted)
   end
 
-  def perform(product, catalog, timestamp)
+  def perform(product, catalog, timestamp, manual: false)
     Rails.logger.info(
       "Starting product sync: Product #{product.id} (#{product.sku}) " \
       "to Catalog #{catalog.id} (#{catalog.code}), triggered at #{timestamp}"
@@ -55,7 +55,11 @@ class ProductSyncJob < ApplicationJob
     # schedules one sync for when the window ends instead of being dropped.
     # The lock stores when the leading sync started, so duplicates it already covers are dropped.
     lock = sync_lock(product, catalog)
-    unless lock.unique?(value: Time.current.to_f.to_s)
+    started_at = Time.current.to_f.to_s
+    # A manual sync sends now but still takes the lock, so edits right after it are held
+    if manual
+      lock.claim!(value: started_at)
+    elsif !lock.unique?(value: started_at)
       schedule_trailing_sync(product, catalog, lock, timestamp)
       return
     end

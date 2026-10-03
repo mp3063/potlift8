@@ -123,6 +123,40 @@ RSpec.describe ProductSyncJob, type: :job do
         allow(ProductSyncService).to receive(:new).with(product, catalog).and_return(mock_service)
       end
 
+      it "sends a manual sync right away inside the window" do
+        described_class.perform_now(product, catalog, timestamp)
+        described_class.perform_now(product, catalog, Time.current, manual: true)
+
+        expect(mock_service).to have_received(:sync_to_external_system).twice
+        expect(ProductSyncJob).not_to have_been_enqueued
+      end
+
+      it "still holds an automatic sync inside the window" do
+        described_class.perform_now(product, catalog, timestamp)
+        described_class.perform_now(product, catalog, Time.current)
+
+        expect(mock_service).to have_received(:sync_to_external_system).once
+        expect(ProductSyncJob).to have_been_enqueued.exactly(:once)
+      end
+
+      it "holds an automatic edit right after a manual send" do
+        freeze_time do
+          described_class.perform_now(product, catalog, Time.current, manual: true)
+          travel 5.seconds
+          described_class.perform_now(product, catalog, Time.current)
+        end
+
+        expect(mock_service).to have_received(:sync_to_external_system).once
+        expect(ProductSyncJob).to have_been_enqueued.exactly(:once)
+      end
+
+      it "survives serialization with the manual flag" do
+        described_class.perform_later(product, catalog, timestamp, manual: true)
+
+        expect(ProductSyncJob).to have_been_enqueued.with(product, catalog, timestamp, manual: true)
+        expect { perform_enqueued_jobs }.not_to raise_error
+      end
+
       it "schedules one trailing sync for a change inside the window" do
         2.times { described_class.perform_now(product, catalog, timestamp) }
 

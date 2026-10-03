@@ -791,10 +791,10 @@ RSpec.describe '/catalogs', type: :request do
         expect(catalog_item.reload.sync_status).to eq('pending')
       end
 
-      it 'enqueues ProductSyncJob' do
+      it 'enqueues a manual ProductSyncJob' do
         expect {
           post sync_product_catalog_path(catalog.code, product.id), as: :turbo_stream
-        }.to have_enqueued_job(ProductSyncJob)
+        }.to have_enqueued_job(ProductSyncJob).with(product, catalog, kind_of(Time), manual: true)
       end
 
       it 'leaves the page to the live status broadcast' do

@@ -257,7 +257,7 @@ class CatalogsController < ApplicationController
     catalog_item = @catalog.catalog_items.find_by!(product: product)
 
     catalog_item.update!(sync_status: :pending)
-    ProductSyncJob.perform_later(product, @catalog, Time.current)
+    ProductSyncJob.perform_later(product, @catalog, Time.current, manual: true)
 
     respond_to do |format|
       format.turbo_stream { head :no_content }

@@ -48,6 +48,15 @@ class JobDeduplicator
     true
   end
 
+  # Takes the key even if held, restarting the window
+  def claim!(value: "1")
+    @redis.set(build_deduplication_key, value, ex: @window)
+  rescue Redis::BaseError => e
+    Rails.logger.error(
+      "[JobDeduplicator] Redis error claiming '#{@job_name}': #{e.message}"
+    )
+  end
+
   def execute_once(raise_on_duplicate: false)
     if unique?
       yield
