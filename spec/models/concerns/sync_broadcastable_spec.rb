@@ -10,7 +10,7 @@ RSpec.describe SyncBroadcastable, type: :model do
 
   describe 'after_update_commit callback' do
     it 'broadcasts the row and the summary card when sync_status changes' do
-      expect(catalog_item).to receive(:broadcast_replace_to).once
+      expect(catalog_item).to receive(:broadcast_replace_to).twice
       expect(catalog).to receive(:broadcast_sync_summary).once
 
       catalog_item.update!(sync_status: :synced, last_synced_at: Time.current)
@@ -25,9 +25,15 @@ RSpec.describe SyncBroadcastable, type: :model do
       catalog_item.update!(last_synced_at: Time.current)
     end
 
-    it 'broadcasts to the catalog sync_status stream' do
+    it 'broadcasts to the catalog and product sync_status streams' do
       expect(catalog_item).to receive(:broadcast_replace_to).with(
         catalog, "sync_status",
+        target: "catalog_item_#{catalog_item.id}_sync",
+        partial: "catalogs/catalog_item_sync_cell",
+        locals: { catalog_item: catalog_item }
+      )
+      expect(catalog_item).to receive(:broadcast_replace_to).with(
+        product, "sync_status",
         target: "catalog_item_#{catalog_item.id}_sync",
         partial: "catalogs/catalog_item_sync_cell",
         locals: { catalog_item: catalog_item }

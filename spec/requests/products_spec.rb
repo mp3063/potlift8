@@ -338,6 +338,33 @@ RSpec.describe '/products', type: :request do
       }.to raise_error(ActiveRecord::RecordNotFound)
     end
 
+    context 'in a shop-connected catalog' do
+      let(:catalog) { create(:catalog, :shop_connected, company: company, name: 'Web EUR') }
+
+      it 'shows each catalog row with its sync badge, last sync time and error' do
+        changed = create(:catalog_item, catalog: catalog, product: product, sync_status: :synced,
+                                        last_synced_at: 2.hours.ago, content_changed_at: 1.hour.ago)
+        failing_catalog = create(:catalog, :shop_connected, company: company, name: 'Web SEK')
+        failed = create(:catalog_item, catalog: failing_catalog, product: product, sync_status: :failed,
+                                       last_sync_error: 'Shopify said no')
+
+        get product_path(product)
+
+        page = Nokogiri::HTML(response.body)
+        changed_cell = page.at_css("#catalog_item_#{changed.id}_sync").text
+        expect(changed_cell).to include('Changed since sync').and include('about 2 hours')
+        expect(page.at_css("#catalog_item_#{failed.id}_sync").text).to include('Failed').and include('Shopify said no')
+      end
+
+      it 'subscribes to sync status updates for the product' do
+        create(:catalog_item, catalog: catalog, product: product)
+
+        get product_path(product)
+
+        expect(response.body).to include('turbo-cable-stream-source')
+      end
+    end
+
     context 'with attributes' do
       # 'price' is auto-provisioned as a system attribute on company creation,
       # so reuse the existing record instead of creating a duplicate (unique on code+company).

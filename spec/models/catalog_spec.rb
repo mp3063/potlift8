@@ -196,13 +196,19 @@ RSpec.describe Catalog, type: :model do
 
     it 'counts items per sync state, including pending' do
       add_item(sync_status: :synced, last_synced_at: 30.minutes.ago)
-      add_item(sync_status: :synced, last_synced_at: 2.hours.ago)
+      add_item(sync_status: :synced, last_synced_at: 2.hours.ago, content_changed_at: 1.hour.ago)
       add_item(sync_status: :pending)
       add_item(sync_status: :pending)
       add_item(sync_status: :failed)
       add_item(sync_status: :never_synced)
 
       expect(catalog.sync_counts).to eq(synced: 1, outdated: 1, pending: 2, failed: 1, never: 1)
+    end
+
+    it 'counts an old sync with no change since as synced' do
+      add_item(sync_status: :synced, last_synced_at: 3.days.ago, content_changed_at: 4.days.ago)
+
+      expect(catalog.sync_counts).to include(synced: 1, outdated: 0)
     end
   end
 

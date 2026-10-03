@@ -57,13 +57,13 @@ module ProductsHelper
   def sync_status_badge_for(catalog_item)
     case catalog_item.sync_status
     when "synced"
-      if catalog_item.last_synced_at && catalog_item.last_synced_at > 1.hour.ago
-        render Ui::BadgeComponent.new(variant: :success, dot: true) do
-          "Synced"
+      if catalog_item.out_of_date?
+        render Ui::BadgeComponent.new(variant: :warning) do
+          "Changed since sync"
         end
       else
-        render Ui::BadgeComponent.new(variant: :warning) do
-          "Outdated"
+        render Ui::BadgeComponent.new(variant: :success, dot: true) do
+          "Synced"
         end
       end
     when "pending"

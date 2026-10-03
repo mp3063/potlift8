@@ -134,6 +134,16 @@ RSpec.describe '/catalogs', type: :request do
         expect(response.body).not_to include('PROD002')
       end
 
+      it 'flags a synced item that changed since its sync' do
+        catalog.update!(info: { 'shop_id' => 1 })
+        catalog_item2.update_columns(content_changed_at: 1.minute.from_now)
+
+        get catalog_items_path(catalog)
+
+        cell = Nokogiri::HTML(response.body).at_css("#catalog_item_#{catalog_item2.id}_sync")
+        expect(cell.text).to include('Changed since sync')
+      end
+
       it 'ignores unknown statuses' do
         get catalog_items_path(catalog), params: { sync_status: 'bogus' }
         expect(response.body).to include('PROD001')
@@ -749,7 +759,8 @@ RSpec.describe '/catalogs', type: :request do
         expect(response.body).to include('turbo-stream')
         # sync_product updates the per-product sync button (not a flash).
         expect(response.body).to include("sync-btn-#{catalog.code}")
-        expect(response.body).to include('Synced')
+        expect(response.body).to include('Queued')
+        expect(response.body).not_to include('Synced')
       end
 
       it 'falls back to redirect for HTML format' do

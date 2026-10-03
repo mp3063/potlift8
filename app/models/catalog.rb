@@ -225,9 +225,10 @@ class Catalog < ApplicationRecord
 
   def sync_counts
     items = catalog_items
+    outdated = items.out_of_date.count
     {
-      synced: items.sync_synced.where("last_synced_at > ?", 1.hour.ago).count,
-      outdated: items.sync_synced.where("last_synced_at <= ?", 1.hour.ago).count,
+      synced: items.sync_synced.count - outdated,
+      outdated: outdated,
       pending: items.sync_pending.count,
       failed: items.sync_failed.count,
       never: items.sync_never_synced.count

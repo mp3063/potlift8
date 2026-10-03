@@ -17,12 +17,14 @@ module SyncBroadcastable
   private
 
   def broadcast_sync_status
-    broadcast_replace_to(
-      catalog, "sync_status",
-      target: "catalog_item_#{id}_sync",
-      partial: "catalogs/catalog_item_sync_cell",
-      locals: { catalog_item: self }
-    )
+    [ catalog, product ].each do |streamable|
+      broadcast_replace_to(
+        streamable, "sync_status",
+        target: "catalog_item_#{id}_sync",
+        partial: "catalogs/catalog_item_sync_cell",
+        locals: { catalog_item: self }
+      )
+    end
 
     catalog.broadcast_sync_summary
   end

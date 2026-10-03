@@ -144,6 +144,27 @@ RSpec.describe ProductsHelper, type: :helper do
     end
   end
 
+  describe '#sync_status_badge_for' do
+    it 'renders a success badge for a synced item, however old the sync' do
+      html = helper.sync_status_badge_for(build(:catalog_item, sync_status: :synced, last_synced_at: 3.days.ago))
+
+      expect(html).to include('bg-green-100').and include('Synced')
+    end
+
+    it 'renders a warning badge for a synced item changed since its sync' do
+      item = build(:catalog_item, sync_status: :synced, last_synced_at: 2.hours.ago, content_changed_at: 1.hour.ago)
+      html = helper.sync_status_badge_for(item)
+
+      expect(html).to include('bg-yellow-100').and include('Changed since sync')
+    end
+
+    it 'renders pending, failed and never-synced badges' do
+      expect(helper.sync_status_badge_for(build(:catalog_item, sync_status: :pending))).to include('Pending')
+      expect(helper.sync_status_badge_for(build(:catalog_item, sync_status: :failed))).to include('Failed')
+      expect(helper.sync_status_badge_for(build(:catalog_item, sync_status: :never_synced))).to include('Not synced')
+    end
+  end
+
   describe '#sync_status_badge' do
     it 'renders success variant badge for recent sync' do
       freeze_time do

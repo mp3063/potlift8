@@ -58,12 +58,16 @@
       <% shopify_catalogs = @product.catalog_items.includes(:catalog)
            .select { |ci| ci.catalog.shopify_connected? } %>
       <% if shopify_catalogs.any? %>
+        <%= turbo_stream_from @product, "sync_status" %>
         <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-4">
           <h3 class="text-sm font-medium text-gray-900 mb-3">Shopify Sync Preview</h3>
           <div class="space-y-2">
             <% shopify_catalogs.each do |ci| %>
-              <div class="flex items-center justify-between p-2 rounded hover:bg-gray-50 transition-colors">
-                <span class="text-sm text-gray-700"><%= ci.catalog.name %></span>
+              <div class="flex items-start justify-between gap-2 p-2 rounded hover:bg-gray-50 transition-colors">
+                <div class="min-w-0 space-y-1">
+                  <span class="text-sm text-gray-700"><%= ci.catalog.name %></span>
+                  <%= render partial: "catalogs/catalog_item_sync_cell", locals: { catalog_item: ci } %>
+                </div>
                 <div class="flex items-center gap-2">
                   <div id="sync-btn-<%= ci.catalog.code %>">
                     <%= button_to sync_product_catalog_path(ci.catalog.code, product_id: @product.id),
