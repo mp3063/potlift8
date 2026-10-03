@@ -224,6 +224,94 @@ RSpec.describe Products::SyncPreviewComponent, type: :component do
     end
   end
 
+  describe "showing which values differ" do
+    let(:payload) do
+      {
+        product: { id: product.id, sku: "TEST-SKU-001", name: "New Name", product_status: "active" },
+        attributes: { "weight" => { value: "500", shopify_field: "weight" }, "color" => { value: "Red" } },
+        labels: [ { code: "new", name: "New Arrival" }, { code: "sale", name: "Sale" } ]
+      }
+    end
+    let(:stored) do
+      { sku: "TEST-SKU-001", name: "Old Name", product_status: "active",
+        attributes: { weight: { value: "400", shopify_field: "weight" }, color: { value: "Red" } },
+        labels: [ { code: "new", name: "Fresh" } ] }
+    end
+    let(:shopify_data) { { last_synced_at: 1.hour.ago.iso8601, last_payload: stored, sync_task_id: 1, sync_status: "executed" } }
+
+    def section(title)
+      page.find("summary", text: title).ancestor("details")
+    end
+
+    def changed_rows(title)
+      section(title).all("[data-diff='changed']")
+    end
+
+    it "shows both values of a changed field, and only on that row" do
+      subject
+      rows = changed_rows("Basic Product Info")
+      expect(rows.size).to eq(1)
+      expect(rows.first).to have_text(/Potlift:\s+New Name/).and have_text(/Shopify:\s+Old Name/)
+    end
+
+    it "renders the compared fields, not the payload's" do
+      subject
+      expect(section("Basic Product Info")).not_to have_css("td", exact_text: "id")
+    end
+
+    it "shows a nested change by its dotted path and leaf values" do
+      subject
+      row = changed_rows("Attributes").sole
+      expect(row).to have_text("weight.value").and have_text(/Potlift:\s+500/).and have_text(/Shopify:\s+400/)
+      expect(row).not_to have_text("shopify_field")
+    end
+
+    it "highlights a changed field inside an array item" do
+      subject
+      item = section("Labels").all("[data-diff-item]").first
+      expect(item["data-diff-item"]).to eq("changed")
+      expect(item).to have_text(/Potlift:\s+New Arrival/).and have_text(/Shopify:\s+Fresh/)
+    end
+
+    it "marks an item that is only on the Potlift side" do
+      subject
+      item = section("Labels").all("[data-diff-item]").last
+      expect(item).to have_text("Not in Shopify yet").and have_text("Sale")
+    end
+
+    it "marks an item that is only on the stored side, with its stored fields" do
+      stored[:labels] << { code: "old", name: "Clearance" }
+      payload[:labels].pop
+      subject
+      item = section("Labels").all("[data-diff-item]").last
+      expect(item).to have_text("Only in Shopify").and have_text("Clearance")
+    end
+
+    it "counts changed fields plus added and removed items" do
+      subject
+      expect(section("Labels")).to have_css("summary", text: "2 differences")
+      expect(section("Attributes")).to have_css("summary", text: "1 difference")
+    end
+
+    it "opens sections with differences" do
+      payload[:inventory] = { total_saldo: 1 }
+      payload[:translations] = { "sv" => { "name" => "Ny" } }
+      stored[:translations] = { sv: { name: "Gammal" } }
+      subject
+      expect(section("Translations")[:open]).not_to be_nil
+    end
+  end
+
+  describe "without comparison data" do
+    let(:payload) { { product: { id: 7, sku: "TEST-SKU-001", status: "active" } } }
+
+    it "renders the payload as it is" do
+      subject
+      expect(page).to have_css("td", exact_text: "id").and have_css("td", exact_text: "status")
+      expect(page).not_to have_css("[data-diff='changed']")
+    end
+  end
+
   describe "changed since sync badge" do
     it "shows when the catalog item is out of date" do
       catalog_item.update!(sync_status: :synced, last_synced_at: 2.hours.ago, content_changed_at: 1.hour.ago)

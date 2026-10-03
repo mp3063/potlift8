@@ -65,14 +65,43 @@ module Products
       ].select { |s| payload[s[:key]].present? }
     end
 
+    def section_data(section_key)
+      has_shopify_comparison? ? load_section(sent_load, section_key) : payload[section_key]
+    end
+
     def diff_section(section_key)
       return nil unless has_shopify_comparison?
 
-      potlift_data = load_section(sent_load, section_key)
-      shopify_data_section = load_section(shopify_data[:last_payload].deep_stringify_keys, section_key)
-      return nil unless potlift_data.present? && shopify_data_section.present?
+      @diffs ||= {}
+      return @diffs[section_key] if @diffs.key?(section_key)
 
-      compute_diff(potlift_data, shopify_data_section)
+      local = section_data(section_key)
+      remote = load_section(stored_load, section_key)
+      @diffs[section_key] = (field_changes(local, remote).to_h if local.present? && remote.present?)
+    end
+
+    # Rows are [key, value, changes]; one block for a hash section, one per item for an array section
+    def section_blocks(section_key)
+      local = section_data(section_key)
+      remote = load_section(stored_load, section_key) if has_shopify_comparison?
+      return [ { prefix: nil, rows: diff_rows(section_key, local, remote) } ] if local.is_a?(Hash)
+
+      remote = [] unless remote.is_a?(Array)
+      changes = diff_section(section_key) || {}
+      Array.new([ local.size, remote.size ].max) do |i|
+        mine, theirs = local[i], remote[i]
+        whole = changes[i.to_s]
+        marker = if whole && mine.nil? then "Only in Shopify"
+        elsif whole && theirs.nil? then "Not in Shopify yet"
+        end
+        item = mine.nil? ? theirs : mine
+        rows = if item.is_a?(Hash)
+          diff_rows(section_key, item, theirs, i.to_s)
+        else
+          [ [ nil, item, marker ? {} : changes.slice(i.to_s) ] ]
+        end
+        { prefix: i.to_s, marker: marker, rows: rows }
+      end
     end
 
     def format_value(value)
@@ -98,41 +127,33 @@ module Products
       @sent_load ||= JSON.parse(ProductSyncService.new(product, catalog).build_shopify_load_data(payload).to_json)
     end
 
+    def stored_load
+      @stored_load ||= shopify_data[:last_payload].deep_stringify_keys
+    end
+
+    def diff_rows(section_key, local, remote, prefix = nil)
+      remote = {} unless remote.is_a?(Hash)
+      changes = diff_section(section_key) || {}
+      (local.keys | remote.keys).map do |key|
+        path = [ prefix, key ].compact.join(".")
+        [ key, local[key], changes.select { |p, _| p == path || p.start_with?("#{path}.") } ]
+      end
+    end
+
+    def field_changes(local, remote, path = nil)
+      if local.is_a?(Hash) && remote.is_a?(Hash)
+        (local.keys | remote.keys).flat_map { |key| field_changes(local[key], remote[key], [ path, key ].compact.join(".")) }
+      elsif local.is_a?(Array) && remote.is_a?(Array)
+        Array.new([ local.size, remote.size ].max) { |i| field_changes(local[i], remote[i], [ path, i ].compact.join(".")) }.flatten(1)
+      elsif local == remote
+        []
+      else
+        [ [ path, { potlift: local, shopify: remote } ] ]
+      end
+    end
+
     def load_section(load, section_key)
       section_key == :product ? load.slice(*SENT_PRODUCT_FIELDS) : load[section_key.to_s]
-    end
-
-    def compute_diff(local, remote)
-      return { status: :match } if normalize(local) == normalize(remote)
-
-      changes = []
-      if local.is_a?(Hash) && remote.is_a?(Hash)
-        all_keys = (local.keys.map(&:to_s) + remote.keys.map(&:to_s)).uniq
-        all_keys.each do |key|
-          l_val = local[key] || local[key.to_sym]
-          r_val = remote[key] || remote[key.to_sym]
-          if normalize(l_val) != normalize(r_val)
-            changes << { field: key, potlift: l_val, shopify: r_val }
-          end
-        end
-      elsif local.is_a?(Array) && remote.is_a?(Array)
-        [ local.size, remote.size ].max.times do |i|
-          changes << { field: i.to_s, potlift: local[i], shopify: remote[i] } if normalize(local[i]) != normalize(remote[i])
-        end
-      end
-
-      { status: :changed, changes: changes }
-    end
-
-    def normalize(value)
-      case value
-      when Hash
-        value.transform_keys(&:to_s).transform_values { |v| normalize(v) }
-      when Array
-        value.map { |v| normalize(v) }
-      else
-        value
-      end
     end
   end
 end

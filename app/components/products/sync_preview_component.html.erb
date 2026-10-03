@@ -67,24 +67,24 @@
 
     <div class="px-6 py-5 space-y-4">
       <% payload_sections.each_with_index do |section, idx| %>
+        <% diff = diff_section(section[:key]) %>
         <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-          <details class="group" <%= "open" if idx < 3 %>>
+          <details class="group" <%= "open" if idx < 3 || diff.present? %>>
             <summary class="flex items-center justify-between px-4 py-3 cursor-pointer
                            bg-gray-50 hover:bg-gray-100 rounded-t-lg transition-colors duration-150
                            select-none outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset
                            group-not-open:rounded-b-lg">
               <div class="flex items-center gap-2">
                 <span class="text-sm font-semibold text-gray-900"><%= section[:title] %></span>
-                <% diff = diff_section(section[:key]) %>
-                <% if diff && diff[:status] == :match %>
+                <% if diff&.empty? %>
                   <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs
                                font-medium bg-green-100 text-green-800 border border-green-200">
                     In sync
                   </span>
-                <% elsif diff && diff[:status] == :changed %>
+                <% elsif diff.present? %>
                   <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs
                                font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
-                    <%= diff[:changes].size %> difference<%= "s" if diff[:changes].size != 1 %>
+                    <%= diff.size %> difference<%= "s" if diff.size != 1 %>
                   </span>
                 <% end %>
               </div>
@@ -96,56 +96,59 @@
             </summary>
 
             <div class="px-4 py-3 border-t border-gray-200">
-              <% data = payload[section[:key]] %>
-              <% if data.is_a?(Hash) %>
-                <table class="w-full table-fixed">
-                  <tbody class="divide-y divide-gray-100">
-                    <% data.each do |key, value| %>
-                      <tr>
-                        <td class="py-2.5 pr-4 text-xs font-medium text-gray-500 uppercase tracking-wider wrap-anywhere align-top" style="width: 190px;"><%= key %></td>
-                        <td class="py-2.5 text-sm text-gray-900 break-words align-top">
-                          <% section_diff = diff_section(section[:key]) %>
-                          <% changed = section_diff&.dig(:changes)&.find { |c| c[:field] == key.to_s } %>
-                          <% if changed %>
-                            <div class="space-y-1.5">
-                              <div class="bg-green-50 px-3 py-1.5 rounded-md border border-green-200 text-sm">
-                                <span class="text-green-600 font-medium">Potlift:</span>
-                                <span class="text-green-800 ml-1"><%= format_value(value) %></span>
-                              </div>
-                              <div class="bg-yellow-50 px-3 py-1.5 rounded-md border border-yellow-200 text-sm">
-                                <span class="text-yellow-600 font-medium">Shopify:</span>
-                                <span class="text-yellow-800 ml-1"><%= format_value(changed[:shopify]) %></span>
-                              </div>
-                            </div>
-                          <% else %>
-                            <%= format_value(value) %>
-                          <% end %>
-                        </td>
-                      </tr>
-                    <% end %>
-                  </tbody>
-                </table>
-              <% elsif data.is_a?(Array) %>
-                <p class="text-sm text-gray-500 mb-3">
-                  <%= data.size %> item<%= "s" if data.size != 1 %>
-                </p>
+              <% data = section_data(section[:key]) %>
+              <% if data.is_a?(Hash) || data.is_a?(Array) %>
+                <% if data.is_a?(Array) %>
+                  <p class="text-sm text-gray-500 mb-3">
+                    <%= data.size %> item<%= "s" if data.size != 1 %>
+                  </p>
+                <% end %>
                 <div class="space-y-2">
-                  <% data.each do |item| %>
-                    <div class="p-3 bg-gray-50 rounded-lg border border-gray-100 text-sm">
-                      <% if item.is_a?(Hash) %>
-                        <table class="w-full table-fixed">
-                          <tbody>
-                            <% item.each do |k, v| %>
-                              <tr>
-                                <td class="py-0.5 pr-3 text-xs font-medium text-gray-500 uppercase tracking-wider wrap-anywhere align-top" style="width: 170px;"><%= k %></td>
-                                <td class="py-0.5 text-sm text-gray-900 break-all"><%= format_value(v) %></td>
-                              </tr>
-                            <% end %>
-                          </tbody>
-                        </table>
-                      <% else %>
-                        <%= item %>
+                  <% section_blocks(section[:key]).each do |block| %>
+                    <% item = data.is_a?(Array) %>
+                    <% item_state = block[:marker] || block[:rows].any? { |row| row[2].any? } ? "changed" : "same" %>
+                    <div <%= tag.attributes(data: { diff_item: (item_state if item) },
+                                            class: class_names("p-3 bg-gray-50 rounded-lg border border-gray-100 text-sm" => item,
+                                                               "border-l-4 border-l-yellow-400" => item && item_state == "changed")) %>>
+                      <% if block[:marker] %>
+                        <span class="inline-flex items-center mb-1 px-2 py-0.5 rounded-full text-xs font-medium
+                                     bg-yellow-100 text-yellow-800 border border-yellow-200"><%= block[:marker] %></span>
                       <% end %>
+                      <table class="w-full table-fixed">
+                        <tbody class="<%= "divide-y divide-gray-100" unless item %>">
+                          <% block[:rows].each do |key, value, changes| %>
+                            <tr <%= tag.attributes(data: { diff: ("changed" if changes.any?) }) %>>
+                              <td class="<%= class_names(item ? "py-0.5 pr-3" : "py-2.5 pr-4",
+                                                         "border-l-4 border-l-yellow-400 pl-2" => changes.any? && !item) %>
+                                         text-xs font-medium text-gray-500 uppercase tracking-wider wrap-anywhere align-top"
+                                  style="width: <%= item ? 170 : 190 %>px;"><%= key %></td>
+                              <td class="<%= item ? "py-0.5 break-all" : "py-2.5 break-words" %> text-sm text-gray-900 align-top">
+                                <% if changes.any? %>
+                                  <div class="space-y-1.5">
+                                    <% changes.each do |path, change| %>
+                                      <% shown_path = path.delete_prefix("#{block[:prefix]}.") if block[:prefix] %>
+                                      <% shown_path ||= path %>
+                                      <% if key && shown_path != key.to_s %>
+                                        <div class="text-xs font-mono text-gray-500"><%= shown_path %></div>
+                                      <% end %>
+                                      <div class="bg-green-50 px-3 py-1.5 rounded-md border border-green-200 text-sm">
+                                        <span class="text-green-600 font-medium">Potlift:</span>
+                                        <span class="text-green-800 ml-1"><%= format_value(change[:potlift]) %></span>
+                                      </div>
+                                      <div class="bg-yellow-50 px-3 py-1.5 rounded-md border border-yellow-200 text-sm">
+                                        <span class="text-yellow-600 font-medium">Shopify:</span>
+                                        <span class="text-yellow-800 ml-1"><%= format_value(change[:shopify]) %></span>
+                                      </div>
+                                    <% end %>
+                                  </div>
+                                <% else %>
+                                  <%= format_value(value) %>
+                                <% end %>
+                              </td>
+                            </tr>
+                          <% end %>
+                        </tbody>
+                      </table>
                     </div>
                   <% end %>
                 </div>
