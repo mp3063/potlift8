@@ -121,6 +121,29 @@ RSpec.describe '/catalogs', type: :request do
       end
     end
 
+    context 'on a shop-connected catalog' do
+      before { catalog.update!(info: { 'shop_id' => 1 }) }
+
+      it 'shows the paused state once, on the summary card, with a Resume button' do
+        catalog.update!(info: catalog.info.merge('sync_paused' => true))
+
+        get catalog_items_path(catalog)
+
+        card = Nokogiri::HTML(response.body).at_css("#sync_summary_#{catalog.id}")
+        expect(card.text).to include('Sync paused — product changes are not sent to Shopify until you resume')
+        expect(card.css('button').map(&:text).join).to include('Resume sync')
+        expect(response.body.scan('Sync paused').size).to eq(1)
+        expect(response.body).not_to include('Auto-sync is paused')
+      end
+
+      it 'shows no paused state while syncing normally' do
+        get catalog_items_path(catalog)
+
+        expect(response.body).not_to include('Sync paused')
+        expect(response.body).not_to include('Resume sync')
+      end
+    end
+
     context 'with sync_status filter' do
       before do
         catalog_item1.update!(sync_status: :failed, last_sync_error: 'boom')
@@ -966,6 +989,15 @@ RSpec.describe '/catalogs', type: :request do
       it 'falls back to redirect for HTML format' do
         post toggle_sync_pause_catalog_path(catalog.code)
         expect(response).to redirect_to(catalog_items_path(catalog))
+      end
+
+      it 're-renders the card in its paused state, then back' do
+        post toggle_sync_pause_catalog_path(catalog.code), as: :turbo_stream
+        expect(response.body).to include('Sync paused').and include('Resume sync')
+
+        post toggle_sync_pause_catalog_path(catalog.code), as: :turbo_stream
+        expect(response.body).not_to include('Sync paused')
+        expect(response.body).not_to include('Resume sync')
       end
     end
   end
