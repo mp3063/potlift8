@@ -430,7 +430,7 @@ class ProductSyncService
   end
 
   # Shopify8's ProductChangedExecutor expects sku at top level
-  def build_shopify_load_data(payload)
+  public def build_shopify_load_data(payload)
     product_data = payload[:product] || {}
 
     {

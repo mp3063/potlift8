@@ -32,10 +32,12 @@
           <div class="text-lg font-semibold text-green-600"><%= sync_counts[:synced] %></div>
           <div class="text-xs text-gray-500">Synced</div>
         </div>
-        <div class="text-center">
+        <% link_outdated = sync_counts[:outdated].to_i > 0 %>
+        <%= content_tag(link_outdated ? :a : :div, class: ["block text-center", ("hover:underline" if link_outdated)],
+                        href: (catalog_items_path(catalog, sync_status: "out_of_date") if link_outdated)) do %>
           <div class="text-lg font-semibold text-yellow-600"><%= sync_counts[:outdated] %></div>
           <div class="text-xs text-gray-500">Changed since sync</div>
-        </div>
+        <% end %>
         <% if sync_counts[:pending] && sync_counts[:pending] > 0 %>
           <div class="text-center">
             <div class="text-lg font-semibold text-amber-500"><%= sync_counts[:pending] %></div>

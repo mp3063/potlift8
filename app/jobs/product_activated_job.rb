@@ -44,15 +44,7 @@ class ProductActivatedJob < ApplicationJob
       "Syncing product #{product.id} (#{product.sku}) to #{catalogs.size} catalog(s)"
     )
 
-    catalogs.each do |catalog|
-      if catalog.info&.dig("sync_paused")
-        Rails.logger.info(
-          "Catalog #{catalog.code} has sync paused. Recording the change without syncing product #{product.sku}."
-        )
-      end
-
-      catalog.queue_product_sync(product, timestamp)
-    end
+    catalogs.each { |catalog| catalog.queue_product_sync(product, timestamp) }
   end
 
   def notify_superproducts(product, timestamp)

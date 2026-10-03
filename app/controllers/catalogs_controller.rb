@@ -27,7 +27,14 @@ class CatalogsController < ApplicationController
                                      .where("products.name ILIKE ? OR products.sku ILIKE ?", search_term, search_term)
     end
 
-    if CatalogItem.sync_statuses.key?(params[:sync_status])
+    case params[:sync_status]
+    when "synced"
+      @sync_status_filter = "synced"
+      @catalog_items = @catalog_items.up_to_date
+    when "out_of_date"
+      @sync_status_filter = "out_of_date"
+      @catalog_items = @catalog_items.out_of_date
+    when *CatalogItem.sync_statuses.keys
       @sync_status_filter = params[:sync_status]
       @catalog_items = @catalog_items.where(sync_status: @sync_status_filter)
     end

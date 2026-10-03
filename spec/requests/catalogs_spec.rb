@@ -144,6 +144,43 @@ RSpec.describe '/catalogs', type: :request do
         expect(cell.text).to include('Changed since sync')
       end
 
+      it 'leaves out items changed since their sync when filtering synced' do
+        catalog_item2.update_columns(content_changed_at: 1.minute.from_now)
+
+        get catalog_items_path(catalog), params: { sync_status: 'synced' }
+
+        expect(response.body).not_to include('PROD002')
+      end
+
+      it 'lists items changed since their sync' do
+        catalog_item1.update!(sync_status: :synced, last_synced_at: Time.current, last_sync_error: nil)
+        catalog_item2.update_columns(content_changed_at: 1.minute.from_now)
+
+        get catalog_items_path(catalog), params: { sync_status: 'out_of_date' }
+
+        expect(response.body).to include('PROD002')
+        expect(response.body).not_to include('PROD001')
+        expect(response.body).to include('Sync status: changed since sync')
+      end
+
+      it 'links the summary count of changed items to that filter' do
+        catalog.update!(info: { 'shop_id' => 1 })
+        catalog_item2.update_columns(content_changed_at: 1.minute.from_now)
+
+        get catalog_items_path(catalog)
+
+        link = Nokogiri::HTML(response.body).at_css("#sync_summary_#{catalog.id} a[href*='sync_status=out_of_date']")
+        expect(link&.text).to include('Changed since sync')
+      end
+
+      it 'does not link the summary count when nothing changed' do
+        catalog.update!(info: { 'shop_id' => 1 })
+
+        get catalog_items_path(catalog)
+
+        expect(response.body).not_to include('sync_status=out_of_date')
+      end
+
       it 'ignores unknown statuses' do
         get catalog_items_path(catalog), params: { sync_status: 'bogus' }
         expect(response.body).to include('PROD001')

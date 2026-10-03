@@ -149,6 +149,10 @@ RSpec.describe CatalogItem, type: :model do
         expect(CatalogItem.out_of_date).to contain_exactly(changed_after_sync, synced_without_time)
       end
 
+      it '.up_to_date returns the other synced items' do
+        expect(CatalogItem.up_to_date).to contain_exactly(changed_before_sync, never_changed)
+      end
+
       it 'agrees with #out_of_date?' do
         CatalogItem.where(catalog: catalog).each do |item|
           expect(item.out_of_date?).to eq(CatalogItem.out_of_date.include?(item))

@@ -52,7 +52,7 @@ module AttributeValues
 
   # This method does two things:
   # 1. Touches the product to invalidate HTTP caches (ETags, fresh_when)
-  # 2. Directly enqueues ProductSyncJob for each catalog that has sync enabled
+  # 2. Records the change and queues a sync per catalog (Catalog#queue_product_sync)
   # We must enqueue sync jobs directly because ChangePropagator skips sync when
   # only updated_at changed (to avoid unnecessary syncs from simple touches).
   def propagate_change
@@ -81,14 +81,6 @@ module AttributeValues
       "Propagating to #{targets.size} catalog sync(s)"
     )
 
-    targets.each do |target, catalog|
-      if catalog.info&.dig("sync_paused")
-        Rails.logger.debug(
-          "Catalog #{catalog.code} has sync paused. Recording the change without syncing."
-        )
-      end
-
-      catalog.queue_product_sync(target, timestamp)
-    end
+    targets.each { |target, catalog| catalog.queue_product_sync(target, timestamp) }
   end
 end

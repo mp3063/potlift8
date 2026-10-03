@@ -140,7 +140,7 @@
       ) %>
       <% if @sync_status_filter %>
         <span class="inline-flex items-center self-center whitespace-nowrap px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-          Sync status: <%= @sync_status_filter.humanize.downcase %>
+          Sync status: <%= sync_status_filter_label(@sync_status_filter) %>
         </span>
       <% end %>
       <% if params[:q].present? || @sync_status_filter %>
@@ -304,7 +304,7 @@
       <% if params[:q].present? %>
         <h3 class="mt-4 text-sm font-medium text-gray-900">No results for "<%= params[:q] %>"</h3>
       <% else %>
-        <h3 class="mt-4 text-sm font-medium text-gray-900">No items with sync status "<%= @sync_status_filter.humanize.downcase %>"</h3>
+        <h3 class="mt-4 text-sm font-medium text-gray-900">No items with sync status "<%= sync_status_filter_label(@sync_status_filter) %>"</h3>
       <% end %>
       <p class="mt-2 text-sm text-gray-500">Try a different search term or clear the search.</p>
       <div class="mt-6">

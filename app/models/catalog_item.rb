@@ -38,6 +38,9 @@ class CatalogItem < ApplicationRecord
     sync_synced.where.not(content_changed_at: nil)
                .where("catalog_items.last_synced_at IS NULL OR catalog_items.content_changed_at > catalog_items.last_synced_at")
   }
+  scope :up_to_date, -> {
+    sync_synced.where("catalog_items.content_changed_at IS NULL OR catalog_items.content_changed_at <= catalog_items.last_synced_at")
+  }
 
   # Known limit: a late confirmation can hide a newer edit until its trailing sync re-marks the item pending
   def out_of_date?

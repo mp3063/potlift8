@@ -99,15 +99,7 @@ module ChangePropagator
       "for #{self.class.name} #{id}"
     )
 
-    catalogs_to_sync.each do |catalog|
-      if catalog.info&.dig("sync_paused")
-        Rails.logger.debug(
-          "Catalog #{catalog.code} has sync paused. Recording the change without syncing."
-        )
-      end
-
-      catalog.queue_product_sync(self, timestamp)
-    end
+    catalogs_to_sync.each { |catalog| catalog.queue_product_sync(self, timestamp) }
   end
 
   def touch_superproducts

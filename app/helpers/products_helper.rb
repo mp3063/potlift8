@@ -54,6 +54,10 @@ module ProductsHelper
     end
   end
 
+  def sync_status_filter_label(filter)
+    filter == "out_of_date" ? "changed since sync" : filter.humanize.downcase
+  end
+
   def sync_status_badge_for(catalog_item)
     case catalog_item.sync_status
     when "synced"

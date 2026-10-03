@@ -180,6 +180,43 @@ RSpec.describe Products::SyncPreviewComponent, type: :component do
     end
   end
 
+  describe "Variants / Bundle Items diff" do
+    let(:product) { create(:product, :configurable_variant, company: company, sku: "TEST-SKU-001") }
+    let(:payload) do
+      {
+        subproducts: [ {
+          quantity: 1, configuration_position: 1, variant_config: { "size" => "S" }, configuration_details: nil,
+          product: { id: 99, sku: "TEST-SKU-001-S", ean: nil, name: "Small", product_type: "sellable", product_status: "active" },
+          attributes: { "color" => { value: "Red" } }, inventory: { total_saldo: 3 }, translations: {}
+        } ]
+      }
+    end
+    let(:sent_variant) do
+      { sku: "TEST-SKU-001-S", name: "Small", product_type: "sellable", product_status: "active", quantity: 1,
+        configuration_position: 1, variant_config: { size: "S" }, attributes: { color: { value: "Red" } },
+        inventory: { total_saldo: 3 }, translations: {} }
+    end
+    let(:shopify_data) do
+      { last_synced_at: 1.hour.ago.iso8601, last_payload: { sku: "TEST-SKU-001", subproducts: [ sent_variant ] },
+        sync_task_id: 1, sync_status: "executed" }
+    end
+
+    def variants_summary
+      page.find("summary", text: "Variants / Bundle Items")
+    end
+
+    it "shows In sync when the stored load is what would be sent" do
+      subject
+      expect(variants_summary).to have_text("In sync")
+    end
+
+    it "flags a variant that changed since" do
+      sent_variant[:name] = "Old Small"
+      subject
+      expect(variants_summary).not_to have_text("In sync")
+    end
+  end
+
   describe "changed since sync badge" do
     it "shows when the catalog item is out of date" do
       catalog_item.update!(sync_status: :synced, last_synced_at: 2.hours.ago, content_changed_at: 1.hour.ago)

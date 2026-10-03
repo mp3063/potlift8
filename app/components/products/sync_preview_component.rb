@@ -68,14 +68,8 @@ module Products
     def diff_section(section_key)
       return nil unless has_shopify_comparison?
 
-      potlift_data = payload[section_key]
-      last_load = shopify_data[:last_payload].deep_stringify_keys
-      if section_key == :product
-        potlift_data = potlift_data&.stringify_keys&.slice(*SENT_PRODUCT_FIELDS)
-        shopify_data_section = last_load.slice(*SENT_PRODUCT_FIELDS)
-      else
-        shopify_data_section = last_load[section_key.to_s]
-      end
+      potlift_data = load_section(sent_load, section_key)
+      shopify_data_section = load_section(shopify_data[:last_payload].deep_stringify_keys, section_key)
       return nil unless potlift_data.present? && shopify_data_section.present?
 
       compute_diff(potlift_data, shopify_data_section)
@@ -100,6 +94,14 @@ module Products
 
     private
 
+    def sent_load
+      @sent_load ||= ProductSyncService.new(product, catalog).build_shopify_load_data(payload).deep_stringify_keys
+    end
+
+    def load_section(load, section_key)
+      section_key == :product ? load.slice(*SENT_PRODUCT_FIELDS) : load[section_key.to_s]
+    end
+
     def compute_diff(local, remote)
       return { status: :match } if normalize(local) == normalize(remote)
 
@@ -113,9 +115,13 @@ module Products
             changes << { field: key, potlift: l_val, shopify: r_val }
           end
         end
+      elsif local.is_a?(Array) && remote.is_a?(Array)
+        [ local.size, remote.size ].max.times do |i|
+          changes << { field: i.to_s, potlift: local[i], shopify: remote[i] } if normalize(local[i]) != normalize(remote[i])
+        end
       end
 
-      { status: changes.empty? ? :match : :changed, changes: changes }
+      { status: :changed, changes: changes }
     end
 
     def normalize(value)
