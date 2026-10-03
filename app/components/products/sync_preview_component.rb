@@ -62,11 +62,13 @@ module Products
         { key: :translations, title: "Translations" },
         { key: :configurations, title: "Configurations" },
         { key: :subproducts, title: "Variants / Bundle Items" }
-      ].select { |s| payload[s[:key]].present? }
+      ].select { |s| payload[s[:key]].present? || (has_shopify_comparison? && load_section(stored_load, s[:key]).present?) }
     end
 
     def section_data(section_key)
-      has_shopify_comparison? ? load_section(sent_load, section_key) : payload[section_key]
+      return payload[section_key] unless has_shopify_comparison?
+
+      load_section(sent_load, section_key) || empty_like(load_section(stored_load, section_key))
     end
 
     def diff_section(section_key)
@@ -76,8 +78,8 @@ module Products
       return @diffs[section_key] if @diffs.key?(section_key)
 
       local = section_data(section_key)
-      remote = load_section(stored_load, section_key)
-      @diffs[section_key] = (field_changes(local, remote).to_h if local.present? && remote.present?)
+      remote = load_section(stored_load, section_key) || empty_like(local)
+      @diffs[section_key] = (field_changes(local, remote).to_h if local.present? || remote.present?)
     end
 
     # Rows are [key, value, changes]; one block for a hash section, one per item for an array section
@@ -150,6 +152,10 @@ module Products
       else
         [ [ path, { potlift: local, shopify: remote } ] ]
       end
+    end
+
+    def empty_like(value)
+      value.is_a?(Hash) ? {} : []
     end
 
     def load_section(load, section_key)

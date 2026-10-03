@@ -287,6 +287,20 @@ RSpec.describe Products::SyncPreviewComponent, type: :component do
       expect(item).to have_text("Only in Shopify").and have_text("Clearance")
     end
 
+    it "keeps a section whose items were all removed, marking the stored ones" do
+      payload[:labels] = []
+      subject
+      expect(section("Labels")).to have_css("summary", text: "1 difference")
+      expect(section("Labels").find("[data-diff-item]")).to have_text("Only in Shopify").and have_text("Fresh")
+    end
+
+    it "marks every item when the section was last sent empty" do
+      stored[:labels] = []
+      subject
+      expect(section("Labels")).to have_css("summary", text: "2 differences")
+      expect(section("Labels").all("[data-diff-item]").map(&:text)).to all(include("Not in Shopify yet"))
+    end
+
     it "counts changed fields plus added and removed items" do
       subject
       expect(section("Labels")).to have_css("summary", text: "2 differences")
