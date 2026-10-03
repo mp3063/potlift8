@@ -67,7 +67,7 @@
                 <div class="flex items-center justify-between gap-2">
                   <span class="min-w-0 truncate text-sm text-gray-700"><%= ci.catalog.name %></span>
                   <div class="flex shrink-0 items-center gap-2 whitespace-nowrap">
-                    <div id="sync-btn-<%= ci.catalog.code %>">
+                    <div>
                       <%= button_to sync_product_catalog_path(ci.catalog.code, product_id: @product.id),
                           method: :post,
                           class: "inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-indigo-600

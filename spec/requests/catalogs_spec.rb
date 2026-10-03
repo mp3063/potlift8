@@ -774,12 +774,6 @@ RSpec.describe '/catalogs', type: :request do
     end
 
     describe 'POST /catalogs/:code/sync_product' do
-      it 'responds with turbo_stream format' do
-        post sync_product_catalog_path(catalog.code, product.id), as: :turbo_stream
-        expect(response).to be_successful
-        expect(response.media_type).to eq('text/vnd.turbo-stream.html')
-      end
-
       it 'sets catalog_item to pending status' do
         post sync_product_catalog_path(catalog.code, product.id), as: :turbo_stream
         expect(catalog_item.reload.sync_status).to eq('pending')
@@ -791,13 +785,9 @@ RSpec.describe '/catalogs', type: :request do
         }.to have_enqueued_job(ProductSyncJob)
       end
 
-      it 'includes a sync-button update in turbo_stream response' do
+      it 'leaves the page to the live status broadcast' do
         post sync_product_catalog_path(catalog.code, product.id), as: :turbo_stream
-        expect(response.body).to include('turbo-stream')
-        # sync_product updates the per-product sync button (not a flash).
-        expect(response.body).to include("sync-btn-#{catalog.code}")
-        expect(response.body).to include('Queued')
-        expect(response.body).not_to include('Synced')
+        expect(response).to have_http_status(:no_content)
       end
 
       it 'falls back to redirect for HTML format' do

@@ -260,12 +260,7 @@ class CatalogsController < ApplicationController
     ProductSyncJob.perform_later(product, @catalog, Time.current)
 
     respond_to do |format|
-      format.turbo_stream do
-        render turbo_stream: turbo_stream.update(
-          "sync-btn-#{@catalog.code}",
-          Ui::BadgeComponent.new(variant: :info, dot: true).with_content("Queued")
-        )
-      end
+      format.turbo_stream { head :no_content }
       format.html { redirect_to catalog_items_path(@catalog), notice: "Sync started for #{product.name}." }
     end
   end
