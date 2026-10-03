@@ -41,6 +41,7 @@ Paths are relative to `Ozz-Rails-8/`.
 | SYNC-14 | Saving an unchanged attribute value still touches `products.updated_at` and queues a sync | Potlift8 | Low | review | Open |
 | UI-04 | The boolean inline editor posts the CSS class string | Potlift8 | Medium | review | Open |
 | TEST-02 | Potlift8 SimpleCov line coverage is 79.5%, below the 80% minimum | Potlift8 | Low | full suite run | Open |
+| SYNC-15 | On a paused catalog, Sync / Sync All mark items Queued but the job skips them, so they stay Queued until a later sync; resume does not re-queue. Undecided: let manual sync bypass the pause, or disable it while paused (user, 2026-10-03: keep as is for now) | Potlift8 | Low | manual test | Deferred |
 
 Also in this document: [planned work that was decided but not started](#planned-work-decided-not-started) and [a tooling note](#tooling-note).
 
