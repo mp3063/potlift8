@@ -98,7 +98,7 @@
             <div class="px-4 py-3 border-t border-gray-200">
               <% data = payload[section[:key]] %>
               <% if data.is_a?(Hash) %>
-                <table class="w-full">
+                <table class="w-full table-fixed">
                   <tbody class="divide-y divide-gray-100">
                     <% data.each do |key, value| %>
                       <tr>
@@ -133,12 +133,12 @@
                   <% data.each do |item| %>
                     <div class="p-3 bg-gray-50 rounded-lg border border-gray-100 text-sm">
                       <% if item.is_a?(Hash) %>
-                        <table class="w-full">
+                        <table class="w-full table-fixed">
                           <tbody>
                             <% item.each do |k, v| %>
                               <tr>
                                 <td class="py-0.5 pr-3 text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap align-top" style="width: 120px;"><%= k %></td>
-                                <td class="py-0.5 text-sm text-gray-900"><%= format_value(v) %></td>
+                                <td class="py-0.5 text-sm text-gray-900 break-all"><%= format_value(v) %></td>
                               </tr>
                             <% end %>
                           </tbody>
