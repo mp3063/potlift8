@@ -39,6 +39,13 @@ RSpec.describe ChangePropagator, type: :model do
       end.not_to have_enqueued_job(ProductSyncJob)
     end
 
+    it 'records the change on the catalog item, even while sync is paused' do
+      catalog.update!(info: catalog.info.merge('sync_paused' => true))
+
+      expect { product.update!(name: 'Changed Name') }
+        .to change { catalog_item.reload.content_changed_at }.from(nil)
+    end
+
     it 'skips catalogs that are not connected to a shop' do
       catalog.update!(info: {})
 

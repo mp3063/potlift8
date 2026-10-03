@@ -102,6 +102,51 @@ RSpec.describe Catalog, type: :model do
     end
   end
 
+  describe '#queue_product_sync' do
+    let(:company) { create(:company) }
+    let(:product) { create(:product, company: company) }
+    let(:catalog) { create(:catalog, :shop_connected, company: company) }
+    let!(:catalog_item) do
+      create(:catalog_item, catalog: catalog, product: product).tap { clear_enqueued_jobs }
+    end
+    let(:timestamp) { Time.zone.parse('2026-10-03 12:00:00') }
+
+    it 'stamps the catalog item and enqueues a sync' do
+      expect { catalog.queue_product_sync(product, timestamp) }
+        .to have_enqueued_job(ProductSyncJob).with(product, catalog, timestamp)
+
+      expect(catalog_item.reload.content_changed_at).to eq(timestamp)
+    end
+
+    it 'stamps but does not enqueue while sync is paused' do
+      catalog.update!(info: catalog.info.merge('sync_paused' => true))
+
+      expect { catalog.queue_product_sync(product, timestamp) }.not_to have_enqueued_job(ProductSyncJob)
+      expect(catalog_item.reload.content_changed_at).to eq(timestamp)
+    end
+
+    it 'stamps but does not enqueue when no shop is connected' do
+      catalog.update!(info: {})
+
+      expect { catalog.queue_product_sync(product, timestamp) }.not_to have_enqueued_job(ProductSyncJob)
+      expect(catalog_item.reload.content_changed_at).to eq(timestamp)
+    end
+
+    it 'stamps only this catalog item' do
+      other_catalog = create(:catalog, company: company)
+      other_item = create(:catalog_item, catalog: other_catalog, product: product)
+
+      catalog.queue_product_sync(product, timestamp)
+
+      expect(other_item.reload.content_changed_at).to be_nil
+    end
+
+    it 'enqueues with a delay when wait is given' do
+      expect { catalog.queue_product_sync(product, timestamp, wait: 5.seconds) }
+        .to have_enqueued_job(ProductSyncJob).with(product, catalog, timestamp).at(a_value_within(2.seconds).of(5.seconds.from_now))
+    end
+  end
+
   describe '#shop_connected?' do
     it 'is true when the catalog has a shop_id, whatever the target' do
       expect(build(:catalog, info: { 'shop_id' => 1 }).shop_connected?).to be true

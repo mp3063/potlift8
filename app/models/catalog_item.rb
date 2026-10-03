@@ -34,6 +34,16 @@ class CatalogItem < ApplicationRecord
   scope :active_items, -> { where(catalog_item_state: :active) }
   scope :inactive_items, -> { where(catalog_item_state: :inactive) }
   scope :by_priority, -> { reorder(Arel.sql("catalog_items.priority DESC NULLS LAST, catalog_items.id ASC")) }
+  scope :out_of_date, -> {
+    sync_synced.where.not(content_changed_at: nil)
+               .where("catalog_items.last_synced_at IS NULL OR catalog_items.content_changed_at > catalog_items.last_synced_at")
+  }
+
+  # Known limit: a late confirmation can hide a newer edit until its trailing sync re-marks the item pending
+  def out_of_date?
+    sync_synced? && content_changed_at.present? &&
+      (last_synced_at.nil? || content_changed_at > last_synced_at)
+  end
 
   def sales_ready?
     validator = CatalogItemValidator.new(self)

@@ -55,11 +55,7 @@ class CatalogItemAttributeValue < ApplicationRecord
     catalog_item = self.catalog_item
     return unless catalog_item
 
-    catalog = catalog_item.catalog
-    return unless catalog&.shop_connected?
-    return if catalog.info&.dig("sync_paused")
-
-    ProductSyncJob.perform_later(catalog_item.product, catalog, Time.current)
+    catalog_item.catalog.queue_product_sync(catalog_item.product)
   rescue StandardError => e
     Rails.logger.error("[CatalogItemAttributeValue] Failed to enqueue sync: #{e.message}")
   end

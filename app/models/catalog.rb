@@ -215,6 +215,14 @@ class Catalog < ApplicationRecord
     info&.dig("shopify_domain_cache")
   end
 
+  # Stamps even when paused or unconnected, so the item still shows as changed since sync
+  def queue_product_sync(product, timestamp = Time.current, wait: nil)
+    catalog_items.where(product: product).update_all(content_changed_at: timestamp)
+    return if info&.dig("sync_paused") || !shop_connected?
+
+    (wait ? ProductSyncJob.set(wait: wait) : ProductSyncJob).perform_later(product, self, timestamp)
+  end
+
   def sync_counts
     items = catalog_items
     {

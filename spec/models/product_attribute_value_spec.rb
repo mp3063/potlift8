@@ -141,7 +141,7 @@ RSpec.describe ProductAttributeValue, type: :model do
     end
 
     describe 'after_commit :propagate_change' do
-      let(:catalog) { create(:catalog, company: product.company) }
+      let(:catalog) { create(:catalog, :shop_connected, company: product.company) }
       let(:product) { create(:product) }
       let(:pav) { create(:product_attribute_value, product: product) }
 
@@ -166,7 +166,7 @@ RSpec.describe ProductAttributeValue, type: :model do
       # The parent's payload carries each variant's attributes, so a variant edit must re-sync the parent
       it 'enqueues ProductSyncJob for the catalogs of a configurable parent' do
         parent = create(:product, :configurable_variant, company: product.company)
-        parent_catalog = create(:catalog, company: product.company)
+        parent_catalog = create(:catalog, :shop_connected, company: product.company)
         create(:catalog_item, catalog: parent_catalog, product: parent)
         create(:product_configuration, superproduct: parent, subproduct: product)
         ActiveJob::Base.queue_adapter.enqueued_jobs.clear
@@ -178,13 +178,30 @@ RSpec.describe ProductAttributeValue, type: :model do
 
       it 'does not re-sync a bundle that contains the product' do
         bundle = create(:product, :bundle, company: product.company)
-        bundle_catalog = create(:catalog, company: product.company)
+        bundle_catalog = create(:catalog, :shop_connected, company: product.company)
         create(:catalog_item, catalog: bundle_catalog, product: bundle)
         create(:product_configuration, superproduct: bundle, subproduct: product)
         ActiveJob::Base.queue_adapter.enqueued_jobs.clear
 
         expect { pav.update(value: 'component value') }
           .not_to have_enqueued_job(ProductSyncJob).with(bundle, anything, anything)
+      end
+
+      it 'records the change on the catalog item, even while sync is paused' do
+        catalog.update!(info: catalog.info.merge('sync_paused' => true))
+        product.catalogs.reset # loaded when pav was created, before the pause
+
+        expect { pav.update(value: 'paused value') }.not_to have_enqueued_job(ProductSyncJob)
+        expect(CatalogItem.find_by(catalog: catalog, product: product).content_changed_at).to be_present
+      end
+
+      it 'records the change on a configurable parent catalog item' do
+        parent = create(:product, :configurable_variant, company: product.company)
+        parent_catalog = create(:catalog, :shop_connected, company: product.company)
+        parent_item = create(:catalog_item, catalog: parent_catalog, product: parent)
+        create(:product_configuration, superproduct: parent, subproduct: product)
+
+        expect { pav.update(value: 'variant value') }.to change { parent_item.reload.content_changed_at }.from(nil)
       end
 
       it 'does not enqueue job when product has no catalogs' do

@@ -11,7 +11,7 @@
 # 1. Product is updated -> after_commit callback fires
 # 2. Check if meaningful changes occurred (not just updated_at)
 # 3. Find all catalogs containing this product
-# 4. Enqueue ProductSyncJob for each catalog (skip if sync_paused)
+# 4. Record the change and queue a sync per catalog (Catalog#queue_product_sync)
 # 5. Touch superproducts to trigger their propagation
 module ChangePropagator
   extend ActiveSupport::Concern
@@ -102,13 +102,11 @@ module ChangePropagator
     catalogs_to_sync.each do |catalog|
       if catalog.info&.dig("sync_paused")
         Rails.logger.debug(
-          "Catalog #{catalog.code} has sync paused. Skipping propagation."
+          "Catalog #{catalog.code} has sync paused. Recording the change without syncing."
         )
-        next
       end
-      next unless catalog.shop_connected?
 
-      ProductSyncJob.perform_later(self, catalog, timestamp)
+      catalog.queue_product_sync(self, timestamp)
     end
   end
 

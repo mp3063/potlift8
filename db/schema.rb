@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_02_215913) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_03_175820) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -91,6 +91,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_02_215913) do
     t.integer "sync_status", default: 0, null: false
     t.datetime "last_synced_at"
     t.string "last_sync_error"
+    t.datetime "content_changed_at"
     t.index ["catalog_id", "priority"], name: "index_catalog_items_on_catalog_priority", comment: "Optimizes ordered catalog product retrieval"
     t.index ["catalog_id", "product_id"], name: "index_catalog_items_on_catalog_id_and_product_id", unique: true
     t.index ["catalog_item_state"], name: "index_catalog_items_on_catalog_item_state"

@@ -133,6 +133,52 @@ RSpec.describe CatalogItem, type: :model do
         expect(result).not_to include(active)
       end
     end
+
+    describe '.out_of_date' do
+      let!(:changed_after_sync) do
+        create(:catalog_item, catalog: catalog, sync_status: :synced, last_synced_at: 2.hours.ago, content_changed_at: 1.hour.ago)
+      end
+      let!(:changed_before_sync) do
+        create(:catalog_item, catalog: catalog, sync_status: :synced, last_synced_at: 1.hour.ago, content_changed_at: 2.hours.ago)
+      end
+      let!(:never_changed) { create(:catalog_item, catalog: catalog, sync_status: :synced, last_synced_at: 1.hour.ago) }
+      let!(:synced_without_time) { create(:catalog_item, catalog: catalog, sync_status: :synced, content_changed_at: 1.hour.ago) }
+      let!(:pending_changed) { create(:catalog_item, catalog: catalog, sync_status: :pending, content_changed_at: 1.hour.ago) }
+
+      it 'returns synced items changed after their last sync' do
+        expect(CatalogItem.out_of_date).to contain_exactly(changed_after_sync, synced_without_time)
+      end
+
+      it 'agrees with #out_of_date?' do
+        CatalogItem.where(catalog: catalog).each do |item|
+          expect(item.out_of_date?).to eq(CatalogItem.out_of_date.include?(item))
+        end
+      end
+    end
+  end
+
+  describe '#out_of_date?' do
+    it 'is true when synced and changed after the last sync' do
+      expect(build(:catalog_item, sync_status: :synced, last_synced_at: 2.hours.ago, content_changed_at: 1.hour.ago)).to be_out_of_date
+    end
+
+    it 'is true when synced, changed and the sync time is unknown' do
+      expect(build(:catalog_item, sync_status: :synced, last_synced_at: nil, content_changed_at: 1.hour.ago)).to be_out_of_date
+    end
+
+    it 'is false when the last sync came after the change' do
+      expect(build(:catalog_item, sync_status: :synced, last_synced_at: 1.hour.ago, content_changed_at: 2.hours.ago)).not_to be_out_of_date
+    end
+
+    it 'is false when no change was recorded' do
+      expect(build(:catalog_item, sync_status: :synced, last_synced_at: 1.hour.ago)).not_to be_out_of_date
+    end
+
+    it 'is false unless synced' do
+      %i[pending failed never_synced].each do |status|
+        expect(build(:catalog_item, sync_status: status, content_changed_at: 1.hour.ago)).not_to be_out_of_date
+      end
+    end
   end
 
   # Test #effective_attribute_value method

@@ -84,12 +84,11 @@ module AttributeValues
     targets.each do |target, catalog|
       if catalog.info&.dig("sync_paused")
         Rails.logger.debug(
-          "Catalog #{catalog.code} has sync paused. Skipping propagation."
+          "Catalog #{catalog.code} has sync paused. Recording the change without syncing."
         )
-        next
       end
 
-      ProductSyncJob.perform_later(target, catalog, timestamp)
+      catalog.queue_product_sync(target, timestamp)
     end
   end
 end

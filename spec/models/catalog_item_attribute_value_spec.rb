@@ -294,6 +294,13 @@ RSpec.describe CatalogItemAttributeValue, type: :model do
 
       expect { save_override(catalog) }.not_to have_enqueued_job(ProductSyncJob)
     end
+
+    it 'records the change on the catalog item, even while sync is paused' do
+      catalog = create(:catalog, company: company, info: { 'shop_id' => 1, 'sync_paused' => true })
+
+      expect { save_override(catalog) }.not_to have_enqueued_job(ProductSyncJob)
+      expect(CatalogItem.find_by(catalog: catalog, product: product).content_changed_at).to be_present
+    end
   end
 
   describe 'integration' do

@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe ProductActivatedJob, type: :job do
   let(:company) { create(:company) }
   let(:product) { create(:product, company: company, product_status: :active) }
-  let(:catalog) { create(:catalog, company: company) }
+  let(:catalog) { create(:catalog, :shop_connected, company: company) }
   let!(:catalog_item) { create(:catalog_item, catalog: catalog, product: product) }
 
   describe 'queue configuration' do
@@ -41,6 +41,13 @@ RSpec.describe ProductActivatedJob, type: :job do
         end.not_to have_enqueued_job(ProductSyncJob)
       end
 
+      it 'records the change on the catalog item, even while sync is paused' do
+        catalog.update!(info: catalog.info.merge('sync_paused' => true))
+
+        expect { described_class.perform_now(product) }
+          .to change { catalog_item.reload.content_changed_at }.from(nil)
+      end
+
       it 'handles product with no catalogs' do
         product.catalog_items.destroy_all
 
@@ -54,7 +61,7 @@ RSpec.describe ProductActivatedJob, type: :job do
       end
 
       it 'syncs to multiple catalogs' do
-        catalog2 = create(:catalog, company: company, code: 'CAT002')
+        catalog2 = create(:catalog, :shop_connected, company: company, code: 'CAT002')
         create(:catalog_item, catalog: catalog2, product: product)
 
         expect do
@@ -174,7 +181,7 @@ RSpec.describe ProductActivatedJob, type: :job do
       end
 
       context 'with superproduct in multiple catalogs' do
-        let(:catalog2) { create(:catalog, company: company, code: 'CAT003') }
+        let(:catalog2) { create(:catalog, :shop_connected, company: company, code: 'CAT003') }
         let!(:super_catalog_item2) do
           create(:catalog_item, catalog: catalog2, product: superproduct)
         end
