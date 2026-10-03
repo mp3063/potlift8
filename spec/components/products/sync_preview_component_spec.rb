@@ -210,6 +210,13 @@ RSpec.describe Products::SyncPreviewComponent, type: :component do
       expect(variants_summary).to have_text("In sync")
     end
 
+    it "compares dates the way they are stored" do
+      payload[:subproducts].first[:inventory][:eta] = Date.new(2026, 3, 23)
+      sent_variant[:inventory][:eta] = "2026-03-23"
+      subject
+      expect(variants_summary).to have_text("In sync")
+    end
+
     it "flags a variant that changed since" do
       sent_variant[:name] = "Old Small"
       subject

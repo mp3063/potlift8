@@ -95,7 +95,7 @@ module Products
     private
 
     def sent_load
-      @sent_load ||= ProductSyncService.new(product, catalog).build_shopify_load_data(payload).deep_stringify_keys
+      @sent_load ||= JSON.parse(ProductSyncService.new(product, catalog).build_shopify_load_data(payload).to_json)
     end
 
     def load_section(load, section_key)
