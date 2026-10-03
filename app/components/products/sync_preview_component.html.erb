@@ -48,6 +48,9 @@
             Never synced to Shopify
           </span>
         <% end %>
+        <% if catalog_item.out_of_date? %>
+          <%= render Ui::BadgeComponent.new(variant: :warning) do %>Changed since sync<% end %>
+        <% end %>
         <% if shopify_product_status.present? %>
           <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium
             <%= case shopify_product_status

@@ -769,6 +769,25 @@ RSpec.describe '/catalogs', type: :request do
       end
     end
 
+    describe 'GET /catalogs/:code/sync_preview' do
+      let(:client) { instance_double(Shopify8ApiClient) }
+
+      before do
+        catalog.update!(info: { 'shop_id' => 7, 'shopify_api_token' => 'token' })
+        allow(Shopify8ApiClient).to receive(:new).and_return(client)
+        allow(client).to receive(:fetch).and_return(Shopify8ApiClient::Result.new(success: true, data: { sync_tasks: [] }))
+      end
+
+      it "asks Shopify8 for this product's last sync to this catalog's shop" do
+        get sync_preview_catalog_path(catalog.code, product_id: product.id)
+
+        expect(response).to be_successful
+        expect(client).to have_received(:fetch).with(
+          a_string_including("/api/v1/sync_tasks?", "shop_id=7", "origin_target_id=#{CGI.escape(product.sku)}")
+        )
+      end
+    end
+
     describe 'POST /catalogs/:code/sync_all' do
       it 'responds with turbo_stream format' do
         post sync_all_catalog_path(catalog.code), as: :turbo_stream

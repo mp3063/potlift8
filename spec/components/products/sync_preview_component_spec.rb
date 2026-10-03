@@ -101,7 +101,7 @@ RSpec.describe Products::SyncPreviewComponent, type: :component do
       {
         last_synced_at: 2.hours.ago.iso8601,
         last_payload: {
-          "product" => { "sku" => "TEST-SKU-001", "name" => "Test Product", "status" => "active" },
+          "sku" => "TEST-SKU-001", "name" => "Test Product", "status" => "active",
           "attributes" => { "color" => "Red", "size" => "Large", "weight" => "500g" }
         },
         sync_task_id: 1,
@@ -126,7 +126,7 @@ RSpec.describe Products::SyncPreviewComponent, type: :component do
       {
         last_synced_at: 1.hour.ago.iso8601,
         last_payload: {
-          "product" => { "sku" => "TEST-SKU-001", "name" => "Old Product Name", "status" => "active" },
+          "sku" => "TEST-SKU-001", "name" => "Old Product Name", "status" => "active",
           "attributes" => { "color" => "Blue", "size" => "Large", "weight" => "500g" }
         },
         sync_task_id: 1,
@@ -143,6 +143,54 @@ RSpec.describe Products::SyncPreviewComponent, type: :component do
       subject
       expect(page).to have_text("Potlift:")
       expect(page).to have_text("Shopify:")
+    end
+  end
+
+  describe "Basic Product Info diff" do
+    let(:payload) do
+      { product: { id: product.id, sku: "TEST-SKU-001", name: "Test Product", product_status: "active" } }
+    end
+
+    def basic_info_summary
+      page.find("summary", text: "Basic Product Info")
+    end
+
+    # The sent load as the client returns it: flat, symbol keys, no id
+    def shopify_data_with(load)
+      { last_synced_at: 1.hour.ago.iso8601, last_payload: load, sync_task_id: 1, sync_status: "executed" }
+    end
+
+    context "when the sent fields match" do
+      let(:shopify_data) { shopify_data_with(sku: "TEST-SKU-001", name: "Test Product", product_status: "active") }
+
+      it "shows In sync" do
+        subject
+        expect(basic_info_summary).to have_text("In sync")
+      end
+    end
+
+    context "when a sent field differs" do
+      let(:shopify_data) { shopify_data_with(sku: "TEST-SKU-001", name: "Old Name", product_status: "active") }
+
+      it "counts only that field" do
+        subject
+        expect(basic_info_summary).to have_text("1 difference")
+        expect(page).to have_text("Old Name")
+      end
+    end
+  end
+
+  describe "changed since sync badge" do
+    it "shows when the catalog item is out of date" do
+      catalog_item.update!(sync_status: :synced, last_synced_at: 2.hours.ago, content_changed_at: 1.hour.ago)
+      subject
+      expect(page).to have_text("Changed since sync")
+    end
+
+    it "is absent when the catalog item is up to date" do
+      catalog_item.update!(sync_status: :synced, last_synced_at: 1.hour.ago, content_changed_at: 2.hours.ago)
+      subject
+      expect(page).not_to have_text("Changed since sync")
     end
   end
 

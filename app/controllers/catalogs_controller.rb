@@ -394,7 +394,8 @@ class CatalogsController < ApplicationController
 
     client = Shopify8ApiClient.new(api_token: api_token)
     result = client.fetch(
-      "/api/v1/sync_tasks?origin_target_id=#{CGI.escape(sku)}&status=executed&event_type=product_changed&limit=1"
+      "/api/v1/sync_tasks?shop_id=#{@catalog.shop_id}&origin_target_id=#{CGI.escape(sku)}" \
+      "&status=executed&event_type=product_changed&limit=1"
     )
     return nil unless result.success?
 

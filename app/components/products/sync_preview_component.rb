@@ -4,6 +4,10 @@ module Products
   class SyncPreviewComponent < ViewComponent::Base
     attr_reader :product, :catalog, :catalog_item, :payload, :shopify_data
 
+    # The sent load carries these product fields flat at its top level (ProductSyncService#build_shopify_load_data)
+    SENT_PRODUCT_FIELDS = %w[sku ean name product_type product_status configuration_type
+                             total_saldo total_max_sellable_saldo].freeze
+
     def initialize(product:, catalog:, catalog_item:, payload:, shopify_data: nil)
       @product = product
       @catalog = catalog
@@ -65,7 +69,13 @@ module Products
       return nil unless has_shopify_comparison?
 
       potlift_data = payload[section_key]
-      shopify_data_section = shopify_data[:last_payload]&.dig(section_key.to_s)
+      last_load = shopify_data[:last_payload].deep_stringify_keys
+      if section_key == :product
+        potlift_data = potlift_data&.stringify_keys&.slice(*SENT_PRODUCT_FIELDS)
+        shopify_data_section = last_load.slice(*SENT_PRODUCT_FIELDS)
+      else
+        shopify_data_section = last_load[section_key.to_s]
+      end
       return nil unless potlift_data.present? && shopify_data_section.present?
 
       compute_diff(potlift_data, shopify_data_section)
