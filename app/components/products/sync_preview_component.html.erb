@@ -102,7 +102,7 @@
                   <tbody class="divide-y divide-gray-100">
                     <% data.each do |key, value| %>
                       <tr>
-                        <td class="py-2.5 pr-4 text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap align-top" style="width: 140px;"><%= key %></td>
+                        <td class="py-2.5 pr-4 text-xs font-medium text-gray-500 uppercase tracking-wider wrap-anywhere align-top" style="width: 190px;"><%= key %></td>
                         <td class="py-2.5 text-sm text-gray-900 break-words align-top">
                           <% section_diff = diff_section(section[:key]) %>
                           <% changed = section_diff&.dig(:changes)&.find { |c| c[:field] == key.to_s } %>
@@ -137,7 +137,7 @@
                           <tbody>
                             <% item.each do |k, v| %>
                               <tr>
-                                <td class="py-0.5 pr-3 text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap align-top" style="width: 120px;"><%= k %></td>
+                                <td class="py-0.5 pr-3 text-xs font-medium text-gray-500 uppercase tracking-wider wrap-anywhere align-top" style="width: 170px;"><%= k %></td>
                                 <td class="py-0.5 text-sm text-gray-900 break-all"><%= format_value(v) %></td>
                               </tr>
                             <% end %>
