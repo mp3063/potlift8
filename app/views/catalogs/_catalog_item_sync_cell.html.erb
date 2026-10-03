@@ -1,9 +1,9 @@
 <div id="catalog_item_<%= catalog_item.id %>_sync">
-  <div class="flex items-center gap-2">
+  <div class="flex items-center gap-2 whitespace-nowrap">
     <%= sync_status_badge_for(catalog_item) %>
     <% if catalog_item.last_synced_at %>
       <span class="text-xs text-gray-400 hidden sm:inline" title="<%= catalog_item.last_synced_at.strftime('%B %d, %Y at %I:%M %p') %>">
-        <%= time_ago_in_words(catalog_item.last_synced_at) %>
+        <%= time_ago_in_words(catalog_item.last_synced_at) %> ago
       </span>
     <% end %>
   </div>
